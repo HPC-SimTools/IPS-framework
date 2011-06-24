@@ -1,0 +1,81 @@
+simulation = sample
+description = "aorsa, nubeam, tsc"
+
+# old style specification
+[sample]
+name = sample_config   # name of the simulation (for human readability)
+components = aorsa, nubeam, tsc # component list
+nsteps = 1000  
+
+# Simulation overheads
+[[startup]]
+  name = startup
+  runtime = 15
+[[shutdown]]
+  name = shutdown
+  runtime = 3
+
+# FT section
+ft_strategy = none
+retry_limit = 3
+[[restart]]
+  name = restart
+  runtime = 20
+[[resubmit]]
+  name = resubmit
+  runtime = 15
+[[launch_delay]]
+  name = launch_delay
+  runtime = 60
+[[checkpoint]]
+  ckpt_on = False
+  ckpt_mode = phys_regular
+  ckpt_interval = 50
+  runtime = 20
+  name = ckpt
+
+# component specification
+[[nubeam]]
+	name = nubeam        
+	description = ""
+    	depends_on = aorsa
+	# resource needs
+	num_proc = 512
+	mem_pproc = 1
+	disk_pproc = 1
+	# runtime specification
+	runtime = 1020
+	stddev =  300
+	# overheads
+	start_up = 5
+	clean_up = 10
+
+[[tsc]]
+	name = tsc        
+	descriptionxs = ""
+    	depends_on =  nubeam
+	# resource needs
+	num_proc = 1
+	mem_pproc = 1
+	disk_pproc = 1
+	# runtime specification
+	runtime = 130
+	stddev = 40
+	# overheads
+	start_up = 5
+	clean_up = 10
+
+[[aorsa]]
+	name = aorsa        
+	description = ""
+    	depends_on = 
+	# resource needs
+	num_proc = 1024
+	mem_pproc = 1
+	disk_pproc = 1
+	# runtime specification
+	runtime = 1020
+	stddev = 5
+	# overheads
+	start_up = 5
+	clean_up = 10

@@ -1,0 +1,32 @@
+In order to get timing data for the IPS, you need to first install 
+Tau (http://www.cs.uoregon.edu/research/tau/home.php).  
+
+When installing it be sure to specify the location of pythoninc and 
+pythonlib.  Installation instructions can be found here:
+http://www.cs.uoregon.edu/research/tau/docs/newguide/bk02ch01.html
+
+OR
+
+On jaguar you can make the following changes to your path and python 
+path to use the installation of TAU I installed:
+
+PATH:           /lustre/scr144/ssfoley/tau-2.18.2p2/x86_64/bin
+PYTHONPATH:     /lustre/scr144/ssfoley/tau-2.18.2p2/x86_64/lib
+
+
+Once tau is set up and is working properly, set the environment 
+variable IPS_TIMING to 1.  There are a set of functions defined in 
+ipsTiming that create, start, stop, and dump tau timer data.
+
+Currently instrumented:
+    ips.py
+    services.py
+
+Results:
+After a run, you will find dump file called "dump.0.0.0" in the current
+working directory, as well as in the work directories of all the 
+components that have executed.  You can rename the file profile.0.0.0 
+and run pprof at the command line to look at the data, or you can just 
+look at the raw file.
+
+- Samantha Foley, 07/14/09

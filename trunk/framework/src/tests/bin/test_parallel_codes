@@ -1,0 +1,15 @@
+#!/bin/sh
+#PBS -N test_pcodes
+#PBS -A fus019dev
+#PBS -j oe
+#PBS -l walltime=00:5:00,size=16
+
+cd /lustre/scr144/ssfoley/
+#./get_nids
+#aprun -n 16 ./hw
+#aprun -n 16 ./parallel_sleep 10
+#aprun -n 16 ./faulty_parallel_sleep 10 1
+#env
+#aprun -n 16 ./faulty_parallel_sleep 10 2
+#env
+python py_launch.py

@@ -1,0 +1,8 @@
+#!/bin/sh
+#PBS -N nids
+#PBS -A fus019dev
+#PBS -j oe
+#PBS -l walltime=00:5:00,size=16
+
+cd /lustre/scr144/ssfoley/
+./get_nids

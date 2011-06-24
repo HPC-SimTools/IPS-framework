@@ -1,0 +1,37 @@
+simulation = swim3
+description = "aorsa, nubeam, tsc"
+
+[swim3]
+name = swim3   # name of the simulation (for human readability)
+components = aorsa, nubeam, tsc # component list
+nsteps = 100
+
+[[nubeam]]
+	name = nubeam        
+	description = ""
+    	depends_on = aorsa
+	num_proc = 256
+	mem_pproc = 1
+	disk_pproc = 1
+	runtime = 2020
+	stddev = 600
+
+[[tsc]]
+	name = tsc        
+	description = ""
+    	depends_on =  nubeam
+	num_proc = 1
+	mem_pproc = 1
+	disk_pproc = 1
+	runtime = 130
+	stddev = 40
+
+[[aorsa]]
+	name = aorsa        
+	description = ""
+    	depends_on = 
+	num_proc = 1024
+	mem_pproc = 1
+	disk_pproc = 1
+	runtime = 1020
+	stddev = 5

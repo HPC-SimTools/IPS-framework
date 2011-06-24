@@ -1,0 +1,31 @@
+# DAKOTA - configuration file for a parameter study on IPS
+
+strategy,
+	single_method
+	tabular_graphics_data
+
+method,
+	vector_parameter_study
+	final_point = 4 
+	num_steps = 3
+
+model,
+	single
+
+variables,
+	continuous_design = 1
+	initial_point	  1
+	descriptors	  'Ti0'
+
+interface,					
+	system					
+	analysis_driver = './ips_wrapper.sh'
+	parameters_file = 'params.in'		
+	results_file = 'results.out'		
+	file_tag       # THIS IS VERY IMPORTANT FOR THE CORRECT OPERATION OF THE SCRIPTS
+	aprepro	       # ALSO VERY IMPORTANT
+
+responses,
+	num_objective_functions = 1
+	no_gradients
+	no_hessians

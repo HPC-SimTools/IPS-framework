@@ -1,0 +1,47 @@
+This directory contains documentation files (*.rst) and sphinx utilities to 
+build them into webpages, latex, and text files.
+
+At the moment, in order to view them in a pretty and composed fashion you will 
+need to build them yourself.  This will change once we have stabilized the 
+documentation such that we can share them (probably at cswim.org).
+
+1) Obtain sphinx - http://sphinx.pocoo.org/
+   * What is sphinx?  It is a python package that helps you produce nice 
+     looking documentation in various forms, so you can write the 
+     documentation once, then use sphinx to generate html, latex (pdf), 
+     text, or many other forms.
+   * What do I need to install sphinx?  You will need Python 
+     (http://www.python.org/), docutils (http://docutils.sourceforge.net/), 
+     and sphinx.  You may also want easy-install (a package installer for 
+     Python kind of like yum - http://pypi.python.org/pypi/setuptools) 
+     to make installing Python packages easier.
+   * I suggest getting Python, then easy-install, then the other two packages.
+
+2) Build the documentation
+   * Choose a desired output format (html, latex, text).
+   * type: make <format>
+   * For example, "make html" will produce webpages containing documentation
+     and APIs for the framework code.
+   * The documentation in the specified format will be located in:
+       ips/trunk/doc/_build/<format>/
+   
+     For example, "make html" puts the top-level page:
+       ips/trunk/doc/_build/html/index.html
+
+3) Writing documentation
+   * Each category of documentation (e.g., user guides, component guides) 
+     contains its own document that explains the category and the documents 
+     contained therein.  These documents must be added to the "toc-tree" in 
+     the category description document in order to be discovered and built by 
+     Sphinx.  If the category has only one document, it does not need a 
+     toc-tree, it should, however, be included in the top-level toc-tree in 
+     index.rst.
+   * Documentation is written using the reStructuredText markup language.  It 
+     is similar to languages used to write wiki documents.  You can find a 
+     good reference at http://sphinx.pocoo.org/rest.html, which covers the 
+     basics, and links to more detailed information on the language.
+   * Documentation files must end in .rst.
+   * Docstrings in the source code for the framework use reStructuredText 
+     formatting as well.
+
+Questions? Contact Samantha Foley (foleyss@ornl.gov)

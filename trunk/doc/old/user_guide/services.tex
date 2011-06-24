@@ -1,0 +1,269 @@
+\section{Guide to IPS Services}
+\label{sec:services}
+
+In this section the functions that the services provide to components are
+described.  It is broken down into the following groups:
+\begin{itemize}
+\item General Purpose
+\item Task Launch
+\item Component Invocations
+\item Data Management
+\item Logging
+\item Event Service
+\end{itemize}
+
+\subsection{General Purpose Services}
+\label{sec:gen_services}
+\par
+This section contains information about services to access configuration information.
+\par
+\texttt{get\_config\_param(self, param) return value}:
+\par
+  This function returns the value of configuration parameter \texttt{param}.  
+  Platform, simulation and dynamic configuration parameters can be 
+  retrieved in this way, however use \texttt{get\_port} for retrieving component 
+  references (see Component Invocation section for \texttt{get\_port} details).  
+  An exception is thrown if the parameter is not found or there is an 
+  error retrieving it.\\
+
+\texttt{set\_config\_param(self, param, value, target\_sim\_name=None)\\
+  return retval or None}:
+\par
+  This function sets the value of configuration parameter \texttt{param} if it is 
+  a dynamic configuration parameter.  If the parameter is a dynamic config 
+  parameters, the value is set and returned on success, an exception is 
+  raised on failure.  If the parameter is not a dynamic config parameter, 
+  the return value is \texttt{None}.\\
+
+\texttt{get\_time\_loop(self) return tlist}:
+\par
+  This function returns a list of simulation time values as specified in 
+  the simulation configuration file.\\
+
+\texttt{get\_working\_dir(self) return workdir}:
+\par
+  This function returns the working directory for the calling component.  
+  The structure of the working directory is:
+  \begin{verbatim}
+  $SIM_ROOT/work/${CLASS}_${SUB_CLASS}_${NAME}_${INSTANCE_NUM}
+  \end{verbatim}
+
+\subsection{Task Launch Services}
+\label{sec:task_services}
+\par These are the services for launching and managing tasks in the component.  
+They are typically used in the step function of a physics component to 
+launch binaries.\\
+
+\texttt{launch\_task(self, nproc, working\_dir, binary, $\ast$args, $\ast$$\ast$keywords) return task\_id}:
+\par
+  This function launches binary \texttt{binary} in working directory 
+  \texttt{working\_dir} on \texttt{nproc} processes with \texttt{$\ast$args} and \texttt{$\ast$$\ast$keywords} (in 
+  python \texttt{$\ast$args} refers to any number of arbitrary arguments, and \texttt{$\ast$$\ast$keywords} 
+  refers to any number of \texttt{keyword\=value} pairs.  In this context, the \texttt{$\ast$args} 
+  are for the binary, and the \texttt{$\ast$$\ast$keywords} are used by the services and 
+  framework.).  It is a non-blocking call because a new process is created 
+  to do the launch of the task, and the \texttt{task\_id} (a logical ID created by 
+  the task manager) is the handle to refer to this task.  There are 
+  several exceptions that can be raised:
+  \begin{itemize}
+    \item an exception from initializing the task (this could be related to 
+      the number of processes requested or constructing the launch string)
+    \item an exception when launching the process
+  \end{itemize}
+  
+\texttt{kill\_task(self, task\_id)}:
+\par
+  This function kills task \texttt{task\_id}.  An exception is raised if the task 
+  id is not found, if there were problems terminating the process, or 
+  there are problems finalizing the task.\\
+
+\texttt{kill\_all\_tasks(self)}:
+\par
+  This function kills all tasks that the component currently has 
+  executing.  It calls \texttt{kill\_task} on each one, and will raise the first 
+  exception it encounters.  It returns successfully if no exceptions are 
+  raised.\\
+
+\texttt{wait\_task\_nonblocking(self, task\_id) return retval or None}:
+\par
+  This function checks the status of task \texttt{task\_id}, if it has completed,
+  the task is finalized and the return value returned, otherwise, \texttt{None} 
+  is returned.  An exception is raised if \texttt{task\_id} is invalid or there 
+  are problems finalizing the task.\\
+
+\texttt{wait\_task(self, task\_id) return retval}:
+\par
+  This function waits until task \texttt{task\_id} has completed, finalizes it and
+  returns the return value.  An exception is raised if \texttt{task\_id} is 
+  invalid or there are problems finalizing the task.\\
+
+\texttt{wait\_tasklist(self, task\_id\_list) return ret\_dict}:
+\par
+  This function does a blocking wait on all tasks in \texttt{task\_id\_list} and a
+  dictionary of \texttt{task\_id}s and return values is returned.  An exception is 
+  thrown if any \texttt{task\_id} is not found, or there are problems finalizing 
+  any task.\\
+
+
+\subsection{Component Invocation Services}
+\label{sec:invoc_services}
+
+\par
+These are the services necessary for calling components.  They are 
+typically used by the driver.\\
+
+
+\texttt{get\_port(self, port\_name) returns component\_reference}:
+\par
+  This function looks up and returns a reference to the component
+  that is specified in the configuration file as \texttt{port\_name}.  Exceptions 
+  should be caught in component to ensure that the component reference was 
+  received successfully.\\
+
+\texttt{call\_nonblocking(self, component\_id, method\_name, $\ast$args) returns call\_id}:
+\par
+  This function invokes the method \texttt{method\_name} on component 
+  \texttt{component\_id} with arguments \texttt{$\ast$args} and returns the \texttt{call\_id}.  You must use a 
+  \texttt{wait\_call()} function (see below) to get the results of the call, or the 
+  simulation will hang until the entire simulation is terminated by an 
+  external force (most likely, the batch scheduler will notice that you 
+  are still running after your allocated time is up and kill your job).\\
+
+\texttt{call(self, component\_id, method\_name, $\ast$args) return retval}:
+\par
+  This function invokes the method \texttt{method\_name} on component 
+  \texttt{component\_id} with arguments \texttt{$\ast$args}, then waits for the result and 
+  returns it to the caller (\texttt{retval}).  This is a blocking call.\\
+
+\texttt{wait\_call(self, call\_id, block=True) return retval}:
+\par
+  This function waits for the result from call \texttt{call\_id} and returns the 
+  results.  By default, this is a blocking call and will not return until 
+  the call has finished.  If \texttt{block} is set to \texttt{False}, the function will 
+  raise \texttt{ipsExceptions.IncompleteCallException} if the call has not yet 
+  finished.\\
+
+\texttt{wait\_call\_list(self, call\_id\_list, block=True) return ret\_map}:
+\par
+  This function waits on all call IDs in \texttt{call\_id\_list} then returns a 
+  dictionary where the keys are the \texttt{call\_ids} and the values are the 
+  corresponding return values.  By default this call blocks until \emph{all} 
+  calls have finished.  If \texttt{block} is set to \texttt{False}, the function will 
+  raise \texttt{ipsExceptions.IncompleteCallException} if any call has not yet 
+  finished.\\
+
+
+\subsection{Data Management Services}
+\label{sec:data_services}
+\par
+These services are for dealing with input, output and plasma state files.\\
+
+\texttt{stage\_input\_files(self, input\_file\_list)}:
+\par
+  This function copies files in \texttt{input\_file\_list} from the input file 
+  directory specified in the configuration file, to the component's 
+  working directory.  Also copies files to:
+  \begin{verbatim}
+  $SIM_ROOT/simulation_setup/${CLASS}_${SUB_CLASS}_${NAME}_${SEQ_NUM}
+  \end{verbatim}
+  Exceptions are raised if there are problems on the second copy.\\
+
+\texttt{stage\_output\_files(self, timestamp, file\_list)}:
+\par
+  This function copies output files in \texttt{file\_list} to:\\
+  \begin{verbatim}
+  $SIM_ROOT/simulation_results/${timestamp}/components/      \
+        ${CLASS}_${SUB_CLASS}_${NAME}_${SEQ_NUM}
+  \end{verbatim}
+  Exceptions are raised if there are problems.\\
+
+\texttt{stage\_plasma\_state(self)}:
+\par
+  This function copies the current master plasma state files to the 
+  component's working directory.\\
+
+\texttt{save\_restart\_files(self, timestamp, file\_list)}:
+\par
+  This function copies files needed for component restart to the restart 
+  directory:\\
+  \begin{verbatim}
+  $SIM_ROOT/restart/$timestamp/components/       \
+        ${CLASS}_${SUB_CLASS}_${NAME}_${SEQ_NUM}
+  \end{verbatim}
+  Exceptions are raised if there are problems.\\
+
+\texttt{get\_restart\_files(self, restart\_root, timestamp, file\_list)}:
+\par
+  This function copies files needed to restart a component from the 
+  restart directory to the component's work directory.  Exceptions are 
+  raised if there are problems.\\
+
+\texttt{update\_plasma\_state(self)}:
+\par
+  This function copies component's current version of the plasma state 
+  files to the master plasma state.  \emph{Note: this will overwrite the current plasma state with the calling component's version}.  This is ok for serial 
+  execution of components, however, the \texttt{merge\_plasma\_state()} function is 
+  best for concurrent execution.  Exceptions are raised if there are 
+  problems.\\
+
+\texttt{merge\_current\_plasma\_state(self, partial\_state\_file, logfile=None)}:
+\par
+  This function merges a partial plasma state file with the current master 
+  plasma state.  Exceptions are raised if there are problems.\\
+
+
+\subsection{Logging Services}
+\label{sec:log_services}
+\par
+These services allow you to log information about the simulation so you 
+can look at it after the simulation ends and see what went wrong and when.  
+All messages are aggregated over the simulation and printed to a single 
+file.  The functions below only differ in the conditions in which they are 
+printed.  The logging level is set at the beginning of the simulation.\\
+
+\begin{verbatim}
+log(self, *args)
+debug(self, *args)
+info(self, *args)
+warning(self, *args)
+error(self, *args)
+exception(self, *args)
+critical(self, *args)
+\end{verbatim}
+Note: \texttt{$\ast$args} should really be a formatted string with any variables as the following arguments in order.  
+Variables can be used in the string like so:\\
+  \texttt{services.log(``this is my string with \%s added to it when \%s happens'', x, y) }
+(where x and y are strings).\\
+
+\subsection{Event Service}
+\label{sec:event_services}
+\par
+These calls are for components that are using the event service.  Note 
+that the event name, event body and topic names must be agreed upon by the 
+communicating parties.  The event service does not check for properly 
+constructed events or active topics.\\
+
+\texttt{publish(self, topicName, eventName, eventBody)}:
+\par
+  This function publishes an event with name \texttt{eventName} and body 
+  \texttt{eventBody} to topic \texttt{topicName}.\\
+
+
+\texttt{subscribe(self, topicName, callback)}:
+\par
+  This function subscribes the component to topic \texttt{topicName} so that 
+  callback \texttt{callback} is called when \texttt{process\_events} is called.  The 
+  function listed as the callback should be written such that it handles 
+  exactly one event.  The callback will be called for each event that is 
+  received on that topic.\\
+
+
+\texttt{unsubscribe(self, topicName)}:
+\par
+  This function unsubscribed the component from topic \texttt{topicName}.\\
+
+\texttt{process\_events(self)}:
+\par
+  This function processes all events on all topics to which the component 
+  is subscribed.  For each event, the callback that is registered for that 
+  event topic is called.

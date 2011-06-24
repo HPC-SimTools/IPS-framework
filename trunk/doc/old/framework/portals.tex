@@ -1,0 +1,203 @@
+\section{SWIM Framework and Utilities}
+\label{sec:frameworkutils}
+The primary software design decision in SWIM was to use scripts whenever
+possible, instead of requiring the use of a particular technology. This does
+mean there are multiple levels and categories encompassed by the term ``script''
+but it does let us re-use existing harness, configure, and run scripts that
+the different components already have available. A SWIM portal (Section
+\ref{sec:portalgeneral}) has been started, but for the most part a SWIM run can
+be made without using the portal at all - it is intended as a convenience and
+an organizer, not as a single required entry point.
+
+The SWIM portal-based approach is consonant with what is being
+done in other national scientific collaborative efforts, and for job submission
+interfaces provided by some supercomputer centers. 
+An overview of portals and the tradeoffs in choosing to use them 
+are in Section \ref{sec:portalgeneral}, and the particulars for the SWIM portal
+are in Section \ref{sec:swimportal}.
+
+Utilities that are near ready to be used are the job manager, the
+data manager, and the event system.  Each needs more development however - in
+particular the authentication and launch part of the job manager are not
+yet implemented.
+Some utilities, like the data manager, are accessible both through the portal
+and independently via other interfaces (e.g., through Perl or ``web services''
+interfaces). The job manager has two parts, one for submitting jobs via the
+portal and the other for negotiating and dealing with batch managers on HPC
+resources. The second one can be and is implemented via Python scripts rather
+than being embedded as part of the portal itself. 
+
+\input{datamanager}
+
+\input{jobs}
+
+\input{events}
+
+\subsection{General portal ideas and terminology}
+\label{sec:portalgeneral} 
+The term {\em portal} originally was applied to job launch facilities provided
+by the San Diego Supercomputer Center and NCSA \cite{mcat,hdf}. Portals are now used for 
+job launch at remote facilities, coordination and collaboration within specific
+application areas like climate \cite{climate_portal} and weather
+\cite{lead} modeling, monitoring scientific
+instruments \cite{cima}, and managing large scale data sets.
+%can't find what reference "climate portal corresponds to
+
+A portal is a web-based service running at some well-known location, which is
+generally independent of where clients are running, managed resources are
+located, or large scale scientific data sets are located. A user can launch a
+set of jobs on a portal, logoff, and then reconnect later from a different
+machine to check results or continue the session. A distinguishing feature of
+portals is {\em customization}, meaning each user can arrange the interface for
+their own interests and the server will maintain that information across
+sessions for the user. Unlike most web services, that user-dependent information
+is stored on the server side rather than in cookies on the user's client
+machine. Customization can include what material to view, how the user interacts
+with the interface, and most other aspects - but in practice most portal users
+simply use the default.
+
+Certain services that run within a portal ``container'' are called {\em
+portlets}, and they have access to the information stored in the container.
+Part of customization typically includes which portlets a user starts by
+default. Portlets are written in Java and have to implement a
+container-specified portlet interface, so that the portal can interact with
+them uniformly. An end user generally should not need to write or edit portlets,
+and instead new ones are added by the portal maintainers. Adding a portlet
+requires some restart of the web server hosting the portal, a heavy-weight
+task.
+
+\subsection{Portal advantages and disadvantages}
+
+Using a portal allows reuse of utilities developed across a broad range of
+application areas. One of the most frequently used portlets is {\em MyProxy},
+\cite{myproxy} which on logon holds a user's authentication credentials and
+can present them to other (potentially remote) services on a user's behalf. 
+This is necessary because as a Unix process the portal is running as some a
+virtual user, and several real users may be logged in simultaneously.
+{\em MyProxy} holds ``proxy certificates'' and so does not need to actually
+store a user's password on the portal host.  
+%can't find MyProxy reference
+
+While {\em MyProxy} handles the problem of authentication, {\em authorization}
+(determining which users can access which resources) is a separate and
+more difficul problem, with several different solutions in the portal world.
+
+Portals provide centralization, so a user's full work arena is available from
+any site.  This avoids the problem of having different utilities, codes, and
+working resources scattered on different machines, but does require the portal
+to run on a reliable server with good network connectivity. Some portal 
+implementations use techniques from commercial web servers, using load-balancing
+and fail-over so that if one server host fails another can seamlessly take up
+the load. SWIM is unlikely to encounter the scalability problems that some
+portals have (thousands of simultaneous users) so load balancing is unlikely to
+be a problem. 
+Another advantage is that portal technology is being developed by several CS
+research groups and companies, letting us use future upgrades and utilities
+as they are developed. 
+
+Disadvantages of using a portal approach, and how we are trying to mitigate
+them, include
+\begin{itemize}
+  \item Authentication with remote resources is via ``grid certificates'', the
+  grandchild of Globus certificates. These are X.509 certificates. SWIM will
+  automatically generate the proxy certificate so that a user can login once
+  per session and only have to provide a password once. But a preliminary step
+  is needed to have a grid certificate created for the user.  Grid certificates
+  are accepted at PPPL for the TRANSP and collaboratory projects, and are being
+  used as part of ORNL's Teragrid participation.
+  \item Centralization of services potentially could lead to not being able to
+  do any work if the portal host is down or inaccessible. We currently have 
+  fail-over capability between two machines at IU, located at Indianapolis and
+  Bloomington for geographic dispersion. Both servers are on at least three
+  major wide area networks (iLight, AT\&T, ESNet, Abilene). But being able to
+  do fail-over among machines located under different administrative domains
+  is still an open research issue, which IU is working on in the context of
+  other portals. 
+  \item Centralization also means the failure or loss of one utility (portlet)
+    could bring down all the other portlets. We are addressing this by using
+    an {\em event channel} for decoupling as much as possible (see Section
+            \ref{sec:eventchannel}).
+  \item Portals entail a lot of heavy-weight machinery, especially when a user
+  just wants to do some
+  quick debug cycling or exploratory runs. This is  mitigated partly by the
+  multilevel scripting approach. The plan is to be able to run any constituent
+  code as a component independently of any other, and even without access to the
+  portal. Whenever a component script makes a call to a portal utility like 
+  publishing a message to the event channel, if the portal is not accessible
+  the script falls back to a local mechanism like writing a log file.
+  The portal should be seen as a set of utilities that help compose, run,
+  and diagnose SWIM runs - but it is possible to make such runs even without
+  using the portal.
+  \item A lot of work and effort is being put into a computer technology that
+  may turn out to be a flash in the pan and outdated within a few years.
+  Mitigating this is the support of portals in commercial settings by major
+  companies like IBM, Sun, and lately MicroSoft, and in HPC scientific settings
+  by the NSF, NIH, and DoE. The multi-level scripting approach also helps and in
+  principle at least each portlet can be converted to the next generation
+  container/utility technology. E.g., portlets were preceded by ``servlets'' in Java,
+  and there are automatic utilities to convert a servlet to a portlet. 
+  As another example,
+  the data manager portlet uses an underlying MySQL database system and also
+  provides scripting and ``web services'' interfaces, so running it independently
+  of the portal is possible (and is done routinely in the CIMA project).
+\end{itemize}
+Overall, the plan is to provide the useful utilities that portals have but to
+not have the project tied to that particular technology. Portals have been
+around for only about 12 years now, while some control and scientific
+application management scripts have been around for 40 years. 
+
+\subsection{SWIM portal implementation}
+\label{sec:swimportal} 
+SWIM is using the Gridsphere portal system  \cite{gridsphere}, because it seems
+to be the most widely used portal in distributed scientific computing.
+%can't find gridshpere, could it be: gsi, gridftp, grid?
+The implementation currently includes fiveite utilities or portlets. A standalone
+{\em event channel} \cite{wsmgpaper} is used to help decouple different utilities
+and the various component runs required.
+    \subsubsection{Current Portlets} 
+    \begin{description}
+     \item {\em MyProxy}. As described earlier, this handles authentication of users:
+     after logging in and providing a portal password, under the covers myproxy
+     generates a ``grid certificate'' for the user and that is used to launch
+     jobs and transfer data on behalf of the user. A user should never have to
+     deal with or even be aware of this portlet!
+     \item {\em Job Manager}.
+       The portal remotely launches jobs using the batch management script.
+       The launch and monitoring of the job is taken care of by the script
+       automatically and uses a configuration file ({\bf SWIM\_config}) for
+       specific information about how to run the code.  While the code is
+       running, events are published to the portal for the user to view.
+       Killing a job is also possible from this utility.
+     \item {\em Data Manager}.
+        This portlet is responsible for locating and moving
+        files as needed for a run. It automatically generates metadata and stores
+        it in a relational database, allowing users to perform queries.
+        Details are in Section \ref{sec:datamanager}.
+    \end{description}
+
+\subsubsection{Event Viewer}
+The SWIM portal has pages for viewing events (see Section \ref{sec:eventchannel})
+as they are published.  Separate pages are provided for each type of event so
+that a user does not get information overload with messages appearing on the web page.
+Messages are ``pushed'' to the portal page, appearing without user action
+required.
+Because events are stored by the data manager, a user can also do filtering on
+the messages and request, e.g., only those from a particular user or machine. 
+This kind of query uses a ``pull'' approach, that is, requires a user to enter
+the request or refresh the page to update it.
+
+\subsubsection{Overall script}
+The major task of the SWIM portal is to run the IPS script that specifies which
+components to run, performs time looping, and makes decisions based on physics
+or other criteria. Although the portal launches and runs this overall management
+script (and the data manager archives it), that does not imply or require that
+the script run on the portal host. Just what needs to go into this script is
+specified in the IPS Design document written by Don Batchelor, and is still
+evolving. The general principle is to keep individual code component run scripts
+free of SWIM-specific actions and ideas, and concentrating those actions into
+the overall script.
+
+It can be edited directly on the portal page, or (a more likely usage) edited locally and
+uploaded to the SWIM portal. The first case is more likely for quick debugging
+and experiments since web interfaced editors generally are poor. 
+

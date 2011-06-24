@@ -1,0 +1,15 @@
+machine_name = unicorn
+nodes =  280
+ppn =  4
+mem_pernode = 0
+disk_pernode = 0
+# mtbf is measured in seconds!!!!
+#distribution = weibull
+distribution = exponential
+#shape = 0.8
+shape = 0.7
+#mtbf = 31536000  # 1 year
+mtbf = 126144000  # 4 years
+#mtbf = 157680000  # 5 years
+#mtbf = 3600  # 1 hour
+#mtbf = 36000  # 10 hours

@@ -1,0 +1,50 @@
+\section{Design Goals}
+\label{sec:design_goals}
+
+Design goals were agreed upon at the start of the \ac{swim} project. They include:
+\begin{itemizer}
+\item{Handle job management and monitoring on different platforms, especially
+unique DOE petascale ones}
+
+\item{Data managment, movement, location, and sophisticated query}
+
+\item{Minimal perturbation to ongoing scientific research using the extant
+constituent codes and software}
+
+\item{Maximize reliability of the systems codes}
+
+\item{Extensibility, programmability, and longevity}
+
+\item{Leverage existing technology and interoperate with other fusion
+simulation efforts}
+
+\end{itemizer}
+Implementation choices have been driven by these design goals.
+One choice has been to use a primarily {\em scripting} based framework system.
+This allows us to use
+different \ac{gui} and workflow composition systems while retaining a large base
+of intercomponent interactions defined by \ac{swim} runs.  Scripts have had greater
+longevity than \ac{gui}s, and some of the scripts used to coordinate and launch HPC
+runs in fusion simulations date back decades.
+
+Another principle driven by the goals is the {\em decoupling} of parts of the \ac{swim}
+framework as much as possible (this is actually a form of the software component
+dictum that required interfaces should be as minimal as possible).
+Foremost, no simulation should fail unnecessarily because some other component
+failed. A sophisticated data managment system is provided through the portal,
+but decoupling means it can be used independently of the portal - and some runs
+can be made without using the data manager at all. Of course in that case you
+lose the ability to track and automatically archive the files associated with a
+run.
+
+Also as much as possible \ac{swim} uses utilities that have proven reliable, are
+widely used, and which seem likely to continue to be maintained and developed
+by other projects. Included in this list are the Python language, the Gridsphere
+portal, and MySQL for data management underpinnings.
+
+As another example, 
+using Python (versus, e.g., Java)
+for the scripts was chosen because current DOE HPC platforms all support some
+form of Python, even if they do not have Java yet. 
+
+

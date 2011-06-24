@@ -1,0 +1,10 @@
+============
+Introduction
+============
+
+The Resource Usage Simulator (RUS) was developed to study the resource (node) utilization of the Center for Simulation of Radio Frequency Wave Interactions with Magnetohydrodynamics (SWIM) project's fusion energy simulation framework, the Integrated Plasma Simulator (IPS).  The IPS supports sub-batch allocation resource and task management, allowing the framework to launch multiple parallel applications concurrently.  This presents an interesting resource utilization 
+problem that can be non-deterministic and affected by many different factors, thus RUS was developed.
+
+RUS is a discrete event simulator that models the task and resource management of the IPS.  It implements the same resource management policies but uses a different interface.  The task execution in the IPS is determined by the driver of the simulation and the component's invocation of tasks.  The RUS is slightly different in its apporach and differs from the IPS in the following ways: execution order is determined by the *depends-on* relationship between components, and there is only one task execution per component.  This difference in capability allows RUS to model *most* of the existing and future use-cases of the IPS.
+
+RUS has been used to examine the resource utilization of different IPS workloads with different execution characteristics (runtime and scalability), as well as the cost of different fault tolerance strategies.  However, there is much more to explore including different levels of parallelism, more workload characteristics studies, more fault tolerance strategy cost comparisons, examining the impact of different overheads with respct to normal execution and faulty execution, as well as examining the impact of multi- and many-core architectures on workloads with tasks of very small scalability.

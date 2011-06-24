@@ -1,0 +1,22 @@
+This User' s Guide is designed to explain the IPS (its structure and how to 
+use it) as well as a reference for general IPS users.  It is organized as 
+follows:
+
+overview.txt: provides an overview of the structure of the IPS and what it 
+can be used for.
+
+components.txt: general and specific information on how to create 
+components.  Also includes information on how to create drivers and a list 
+of existing components.
+
+services.txt: a list of the services available to components in the IPS and 
+how to use them to be used as a reference while developing components.
+
+simulations.txt: a guide on how to create simulations, including component 
+composition, configuration, and building and running the IPS.
+
+samples/ : this directory contains sample files for users to copy and 
+augment to create components and simulations.
+
+
+ 

@@ -1,0 +1,133 @@
+Simulations:  dons_run
+Allocation sizes: from 4 to 40 with an interval of 1 , a ppn value of 4 , and a trial count of 10
+Minimum and Maximum Efficiency values for each interleaving level:
+	1 |	min: 55 percent 	16 cores |	max: 55 percent 	16 cores |
+	2 |	min: 65 percent 	28 cores |	max: 72 percent 	16 cores |
+	3 |	min: 61 percent 	48 cores |	max: 75 percent 	20 cores |
+	4 |	min: 60 percent 	64 cores |	max: 76 percent 	20 cores |
+	5 |	min: 59 percent 	80 cores |	max: 77 percent 	20 cores |
+	6 |	min: 59 percent 	92 cores |	max: 77 percent 	20 cores |
+	7 |	min: 58 percent 	112 cores |	max: 77 percent 	16 cores |
+	8 |	min: 58 percent 	124 cores |	max: 77 percent 	16 cores |
+	9 |	min: 57 percent 	144 cores |	max: 77 percent 	16 cores |
+	10 |	min: 58 percent 	152 cores |	max: 78 percent 	20 cores |
+============================================
+Local Minima:
+# sims: 1	 efficiency: 55	 cores: 16	 time: 24314	 cost: 108.067453 CPU Hours
+# sims: 2	 efficiency: 65	 cores: 32	 time: 20450	 cost: 181.781816 CPU Hours
+# sims: 3	 efficiency: 65	 cores: 28	 time: 34884	 cost: 271.327354 CPU Hours
+# sims: 3	 efficiency: 61	 cores: 48	 time: 21658	 cost: 288.786369 CPU Hours
+# sims: 4	 efficiency: 64	 cores: 28	 time: 47333	 cost: 368.149444 CPU Hours
+# sims: 4	 efficiency: 60	 cores: 64	 time: 22245	 cost: 395.485366 CPU Hours
+# sims: 5	 efficiency: 64	 cores: 28	 time: 59500	 cost: 462.788989 CPU Hours
+# sims: 5	 efficiency: 59	 cores: 80	 time: 22384	 cost: 497.443293 CPU Hours
+# sims: 6	 efficiency: 63	 cores: 28	 time: 71892	 cost: 559.163681 CPU Hours
+# sims: 6	 efficiency: 59	 cores: 96	 time: 22639	 cost: 603.743769 CPU Hours
+# sims: 7	 efficiency: 63	 cores: 28	 time: 83763	 cost: 651.496781 CPU Hours
+# sims: 7	 efficiency: 63	 cores: 72	 time: 32485	 cost: 649.715234 CPU Hours
+# sims: 7	 efficiency: 58	 cores: 112	 time: 22766	 cost: 708.304162 CPU Hours
+# sims: 8	 efficiency: 63	 cores: 28	 time: 96272	 cost: 748.788994 CPU Hours
+# sims: 8	 efficiency: 58	 cores: 124	 time: 23555	 cost: 811.366635 CPU Hours
+# sims: 8	 efficiency: 58	 cores: 128	 time: 22743	 cost: 808.660805 CPU Hours
+# sims: 9	 efficiency: 63	 cores: 28	 time: 108067	 cost: 840.528833 CPU Hours
+# sims: 9	 efficiency: 57	 cores: 144	 time: 23118	 cost: 924.774968 CPU Hours
+# sims: 10	 efficiency: 63	 cores: 28	 time: 120091	 cost: 934.047645 CPU Hours
+# sims: 10	 efficiency: 64	 cores: 80	 time: 41163	 cost: 914.752576 CPU Hours
+# sims: 10	 efficiency: 61	 cores: 116	 time: 29762	 cost: 959.011879 CPU Hours
+============================================
+Local Maxima:
+# sims: 1	 efficiency: 55	 cores: 16	 time: 24314	 cost: 108.067453 CPU Hours
+# sims: 2	 efficiency: 72	 cores: 16	 time: 37239	 cost: 165.510487 CPU Hours
+# sims: 2	 efficiency: 71	 cores: 20	 time: 29931	 cost: 166.288279 CPU Hours
+# sims: 3	 efficiency: 74	 cores: 16	 time: 53481	 cost: 237.699862 CPU Hours
+# sims: 3	 efficiency: 75	 cores: 20	 time: 42492	 cost: 236.070334 CPU Hours
+# sims: 3	 efficiency: 67	 cores: 36	 time: 26516	 cost: 265.171160 CPU Hours
+# sims: 4	 efficiency: 75	 cores: 16	 time: 70769	 cost: 314.533661 CPU Hours
+# sims: 4	 efficiency: 76	 cores: 20	 time: 55906	 cost: 310.596435 CPU Hours
+# sims: 4	 efficiency: 68	 cores: 36	 time: 34452	 cost: 344.533973 CPU Hours
+# sims: 5	 efficiency: 76	 cores: 16	 time: 87544	 cost: 389.088029 CPU Hours
+# sims: 5	 efficiency: 77	 cores: 20	 time: 69334	 cost: 385.197318 CPU Hours
+# sims: 5	 efficiency: 70	 cores: 32	 time: 47522	 cost: 422.421878 CPU Hours
+# sims: 5	 efficiency: 69	 cores: 36	 time: 42729	 cost: 427.298871 CPU Hours
+# sims: 5	 efficiency: 68	 cores: 44	 time: 35669	 cost: 435.969917 CPU Hours
+# sims: 5	 efficiency: 61	 cores: 76	 time: 23049	 cost: 486.614770 CPU Hours
+# sims: 6	 efficiency: 76	 cores: 16	 time: 104493	 cost: 464.416400 CPU Hours
+# sims: 6	 efficiency: 77	 cores: 20	 time: 82917	 cost: 460.657504 CPU Hours
+# sims: 6	 efficiency: 70	 cores: 32	 time: 57033	 cost: 506.971689 CPU Hours
+# sims: 6	 efficiency: 70	 cores: 36	 time: 50806	 cost: 508.071679 CPU Hours
+# sims: 6	 efficiency: 69	 cores: 40	 time: 46449	 cost: 516.106032 CPU Hours
+# sims: 6	 efficiency: 64	 cores: 68	 time: 29246	 cost: 552.436387 CPU Hours
+# sims: 7	 efficiency: 77	 cores: 16	 time: 121454	 cost: 539.799390 CPU Hours
+# sims: 7	 efficiency: 77	 cores: 20	 time: 96310	 cost: 535.061224 CPU Hours
+# sims: 7	 efficiency: 70	 cores: 32	 time: 66061	 cost: 587.214356 CPU Hours
+# sims: 7	 efficiency: 70	 cores: 36	 time: 59030	 cost: 590.310057 CPU Hours
+# sims: 7	 efficiency: 69	 cores: 44	 time: 49150	 cost: 600.738316 CPU Hours
+# sims: 7	 efficiency: 65	 cores: 64	 time: 35647	 cost: 633.746037 CPU Hours
+# sims: 7	 efficiency: 64	 cores: 76	 time: 30754	 cost: 649.273693 CPU Hours
+# sims: 7	 efficiency: 63	 cores: 80	 time: 29213	 cost: 649.203538 CPU Hours
+# sims: 7	 efficiency: 63	 cores: 84	 time: 28194	 cost: 657.879691 CPU Hours
+# sims: 7	 efficiency: 61	 cores: 96	 time: 25429	 cost: 678.119473 CPU Hours
+# sims: 7	 efficiency: 60	 cores: 104	 time: 23963	 cost: 692.294579 CPU Hours
+# sims: 8	 efficiency: 77	 cores: 16	 time: 138577	 cost: 615.903649 CPU Hours
+# sims: 8	 efficiency: 77	 cores: 20	 time: 109743	 cost: 609.687177 CPU Hours
+# sims: 8	 efficiency: 70	 cores: 32	 time: 75315	 cost: 669.471857 CPU Hours
+# sims: 8	 efficiency: 70	 cores: 36	 time: 67531	 cost: 675.313843 CPU Hours
+# sims: 8	 efficiency: 69	 cores: 44	 time: 56309	 cost: 688.237657 CPU Hours
+# sims: 8	 efficiency: 68	 cores: 52	 time: 48098	 cost: 694.771735 CPU Hours
+# sims: 8	 efficiency: 64	 cores: 80	 time: 33348	 cost: 741.093623 CPU Hours
+# sims: 8	 efficiency: 63	 cores: 88	 time: 30704	 cost: 750.560700 CPU Hours
+# sims: 8	 efficiency: 62	 cores: 96	 time: 28342	 cost: 755.820571 CPU Hours
+# sims: 8	 efficiency: 62	 cores: 100	 time: 27390	 cost: 760.864224 CPU Hours
+# sims: 8	 efficiency: 61	 cores: 108	 time: 25895	 cost: 776.884745 CPU Hours
+# sims: 8	 efficiency: 59	 cores: 120	 time: 24035	 cost: 801.185486 CPU Hours
+# sims: 8	 efficiency: 58	 cores: 128	 time: 22743	 cost: 808.660805 CPU Hours
+# sims: 9	 efficiency: 77	 cores: 16	 time: 154996	 cost: 688.873115 CPU Hours
+# sims: 9	 efficiency: 77	 cores: 20	 time: 123587	 cost: 686.597577 CPU Hours
+# sims: 9	 efficiency: 71	 cores: 32	 time: 84195	 cost: 748.406210 CPU Hours
+# sims: 9	 efficiency: 70	 cores: 36	 time: 75703	 cost: 757.042091 CPU Hours
+# sims: 9	 efficiency: 67	 cores: 56	 time: 51244	 cost: 797.145795 CPU Hours
+# sims: 9	 efficiency: 66	 cores: 64	 time: 45277	 cost: 804.947521 CPU Hours
+# sims: 9	 efficiency: 66	 cores: 68	 time: 42731	 cost: 807.163527 CPU Hours
+# sims: 9	 efficiency: 65	 cores: 72	 time: 40799	 cost: 815.995183 CPU Hours
+# sims: 9	 efficiency: 65	 cores: 76	 time: 38914	 cost: 821.544719 CPU Hours
+# sims: 9	 efficiency: 64	 cores: 80	 time: 37362	 cost: 830.283125 CPU Hours
+# sims: 9	 efficiency: 64	 cores: 84	 time: 35728	 cost: 833.665851 CPU Hours
+# sims: 9	 efficiency: 64	 cores: 88	 time: 34272	 cost: 837.792081 CPU Hours
+# sims: 9	 efficiency: 63	 cores: 92	 time: 33055	 cost: 844.755382 CPU Hours
+# sims: 9	 efficiency: 63	 cores: 96	 time: 31867	 cost: 849.796698 CPU Hours
+# sims: 9	 efficiency: 62	 cores: 100	 time: 30622	 cost: 850.639024 CPU Hours
+# sims: 9	 efficiency: 62	 cores: 104	 time: 29715	 cost: 858.466524 CPU Hours
+# sims: 9	 efficiency: 62	 cores: 108	 time: 28671	 cost: 860.152417 CPU Hours
+# sims: 9	 efficiency: 61	 cores: 112	 time: 27723	 cost: 862.515809 CPU Hours
+# sims: 9	 efficiency: 61	 cores: 116	 time: 27141	 cost: 874.578171 CPU Hours
+# sims: 9	 efficiency: 60	 cores: 124	 time: 25776	 cost: 887.873480 CPU Hours
+# sims: 9	 efficiency: 59	 cores: 132	 time: 24648	 cost: 903.797610 CPU Hours
+# sims: 9	 efficiency: 59	 cores: 136	 time: 23950	 cost: 904.823888 CPU Hours
+# sims: 9	 efficiency: 58	 cores: 140	 time: 23402	 cost: 910.098223 CPU Hours
+# sims: 10	 efficiency: 77	 cores: 16	 time: 172287	 cost: 765.725593 CPU Hours
+# sims: 10	 efficiency: 78	 cores: 20	 time: 136958	 cost: 760.884891 CPU Hours
+# sims: 10	 efficiency: 71	 cores: 32	 time: 93621	 cost: 832.197492 CPU Hours
+# sims: 10	 efficiency: 70	 cores: 36	 time: 83807	 cost: 838.077237 CPU Hours
+# sims: 10	 efficiency: 70	 cores: 40	 time: 76495	 cost: 849.955017 CPU Hours
+# sims: 10	 efficiency: 68	 cores: 52	 time: 60207	 cost: 869.674152 CPU Hours
+# sims: 10	 efficiency: 67	 cores: 56	 time: 56569	 cost: 879.969984 CPU Hours
+# sims: 10	 efficiency: 67	 cores: 60	 time: 53187	 cost: 886.471804 CPU Hours
+# sims: 10	 efficiency: 66	 cores: 64	 time: 50239	 cost: 893.161604 CPU Hours
+# sims: 10	 efficiency: 66	 cores: 68	 time: 47495	 cost: 897.142199 CPU Hours
+# sims: 10	 efficiency: 65	 cores: 76	 time: 42844	 cost: 904.505804 CPU Hours
+# sims: 10	 efficiency: 64	 cores: 80	 time: 41163	 cost: 914.752576 CPU Hours
+# sims: 10	 efficiency: 64	 cores: 84	 time: 39235	 cost: 915.505069 CPU Hours
+# sims: 10	 efficiency: 64	 cores: 88	 time: 37618	 cost: 919.569132 CPU Hours
+# sims: 10	 efficiency: 64	 cores: 92	 time: 36158	 cost: 924.060426 CPU Hours
+# sims: 10	 efficiency: 63	 cores: 100	 time: 33719	 cost: 936.659767 CPU Hours
+# sims: 10	 efficiency: 63	 cores: 108	 time: 31384	 cost: 941.542629 CPU Hours
+# sims: 10	 efficiency: 62	 cores: 112	 time: 30569	 cost: 951.067470 CPU Hours
+# sims: 10	 efficiency: 61	 cores: 120	 time: 28889	 cost: 962.992976 CPU Hours
+# sims: 10	 efficiency: 61	 cores: 124	 time: 27855	 cost: 959.491271 CPU Hours
+# sims: 10	 efficiency: 61	 cores: 128	 time: 27311	 cost: 971.095646 CPU Hours
+# sims: 10	 efficiency: 60	 cores: 136	 time: 26111	 cost: 986.441571 CPU Hours
+# sims: 10	 efficiency: 59	 cores: 144	 time: 25114	 cost: 1004.616649 CPU Hours
+# sims: 10	 efficiency: 59	 cores: 148	 time: 24463	 cost: 1005.759950 CPU Hours
+# sims: 10	 efficiency: 58	 cores: 152	 time: 24153	 cost: 1019.821483 CPU Hours
+# sims: 10	 efficiency: 58	 cores: 156	 time: 23425	 cost: 1015.113972 CPU Hours
+# sims: 10	 efficiency: 58	 cores: 160	 time: 22956	 cost: 1020.287721 CPU Hours

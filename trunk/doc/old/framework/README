@@ -1,0 +1,17 @@
+
+Document describing the SWIM framework, goals, usage, and innards.
+This was written in Latex so that multiple people could hack at it simultaneously
+and we could version control it - I still have not found a good MS Word
+document version control system.
+
+The main document is fmwk.tex, which mainly inputs the sections. 
+
+To create the PDF paper, "make" should work provided you have pdflatex and bibltex
+on your platform.  We also use the acronym package (thanks to David Bernholdt)
+and a package called listings, not included in this directory. listings does a
+good job of typesetting code listings, including Fortran 95.
+
+Because of the way latex works, this just runs things twice to get references
+resolved. That does mean any errors or warning will be given twice.  If the
+make fails, just keep typing "x" and returns until latex gives up and you
+get back to the prompt.

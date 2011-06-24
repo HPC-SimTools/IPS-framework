@@ -1,0 +1,147 @@
+simulation = sample
+description = "aorsa, nubeam, tsc"
+
+# old style specification
+[sample]
+name = sample   # name of the simulation (for human readability)
+#components = aorsa, nubeam, tsc # component list
+#nsteps = 1000
+phases = no_pwr, one, two, three
+
+# Simulation overheads
+[[startup]]
+  name = startup
+  runtime = 15
+[[shutdown]]
+  name = shutdown
+  runtime = 3
+
+# FT section
+
+# phase specification
+[[no_pwr]]
+components = nubeam, tsc
+nsteps = 15
+
+[[[nubeam]]]
+        name = nubeam
+        description = ""
+        depends_on = 
+        num_proc = 16
+        mem_pproc = 1
+        disk_pproc = 1
+        runtime = 15
+        stddev = 3
+
+[[[tsc]]]
+        name = tsc
+        description = ""
+        depends_on = nubeam
+        num_proc = 1
+        mem_pproc = 1
+        disk_pproc = 1
+        runtime = 500
+        stddev = 100
+
+[[one]]
+components = nubeam, tsc, toric
+nsteps = 100
+
+[[[nubeam]]]
+        name = nubeam
+        description = ""
+        depends_on = toric
+        num_proc = 16
+        mem_pproc = 1
+        disk_pproc = 1
+        runtime = 32
+        stddev = 5
+
+[[[tsc]]]
+        name = tsc
+        description = ""
+        depends_on = nubeam
+        num_proc = 1
+        mem_pproc = 1
+        disk_pproc = 1
+        runtime = 130
+        stddev = 40
+
+[[[toric]]]
+        name = toric
+        description = ""
+        depends_on =
+        num_proc = 4
+        mem_pproc = 1
+        disk_pproc = 1
+        runtime = 50
+        stddev = 2
+
+[[two]]
+components = nubeam, tsc, toric
+nsteps = 30
+
+[[[nubeam]]]
+        name = nubeam
+        description = ""
+        depends_on = toric
+        num_proc = 16
+        mem_pproc = 1
+        disk_pproc = 1
+        runtime = 45
+        stddev = 3
+
+[[[tsc]]]
+        name = tsc
+        description = ""
+        depends_on = nubeam
+        num_proc = 1
+        mem_pproc = 1
+        disk_pproc = 1
+        runtime = 40
+        stddev = 4
+
+[[[toric]]]
+        name = toric
+        description = ""
+        depends_on =
+        num_proc = 4
+        mem_pproc = 1
+        disk_pproc = 1
+        runtime = 50
+        stddev = 2
+
+[[three]]
+components = nubeam, tsc, toric
+nsteps = 55
+
+[[[nubeam]]]
+        name = nubeam
+        description = ""
+        depends_on = toric
+        num_proc = 16
+        mem_pproc = 1
+        disk_pproc = 1
+        runtime = 55
+        stddev = 5
+
+[[[tsc]]]
+        name = tsc
+        description = ""
+        depends_on = nubeam
+        num_proc = 1
+        mem_pproc = 1
+        disk_pproc = 1
+        runtime = 35
+        stddev = 4
+
+[[[toric]]]
+        name = toric
+        description = ""
+        depends_on =
+        num_proc = 4
+        mem_pproc = 1
+        disk_pproc = 1
+        runtime = 50
+        stddev = 2
+
