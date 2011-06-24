@@ -1,0 +1,8 @@
+This directory is for tests for the framework and services.  Unittests 
+for the managers and other smaller pieces are found in the unittest 
+directory and ips tests are found in the comprehensive directory.
+
+Note: add the following two lines to the top of your script
+
+import sys
+sys.path.append('..')

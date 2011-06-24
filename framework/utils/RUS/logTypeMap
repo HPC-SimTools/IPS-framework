@@ -1,0 +1,11 @@
+start_sim 0
+end_sim 1
+start_task 2
+finish_task 3
+waiting_on_parents 4
+waiting_on_procs 5
+start_step 6
+end_step 7
+failed_task 8
+node_failure 9
+retry_task 10

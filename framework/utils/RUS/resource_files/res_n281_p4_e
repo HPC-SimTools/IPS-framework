@@ -1,0 +1,10 @@
+machine_name = unicorn
+nodes =  281
+ppn =  4
+mem_pernode = 0
+disk_pernode = 0
+
+# mtbf is measured in seconds!!!!
+distribution = exponential
+
+mtbf = 126144000  # 4 years

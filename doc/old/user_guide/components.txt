@@ -1,0 +1,94 @@
+Guide to IPS Components
+=======================
+
+In the IPS, "component" refers to the python script that interacts with the 
+framework, services, other components and (optionally) launches binaries to 
+perform a specific function for the simulation.  These components tend to 
+be physics components that perform a specific modeling function for a 
+coupled physics simulation.
+
+This guide will help you construct a component (or driver) to be used in 
+various simulations.  You will most likely need to refer to services.txt 
+for the services that framework provides for component activities.  Also, 
+some examples are provided in the sample directory and can serve as a 
+skeleton for implementing your new components!
+
+You will want to put newly created components in their proper directories 
+under the "$IPS_ROOT/components/" directory (where $IPS_ROOT is your 
+checkout of the IPS).  The components directory is organized by class and 
+subclass.  For instance, all components that are drivers are in the class 
+driver, and the subclass describes the implementation of the driver.  This 
+reflects the desire of the SWIM project to collect multiple implementations 
+of different types of components.  For instance, AORSA and TORIC are both 
+RF codes, and are located in the "components/rf/" directory there are 
+directories for "aorsa" and "toric," respectively.  In the "components/rf/
+aorsa/" directory the source for the aorsa component resides, along with 
+any other supporting files (like a makefile).  The AORSA code resides in 
+the "phys_bin/" a separate directory that contains the binaries of codes 
+being used by SWIM.  This directory lives on the target platforms and 
+contains compiled codes that work on that platform as provided by the code 
+owner.  See the building and running sections of the simulations.txt file, 
+and the README file in the top level of the IPS for more information on 
+building and running the IPS and the file structure.
+
+Component Object Structure:
+===========================
+A component implementation inherits some functionality from the IPS Component 
+object to perform some common startup and termination tasks.  Component 
+writers do not need to worry about these calls.
+
+These functions should be copied from the skeleton component and not 
+modified in most cases:
+
+__init__(self, services, config):
+  This function gets and saves the component specific configuration
+  information for use by the component instance throughout the simulation,
+  and sets up the reference to the services that the component instance can
+  use.
+
+--------------------------------------------------
+
+These functions contain the physics functionality of the component and 
+should be written by the component writer.  Please *augment* the skeleton 
+component, as there might be some lines of code that all components need to 
+function properly in the system.
+
+init(self, timestamp):
+  Any initial set up for the component is done here.  "timestamp" is the
+  simulation timestamp from the driver's time loop.  This function 
+  typically gets called at the beginning of the simulation for any 
+  pre-simulation processing.  Additional per-step processing may happen in 
+  the step function.
+
+step(self, timestamp):
+  This is where the component performs its calculations at a particular
+  simulation level timestamp.  This function typically gets called during
+  each iteration through the time loop. Services related to launching 
+  tasks, and data management for the step should be used here.  See the 
+  services section for details on how to choose the right function.  Step 
+  pre- and post-processing may be done here as well.
+
+finalize(self, timestamp):
+  This is where the component performs any clean up after the simulation is
+  over.  It typically gets called at the end of the simulation after the 
+  simulation has completed.
+
+Driver Object Structure:
+========================
+The driver has the same structure as the component with the following
+exceptions:
+ - the init happens before the "simulation" starts
+ - the step function contains all of the logic for the simulation.  
+   It contains three phases:
+   - setup:
+     - component references are obtained and initialized
+     - timeloop is obtained from configuration 
+   - time loop:
+     - in the time loop, components are called.  The simulation workflow 
+       logic is implemented using the different call methods.  See the 
+       services section for details.
+   - clean up:
+     - components are finalized
+ - finalize occurs after all of the components have been finalized.
+
+....................................................

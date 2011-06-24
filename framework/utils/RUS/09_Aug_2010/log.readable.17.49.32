@@ -1,0 +1,44 @@
+% The following data is associated with the run executed at 09_Aug_2010-17.49.32
+% On host dyn9195188.dz.ornl.gov with configuration files:
+% config_files/swim1_concurrent
+% resource_files/res_n64_p4
+% =================================================================
+0 fwk --- start_sim 0.0 %   0 64 # starting simulation
+0 swim1 nova-k waiting_on_parents 0.0 %   0 64 # waiting on (at least one) parents
+0 swim1 nova-k waiting_on_parents 0.0 %   0 64 # waiting on (at least one) parents
+0 swim1 cql3d waiting_on_parents 0.0 %   0 64 # waiting on (at least one) parents
+0 swim1 tsc waiting_on_parents 0.0 %   0 64 # waiting on (at least one) parents
+0 swim1 tsc waiting_on_parents 0.0 %   0 64 # waiting on (at least one) parents
+0 swim1 aorsa start_task 100.0 %   64 64 # started running on 256 processes on 64 nodes
+456 swim1 aorsa finish_task 0.0 %   0 64 # finished running
+456 swim1 nova-k waiting_on_parents 0.0 %   0 64 # waiting on (at least one) parents
+456 swim1 nova-k waiting_on_parents 0.0 %   0 64 # waiting on (at least one) parents
+456 swim1 tsc waiting_on_parents 0.0 %   0 64 # waiting on (at least one) parents
+456 swim1 cql3d start_task 1.5625 %   1 64 # started running on 4 processes on 1 nodes
+807 swim1 cql3d finish_task 0.0 %   0 64 # finished running
+807 swim1 nova-k waiting_on_parents 0.0 %   0 64 # waiting on (at least one) parents
+807 swim1 tsc start_task 1.5625 %   1 64 # started running on 1 processes on 1 nodes
+828 swim1 tsc finish_task 0.0 %   0 64 # finished running
+828 swim1 nova-k start_task 1.5625 %   1 64 # started running on 1 processes on 1 nodes
+886 swim1 nova-k finish_task 0.0 %   0 64 # finished running
+886 swim1 --- end_step 0.0 %   0 64 # ending step 1
+886 swim1 --- start_step 0.0 %   0 64 # starting new step 2
+886 swim1 nova-k waiting_on_parents 0.0 %   0 64 # waiting on (at least one) parents
+886 swim1 nova-k waiting_on_parents 0.0 %   0 64 # waiting on (at least one) parents
+886 swim1 cql3d waiting_on_parents 0.0 %   0 64 # waiting on (at least one) parents
+886 swim1 tsc waiting_on_parents 0.0 %   0 64 # waiting on (at least one) parents
+886 swim1 tsc waiting_on_parents 0.0 %   0 64 # waiting on (at least one) parents
+886 swim1 aorsa start_task 100.0 %   64 64 # started running on 256 processes on 64 nodes
+1341 swim1 aorsa finish_task 0.0 %   0 64 # finished running
+1341 swim1 nova-k waiting_on_parents 0.0 %   0 64 # waiting on (at least one) parents
+1341 swim1 nova-k waiting_on_parents 0.0 %   0 64 # waiting on (at least one) parents
+1341 swim1 tsc waiting_on_parents 0.0 %   0 64 # waiting on (at least one) parents
+1341 swim1 cql3d start_task 1.5625 %   1 64 # started running on 4 processes on 1 nodes
+1763 swim1 cql3d finish_task 0.0 %   0 64 # finished running
+1763 swim1 nova-k waiting_on_parents 0.0 %   0 64 # waiting on (at least one) parents
+1763 swim1 tsc start_task 1.5625 %   1 64 # started running on 1 processes on 1 nodes
+1783 swim1 tsc finish_task 0.0 %   0 64 # finished running
+1783 swim1 nova-k start_task 1.5625 %   1 64 # started running on 1 processes on 1 nodes
+1842 swim1 nova-k finish_task 0.0 %   0 64 # finished running
+1842 swim1 --- end_step 0.0 %   0 64 # ending step 2
+1842 fwk --- end_sim 0.0 %   0 64 # end of simulation

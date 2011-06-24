@@ -1,0 +1,88 @@
+The Resource Usage Simulator is designed to simulate the 
+resource usage of an ensemble of SWIM simulations.
+
+RUS depends on the following packages:
+ ConfigObj
+ gnuplot
+It has been tested using Python 2.6.
+
+To run:
+
+1. Set up the configuration files and resource files you 
+   would like to use.  (See section on configuration files 
+   below.)
+
+2. Simulate resource usage:
+   python rus.py -r <resource config file>
+   	  	 -c <simulation config file>+
+		 -m <logTypeMap>
+		 [-l <prefix to log file name>]
+
+  Note: You may specify more than one config file by using 
+  the -c flag multiple times.
+
+3. Look at your results.  Log files are generated in a 
+   folder with today's date in the directory from which you 
+   ran the simulation.  There are three types of files:
+     - logfile.* : pareseable file describing resource usage
+       		   over the execution time.
+     - logfile.readable.* : a more readable version of the
+       			    logfile.  logTypeMap describes the 
+			    mapping of states to state codes.
+     - rwfile.* : list of times and resource usage.  Used for 
+       		  graphing the resource utilization.
+
+   To graph results:
+     python process_results.py <rwfiles to graph>
+   
+   This produces a gnuplot graph of the percentage of resource 
+   usage over time for the whole run.  Must be run from RUS/.
+   Example results and plot files:
+     09_Aug_2010/log.17.49.32
+     09_Aug_2010/log.readable.17.49.32
+     09_Aug_2010/rwfile.17.49.32-res_n64_p4
+     plots/17.49.32-res_n64_p4.pdf
+
+Configuration Files
+===================
+The Python package ConfigObj is used to define the structure 
+and parsing of the config files.
+
+Simulation Configuration
+------------------------
+Purpose: To describe the simulation(s) and component(s) that 
+are contained therein.  May describe more than one simulation 
+per file.
+
+Structure:
+
+simulation = <list of names of simulations (comma separated)>
+description = <quoted string of text describing the simulation>
+
+[sim1]
+name = <name of simulation>
+components = <list of components (comma separated)>
+nsteps = <number of iterations of this simulation>
+[[comp1]]
+	name = <name of component>
+	description = <quoted string describing the component>
+	depends_on = <list of components that this component depends on>
+	num_proc = <number of processes that the component needs to run>
+	runtime = <time in seconds that the component will take to run on average>
+	stddev = <standard deviation for a gaussian distribution of runtime for this component scenario>
+
+Example: see RUS/config_files/swim1_concurrent
+
+Resource Configuration
+----------------------
+
+Purpose: To describe the size and characteristics of the 
+allocation.
+
+Structure:
+
+machine_name = <name>
+nodes = <number of nodes in the allocation>
+ppn = <machine specified processes per node>
+mem_pernode = <GB of memory per node>
+disk_pernode = <GB of disk space per node>

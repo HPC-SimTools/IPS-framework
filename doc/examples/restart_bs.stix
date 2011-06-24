@@ -1,0 +1,17 @@
+#! /bin/bash
+#PBS -N restart
+#PBS -j oe
+#PBS -l walltime=0:6:00
+#PBS -l nodes=1:ppn=2
+#PBS -l mem=1gb
+#PBS -q smpq
+#PBS -S /bin/bash
+
+IPS_ROOT=$SCRATCH/ips
+cd $PBS_O_WORKDIR
+umask=022
+module purge
+. $IPS_ROOT/swim.bashrc.stix
+
+$IPS_ROOT/bin/ips --config=restart_12_sec.config --platform=$IPS_ROOT/stix.conf --log=restart_sim.log
+

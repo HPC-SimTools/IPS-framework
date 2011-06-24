@@ -1,0 +1,238 @@
+Guide to IPS Services
+=====================
+
+In this section the functions that the services provide to components are
+described.  It is broken down into the following groups:
+ - General Purpose
+ - Task Launch
+ - Component Invocations
+ - Data Management
+ - Logging
+ - Event Service
+
+-------------------------
+General Purpose Services
+-------------------------
+
+get_config_param(self, param) return value:
+  This function returns the value of configuration parameter "param".  
+  Platform, simulation and dynamic configuration parameters can be 
+  retrieved in this way, however use "get_port" for retrieving component 
+  references (see Component Invocation section for "get_port" details).  
+  An exception is thrown if the parameter is not found or there is an 
+  error retrieving it.
+
+set_config_param(self, param, value, target_sim_name=None) 
+  return retval or None:
+  This function sets the value of configuration parameter "param" if it is 
+  a dynamic configuration parameter.  If the parameter is a dynamic config 
+  parameters, the value is set and returned on success, an exception is 
+  raised on failure.  If the parameter is not a dynamic config parameter, 
+  the return value is "None".
+
+get_time_loop(self) return tlist:
+  This function returns a list of simulation time values as specified in 
+  the simulation configuration file.
+
+get_working_dir(self) return workdir:
+  This function returns the working directory for the calling component.  
+  The structure of the working directory is: 
+    $SIM_ROOT/work/${CLASS}_${SUB_CLASS}_${NAME}_{INSTANCE_NUM}  
+
+---------------------
+Task Launch Services
+---------------------
+
+These are the services for launching and managing tasks in the component.  
+They are typically used in the step function of a physics component to 
+launch binaries.
+
+launch_task(self, nproc, working_dir, binary, *args, **keywords) 
+  return task_id:
+  This function launches binary "binary" in working directory 
+  "working_dir" on "nproc" processes with "*args" and "**keywords" (in 
+  python *args refers to any number of arbitrary arguments, and **keywords 
+  refers to any number of keyword=value pairs.  In this context, the *args 
+  are for the binary, and the **keywords are used by the services and 
+  framework.).  It is a non-blocking call because a new process is created 
+  to do the launch of the task, and the "task_id" (a logical ID created by 
+  the task manager) is the handle to refer to this task.  There are 
+  several exceptions that can be raised:
+    - an exception from initializing the task (this could be related to 
+      the number of processes requested or constructing the launch string)
+    - an exception when launching the process
+
+kill_task(self, task_id):
+  This function kills task "task_id".  An exception is raised if the task 
+  id is not found, if there were problems terminating the process, or 
+  there are problems finalizing the task.
+
+kill_all_tasks(self):
+  This function kills all tasks that the component currently has 
+  executing.  It calls kill_task on each one, and will raise the first 
+  exception it encounters.  It returns successfully if no exceptions are 
+  raised.
+
+wait_task_nonblocking(self, task_id) return retval or None:
+  This function checks the status of task "task_id", if it has completed,
+  the task is finalized and the return value returned, otherwise, "None" 
+  is returned.  An exception is raised if "task_id" is invalid or there 
+  are problems finalizing the task.
+
+wait_task(self, task_id) return retval:
+  This function waits until task "task_id" has completed, finalizes it and
+  returns the return value.  An exception is raised if "task_id" is 
+  invalid or there are problems finalizing the task.
+
+wait_tasklist(self, task_id_list) return ret_dict:
+  This function does a blocking wait on all tasks in "task_id_list" and a
+  dictionary of "task_id"s and return values is returned.  An exception is 
+  thrown if any "task_id" is not found, or there are problems finalizing 
+  any task.
+
+
+------------------------------
+Component Invocation Services
+------------------------------
+
+These are the services necessary for calling components.  They are 
+typically used by the driver.
+
+
+get_port(self, port_name) returns component_reference:
+  This function looks up and returns a reference to the component
+  that is specified in the configuration file as "port_name."  Exceptions 
+  should be caught in component to ensure that the component reference was 
+  received successfully.
+
+
+call_nonblocking(self, component_id, method_name, *args) returns call_id:
+  This function invokes the method "method_name" on component 
+  "component_id" with arguments "*args" (a pythonic way of indicating any 
+  number of arguments) and returns the "call_id."  You must use a 
+  wait_call() function (see below) to get the results of the call, or the 
+  simulation will hang until the entire simulation is terminated by an 
+  external force (most likely, the batch scheduler will notice that you 
+  are still running after your allocated time is up and kill your job).
+
+
+call(self, component_id, method_name, *args) return retval:
+  This function invokes the method "method_name" on component 
+  "component_id" with arguments "*args", then waits for the result and 
+  returns it to the caller ("retval").  This is a blocking call.
+
+wait_call(self, call_id, block=True) return retval:
+  This function waits for the result from call "call_id" and returns the 
+  results.  By default, this is a blocking call and will not return until 
+  the call has finished.  If "block" is set to False, the function will 
+  raise "ipsExceptions.IncompleteCallException" if the call has not yet 
+  finished.
+
+wait_call_list(self, call_id_list, block=True) return ret_map:
+  This function waits on all call IDs in "call_id_list" then returns a 
+  dictionary where the keys are the "call_ids" and the values are the 
+  corresponding return values.  By default this call blocks until ALL 
+  calls have finished.  If "block" is set to False, the function will 
+  raise "ipsExceptions.IncompleteCallException" if any call has not yet 
+  finished.
+
+-------------------------
+Data Management Services
+-------------------------
+
+These services are for dealing with input, output and plasma state files.
+
+stage_input_files(self, input_file_list):
+  This function copies files in "input_file_list" from the input file 
+  directory specified in the configuration file, to the component's 
+  working directory.  Also copies files to simulation_setup + full 
+  component ID.  Exceptions are raised if there are problems on the second 
+  copy.
+
+stage_output_files(self, timestamp, file_list):
+  This function copies output files in "file_list" to:
+  $SIM_ROOT/simulation_results/$timestamp/components/  \
+    ${CLASS}_${SUB_CLASS}_$NAME_${SEQ_NUM}  
+  Exceptions are raised if there are problems.
+
+stage_plasma_state(self):
+  This function copies the current master plasma state files to the 
+  component's working directory.
+
+save_restart_files(self, timestamp, file_list):
+  This function copies files needed for component restart to the restart 
+  directory:
+    $SIM_ROOT/restart/$timestamp/components/${CLASS}_${SUB_CLASS}_$NAME_ \
+      ${SEQ_NUM}
+  Exceptions are raised if there are problems.
+
+get_restart_files(self, restart_root, timestamp, file_list):
+  This function copies files needed to restart a component from the 
+  restart directory to the component's work directory.  Exceptions are 
+  raised if there are problems.
+
+update_plasma_state(self):
+  This function copies component's current version of the plasma state 
+  files to the master plasma state.  NOTE: THIS WILL OVERWRITE THE CURRENT 
+  PLASMA STATE WITH THE COMPONENT'S VERSION.  This is ok for serial 
+  execution of components, however, the merge_plasma_state() function is 
+  best for concurrent execution.  Exceptions are raised if there are 
+  problems.
+
+merge_current_plasma_state(self, partial_state_file, logfile=None):
+  This function merges a partial plasma state file with the current master 
+  plasma state.  Exceptions are raised if there are problems.
+
+-----------------
+Logging Services
+-----------------
+
+These services allow you to log information about the simulation so you 
+can look at it after the simulation ends and see what went wrong and when.  
+All messages are aggregated over the simulation and printed to a single 
+file.  The functions below only differ in the conditions in which they are 
+printed.  The logging level is set at the beginning of the simulation.
+
+log(self, *args):
+debug(self, *args):
+info(self, *args):
+warning(self, *args):
+error(self, *args):
+exception(self, *args):
+critical(self, *args):
+
+Note: *args should really be a single string that contains the desired message.  
+Variables can be used in the string like so:
+  "this is my string with %s added to it when %s happens" % (x, y) 
+
+(where x and y are strings).
+
+--------------
+Event Service 
+--------------
+
+These calls are for components that are using the event service.  Note 
+that the event name, event body and topicNames must be agreed upon by the 
+communicating parties.  The event service does not check for properly 
+constructed events or active topics.
+
+publish(self, topicName, eventName, eventBody):
+  This function publishes an event with name "eventName" and body 
+  "eventBody" to topic "topicName".
+
+
+subscribe(self, topicName, callback):
+  This function subscribes the component to topic "topicName" so that 
+  callback "callback" is called when "process_events" is called.  The 
+  function listed as the callback should be written such that it handles 
+  exactly one event.  The callback will be called for each event that is 
+  received on that topic.
+
+
+unsubscribe(self, topicName):
+  This function unsubscribed the component from topic "topicName".
+
+process_events(self):
+  This function processes all events on all topics to which the component 
+  is subscribed.  For each event, the callback that is registered for that 
+  event topic is called.

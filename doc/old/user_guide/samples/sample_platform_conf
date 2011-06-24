@@ -1,0 +1,11 @@
+HOST = franklin       # hostname (case sensitive)
+MPIRUN = aprun        # parallel launch command
+# locations that are specific to each platform
+PHYS_BIN_ROOT = /project/projectdirs/m876/phys-bin/phys/
+PORTAL_URL = http://swim.gat.com:8080/monitor		# URL for the portal
+RUNID_URL  = http://swim.gat.com:4040/runid.esp
+DATA_ROOT = /project/projectdirs/m876/data/
+
+# advanced options
+NODES = 1              # number of nodes available for this particular run
+CORES_PER_NODE = 1     # number of cores or processes per node

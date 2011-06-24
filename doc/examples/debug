@@ -1,0 +1,17 @@
+#! /bin/bash
+#PBS -A m876 
+#PBS -N model_sim
+#PBS -j oe
+#PBS -l walltime=0:6:00
+#PBS -l mppwidth=4
+#PBS -q debug 
+#PBS -S /bin/bash
+#PBS -V
+
+IPS_ROOT=$SCRATCH/ips
+cd $PBS_O_WORKDIR
+umask=0222
+
+rm -rf Model_seq_1
+$IPS_ROOT/bin/ips --config=seq_model_sim.config --platform=$IPS_ROOT/franklin.conf --log=seq_model_sim_pbs.log
+

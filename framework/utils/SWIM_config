@@ -1,0 +1,5 @@
+Jpype = san/fsp/lib/python
+batch_mgr = ssh
+executable = hostname
+num_nodes = 1
+

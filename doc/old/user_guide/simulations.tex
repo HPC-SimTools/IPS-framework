@@ -1,0 +1,167 @@
+\section{Guide to Creating Simulations using the IPS}
+\label{sec:simulations}
+
+\par
+Once you have all of the components and drivers that you want to use in 
+order, you will need to construct a configuration file, build and run the 
+IPS.  This guide will explain the elements of the configuration, and brief 
+instructions on how to build and run the IPS with your simulation.
+
+\subsection{Configuration: Elements of a Simulation}
+\label{sec:config}
+\par 
+A simulation in the {IPS} is defined by the contents of the configuration 
+file.  It is in the configuration files that all of the components, 
+locations of data and source files, and other options are set.  There are 
+seven sections of the simulation configuration file.  They are briefly 
+described below and annotated in the sample directory.
+
+\subsubsection{Paths and Run ID}
+\par 
+In this section the paths to the \texttt{IPS\_ROOT} (framework source tree), 
+\texttt{SIM\_ROOT} (where you want the results to go) and the name of the run are 
+specified.  Some other variables relating to these items are also set for 
+convenience.  It is highly recommended that you change the name of the 
+\texttt{SIM\_ROOT} for each run so as to not clobber your previous results.
+
+\subsubsection{Plasma State Configuration}
+\par 
+In this section the plasma state working directory is specified as the 
+place for plasma state files to be recorded.  The names of the files that 
+are going to be used as the plasma state are also recorded here.
+
+\subsubsection{Portal and Logging}
+\par 
+In this section variables used by the web portal specific to this 
+simulation are set, as well as the simulation log level and location.  The 
+log level controls how much debugging information is provided by the 
+framework.  Each component can set their own log levels in the component 
+configuration section.
+
+\subsubsection{Port Configuration}
+\par 
+This section contains the names of the ports that will be used by the 
+driver, along with the implementations.  Ports are similar to the class 
+names of the components, they refer to the functionality that the component 
+implements.  The port names are how the driver accesses the reference to 
+the component.  Be sure these names match what the driver is expecting.
+
+\subsubsection{Component Configuration}
+\par 
+This section describes how each component should be run.  The class, 
+subclass and name are used to create the IPS name of the component and the 
+directory structure.  \texttt{NPROC} is the number of processes the binary needs to 
+run.  \texttt{BIN\_PATH} is the path to the component script.  Input and output files  
+are also listed here.  Any files not listed will not be captured by the 
+data management system.
+
+\subsubsection{Time Loop Configuration}
+\par 
+This section describes how the simulation level time loop is 
+constructed.  There are two modes, \texttt{REGULAR} (a list of values from start to 
+finish (inclusive) with the specified interval are created) and \texttt{EXPLICIT} (a 
+list of times (space separated) is given explicitly by the user).
+
+
+\subsection{Platform Configuration}
+\label{sec:plat_config}
+\par
+In addition to the simulation configuration file, a platform configuration 
+file must be provided to the {IPS} at launch time.  The platform 
+configuration file tends to remain unchanged per platform.  There are 
+examples in the top level of the {IPS} and in the sample directory.
+\par
+Advanced users may use the \texttt{NODES} and \texttt{CORES\_PER\_NODE} entries to specify the node and core counts available to the simulation for arbitrary machines.  Users should note that the IPS will not check these values against what the machine reports.
+
+
+\subsection{Building the IPS}
+\label{sec:build}
+\par
+Before building and running the {IPS}, you should read the \texttt{README} file in the 
+top level of the {IPS} tree.  It contains important information about 
+dependencies and the directory structure.
+\par
+You need to source \texttt{swim.bashrc.$\ast$} (the star depends
+on your platform, for example, franklin) to set
+up variables and load modules.  Now you are ready to build and install the IPS.
+\par
+These three steps are performed by the following commands in the top level of the IPS tree:
+\begin{verbatim}
+  . swim.bashrc.<platform>
+  make
+  make install
+\end{verbatim}
+
+
+\subsection{Running the IPS}
+\label{sec:run}
+\par
+The IPS has been ported to the Cray XT4/XT5 machines jaguar (at NCCS) and franklin (at NERSC), as well as viz/mhd at PPPL (a shared memory machine).  The IPS will run on arbitrary machines if the number of nodes available in the allocation are specified in the platform configuration file.  If no resource information is obtained  the IPS will assume there is only on node with one core available and will run everything on one core serially.  Running the IPS in serial mode is useful for testing the component and services interactions.
+
+\par
+To run the IPS several command line arguments must be provided as such:
+\begin{verbatim}
+ips [--config=CONFIG_FILE_NAME]+ --platform=PLATFORM_FILE_NAME     \
+     --log=LOG_FILE_NAME [--debug] [--ftb]
+  
+Arguments:
+  --config
+    A simulation configuration file.  There can be multiple simulations 
+    executing but each must be described in separate, uniquely named
+    configuration files.  At least one must be provided.
+  --platform
+    The platform file that matches the platform you are using.
+  --log
+    The name of the log file containing all the debugging output.
+  --debug
+    Flag to turn on debugging output.  Optional.
+  --ftb
+    Flag to turn on FTB notifications.  Optional, experimental, only 
+    available on jaguar.
+
+\end{verbatim}
+where, \texttt{ips} is the IPS executable.
+
+\par
+Use \texttt{create\_batch\_script.py} (located in \texttt{IPS\_ROOT/framework/src/}) to create a 
+batch script to submit on a particular machine.  It does some error 
+checking.  There is a sample batch script in the sample directory if you 
+wish to create and edit your own manually.
+
+\begin{verbatim}
+python create_batch_script.py --ips=IPS_EXECUTABLE             \
+                             [--config=CONFIG_FILE_NAME]+      \
+                              --platform=PLATFORM_FILE_NAME    \
+                             [--account=CHRGE_ACCOUNT]         \
+                             [--queue=BATCH_QUEUE]             \
+                             [--walltime=ALLOCATION_TIME]      \
+                             [--nproc=NPROCESSES]              \
+                             [--debug]                         \
+                             [--ftb]                           \
+                             [--output=BATCH_SCRIPT]           
+
+Arguments:
+  --ips
+     This is the IPS executable using the full path.
+  --config
+     A simulation configuration file.  There can be multiple simulations 
+     executing but each must be described in separate, uniquely named 
+     configuration files.  At least one must be provided.
+  --platform
+     The platform file that matches the platform you are using.
+  --account
+     The account that will be charged for time on the machine.
+  --queue
+     The queue to which you will submit the job.
+  --walltime
+     The time to request from the batch scheduler.
+  --nproc
+     The number of processes to request from the batch scheduler.
+  --debug
+     Flag to turn on debugging output.
+  --ftb
+     Flag to turn on FTB notifications.  Only available on jaguar.
+  --output
+     The name of the batch script you want to generate.
+     
+\end{verbatim}

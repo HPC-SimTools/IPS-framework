@@ -1,0 +1,11 @@
+machine_name = unicorn
+nodes =  294
+ppn =  4
+mem_pernode = 0
+disk_pernode = 0
+
+# mtbf is measured in seconds!!!!
+distribution = weibull
+shape = 0.7
+
+mtbf = 126144000  # 4 years
