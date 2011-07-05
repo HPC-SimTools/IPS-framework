@@ -27,10 +27,10 @@ install(PROGRAMS
 
 # Link data and scripts to build dir
 if (NOT WIN32)
-add_custom_target(txutils-scripts-stamp ALL
+add_custom_target(framework-scripts-stamp ALL
   COMMAND ${CMAKE_SOURCE_DIR}/CMake/mklinks.sh txutils-scripts-stamp
     ${CMAKE_CURRENT_SOURCE_DIR} ${DATA} ${SCRIPTS}
-  COMMAND chmod a+x *.sh *.py
+  COMMAND chmod a+x *.py
 )
 endif ()
 
