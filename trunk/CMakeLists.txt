@@ -34,10 +34,6 @@ endif ()
 
 include(${CMAKE_SOURCE_DIR}/CMake/TxInit.cmake)
 
-# Subdirectories
-add_subdirectory(framework)
-add_subdirectory(doc)
-
 ######################################################################
 #
 # Packages.
@@ -46,17 +42,23 @@ add_subdirectory(doc)
 
 # Find/Setup Sphinx and MathJax
 find_package(Sphinx)
-if(SPHINX_FOUND)
-   MESSAGE("SPHINX_EXECUTABLE found.")
-   MESSAGE("SPHINX_EXECUTABLE  = ${SPHINX_EXECUTABLE}")
-endif()
-
 
 # Install files
 install(FILES ${CMAKE_SOURCE_DIR}/svninfo.txt DESTINATION share
   PERMISSIONS OWNER_READ OWNER_WRITE GROUP_READ ${TX_GROUP_WRITE}
 )
 set(CONFIG_FILES ${CMAKE_BINARY_DIR}/CMakeCache.txt)
+
+
+######################################################################
+#
+#  Do subdirectories after you find packages.
+#
+######################################################################
+add_subdirectory(framework)
+add_subdirectory(doc)
+
+
 
 # CPack version numbers for release tarball name.
 set(CPACK_PACKAGE_VERSION_MAJOR ${VERSION_MAJOR})
