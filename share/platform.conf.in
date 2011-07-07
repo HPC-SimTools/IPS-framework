@@ -1,0 +1,36 @@
+HOST = @HOSTNAME@
+#MPIRUN = eval
+MPIRUN = aprun
+PHYS_BIN_ROOT = /project/projectdirs/m876/phys-bin/phys/
+DATA_TREE_ROOT = /project/projectdirs/m876/data
+PORTAL_URL = http://swim.gat.com:8080/monitor		# URL for the portal
+RUNID_URL  = http://swim.gat.com:4040/runid.esp
+DATA_ROOT = /project/projectdirs/m876/data/
+
+#######################################
+# resource detection method
+#######################################
+NODE_DETECTION = checkjob # checkjob | qstat | pbs_env | slurm_env
+
+#######################################
+# manual allocation description
+#######################################
+TOTAL_PROCS = 16
+NODES = 4
+PROCS_PER_NODE = 4
+
+#######################################
+# node topology description
+#######################################
+CORES_PER_NODE = 4
+SOCKETS_PER_NODE = 1
+
+#######################################
+# framework setting for node allocation
+#######################################
+# MUST ADHERE TO THE PLATFORM'S CAPABILITIES
+#   * EXCLUSIVE : only one task per node
+#   * SHARED : multiple tasks may share a node
+# For single node jobs, this can be overridden allowing multiple
+# tasks per node.
+NODE_ALLOCATION_MODE = EXCLUSIVE # SHARED | EXCLUSIVE

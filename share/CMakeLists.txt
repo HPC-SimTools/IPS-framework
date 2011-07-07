@@ -1,0 +1,11 @@
+######################################################################
+#
+# CMakeLists.txt for docs
+#
+# $Id: CMakeLists.txt 1138 2011-01-28 00:25:57Z swsides $
+#
+######################################################################
+
+# Platform
+configure_file(platform.conf.in  platform.conf)
+install(FILES platform.conf DESTINATION  ${CMAKE_INSTALL_PREFIX}/share)
