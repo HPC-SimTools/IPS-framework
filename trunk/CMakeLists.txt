@@ -57,17 +57,16 @@ set(CONFIG_FILES ${CMAKE_BINARY_DIR}/CMakeCache.txt)
 ######################################################################
 add_subdirectory(framework)
 add_subdirectory(doc)
-
-
+add_subdirectory(share)
 
 # CPack version numbers for release tarball name.
 set(CPACK_PACKAGE_VERSION_MAJOR ${VERSION_MAJOR})
 set(CPACK_PACKAGE_VERSION_MINOR ${VERSION_MINOR})
 set(CPACK_PACKAGE_VERSION_PATCH ${VERSION_PATCH}-r${PROJECT_REV})
 
-set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Tech-X Vorpal")
-set(CPACK_PACKAGE_VENDOR "Tech-X Corporation")
-set(CPACK_SOURCE_PACKAGE_FILE_NAME "vorpal-${VORPAL_VERSION}r${PROJECT_REV}"
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "SIMYAN SERVANT")
+set(CPACK_PACKAGE_VENDOR "SWIM Project")
+set(CPACK_SOURCE_PACKAGE_FILE_NAME "simyan-${SIMYAN_VERSION}r${PROJECT_REV}"
   CACHE INTERNAL "tarball basename"
 )
 set(CPACK_SOURCE_GENERATOR TGZ)
