@@ -8,4 +8,4 @@
 
 # Platform
 configure_file(platform.conf.in  platform.conf)
-install(FILES platform.conf DESTINATION  ${CMAKE_INSTALL_PREFIX}/share)
+install(FILES ${CMAKE_BINARY_DIR}/share/platform.conf DESTINATION  ${CMAKE_INSTALL_PREFIX}/share)
