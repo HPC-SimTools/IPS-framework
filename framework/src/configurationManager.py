@@ -483,18 +483,24 @@ in simulation %s component %s configuration section' ,
         ipsutil.copyFiles(os.path.dirname(self.platform_file), 
                           os.path.basename(self.platform_file), simRootDir)
 
-        statedir = self.get_sim_parameter(sim_name,
-                                        'PLASMA_STATE_WORK_DIR')
         try:
-            os.makedirs(statedir)
-        except OSError, (errno, strerror):
-            if (errno != 17):
-                self.fwk.exception('Error creating State directory %s : %d %s' ,
-                                   statedir, errno, strerror)
-                #pytau.stop(self.timers['_initialize_sim'])
-                #stop(self.timers['_initialize_sim'])
-                raise
-        #pytau.stop(self.timers['_initialize_sim'])
+            statedir = self.get_sim_parameter(sim_name,
+                                        'PLASMA_STATE_WORK_DIR')
+            haveStateDir=True
+        except:
+            haveStateDir=False
+
+        if haveStateDir:
+          try:
+              os.makedirs(statedir)
+          except OSError, (errno, strerror):
+              if (errno != 17):
+                  self.fwk.exception('Error creating State directory %s : %d %s' ,
+                                     statedir, errno, strerror)
+                  #pytau.stop(self.timers['_initialize_sim'])
+                  #stop(self.timers['_initialize_sim'])
+                  #raise
+          #pytau.stop(self.timers['_initialize_sim'])
         return
 
    #@TauWrap(TIMERS['_create_component'])
