@@ -63,6 +63,8 @@ def make_timers_child():
             'get_working_dir':ipsTiming.create_timer("services", "get_working_dir", pid),
             'stage_input_files':ipsTiming.create_timer("services", "stage_input_files", pid),
             'stage_output_files':ipsTiming.create_timer("services", "stage_output_files", pid),
+            'stage_nonPS_output_files':ipsTiming.create_timer("services", "stage_nonPS_output_files", pid),
+            'stage_PS_output_files':ipsTiming.create_timer("services", "stage_PS_output_files", pid),
             'stage_plasma_state':ipsTiming.create_timer("services", "stage_plasma_state", pid),
             'update_plasma_state':ipsTiming.create_timer("services", "update_plasma_state", pid),
             'update_time_stamp':ipsTiming.create_timer("services", "update_time_stamp", pid),
@@ -1219,6 +1221,157 @@ class ServicesProxy(object):
         """
         self.warning('stageInputFiles() deprecated - use stage_input_files() instead')
         return self.stage_input_files(input_file_list)
+
+    def stage_nonPS_output_files(self, timeStamp, file_list, keep_old_files = True):
+        """
+        Same as stage_output_files, but does not do anything with the Plasma State. 
+        """
+        workdir = self.get_working_dir()
+        conf = self.component_ref.config
+        sim_root = self.sim_conf['SIM_ROOT']
+        try:
+            outprefix = self.sim_conf['OUTPUT_PREFIX']
+        except KeyError:
+            outprefix = ''
+        out_root = 'simulation_results'
+
+        output_dir = os.path.join(sim_root, out_root, \
+                                 str(timeStamp), 'components' ,
+                                 self.full_comp_id)
+        try:
+            ipsutil.copyFiles(workdir, file_list, output_dir, outprefix, 
+                              keep_old=keep_old_files)
+        except Exception, e:
+            self._send_monitor_event('IPS_STAGE_OUTPUTS',
+                                           'Files = ' + str(file_list) + \
+                                           ' Exception raised : ' + str(e),
+                                           ok='False')
+            self.exception('Error in stage_nonPS_output_files()')
+            raise
+
+        # Store symlinks to component output files in a single top-level directory
+
+        symlink_dir =  os.path.join(sim_root, out_root, self.full_comp_id)
+        try:
+            os.makedirs(symlink_dir)
+        except OSError, (errno, strerror):
+            if (errno != 17):
+                self.exception('Error creating directory %s : %s' ,
+                               symlink_dir, strerror)
+                raise
+            
+        all_files = sum([glob.glob(f) for f in file_list.split()], [])
+        
+        for f in all_files:
+            real_file = os.path.join(output_dir, outprefix + f)
+            tokens = f.rsplit('.', 1)
+            if (len(tokens) == 1) :
+                newName = '_'.join([f , str(timeStamp)])
+            else:
+                name = tokens[0]
+                ext = tokens[1]
+                newName = '_'.join([name, str(timeStamp)]) + '.' + ext
+            sym_link = os.path.join(symlink_dir, newName)
+            if os.path.isfile(sym_link):
+                os.remove(sym_link)
+            # We need to use relative path for the symlinks
+            common1 = os.path.commonprefix([real_file, sym_link])
+            (head, sep, tail)= common1.rpartition('/')
+            common = head.split('/')
+            file_suffix = real_file.split('/')[len(common):] # Include file name
+            link_suffix = sym_link.split('/')[len(common):-1] # No file name
+            p = []
+            if len(link_suffix) > 0:
+                p = [ '../' * len(link_suffix) ]
+            p = p + file_suffix
+            relpath = os.path.join( *p )
+            os.symlink(relpath, sym_link)
+
+        self._send_monitor_event('IPS_STAGE_OUTPUTS',
+                                 'Files = ' + str(file_list))
+        return
+
+    def stage_PS_output_files(self, timeStamp, file_list, keep_old_files = True):
+        """
+        Same as stage_output_files, but only does Plasma State files.
+        """
+        workdir = self.get_working_dir()
+        conf = self.component_ref.config
+        sim_root = self.sim_conf['SIM_ROOT']
+        try:
+            outprefix = self.sim_conf['OUTPUT_PREFIX']
+        except KeyError:
+            outprefix = ''
+        out_root = 'simulation_results'
+
+        output_dir = os.path.join(sim_root, out_root, \
+                                 str(timeStamp), 'components' ,
+                                 self.full_comp_id)
+
+        # Store plasma state files into $SIM_ROOT/history/plasma_state
+        # Plasma state files are renamed, by appending the full component
+        # name (CLASS_SUBCLASS_NAME) and timestamp to the file name.
+        # A version number is added to the end of the file name to avoid
+        # overwriting existing plasma state files
+        plasma_dir = os.path.join(self.sim_conf['SIM_ROOT'],
+                                 'simulation_results',
+                                 'plasma_state')
+        try:
+            os.makedirs(plasma_dir)
+        except OSError, (errno, strerror):
+            if (errno != 17):
+                self._send_monitor_event('IPS_STAGE_OUTPUTS',
+                                         'Files = ' + str(file_list) + \
+                                         ' Exception raised : ' + str(e),
+                                         ok='False')
+                self.exception('Error creating directory %s : %d-%s',
+                               plasma_dir, errno, strerror)
+                raise
+
+        try:
+            plasma_state_files = conf['PLASMA_STATE_FILES'].split()
+        except KeyError:
+            plasma_state_files = self.get_config_param('PLASMA_STATE_FILES').split()
+            
+        all_plasma_files=[]
+        for plasma_file in plasma_state_files:
+            globbed_files = glob.glob(plasma_file)
+            if (len(globbed_files) > 0):
+                all_plasma_files += globbed_files
+
+        for f in all_plasma_files:
+            if not os.path.isfile(f):
+                continue
+            tokens = f.split('.')
+            if (len(tokens) == 1) :
+                newName = '_'.join([outprefix + f , self.full_comp_id , str(timeStamp)])
+            else:
+                name = '.'.join(tokens[:-1])
+                ext = tokens[-1]
+                newName = '_'.join([outprefix + name, self.full_comp_id, str(timeStamp)]) + \
+                           '.' + ext
+            target_name = os.path.join(plasma_dir, newName)
+            if os.path.isfile(target_name):
+                for i in range(1000):
+                    newName = target_name + '.' + str(i)
+                    if  os.path.isfile(newName):
+                        continue
+                    target_name = newName
+                    break
+            try:
+                shutil.copy(f, target_name)
+            except (IOError, os.error), why:
+                self.exception('Error copying file: %s from %s to %s - %s' ,
+                               f, workdir, target_name, str(why))
+                self._send_monitor_event('IPS_STAGE_OUTPUTS',
+                                     'Files = ' + str(file_list) + \
+                                     ' Exception raised : ' + str(why),
+                                     ok='False')
+                raise
+
+        self._send_monitor_event('IPS_STAGE_OUTPUTS',
+                                 'Files = ' + str(file_list))
+        return
 
     def stage_output_files(self, timeStamp, file_list, keep_old_files = True):
         """
