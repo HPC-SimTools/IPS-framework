@@ -11,6 +11,7 @@ from ipsExceptions import BlockedMessageException,  \
                           BadResourceRequestException, \
                           AllocatedNodeDownException, \
                           ResourceRequestMismatchException
+import shutil
 
 # from event_service_spec import PublisherEventService,SubscriberEventService,EventListener,Topic,EventServiceException
 
@@ -82,7 +83,7 @@ class TaskManager(object):
         self.resource_mgr = resource_mgr
         self.config_mgr = config_mgr
         self.FTB = ftb
-        #self.host = self.config_mgr.get_platform_parameter('HOST')
+        self.host = self.config_mgr.get_platform_parameter('HOST')
         self.node_alloc_mode = self.config_mgr.get_platform_parameter('NODE_ALLOCATION_MODE')
         try:
             self.task_launch_cmd = self.config_mgr.get_platform_parameter('MPIRUN')
@@ -217,25 +218,28 @@ class TaskManager(object):
 
         1. *binary*: full path to the executable to launch
 
-        2. *tppn*: processes per node for this task.  (0 indicates that the default ppn is used.)
+        2. *working_dir*: full path to directory where the task will be launched
+        
+        3. *tppn*: processes per node for this task.  (0 indicates that the default ppn is used.)
 
-        3. *block*: whether or not to wait until the task can be launched.
+        4. *block*: whether or not to wait until the task can be launched.
 
-        4. *wnodes*: ``True`` for whole node allocation, ``False`` otherwise.
+        5. *wnodes*: ``True`` for whole node allocation, ``False`` otherwise.
 
-        5. *wsocks*: ``True`` for whole socket allocation, ``False`` otherwise.
+        6. *wsocks*: ``True`` for whole socket allocation, ``False`` otherwise.
 
-        6. \+ *cmd_args*: any arguments for the executable
+        7. \+ *cmd_args*: any arguments for the executable
         """
         caller_id = init_task_msg.sender_id
         nproc = int(init_task_msg.args[0])
         binary = init_task_msg.args[1]
-        tppn = int(init_task_msg.args[2]) #task processes per node
-        block = init_task_msg.args[3]  # Block waiting for available resources
-        wnodes = init_task_msg.args[4]
-        wsocks = init_task_msg.args[5]
+        working_dir = init_task_msg.args[2]
+        tppn = int(init_task_msg.args[3]) #task processes per node
+        block = init_task_msg.args[4]  # Block waiting for available resources
+        wnodes = init_task_msg.args[5]
+        wsocks = init_task_msg.args[6]
 
-        cmd_args = init_task_msg.args[6:]
+        cmd_args = init_task_msg.args[7:]
         # handle for task related things
         task_id = self.get_task_id()
 
@@ -271,9 +275,18 @@ class TaskManager(object):
         except Exception, e:
             raise 
 
+        self.curr_task_table[task_id] = {'component'  : caller_id,
+                                         'status'     : 'init_task',
+                                         'binary'     : binary,
+                                         'nproc'      : nproc,
+                                         'args'       : cmd_args,
+                                         'launch_cmd' : None,
+                                         'ret_data'   : None,
+                                         'node_file': None}
         if partial_node:
             nodes = ','.join(nodelist)
-            cmd = self.build_launch_cmd(nproc, binary, cmd_args, ppn, max_ppn, 
+            cmd = self.build_launch_cmd(nproc, binary, cmd_args, working_dir,
+                                        ppn, max_ppn, 
                                         nodes, accurateNodes, partial_node, 
                                         task_id, core_list=corelist)
         else:
@@ -281,19 +294,14 @@ class TaskManager(object):
                 nodes = ','.join(nodelist)
             else:
                 nodes = ''
-            cmd = self.build_launch_cmd(nproc, binary, cmd_args, ppn, max_ppn, 
+            cmd = self.build_launch_cmd(nproc, binary, cmd_args, working_dir, ppn, max_ppn, 
                                         nodes, accurateNodes, False, task_id)
-        self.curr_task_table[task_id] = {'component'  : caller_id,
-                                         'status'     : 'init_task',
-                                         'binary'     : binary,
-                                         'nproc'      : nproc,
-                                         'args'       : cmd_args,
-                                         'launch_cmd' : cmd,
-                                         'ret_data'   : None}
+        task_data = self.curr_task_table[task_id]
+        task_data['launch_cmd'] =  cmd
         return (task_id, cmd)
 
 
-    def build_launch_cmd(self, nproc, binary, cmd_args, ppn, max_ppn, nodes, 
+    def build_launch_cmd(self, nproc, binary, cmd_args, working_dir, ppn, max_ppn, nodes, 
                          accurateNodes, partial_nodes, task_id, core_list=''):
         """
         Construct task launch command to be executed by the component.  
@@ -301,6 +309,7 @@ class TaskManager(object):
           *nproc* - number of processes to use
           *binary* - binary to launch
           *cmd_args* - additional command line arguments for the binary
+          *working_dir* - full path to where the executable will be launched
           *ppn* - processes per node value to use
           *max_ppn* - maximum possible ppn for this allocation
           *nodes* - comma separated list of node ids
@@ -330,14 +339,14 @@ class TaskManager(object):
                                 ppn_flag, str(ppn)])
                 if accurateNodes:
                     if partial_nodes:
-                        cwd = os.getcwd()
                         hfname = "_gen_hf_" + str(task_id)
+                        hfname = os.path.join(working_dir, hfname)
                         hfile = open(hfname, 'w')
-                        hfname = os.path.join(cwd, hfname)
                         i = 0
                         for s in core_list:
                             print >> hfile, '%s slots=%s' % (s[0], len(s[1]))
                         cmd = ' '.join([cmd, host_file, hfname, proc_bind_option])
+                        self.curr_task_table[task_id]['node_file'] = hfname
                     else:
                         cmd = ' '.join([cmd, host_select, nodes])
         #--------------------------------------
@@ -348,14 +357,23 @@ class TaskManager(object):
             ppn_flag = '-npernode'
             if smp_node:
                 cmd = ' '.join([self.task_launch_cmd, nproc_flag, str(nproc)])
+            elif self.host == 'iter':
+                cfg_fname = "node_config_" + str(task_id)
+                cfg_fname = os.path.join(working_dir, cfg_fname)
+                cfg_file = open(cfg_fname, 'w')
+                cmd_args = ' '.join(cmd_args)
+                node_command = ' '.join([binary, cmd_args])
+                for node in nodes.split(' ,'):
+                    print >> cfg_file, '%s %s %d: %s' % (node, nproc_flag, ppn, node_command)
+                config_option = '-config='+ cfg_fname
+                cmd = ' '.join([self.task_launch_cmd, config_option])
+                self.curr_task_table[task_id]['node_file'] = cfg_fname
+                return cmd
             elif accurateNodes: # Need to assign tasks to nodes explicitly
                 host_select = '--host '+ nodes
                 cmd = ' '.join([self.task_launch_cmd, host_select,
                                 nproc_flag, str(nproc), ppn_flag,
                                 str(ppn)])
-            elif self.host == 'iter':
-                cmd = ' '.join([self.task_launch_cmd, nproc_flag, str(nproc), 
-                                ppn_flag, str(ppn), binary])
             else:
                 cmd = ' '.join([self.task_launch_cmd, nproc_flag,
                                 str(nproc), ppn_flag, str(ppn)])
@@ -440,15 +458,16 @@ class TaskManager(object):
             
             if partial_node:
                 nodes = ','.join(nodelist)
-                cmd = self.build_launch_cmd(nproc, binary, cmd_args, ppn, max_ppn,
-                                            nodes, accurateNodes, partial_node,
+                cmd = self.build_launch_cmd(nproc, binary, cmd_args, working_dir, ppn,
+                                            max_ppn, nodes, accurateNodes, partial_node,
                                             task_id, core_list=corelist)
             else:
                 if accurateNodes:
                     nodes = ','.join(nodelist)
                 else:
                     nodes = ''
-                cmd = self.build_launch_cmd(nproc, binary, cmd_args, ppn, max_ppn,
+                cmd = self.build_launch_cmd(nproc, binary, cmd_args, working_dir,
+                                            ppn, max_ppn,
                                             nodes, accurateNodes, False, task_id)
             
             self.curr_task_table[task_id] = {'component'  : caller_id,
@@ -476,6 +495,7 @@ class TaskManager(object):
         caller_id = finish_task_msg.sender_id
         task_id = finish_task_msg.args[0]
         task_data = finish_task_msg.args[1]
+        node_file = self.curr_task_table[task_id]['node_file']
         try:
             self.resource_mgr.release_allocation(task_id, task_data)
 #            self.curr_task_table[task_id]['status'] = 'finished'
@@ -488,6 +508,8 @@ class TaskManager(object):
         except Exception , e:
             print 'Error finishing task ', task_id
             raise
+#        if node_file:
+#            os.remove(node_file)
         return 0
 
 
