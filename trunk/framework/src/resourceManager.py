@@ -259,7 +259,7 @@ class ResourceManager(object):
 
           * *shared_nodes*: ``True``
           * *nodes*: list of node names
-          * *node_file_entries*: list of slots to be used to launch the task
+          * *node_file_entries*: list of (node, corelist) tuples, where *corelist* is a list of core names.  Core names are integers from 0 to n-1 where n is the number of cores on a node.
           * *ppn*: processes per node for launching the task
           * *max_ppn*: processes that can be launched
           * *accurateNodes*: ``True`` if *nodes* uses the actual names of the nodes, ``False`` otherwise.

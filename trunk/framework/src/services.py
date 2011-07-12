@@ -557,7 +557,7 @@ class ServicesProxy(object):
         try:
             msg_id = self._invoke_service(self.fwk.component_id,
                                           'init_task', nproc, binary, 
-                                          task_ppn, block, 
+                                          working_dir, task_ppn, block, 
                                           whole_nodes, whole_socks, *args)
             (task_id, command) = self._get_service_response(msg_id, block=True)
         except Exception, e:
@@ -615,7 +615,8 @@ class ServicesProxy(object):
 
         try:
             msg_id = self._invoke_service(self.fwk.component_id,
-                                          'init_task', nproc, binary, task_ppn,
+                                          'init_task', nproc, binary,
+                                          working_dir, task_ppn,
                                           block, wnodes, wsocks, *args)
             (task_id, command) = self._get_service_response(msg_id, block=True)
         except Exception, e:
