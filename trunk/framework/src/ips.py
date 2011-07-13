@@ -687,7 +687,15 @@ def printUsageMessage():
     """
     Print message on how to run the IPS.
     """
-    print 'Usage: ips [--config=CONFIG_FILE_NAME]+ --platform=PLATFORM_FILE_NAME --log=LOG_FILE_NAME [--debug | --ftb]'
+    # with files
+    print 'Usage: ips [--create-runspace=RUNSPACE_CONFIG_FILE_NAME]+ --platform=PLATFORM_FILE_NAME --log=LOG_FILE_NAME [--debug | --ftb]'
+    print '       ips [--run-setup=RUN_SETUP_FILE_NAME]+ --platform=PLATFORM_FILE_NAME --log=LOG_FILE_NAME [--debug | --ftb]'
+    print '       ips [--run=RUN_FILE_NAME]+ --platform=PLATFORM_FILE_NAME --log=LOG_FILE_NAME [--debug | --ftb]'
+
+    # without files
+    #print 'Usage: ips [--create-runspace]+ --platform=PLATFORM_FILE_NAME --log=LOG_FILE_NAME [--debug | --ftb]'
+    #print '       ips [--run-setup]+ --platform=PLATFORM_FILE_NAME --log=LOG_FILE_NAME [--debug | --ftb]'
+    #print '       ips [--run]+ --platform=PLATFORM_FILE_NAME --log=LOG_FILE_NAME [--debug | --ftb]'
 
 def main(argv=None):
     """
@@ -707,7 +715,10 @@ def main(argv=None):
 
     try:
         opts, args = getopt.gnu_getopt(argv[first_arg:], '',
-                                       ["config=", "platform=", "log=", 
+                                       ["create-runspace=", 
+                                        "run-setup=",
+                                        "run=", 
+                                        "platform=", "log=", 
                                         "nodes=", "ppn=",
                                         "debug", "verbose", "ftb"])
     except getopt.error, msg:
@@ -719,9 +730,25 @@ def main(argv=None):
     verbose_debug = False
     cmd_nodes = 0
     cmd_ppn = 0
+    # flags for the action to perform
+    do_create_runspace = False
+    do_run_setup = False
+    do_run = False
+    # flag for platform file present
+    platform_file_specified = False
     for arg, value in opts:
-        if (arg == '--config'):
+        if (arg == '--create-runspace'):
+            # create the runspace
             cfgFile_list.append(value)
+            do_create_runspace = True
+        elif (arg == '--run-setup'):
+            # setup for run
+            cfgFile_list.append(value)
+            do_run_setup = True
+        elif (arg == '--run');
+            # run
+            cfgFile_list.append(value)
+            do_run = True
         elif (arg == '--log'):
             log_file_name = value
             try:
@@ -732,6 +759,7 @@ def main(argv=None):
                 raise
         elif (arg == '--platform'):
             platform_filename = value
+            platform_file_specified = True
         elif (arg == '--nodes'):
             cmd_nodes = int(value)
         elif (arg == '--ppn'):
@@ -743,11 +771,30 @@ def main(argv=None):
         elif (arg == '--verbose'):
             verbose_debug = True
 
-    if (len(cfgFile_list) == 0 or platform_filename ==''):
+    # if a --platform file was not specified, use default
+    # if the default doesn't exist, raise an exception
+    if (not platform_file_specified):
+        platform_filename = 'platform.conf'
+        try:
+            platform_file = open(os.path.abspath(platform_filename), 'r')
+        except Exception, e:
+            print 'Error reading from platform.conf file '
+            print str(e)
+            raise
+
+    # if no config files were specified, print usage and exit
+    if (len(cfgFile_list) == 0):
         printUsageMessage()
         return 1
-#    print "got cmd ln args"
-#    print 'cfgFile_list: ', cfgFile_list
+    # if either too many or none of the simyan options 
+    # create-runspace, run-setup, or run were specified,
+    # print usage and exit
+    elif ((do_create_runspace + do_run_setup + do_run - 1) != 0):
+        printUsageMessage()
+        return 1
+
+    #print "got cmd ln args"
+    #print 'cfgFile_list: ', cfgFile_list
     # create framework with config file
     try:
         fwk = Framework(cfgFile_list, log_file, platform_filename, debug, ftb, 
