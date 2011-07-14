@@ -71,3 +71,7 @@ add_custom_command(
 add_custom_target(docs-man DEPENDS ${MAN_OUTPUT})
 
 add_dependencies(docs docs-html docs-pdf docs-man)
+
+# This does the install for the top level
+add_custom_target(install-docs
+  COMMAND $(CMAKE_COMMAND) -P $(CMAKE_BINARY_DIR)/doc/cmake_install.cmake)
