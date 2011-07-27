@@ -90,8 +90,10 @@ TIMERS = make_timers()
 
 class Framework(object):
     #@ipsTiming.TauWrap(TIMERS['__init__'])
-    def __init__(self, config_file_list, log_file, platform_file_name, 
-                 debug=False, ftb=False, verbose_debug = False, cmd_nodes=0, cmd_ppn=0):
+    def __init__(self, do_create_runspace = False, do_run_setup = False, 
+            do_run = False, config_file_list, log_file, simulation_filename, 
+            platform_file_name, debug=False, ftb=False, verbose_debug = False, 
+            cmd_nodes = 0, cmd_ppn = 0):
         """
         Create an IPS Framework Instance to coordinate the execution of IPS simulations
         
@@ -688,14 +690,9 @@ def printUsageMessage():
     Print message on how to run the IPS.
     """
     # with files
-    print 'Usage: ips [--create-runspace=RUNSPACE_CONFIG_FILE_NAME]+ --platform=PLATFORM_FILE_NAME --log=LOG_FILE_NAME [--debug | --ftb]'
-    print '       ips [--run-setup=RUN_SETUP_FILE_NAME]+ --platform=PLATFORM_FILE_NAME --log=LOG_FILE_NAME [--debug | --ftb]'
-    print '       ips [--run=RUN_FILE_NAME]+ --platform=PLATFORM_FILE_NAME --log=LOG_FILE_NAME [--debug | --ftb]'
-
-    # without files
-    #print 'Usage: ips [--create-runspace]+ --platform=PLATFORM_FILE_NAME --log=LOG_FILE_NAME [--debug | --ftb]'
-    #print '       ips [--run-setup]+ --platform=PLATFORM_FILE_NAME --log=LOG_FILE_NAME [--debug | --ftb]'
-    #print '       ips [--run]+ --platform=PLATFORM_FILE_NAME --log=LOG_FILE_NAME [--debug | --ftb]'
+    print 'Usage: ips [--create-runspace]+ --simulation=SIM_FILE_NAME --platform=PLATFORM_FILE_NAME --log=LOG_FILE_NAME [--debug | --ftb]'
+    print '       ips [--run-setup]+ --simulation=SIM_FILE_NAME --platform=PLATFORM_FILE_NAME --log=LOG_FILE_NAME [--debug | --ftb]'
+    print '       ips [--run]+ --simulation=SIM_FILE_NAME --platform=PLATFORM_FILE_NAME --log=LOG_FILE_NAME [--debug | --ftb]'
 
 def main(argv=None):
     """
@@ -705,6 +702,7 @@ def main(argv=None):
 
     cfgFile_list = []
     platform_filename = ''
+    simulation_filename = ''
     log_file = sys.stdout
     # parse command line arguments
     if argv is None:
@@ -715,10 +713,8 @@ def main(argv=None):
 
     try:
         opts, args = getopt.gnu_getopt(argv[first_arg:], '',
-                                       ["create-runspace=", 
-                                        "run-setup=",
-                                        "run=", 
-                                        "platform=", "log=", 
+                                       ["create-runspace", "run-setup", "run", 
+                                        "simulation=", "platform=", "log=", 
                                         "nodes=", "ppn=",
                                         "debug", "verbose", "ftb"])
     except getopt.error, msg:
@@ -736,18 +732,19 @@ def main(argv=None):
     do_run = False
     # flag for platform file present
     platform_file_specified = False
+    simulation_file_specified = False
     for arg, value in opts:
         if (arg == '--create-runspace'):
             # create the runspace
-            cfgFile_list.append(value)
+            # cfgFile_list.append(value)
             do_create_runspace = True
         elif (arg == '--run-setup'):
             # setup for run
-            cfgFile_list.append(value)
+            # cfgFile_list.append(value)
             do_run_setup = True
         elif (arg == '--run');
             # run
-            cfgFile_list.append(value)
+            # cfgFile_list.append(value)
             do_run = True
         elif (arg == '--log'):
             log_file_name = value
@@ -757,6 +754,10 @@ def main(argv=None):
                 print 'Error writing to log file ' , log_file_name
                 print str(e)
                 raise
+        elif (arg == '--simulation'):
+            simulation_filename = value
+            cfgFile_list.append(value)
+            simulation_file_specified = True
         elif (arg == '--platform'):
             platform_filename = value
             platform_file_specified = True
@@ -782,23 +783,33 @@ def main(argv=None):
             print str(e)
             raise
 
+    if (not simulation_file_specified):
+        simulation_filename = 'core-edge.conf'
+        try:
+            simulation_file = open(os.path.abspath(simulation_filename), 'r')
+        except Exception, e:
+            print 'Error reading from core-edge.conf file '
+            print str(e)
+            raise
+
     # if no config files were specified, print usage and exit
     if (len(cfgFile_list) == 0):
         printUsageMessage()
         return 1
-    # if either too many or none of the simyan options 
-    # create-runspace, run-setup, or run were specified,
-    # print usage and exit
-    elif ((do_create_runspace + do_run_setup + do_run - 1) != 0):
-        printUsageMessage()
-        return 1
+    # if no options were specified
+    elif ((do_create_runspace + do_run_setup + do_run) == 0):
+        # do everything
+        do_create_runspace = True
+        do_run_setup = True
+        do_run = True
 
     #print "got cmd ln args"
     #print 'cfgFile_list: ', cfgFile_list
     # create framework with config file
     try:
-        fwk = Framework(cfgFile_list, log_file, platform_filename, debug, ftb, 
-                        verbose_debug, cmd_nodes, cmd_ppn)
+        fwk = Framework(do_create_runspace, do_run_setup, do_run, cfgFile_list, 
+                log_file, simulation_filename, platform_filename, debug, ftb, 
+                verbose_debug, cmd_nodes, cmd_ppn)
         fwk.run()
         ipsTiming.dumpAll('framework')
     except :
