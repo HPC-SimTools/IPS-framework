@@ -1,0 +1,7 @@
+In order to run ips, edit configuration files:
+set SIM_ROOT to some local directory
+and reset IPS_ROOT.  You also will need to change W3 and URL
+for the monitor component.
+
+After that run run_tx.sh.
+

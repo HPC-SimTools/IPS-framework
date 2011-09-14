@@ -323,6 +323,7 @@ class ConfigurationManager(object):
         self.log_process = Process(target=self.log_daemon.__run__)
         self.log_process.start()
 
+        # sim_map is a map of sim_name to sim_data objects
         for sim_name, sim_data in self.sim_map.items():
             if (sim_name != self.fwk_sim_name):
                 self._initialize_sim(sim_data)
@@ -345,7 +346,28 @@ class ConfigurationManager(object):
         """
         #pytau.start(self.timers['_initialize_fwk_components'])
         #start(self.timers['_initialize_fwk_components'])
-        # The Portal bridge
+        
+        # set up the RunspaceInit component
+        #runspace_conf = {}
+        #runspace_conf['CLASS'] = 'FWK'
+        #runspace_conf['SUB_CLASS'] = 'COMP'
+        #runspace_conf['NAME'] = 'RunspaceInit'
+        #runspace_conf['BIN_PATH'] = sys.path[0]
+        #runspace_conf['SCRIPT'] = os.path.join(runspace_conf['BIN_PATH'], 
+        #        'RunspaceInit_Component.py')
+        #runspace_conf['INPUT_DIR'] = '/dev/null'
+        #runspace_conf['INPUT_FILES'] = ''
+        #runspace_conf['OUTPUT_FILES'] = ''
+        #runspace_conf['NPROC'] = 1
+        #runspace_conf['LOG_LEVEL'] = 'WARNING'
+        #if (self.fwk.log_level == logging.DEBUG):
+        #    runspace_conf['LOG_LEVEL'] = 'DEBUG'
+
+        #runspace_component_id = self._create_component(runspace_conf,
+        #                                       self.sim_map[self.fwk_sim_name])
+        #self.fwk_components.append(runspace_component_id)
+
+        # set up The Portal bridge
         portal_conf={}
         portal_conf['CLASS'] = 'FWK'
         portal_conf['SUB_CLASS'] = 'COMP'
@@ -370,6 +392,7 @@ class ConfigurationManager(object):
         self.fwk_components.append(component_id)
 
 
+        # set up the FTB
         if self.FTB:
             ftb_conf={}
             ftb_conf['CLASS'] = 'FWK'
@@ -398,7 +421,7 @@ class ConfigurationManager(object):
         """
         Parses the configuration data (*sim_conf*) associated with a simulation
         (*sim_name*). Instantiate the components associated with each simulation.
-        Populate the *component_registry* with appropriate component and pot
+        Populate the *component_registry* with appropriate component and port
         mapping info.
         """
         #pytau.start(self.timers['_initialize_sim'])
@@ -408,23 +431,26 @@ class ConfigurationManager(object):
         ports_config = sim_conf['PORTS']
         ports_list  = ports_config['NAMES'].split()
 
+        # get the simRootDir, then make it
         simRootDir = self.get_sim_parameter(sim_name, 'SIM_ROOT')
-        try:
-            os.makedirs(simRootDir)
-        except OSError, (errno, strerror):
-            if (errno != 17):
-                self.fwk.exception('Error creating Simulation directory %s : %d %s' ,
-                                   simRootDir, errno, strerror)
+
+        # not making directories in configurationManager anymore
+        #try:
+        #    os.makedirs(simRootDir)
+        #except OSError, (errno, strerror):
+        #    if (errno != 17):
+        #        self.fwk.exception('Error creating Simulation directory %s : %d %s' ,
+        #                           simRootDir, errno, strerror)
                 #pytau.stop(self.timers['_initialize_sim'])
                 #stop(self.timers['_initialize_sim'])
-                raise
-        try:
-            shutil.rmtree(os.path.join(simRootDir, 'work'))
-        except OSError, (errno, strerror):
-            if (errno == 2):
-                pass
-            else:
-                raise
+        #        raise
+        #try:
+        #    shutil.rmtree(os.path.join(simRootDir, 'work'))
+        #except OSError, (errno, strerror):
+        #    if (errno == 2):
+        #        pass
+        #    else:
+        #        raise
             
         # set simulation level partial_nodes
         try:
@@ -455,8 +481,8 @@ class ConfigurationManager(object):
             conf_fields = set(comp_conf.keys())
             if (not self.required_fields.issubset(conf_fields)):
                 self.fwk.exception('Error: missing required entries %s \
-in simulation %s component %s configuration section' ,
-                list(self.required_fields - conf_fields), sim_name, comp_ref)
+                    in simulation %s component %s configuration section' ,
+                    list(self.required_fields - conf_fields), sim_name, comp_ref)
                 #pytau.stop(self.timers['_initialize_sim'])
                 #stop(self.timers['_initialize_sim'])
                 sys.exit(1)
@@ -478,11 +504,15 @@ in simulation %s component %s configuration section' ,
                              'config file for simulation %s' , sim_data.sim_name)
            
         conf_file = sim_data.conf_file
-        ipsutil.copyFiles(os.path.dirname(conf_file), 
-                          os.path.basename(conf_file), simRootDir)
-        ipsutil.copyFiles(os.path.dirname(self.platform_file), 
-                          os.path.basename(self.platform_file), simRootDir)
 
+        # No longer doing this in configurationManager.py
+        # Copy the configuration and platform files to the simRootDir
+        #ipsutil.copyFiles(os.path.dirname(conf_file), 
+        #                  os.path.basename(conf_file), simRootDir)
+        #ipsutil.copyFiles(os.path.dirname(self.platform_file), 
+        #                  os.path.basename(self.platform_file), simRootDir)
+
+        # try to find the statedir
         try:
             statedir = self.get_sim_parameter(sim_name,
                                         'PLASMA_STATE_WORK_DIR')
@@ -490,6 +520,7 @@ in simulation %s component %s configuration section' ,
         except:
             haveStateDir=False
 
+        # if we have statedir specified, make it
         if haveStateDir:
           try:
               os.makedirs(statedir)
@@ -514,28 +545,31 @@ in simulation %s component %s configuration section' ,
         path = comp_conf['BIN_PATH']
         script = comp_conf['SCRIPT'].rsplit('.', 1)[0].split('/')[-1]
         endpath = comp_conf['SCRIPT'].rfind('/')
-#        print 'path[0]', comp_conf['SCRIPT'][0:endpath]
-#        print 'script', script
+        print 'path[0]', comp_conf['SCRIPT'][0:endpath]
+        print 'script', script
+        print 'endpath', endpath
         if (endpath != -1):
             path = [comp_conf['SCRIPT'][0:endpath], 
                     comp_conf['SCRIPT'][0:endpath] + '/' + script, 
                     comp_conf['SCRIPT'][0:endpath] + '/' + script + '.py']
-        class_name = comp_conf['NAME']
-        try:
-            (modFile, pathname, description) = imp.find_module(script, path)
-            module = imp.load_module(script, modFile, pathname, description)
-            component_class = getattr(module, class_name)
-        except Exception, e:
-            self.fwk.error('Error in configuration file : NAME = %s   SCRIPT = %s', 
-                           comp_conf['NAME'], comp_conf['SCRIPT'] )
-            self.fwk.exception('Error instantiating IPS component %s From %s', class_name, script)
-            #pytau.stop(self.timers['_create_component'])
-            raise
-        else:
-            ipsutil.copyFiles(os.path.dirname(comp_conf['SCRIPT']), 
-                              [os.path.basename(comp_conf['SCRIPT'])],
-                              os.path.join(sim_data.sim_conf['SIM_ROOT'], 
-                                           'simulation_setup'))
+            class_name = comp_conf['NAME']
+            try:
+                (modFile, pathname, description) = imp.find_module(script, path)
+                module = imp.load_module(script, modFile, pathname, description)
+                component_class = getattr(module, class_name)
+            except Exception, e:
+                self.fwk.error('Error in configuration file : NAME = %s   SCRIPT = %s', 
+                               comp_conf['NAME'], comp_conf['SCRIPT'] )
+                self.fwk.exception('Error instantiating IPS component %s From %s', class_name, script)
+                #pytau.stop(self.timers['_create_component'])
+                raise
+        #else:
+        #  not making directories or copying files in configurationManager anymore
+        #    ipsutil.copyFiles(os.path.dirname(comp_conf['SCRIPT']), 
+        #                      [os.path.basename(comp_conf['SCRIPT'])],
+        #                      os.path.join(sim_data.sim_conf['SIM_ROOT'], 
+        #                                   'simulation_setup'))
+
         #print "successful component creations!!!!!!"
         svc_response_q = Queue(0)
         invocation_q = Queue(0)

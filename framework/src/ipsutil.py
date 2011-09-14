@@ -9,15 +9,17 @@ def copyFiles(src_dir, src_file_list, target_dir, prefix='', keep_old = False):
        optional prefix.  If *keep_old* is ``True``, existing files in 
        *target_dir* will not be overridden, otherwise files can be clobbered 
        (default).
-       Wild-cards in file name specification are allowed, *target_dir* is 
-       created if it doesn't already exist.
+       Wild-cards in file name specification are allowed. 
     """
-    try:
-        os.makedirs(target_dir)
-    except OSError, (errno, strerror):
-        if (errno != 17):
-            print 'Error creating directory %s : %d-%s' % (target_dir, errno, strerror)
-            raise
+    # copyFiles no longer attempts to make the directory, if this is not done by
+    # the RunspaceInit_Component, then we can't continue
+
+    #try:
+    #    os.makedirs(target_dir)
+    #except OSError, (errno, strerror):
+    #    if (errno != 17):
+    #        print 'Error creating directory %s : %d-%s' % (target_dir, errno, strerror)
+    #        raise
     try:
         file_list = src_file_list.split()
     except AttributeError : # srcFileList is not a string

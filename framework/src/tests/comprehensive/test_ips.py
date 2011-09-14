@@ -39,12 +39,12 @@ class testIPS(unittest.TestCase):
         cfgFile_list = []
         #cfgFile_list.append('basic_concurrent1.conf')
         cfgFile_list.append('basic_serial1.conf')
-        platform_filename = 'workstation.conf'
+        platform_filename = 'iter.conf'
         #log_file = 'test_basic_concurrent1_on_workstation.log'
         log_file = 'test_basic_serial1_on_workstation.log'
 
         # create framework with config file
-        fwk = Framework(cfgFile_list, log_file, platform_filename)
+        fwk = Framework(True, True, True, cfgFile_list, log_file, platform_filename)
         #absCfgFile_list = [os.path.abspath(cfgFile) for cfgFile in cfgFile_list]
 
         #test must return true if nothing bad happened, false otherwise
