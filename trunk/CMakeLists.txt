@@ -58,6 +58,7 @@ set(CONFIG_FILES ${CMAKE_BINARY_DIR}/CMakeCache.txt)
 add_subdirectory(framework)
 add_subdirectory(doc)
 add_subdirectory(share)
+add_subdirectory(components)
 
 # CPack version numbers for release tarball name.
 set(CPACK_PACKAGE_VERSION_MAJOR ${VERSION_MAJOR})

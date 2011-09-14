@@ -90,10 +90,9 @@ TIMERS = make_timers()
 
 class Framework(object):
     #@ipsTiming.TauWrap(TIMERS['__init__'])
-    def __init__(self, do_create_runspace = False, do_run_setup = False, 
-            do_run = False, config_file_list, log_file, simulation_filename, 
-            platform_file_name, debug=False, ftb=False, verbose_debug = False, 
-            cmd_nodes = 0, cmd_ppn = 0):
+    def __init__(self, do_create_runspace, do_run_setup, do_run, 
+            config_file_list, log_file, platform_file_name, debug=False, 
+            ftb=False, verbose_debug = False, cmd_nodes = 0, cmd_ppn = 0):
         """
         Create an IPS Framework Instance to coordinate the execution of IPS simulations
         
@@ -126,18 +125,40 @@ class Framework(object):
         """
         #self.timers = make_timers()
         #start(self.timers['__init__'])
+
+        # create runspace with init.init() flag
+        self.do_create_runspace = do_create_runspace
+        # parse/validate inputs with sim_comps.init() flags
+        self.do_run_setup = do_run_setup
+        # do run
+        self.do_run = do_run
+
+        # fault tolerance flag
         self.ftb = ftb
+        # log file name if specified
         self.log_file = log_file
+        # the multiprocessing queue
         self.in_queue = multiprocessing.Queue(0)
+        # registry of components for calling
         self.comp_registry = ComponentRegistry()
+        # reference to this class's component ID
         self.component_id = ComponentID(self.__class__.__name__, 'FRAMEWORK')
+        # map of ports
         self.port_map = {}
+
+        # saving these for access later by the RunspaceInit_Component
+        # platform file name
+        self.platform_file_name = platform_file_name
+        # config file list
+        self.config_file_list = config_file_list
+
         # host is set in the configuration manager, not needed here???????
         self.host = socket.gethostname()
         self.logger = None
         self.service_handler = {}
         self.cur_time = time.time()
         self.start_time = self.cur_time
+        # 
         self.event_service = EventService(self)
         initialize_event_service(self.event_service)
         self.event_manager = eventManager(self)
@@ -168,6 +189,17 @@ class Framework(object):
         logger.addHandler(ch)
         self.logger = logger
         self.verbose_debug = verbose_debug
+
+        # space for new code
+        #if(do_create_runspace):
+            # create the runspace
+
+        #if(do_run_setup):
+            # setup for the run
+
+        #if(do_run):
+            # run it
+
         # add the handler to the root logger
         try:
             # each manager should create their own event manager if they want to send and receive events
@@ -468,8 +500,16 @@ class Framework(object):
                 self._send_monitor_event(sim_name, 'IPS_RESOURCE_ALLOC', comment)
                 if self.ftb:
                     self._send_ftb_event('IPS_START')
+                if do_create_runspace:
+                    methods.append('init')
+                if do_run_setup:
+                    methods.append('parse')
+                if do_run:
+                    methods.append('step')
+                    methods.append('finalize')
                 for comp_id in comp_list:
-                    for method in ['init', 'step', 'finalize']:
+                    #for method in ['init', 'step', 'finalize']:
+                    for method in methods:
                         req_msg = ServiceRequestMessage(self.component_id,
                                                         self.component_id, comp_id,
                                                         'init_call', method, 0)
@@ -690,15 +730,13 @@ def printUsageMessage():
     Print message on how to run the IPS.
     """
     # with files
-    print 'Usage: ips [--create-runspace]+ --simulation=SIM_FILE_NAME --platform=PLATFORM_FILE_NAME --log=LOG_FILE_NAME [--debug | --ftb]'
-    print '       ips [--run-setup]+ --simulation=SIM_FILE_NAME --platform=PLATFORM_FILE_NAME --log=LOG_FILE_NAME [--debug | --ftb]'
-    print '       ips [--run]+ --simulation=SIM_FILE_NAME --platform=PLATFORM_FILE_NAME --log=LOG_FILE_NAME [--debug | --ftb]'
+    print 'Usage: ips [--create-runspace | --run-setup | --run]+ --simulation=SIM_FILE_NAME --platform=PLATFORM_FILE_NAME --log=LOG_FILE_NAME [--debug | --ftb]'
 
 def main(argv=None):
     """
     Check and parse args, create and run the framework.
     """
-#    print "hello from main"
+    print "hello from main"
 
     cfgFile_list = []
     platform_filename = ''
@@ -736,15 +774,12 @@ def main(argv=None):
     for arg, value in opts:
         if (arg == '--create-runspace'):
             # create the runspace
-            # cfgFile_list.append(value)
             do_create_runspace = True
         elif (arg == '--run-setup'):
             # setup for run
-            # cfgFile_list.append(value)
             do_run_setup = True
-        elif (arg == '--run');
+        elif (arg == '--run'):
             # run
-            # cfgFile_list.append(value)
             do_run = True
         elif (arg == '--log'):
             log_file_name = value
@@ -799,17 +834,15 @@ def main(argv=None):
     # if no options were specified
     elif ((do_create_runspace + do_run_setup + do_run) == 0):
         # do everything
-        do_create_runspace = True
-        do_run_setup = True
-        do_run = True
+        do_create_runspace = do_run_setup = do_run = True
 
     #print "got cmd ln args"
     #print 'cfgFile_list: ', cfgFile_list
     # create framework with config file
     try:
         fwk = Framework(do_create_runspace, do_run_setup, do_run, cfgFile_list, 
-                log_file, simulation_filename, platform_filename, debug, ftb, 
-                verbose_debug, cmd_nodes, cmd_ppn)
+                log_file, platform_filename, debug, ftb, verbose_debug, 
+                cmd_nodes, cmd_ppn)
         fwk.run()
         ipsTiming.dumpAll('framework')
     except :

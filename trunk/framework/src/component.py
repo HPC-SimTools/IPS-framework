@@ -74,20 +74,23 @@ class Component(object):
         tmp = sys.exit
         sys.exit = self.__my_exit__
         self.sys_exit = tmp
-        workdir = self.services.get_working_dir()
-        try:
-            os.chdir(workdir)
-        except OSError, (errno, strerror):
-            self.services.debug('Working directory %s does not exist - will attempt creation',
-                                workdir)
-            try:
-                os.makedirs(workdir)
-            except OSError, (errno, strerror):
-                self.services.exception('Error creating directory %s : %s' ,
-                                        workdir, strerror)
-                #pytau.stop(timer)
-                raise
-        os.chdir(workdir)
+        #workdir = self.services.get_working_dir()
+
+        # now it is the component's responsibility to enter the working 
+        # directory in init(),step(),finalize()
+        #try:
+        #    os.chdir(workdir)
+        #except OSError, (errno, strerror):
+        #    self.services.debug('Working directory %s does not exist - will attempt creation',
+        #                        workdir)
+        #    try:
+        #        os.makedirs(workdir)
+        #    except OSError, (errno, strerror):
+        #        self.services.exception('Error creating directory %s : %s' ,
+        #                                workdir, strerror)
+        #        #pytau.stop(timer)
+        #        raise
+        #os.chdir(workdir)
         self.services.debug('Running - CompID =  %s',
                             self.component_id.get_serialization())
         
@@ -130,6 +133,14 @@ class Component(object):
         is executed.
         """
         self.services.debug('init() method called')
+        pass
+
+    def parse(self, timestamp=0.0):
+        """
+        Produce some default debugging information before the rest of the code
+        is executed.
+        """
+        self.services.debug('parse() method called')
         pass
 
     def restart(self, timestamp=0.0):

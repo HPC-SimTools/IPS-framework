@@ -14,7 +14,7 @@ import unittest
 from ips import Framework
 
 def printUsageMessage():
-    print 'Usage: ips [--config=CONFIG_FILE_NAME]+ --platform=PLATFORM_FILE_NAME --log=LOG_FILE_NAME'
+    print 'Usage: ips [--create-runspace | --run-setup | --run]+ --simulation=SIM_FILE_NAME --platform=PLATFORM_FILE_NAME --log=LOG_FILE_NAME [--debug | --ftb]'
 
 class testIPS(unittest.TestCase):
     def test_main(self, argv=None):
@@ -30,7 +30,10 @@ class testIPS(unittest.TestCase):
 
         try:
             opts, args = getopt.gnu_getopt(argv[first_arg:], '',
-                                           ["config=", "platform=", "log="])
+                                       ["create-runspace", "run-setup", "run", 
+                                        "simulation=", "platform=", "log=", 
+                                        "nodes=", "ppn=",
+                                        "debug", "verbose", "ftb"])
         except getopt.error, msg:
             self.fail('Invalid command line arguments'+ msg)
             #print 'Invalid command line arguments', msg
@@ -55,7 +58,7 @@ class testIPS(unittest.TestCase):
 
 
         # create framework with config file
-        fwk = Framework(cfgFile_list, log_file, platform_filename)
+        fwk = Framework(True, True, True, cfgFile_list, log_file, platform_filename)
         absCfgFile_list = [os.path.abspath(cfgFile) for cfgFile in cfgFile_list]
 
         # test must return true if nothing bad happened, false otherwise.
@@ -67,6 +70,6 @@ class testIPS(unittest.TestCase):
 if __name__ == "__main__":
     print "Starting IPS"
     sys.stdout.flush()
-    args = '--config=sim.conf --config=sim2.conf --platform=jaguar.conf'
+    args = '--simulation=sim.conf --simulation=sim2.conf --platform=jaguar.conf'
     argv = args.split(' ')
     sys.exit(unittest.main(argv))
