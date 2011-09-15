@@ -17,7 +17,7 @@ class epaDriver(Component):
     def init(self, timestamp=0):
         return
 
-    def parse(self, timestamp=0):
+    def validate(self, timestamp=0):
         return
 
     def step(self, timestamp=0):

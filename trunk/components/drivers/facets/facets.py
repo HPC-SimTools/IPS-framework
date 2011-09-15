@@ -279,8 +279,8 @@ class facets(Component):
 #
 # ------------------------------------------------------------------------------
 
-    def parse(self, timeStamp):
-        print 'facets_epa.parse() called'
+    def validate(self, timeStamp):
+        print 'facets_epa.validate() called'
 
         return 0
 

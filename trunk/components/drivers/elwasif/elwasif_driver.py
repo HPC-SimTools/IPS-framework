@@ -21,7 +21,7 @@ class testDriver(Component):
         # ssf - insert additional init stuff here
         return
 
-    def parse(self, timestamp=0):
+    def validate(self, timestamp=0):
         # ncd - meeting new interface standard for components
         return
 

@@ -1,10 +1,4 @@
-######################################################################
-#
-# CMakeLists.txt for txutils
-#
-# $Id: CMakeLists.txt 758 2011-06-27 22:35:44Z cary $
-#
-######################################################################
+add_subdirectory(tests)
 
 # Variable holding executable scripts
 set(SCRIPTS

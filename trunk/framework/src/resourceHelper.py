@@ -55,11 +55,13 @@ def get_checkjob_info():
     tot_procs = 0
     data_lines = []
     
+    """
     try:
         job_id = os.environ['PBS_JOBID']
     except:
         print 'problems getting job id'
         raise
+    """
 
     """
     try:
@@ -77,6 +79,7 @@ def get_checkjob_info():
         raise
     """
 
+    """
     # run checkjob $PBS_JOBID
     try:
         proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, shell=True)
@@ -97,6 +100,7 @@ def get_checkjob_info():
     except:
         print 'problems getting checkjob output'
         raise
+    """
 
     """
     There are two different formats for listing nodes that the job has access to.
@@ -365,7 +369,7 @@ def getResourceList(services, host, ftb, partial_nodes=False):
                         accurateNodes = True
                     except:
                         try:
-                            num_nodes, ppn, mixed_nodes, listOfNodes = manual_detection()
+                            num_nodes, ppn, mixed_nodes, listOfNodes = manual_detection(services)
                             accurateNodes = False
                         except:
                             print "*** NO DETECTION MECHANISM WORKS ***" 

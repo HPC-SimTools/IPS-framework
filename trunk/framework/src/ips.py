@@ -128,7 +128,7 @@ class Framework(object):
 
         # create runspace with init.init() flag
         self.do_create_runspace = do_create_runspace
-        # parse/validate inputs with sim_comps.init() flags
+        # validate inputs with sim_comps.init() flags
         self.do_run_setup = do_run_setup
         # do run
         self.do_run = do_run
@@ -464,6 +464,7 @@ class Framework(object):
             self.exception('encountered exception during fwk.run() initialization')
             self.terminate_sim(status=Message.FAILURE)
             #stop(self.timers['run'])
+            print 'HERE1'
             return False
 
         # All Framework components must finish their init() calls before 
@@ -498,17 +499,18 @@ class Framework(object):
                 comment = 'Nodes = %d   PPN = %d' % \
                             (self.resource_manager.num_nodes, self.resource_manager.ppn)
                 self._send_monitor_event(sim_name, 'IPS_RESOURCE_ALLOC', comment)
+                methods = []
                 if self.ftb:
                     self._send_ftb_event('IPS_START')
-                if do_create_runspace:
+                if self.do_create_runspace:
                     methods.append('init')
-                if do_run_setup:
-                    methods.append('parse')
-                if do_run:
+                if self.do_run_setup:
+                    methods.append('validate')
+                if self.do_run:
                     methods.append('step')
                     methods.append('finalize')
                 for comp_id in comp_list:
-                    #for method in ['init', 'step', 'finalize']:
+                    #for method in ['init', 'validate', 'step', 'finalize']:
                     for method in methods:
                         req_msg = ServiceRequestMessage(self.component_id,
                                                         self.component_id, comp_id,
@@ -519,6 +521,7 @@ class Framework(object):
             self.exception('encountered exception during fwk.run() genration of call messages')
             self.terminate_sim(status=Message.FAILURE)
             #stop(self.timers['run'])
+            print 'HERE2 Exception: ', e.message
             return False
 
         call_id_list = []
@@ -535,6 +538,7 @@ class Framework(object):
             self.exception('encountered exception during fwk.run() sending first round of invocations (init of inits and fwk comps)')
             self.terminate_sim(status=Message.FAILURE)
             #stop(self.timers['run'])
+            print 'HERE3'
             return False
 
         while (len(call_id_list) > 0):
@@ -562,6 +566,7 @@ class Framework(object):
                         self.exception('Error dispatching service request message.')
                         self.terminate_sim(status=Message.FAILURE)
                         #stop(self.timers['run'])
+                        print 'HERE4'
                         return False
                     continue
                 elif (msg.__class__.__name__ == 'MethodResultMessage'):
@@ -784,6 +789,8 @@ def main(argv=None):
         elif (arg == '--log'):
             log_file_name = value
             try:
+                print 'have not opened main log file'
+                time.sleep(100)
                 log_file = open(os.path.abspath(log_file_name), 'w')
             except Exception, e:
                 print 'Error writing to log file ' , log_file_name
