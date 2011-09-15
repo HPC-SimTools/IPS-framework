@@ -31,12 +31,12 @@ class generic_driver(Component):
 
 # ------------------------------------------------------------------------------
 #
-# parse function
+# validate function
 #
 # ------------------------------------------------------------------------------
 
-    def parse(self, timestamp=0):
-        # Driver parse ? nothing to be done
+    def validate(self, timestamp=0):
+        # Driver validate ? nothing to be done
         return
 
 # ------------------------------------------------------------------------------

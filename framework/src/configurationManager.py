@@ -348,31 +348,31 @@ class ConfigurationManager(object):
         #start(self.timers['_initialize_fwk_components'])
         
         # set up the RunspaceInit component
-        #runspace_conf = {}
-        #runspace_conf['CLASS'] = 'FWK'
-        #runspace_conf['SUB_CLASS'] = 'COMP'
-        #runspace_conf['NAME'] = 'RunspaceInit'
-        #runspace_conf['BIN_PATH'] = sys.path[0]
-        #runspace_conf['SCRIPT'] = os.path.join(runspace_conf['BIN_PATH'], 
-        #        'RunspaceInit_Component.py')
-        #runspace_conf['INPUT_DIR'] = '/dev/null'
-        #runspace_conf['INPUT_FILES'] = ''
-        #runspace_conf['OUTPUT_FILES'] = ''
-        #runspace_conf['NPROC'] = 1
-        #runspace_conf['LOG_LEVEL'] = 'WARNING'
-        #if (self.fwk.log_level == logging.DEBUG):
-        #    runspace_conf['LOG_LEVEL'] = 'DEBUG'
+        runspace_conf = {}
+        runspace_conf['CLASS'] = 'FWK'
+        runspace_conf['SUB_CLASS'] = 'COMP'
+        runspace_conf['NAME'] = 'RunspaceInit_Component'
+        runspace_conf['BIN_PATH'] = self.sim_map[self.fwk_sim_name].sim_conf['FWK_COMPS_PATH']
+        runspace_conf['SCRIPT'] = os.path.join(runspace_conf['BIN_PATH'], 
+                'RunspaceInit_Component.py')
+        runspace_conf['INPUT_DIR'] = '/dev/null'
+        runspace_conf['INPUT_FILES'] = ''
+        runspace_conf['OUTPUT_FILES'] = ''
+        runspace_conf['NPROC'] = 1
+        runspace_conf['LOG_LEVEL'] = 'WARNING'
+        if (self.fwk.log_level == logging.DEBUG):
+            runspace_conf['LOG_LEVEL'] = 'DEBUG'
 
-        #runspace_component_id = self._create_component(runspace_conf,
-        #                                       self.sim_map[self.fwk_sim_name])
-        #self.fwk_components.append(runspace_component_id)
+        runspace_component_id = self._create_component(runspace_conf,
+                                               self.sim_map[self.fwk_sim_name])
+        self.fwk_components.append(runspace_component_id)
 
         # set up The Portal bridge
         portal_conf={}
         portal_conf['CLASS'] = 'FWK'
         portal_conf['SUB_CLASS'] = 'COMP'
         portal_conf['NAME'] = 'PortalBridge'
-        portal_conf['BIN_PATH'] = sys.path[0]
+        portal_conf['BIN_PATH'] = self.sim_map[self.fwk_sim_name].sim_conf['FWK_COMPS_PATH']
         portal_conf['SCRIPT'] = os.path.join(portal_conf['BIN_PATH'], 'portalBridge.py')
         portal_conf['INPUT_DIR'] = '/dev/null'
         portal_conf['INPUT_FILES']  = ''
@@ -398,7 +398,7 @@ class ConfigurationManager(object):
             ftb_conf['CLASS'] = 'FWK'
             ftb_conf['SUB_CLASS'] = 'COMP'
             ftb_conf['NAME'] = 'FTBBridge'
-            ftb_conf['BIN_PATH'] = sys.path[0]
+            ftb_conf['BIN_PATH'] = self.sim_map[self.fwk_sim_name].sim_conf['FWK_COMPS_PATH']
             ftb_conf['SCRIPT'] = os.path.join(ftb_conf['BIN_PATH'], 'ftbBridge.py')
             ftb_conf['INPUT_DIR'] = ''
             ftb_conf['INPUT_FILES']  = ''
@@ -521,17 +521,17 @@ class ConfigurationManager(object):
             haveStateDir=False
 
         # if we have statedir specified, make it
-        if haveStateDir:
-          try:
-              os.makedirs(statedir)
-          except OSError, (errno, strerror):
-              if (errno != 17):
-                  self.fwk.exception('Error creating State directory %s : %d %s' ,
-                                     statedir, errno, strerror)
-                  #pytau.stop(self.timers['_initialize_sim'])
-                  #stop(self.timers['_initialize_sim'])
-                  #raise
-          #pytau.stop(self.timers['_initialize_sim'])
+        # if haveStateDir:
+        #   try:
+        #       os.makedirs(statedir)
+        #   except OSError, (errno, strerror):
+        #       if (errno != 17):
+        #           self.fwk.exception('Error creating State directory %s : %d %s' ,
+        #                              statedir, errno, strerror)
+        #           #pytau.stop(self.timers['_initialize_sim'])
+        #           #stop(self.timers['_initialize_sim'])
+        #           #raise
+        #   #pytau.stop(self.timers['_initialize_sim'])
         return
 
    #@TauWrap(TIMERS['_create_component'])
@@ -545,9 +545,9 @@ class ConfigurationManager(object):
         path = comp_conf['BIN_PATH']
         script = comp_conf['SCRIPT'].rsplit('.', 1)[0].split('/')[-1]
         endpath = comp_conf['SCRIPT'].rfind('/')
-        print 'path[0]', comp_conf['SCRIPT'][0:endpath]
-        print 'script', script
-        print 'endpath', endpath
+        #print 'path[0]', comp_conf['SCRIPT'][0:endpath]
+        #print 'script', script
+        #print 'endpath', endpath
         if (endpath != -1):
             path = [comp_conf['SCRIPT'][0:endpath], 
                     comp_conf['SCRIPT'][0:endpath] + '/' + script, 

@@ -135,12 +135,12 @@ class Component(object):
         self.services.debug('init() method called')
         pass
 
-    def parse(self, timestamp=0.0):
+    def validate(self, timestamp=0.0):
         """
         Produce some default debugging information before the rest of the code
         is executed.
         """
-        self.services.debug('parse() method called')
+        self.services.debug('validate() method called')
         pass
 
     def restart(self, timestamp=0.0):

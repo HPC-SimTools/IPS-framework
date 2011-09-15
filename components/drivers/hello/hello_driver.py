@@ -10,7 +10,7 @@ class HelloDriver(Component):
     def init(self, timeStamp=0.0):
         return
 
-    def parse(self, timeStamp=0.0):
+    def validate(self, timeStamp=0.0):
         return
 
     def step(self, timeStamp=0.0):
