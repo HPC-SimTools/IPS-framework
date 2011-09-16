@@ -32,8 +32,7 @@ def ctkguiGetAttribs(fileName):
         attribs[atkey]["value"]  = atdefault
   return attribs
 
-def renderTemplate(fileName,attribs):
-  print fileName
+def renderTemplateAmmar(fileName,attribs):
   data = open(fileName).read()
   dom = xml.dom.minidom.parseString(data)
   tmplStr = ""
@@ -55,6 +54,16 @@ def renderTemplate(fileName,attribs):
   inFile=os.path.splitext(fileName)[0]+'.in'
   inf=open(inFile,"w")
   inf.write(buf.getvalue())
+  inf.close()
   #print buf.getvalue()
   return
 
+
+def renderTemplate(fileName):
+  myTemplate = Template(filename=fileName)
+  # create Mako object
+  inFile=os.path.splitext(fileName)[0]+'.in'
+  inf=open(inFile,"w")
+  inf.write(myTemplate.render())
+  inf.close()
+  return

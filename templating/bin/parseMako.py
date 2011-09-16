@@ -55,20 +55,26 @@ def main():
     # This is the "Create Runspace" part of the script
     # IPS/simyan does this much better
     if doNewDir:
-      os.mkdir(newDir)
+      if not os.path.exists(newDir):
+        os.mkdir(newDir)
       shutil.copy(inputFile,newDir)
       if doGui: shutil.copy(guiFile,newDir)
       if os.path.sep in inputFile:
         fileName=os.path.join(newDir,os.path.basename(inputFile))
+      currentAttribs=getCurrentValues(fileName)
 
     # This is the workflow to do if there is a gui file
     if doGui:
       attribs=ctkguiGetAttribs(guiFile)
-      newattribs=getValuesInteractively(attribs)
+      if doNewDir:
+         newattribs=getValuesInteractively(attribs,current=currentAttribs)
+      else:
+         newattribs=getValuesInteractively(attribs)
       replaceCurrentValues(fileName,newattribs)
+      #renderTemplateAmmar(fileName,newattribs)
       renderTemplate(fileName,newattribs)
     else:
-      attribs=ctkguiGetAttribs(guiFile)
+      renderTemplate(fileName,newattribs)
 
 if __name__ == "__main__":
         main()
