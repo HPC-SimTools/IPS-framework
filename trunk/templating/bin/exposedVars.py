@@ -1,16 +1,23 @@
 import os,shutil
 
-def getValuesInteractively(attribs):
+def getValuesInteractively(attribs,current=None):
   """ Given a dictionary of the values to fill, prompt the user for 
       the new values
   """
   for at in attribs.keys():
       attype = attribs[at]["type"]
       atdefault = attribs[at]["default"]
-      queryStr = "%s [default=%s, type=%s] -> " % ( at, atdefault, attype)
+      if current:
+        atcurrent = current[at]
+        queryStr = "%s [default=%s, current=%s, type=%s] -> " % ( at, atdefault, atcurrent, attype)
+      else:
+        queryStr = "%s [default=%s, type=%s] -> " % ( at, atdefault, attype)
       atVal = raw_input(queryStr)
       if not atVal.strip():
-        attribs[at]["value"]=attribs[at]["default"]
+        if current:
+          attribs[at]["value"]=atcurrent
+        else:
+          attribs[at]["value"]=atdefault
         continue
       if attype == "double":
         attribs[at]["value"] = float(atVal)
@@ -28,7 +35,7 @@ def getCurrentValues(fileName):
   currentVals={}
   while 1:
     line=mkf.readline()
-    if line.strip().startswith("<"):
+    if line.strip().startswith("<") or line.strip().startswith("#") or line.strip().startswith("%>"):
        if "Insert the input file" in line:
          break
        else:
@@ -38,7 +45,7 @@ def getCurrentValues(fileName):
     else:
        # Grab the var, vals here
        var=line.split("=")[0]
-       val=line.split("=")[1]
+       val=line.split("=")[1].strip()
        currentVals[var]=val
   mkf.close()
   return currentVals
@@ -61,12 +68,9 @@ def replaceCurrentValues(fileName,newVals):
     if writeAll:
       tmp.write(line)
     else:
-      if line.strip().startswith("<"):
+      if line.strip().startswith("<") or line.strip().startswith("#"):
          tmp.write(line)
          if "Insert the input file" in line: writeAll=True
-         continue
-      elif line.strip().startswith("-->"):
-         tmp.write(line)
          continue
       elif line.strip().startswith("%>"):
          tmp.write(line)

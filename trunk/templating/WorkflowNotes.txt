@@ -19,3 +19,8 @@ Other values:
 The goal of the workflow is to show how each type of input is used.
 First, look at the workflow.sh script to show the different types of
 inputs, and how they would be used.
+
+
+simple01 shows Ammar's method of using Mako.  To use, you need to edit
+bin/parseMako.py and change the renderTemplate(fileName,newattribs) to
+renderTemplateAmmar(fileName,newattribs)
