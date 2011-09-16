@@ -25,7 +25,8 @@ class testIPS(unittest.TestCase):
         cfgFile_list = []
         cfgFile_list.append('basic_serial1_laptop.conf')
         platform_filename = 'laptop.conf'
-        log_file = 'log_test_basic_serial1_on_laptop.log'
+        log_file = log_file = open(os.path.abspath('log_test_basic_serial1_on_laptop.log'), 'w')
+        #log_file = sys.stdout
 
         # create framework with config file
         fwk = Framework(True, False, False, cfgFile_list, log_file, platform_filename)

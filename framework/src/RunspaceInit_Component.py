@@ -30,39 +30,36 @@ class RunspaceInit_Component(Component):
 
         services = self.services
 
-        # get the simRootDir, then make it
+        # get the simRootDir
         simRootDir = services.get_config_param('SIM_ROOT')
         #print 'simRootDir = ', simRootDir
-        #simRootDir = simRootDir + 'test'
-        #print 'simRootDir = ', simRootDir
-
-        print 'Runspace shouldn\'t have been created yet, we\'ll see...'
-        time.sleep(100)
-
-        try:
-            os.makedirs(simRootDir)
-        except OSError, (errno, strerror):
-            if (errno != 17):
-                self.fwk.exception('Error creating Simulation directory %s : %d %s' ,
-                                   simRootDir, errno, strerror)
-               #pytau.stop(self.timers['_initialize_sim'])
-               #stop(self.timers['_initialize_sim'])
-                raise
-
 
         # get the configuration files and platform file
         config_files = services.fwk.config_file_list
+#       print 'config_files[0]: ' + config_files[0]
+#       print 'os.path.abspath(config_files[0]): ' + os.path.abspath(config_files[0])
+#       print 'os.path.basename(config_files[0]): ' + os.path.basename(config_files[0])
         platform_file = services.fwk.platform_file_name
+#       print 'platform_file: ' + platform_file
+#       print 'os.path.abspath(platform_file): ' + os.path.abspath(platform_file)
+#       print 'os.path.basename(platform_file): ' + os.path.basename(platform_file)
+#
+#       (head,tail) = os.path.split(os.path.abspath(config_files[0]))
+#       print 'head ', head
+#       print 'tail ', tail
 
         # uncomment when implemented
         # fc_files = services.fwk.facets_composer_files
 
         # copy these to the SIM_ROOT
-#ipsutil.copyFiles(os.path.dirname(config_files,
-#                          os.path.basename(config_files), simRootDir)
-
-#ipsutil.copyFiles(os.path.dirname(platform_file),
-#                          os.path.basename(platform_file), simRootDir) 
+        (head,tail) = os.path.split(os.path.abspath(config_files[0]))
+#       print 'head ', head
+#       print 'tail ', tail
+        ipsutil.copyFiles(head, config_files, simRootDir)
+        (head, tail) = os.path.split(os.path.abspath(platform_file))
+#       print 'head ', head
+#       print 'tail ', tail
+        ipsutil.copyFiles(head, platform_file, simRootDir) 
         # uncomment when implemented
         #ipsutil.copyFiles(os.path.dirname(self.fc_files),
         #                  os.path.basename(self.fc_files), simRootDir) 
