@@ -90,8 +90,6 @@ class ResourceManager(object):
         self.FTB = ftb
         self.node_alloc_mode = self.CM.get_platform_parameter('NODE_ALLOCATION_MODE')
 
-        print 'have not opened the file'
-        time.sleep(100)
         rfile_name = os.path.join(self.CM.sim_map[self.CM.fwk_sim_name].sim_root, "resource_usage")
         self.reporting_file = open(rfile_name, "w")
 

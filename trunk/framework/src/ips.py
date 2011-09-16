@@ -789,8 +789,6 @@ def main(argv=None):
         elif (arg == '--log'):
             log_file_name = value
             try:
-                print 'have not opened main log file'
-                time.sleep(100)
                 log_file = open(os.path.abspath(log_file_name), 'w')
             except Exception, e:
                 print 'Error writing to log file ' , log_file_name
