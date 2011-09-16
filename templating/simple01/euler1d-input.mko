@@ -1,0 +1,29 @@
+<euler1d-input>
+  <template>
+<![CDATA[
+
+<%
+xlower=0.0
+xupper=1.0
+xupper=1.0
+numFrames=10
+xlower=0.0
+xupper=1.0
+%>
+
+tStart = ${data["tstart"]}
+tEnd = ${data["tend"]}
+numFrames = ${data["numFrames"]}
+initDt = 0.1
+verbosity = debug
+
+  <Grid domain>
+    kind = cart1D
+    lower = [${data["xlower"]}]
+    upper = [${data["xupper"]}]
+    cells = [${data["cells"]}]
+  </Grid>
+]]>
+  </template>
+
+</euler1d-input>

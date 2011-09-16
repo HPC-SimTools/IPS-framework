@@ -1,4 +1,7 @@
 <euler1d-input>
+<%doc>
+var=val
+</%doc>
 
   <!-- define attributes that can be modified by user -->
 
