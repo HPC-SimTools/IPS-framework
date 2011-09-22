@@ -137,6 +137,18 @@ class ComponentRegistry(Singleton):
             raise e
         return
 
+    def getEntry(self, component_id):
+        """
+        Return a registry entry.
+        """
+        key = component_id.get_serialization()
+        try:
+            entry = self.registry[key]
+        except KeyError:
+            print 'No registry entry found for ', key
+            raise
+        return entry
+
     def getComponentArtifact(self, component_id, artifact):
         """
         Return value of *artifact* in *component_id*'s registry entry.
