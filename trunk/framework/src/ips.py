@@ -464,7 +464,6 @@ class Framework(object):
             self.exception('encountered exception during fwk.run() initialization')
             self.terminate_sim(status=Message.FAILURE)
             #stop(self.timers['run'])
-            print 'HERE1'
             return False
 
         # All Framework components must finish their init() calls before 
@@ -521,7 +520,6 @@ class Framework(object):
             self.exception('encountered exception during fwk.run() genration of call messages')
             self.terminate_sim(status=Message.FAILURE)
             #stop(self.timers['run'])
-            print 'HERE2 Exception: ', e.message
             return False
 
         call_id_list = []
@@ -538,7 +536,6 @@ class Framework(object):
             self.exception('encountered exception during fwk.run() sending first round of invocations (init of inits and fwk comps)')
             self.terminate_sim(status=Message.FAILURE)
             #stop(self.timers['run'])
-            print 'HERE3'
             return False
 
         while (len(call_id_list) > 0):
@@ -566,7 +563,6 @@ class Framework(object):
                         self.exception('Error dispatching service request message.')
                         self.terminate_sim(status=Message.FAILURE)
                         #stop(self.timers['run'])
-                        print 'HERE4'
                         return False
                     continue
                 elif (msg.__class__.__name__ == 'MethodResultMessage'):

@@ -6,6 +6,7 @@ import shutil
 import string
 import ipsutil
 import time
+import zipfile
 from component import Component
 
 class RunspaceInit_Component(Component):
@@ -31,68 +32,38 @@ class RunspaceInit_Component(Component):
         services = self.services
 
         # get the simRootDir
-        simRootDir = services.get_config_param('SIM_ROOT')
-        #print 'simRootDir = ', simRootDir
+        self.simRootDir = services.get_config_param('SIM_ROOT')
+
+        try:
+            os.chdir(self.simRootDir)
+        except OSError, (errno, strerror):
+            self.services.debug('Working directory %s does not exist - will attempt creation',
+                                self.simRootDir)
+            try:
+                os.makedirs(self.simRootDir)
+            except OSError, (errno, strerror):
+                self.services.exception('Error creating directory %s : %s' ,
+                                        workdir, strerror)
+                #pytau.stop(timer)
+                raise
+        os.chdir(self.simRootDir)
 
         # get the configuration files and platform file
-        config_files = services.fwk.config_file_list
-#       print 'config_files[0]: ' + config_files[0]
-#       print 'os.path.abspath(config_files[0]): ' + os.path.abspath(config_files[0])
-#       print 'os.path.basename(config_files[0]): ' + os.path.basename(config_files[0])
-        platform_file = services.fwk.platform_file_name
-#       print 'platform_file: ' + platform_file
-#       print 'os.path.abspath(platform_file): ' + os.path.abspath(platform_file)
-#       print 'os.path.basename(platform_file): ' + os.path.basename(platform_file)
-#
-#       (head,tail) = os.path.split(os.path.abspath(config_files[0]))
-#       print 'head ', head
-#       print 'tail ', tail
+        self.config_files = services.fwk.config_file_list
+        self.platform_file = services.fwk.platform_file_name
 
         # uncomment when implemented
-        # fc_files = services.fwk.facets_composer_files
+        # self.fc_files = services.fwk.facets_composer_files
 
         # copy these to the SIM_ROOT
-        (head,tail) = os.path.split(os.path.abspath(config_files[0]))
-#       print 'head ', head
-#       print 'tail ', tail
-        ipsutil.copyFiles(head, config_files, simRootDir)
-        (head, tail) = os.path.split(os.path.abspath(platform_file))
-#       print 'head ', head
-#       print 'tail ', tail
-        ipsutil.copyFiles(head, platform_file, simRootDir) 
+        (head,tail) = os.path.split(os.path.abspath(self.config_files[0]))
+        ipsutil.copyFiles(head, self.config_files, self.simRootDir)
+        (head, tail) = os.path.split(os.path.abspath(self.platform_file))
+        ipsutil.copyFiles(head, self.platform_file, self.simRootDir) 
         # uncomment when implemented
+        #(head, tail) = os.path.split(os.path.abspath(self.fc_files))
         #ipsutil.copyFiles(os.path.dirname(self.fc_files),
         #                  os.path.basename(self.fc_files), simRootDir) 
-
-        # Get component-specific configuration parameters. Note: Not all of these are
-        # used in 'init' but if any are missing we get an exception now instead of
-        # later
-        """
-        try:
-            NPROC = self.NPROC
-            print 'NPROC = ', NPROC
-            BIN_PATH = self.BIN_PATH
-            print 'BIN_PATH = ', BIN_PATH
-            INPUT_FILES = self.INPUT_FILES
-            print 'INPUT_FILES = ', INPUT_FILES
-            OUTPUT_FILES = self.OUTPUT_FILES
-            print 'OUTPUT_FILES = ', OUTPUT_FILES
-            RESTART_FILES = self.RESTART_FILES
-            print 'RESTART_FILES = ', RESTART_FILES
-
-        except:
-            print 'RunspaceInit_Component init: error getting config parameters'
-            services.error('RunspaceInit_Component: error getting config parameters')
-            raise Exception, 'RunspaceInit_Component: error getting config parameters'
-
-        # Get input files  
-        try:
-          services.stage_input_files(INPUT_FILES)
-        except Exception, e:
-          print 'Error in call to stageInputFiles()' , e
-          services.error('Error in call to stageInputFiles()')
-          raise Exception, 'Error in call to stageInputFiles()'
-        """
 
         return
 
@@ -105,7 +76,7 @@ class RunspaceInit_Component(Component):
 # ------------------------------------------------------------------------------
 
     def validate(self, timestamp=0):
-        print 'RunspaceInit_Component.parse() called'
+        print 'RunspaceInit_Component.validate() called'
         return
 
 # ------------------------------------------------------------------------------
@@ -121,6 +92,41 @@ class RunspaceInit_Component(Component):
         print 'RunspaceInit_Component.step() called'
 
         services = self.services
+
+        sim_comps = services.fwk.config_manager.get_component_map()
+        registry = services.fwk.comp_registry
+
+        for sim_name, comp_list in sim_comps.items():
+            for comp_id in comp_list:
+                comp_ref = registry.getEntry(comp_id).component_ref
+                comp_conf = registry.getEntry(comp_id).component_ref.config
+                full_comp_id = '_'.join([comp_conf['CLASS'], comp_conf['SUB_CLASS'],
+                                                  comp_conf['NAME'],
+                                                  str(comp_id.get_seq_num())])
+                workdir = os.path.join(self.simRootDir, 'work', full_comp_id)
+
+                try:
+                    os.makedirs(workdir)
+                except OSError, (errno, strerror):
+                    if (errno != 17):
+                        self.services.exception('Error creating directory %s : %s' ,
+                                                workdir, strerror)
+                        #pytau.stop(timer)
+                        raise
+
+            workdir = services.get_working_dir()
+
+            try:
+                os.makedirs(workdir)
+            except OSError, (errno, strerror):
+                if (errno != 17):
+                    self.services.exception('Error creating directory %s : %s' ,
+                                            workdir, strerror)
+                    #pytau.stop(timer)
+                    raise
+
+        return
+
 
 # ------------------------------------------------------------------------------
 #
@@ -153,6 +159,16 @@ class RunspaceInit_Component(Component):
     def finalize(self, timestamp=0.0):
         print 'RunspaceInit_Component.finalize() called'
 
+        services = self.services 
+
+        os.chdir(self.simRootDir)
+
         # zip up all of the needed files for debugging later
+        basename = os.path.basename(self.simRootDir)
+        basename = ''.join([basename, '.zip'])
+        debug_zip_file = zipfile.ZipFile(basename,'w')
+        debug_zip_file.write(self.platform_file)
+        for file in self.config_files:
+            debug_zip_file.write(file)
 
         return
