@@ -34,6 +34,22 @@ class RunspaceInit_Component(Component):
         # get the simRootDir
         self.simRootDir = services.get_config_param('SIM_ROOT')
 
+        self.config_files = services.fwk.config_file_list
+        self.platform_file = services.fwk.platform_file_name
+
+        # uncomment when implemented
+        # self.fc_files = services.fwk.facets_composer_files
+
+        # copy these to the SIM_ROOT
+        (head,tail) = os.path.split(os.path.abspath(self.config_files[0]))
+#       print 'head ', head
+#       print 'tail ', tail
+        ipsutil.copyFiles(head, self.config_files, self.simRootDir)
+        (head, tail) = os.path.split(os.path.abspath(self.platform_file))
+#       print 'head ', head
+#       print 'tail ', tail
+        ipsutil.copyFiles(head, self.platform_file, self.simRootDir) 
+
         try:
             os.chdir(self.simRootDir)
         except OSError, (errno, strerror):
@@ -49,17 +65,7 @@ class RunspaceInit_Component(Component):
         os.chdir(self.simRootDir)
 
         # get the configuration files and platform file
-        self.config_files = services.fwk.config_file_list
-        self.platform_file = services.fwk.platform_file_name
 
-        # uncomment when implemented
-        # self.fc_files = services.fwk.facets_composer_files
-
-        # copy these to the SIM_ROOT
-        (head,tail) = os.path.split(os.path.abspath(self.config_files[0]))
-        ipsutil.copyFiles(head, self.config_files, self.simRootDir)
-        (head, tail) = os.path.split(os.path.abspath(self.platform_file))
-        ipsutil.copyFiles(head, self.platform_file, self.simRootDir) 
         # uncomment when implemented
         #(head, tail) = os.path.split(os.path.abspath(self.fc_files))
         #ipsutil.copyFiles(os.path.dirname(self.fc_files),
