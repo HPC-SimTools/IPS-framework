@@ -1,4 +1,4 @@
-2011-09-22 13:07:26,479 FRAMEWORK       WARNING  Missing INIT specification in config file for simulation test_basic_serial1_0
-2011-09-22 13:07:26,507 FRAMEWORK       WARNING  RM: listOfNodes = [('dummynode0', 1)]
-2011-09-22 13:07:26,508 FRAMEWORK       WARNING  RM: max_ppn = 1 
-2011-09-22 13:07:26,508 FRAMEWORK       WARNING  RM: 1 nodes and 1 processors per node
+2011-09-23 15:29:05,987 FRAMEWORK       WARNING  Missing INIT specification in config file for simulation test_basic_serial1_0
+2011-09-23 15:29:06,017 FRAMEWORK       WARNING  RM: listOfNodes = [('dummynode0', 1)]
+2011-09-23 15:29:06,017 FRAMEWORK       WARNING  RM: max_ppn = 1 
+2011-09-23 15:29:06,017 FRAMEWORK       WARNING  RM: 1 nodes and 1 processors per node
