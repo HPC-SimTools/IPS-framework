@@ -592,7 +592,7 @@ class ConfigurationManager(object):
         #pytau.stop(self.timers['_create_component'])
         return component_id
 
-#   #@TauWrap(TIMERS['get_component_map'])
+    #@TauWrap(TIMERS['get_component_map'])
     def get_component_map(self):
         """
         Return a dictionary of simulation names and lists of component 

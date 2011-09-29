@@ -1,4 +1,13 @@
-2011-09-23 15:29:05,987 FRAMEWORK       WARNING  Missing INIT specification in config file for simulation test_basic_serial1_0
-2011-09-23 15:29:06,017 FRAMEWORK       WARNING  RM: listOfNodes = [('dummynode0', 1)]
-2011-09-23 15:29:06,017 FRAMEWORK       WARNING  RM: max_ppn = 1 
-2011-09-23 15:29:06,017 FRAMEWORK       WARNING  RM: 1 nodes and 1 processors per node
+2011-09-26 15:03:16,565 FRAMEWORK       WARNING  Missing INIT specification in config file for simulation test_basic_serial1_0
+2011-09-26 15:03:16,593 FRAMEWORK       WARNING  RM: listOfNodes = [('dummynode0', 1)]
+2011-09-26 15:03:16,593 FRAMEWORK       WARNING  RM: max_ppn = 1 
+2011-09-26 15:03:16,593 FRAMEWORK       WARNING  RM: 1 nodes and 1 processors per node
+2011-09-26 15:03:16,648 FRAMEWORK       ERROR    received a failure message from component test_basic_serial1_0_FWK@RunspaceInit_Component@5 : (TypeError('coercing to Unicode: need string or buffer, file found',),)
+2011-09-26 15:03:16,647 FWK_COMP_RunspaceInit_Component_5 ERROR    Uncaught Exception in component method.
+Traceback (most recent call last):
+  File "../../component.py", line 115, in __run__
+  File "/Users/dx4/workspace/facetsall/simyan/framework/src/RunspaceInit_Component.py", line 202, in finalize
+    debug_zip_file.write(self.main_log_file)
+  File "/System/Library/Frameworks/Python.framework/Versions/2.6/lib/python2.6/zipfile.py", line 1002, in write
+    st = os.stat(filename)
+TypeError: coercing to Unicode: need string or buffer, file found
