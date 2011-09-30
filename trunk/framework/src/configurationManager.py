@@ -367,6 +367,7 @@ class ConfigurationManager(object):
                                                self.sim_map[self.fwk_sim_name])
         self.fwk_components.append(runspace_component_id)
 
+        """
         # set up The Portal bridge
         portal_conf={}
         portal_conf['CLASS'] = 'FWK'
@@ -412,6 +413,7 @@ class ConfigurationManager(object):
                                                       self.sim_map[self.fwk_sim_name])
             self.fwk_components.append(ftb_component_id)
 
+        """
 
         #pytau.stop(self.timers['_initialize_fwk_components'])
         #stop(self.timers['_initialize_fwk_components'])

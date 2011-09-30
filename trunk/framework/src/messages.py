@@ -27,7 +27,7 @@ class Message(object):
 class ServiceRequestMessage(Message):
     """
     Message used by components to request the result of a service action by 
-    one of the IPS mansgers.
+    one of the IPS managers.
 
       * *sender_id*: component id of the sender
       * *receiver_id*: component id of the receiver (framework)

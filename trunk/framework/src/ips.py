@@ -69,6 +69,7 @@ from ips_es_spec import eventManager
 import os
 import ipsTiming
 import time
+from configobj import ConfigObj
 #from ipsTiming import *
 
 def make_timers():
@@ -190,16 +191,6 @@ class Framework(object):
         self.logger = logger
         self.verbose_debug = verbose_debug
 
-        # space for new code
-        #if(do_create_runspace):
-            # create the runspace
-
-        #if(do_run_setup):
-            # setup for the run
-
-        #if(do_run):
-            # run it
-
         # add the handler to the root logger
         try:
             # each manager should create their own event manager if they want to send and receive events
@@ -224,6 +215,9 @@ class Framework(object):
             raise 
         self.blocked_messages = []
         #stop(self.timers['__init__'])
+        fwk_comps = self.config_manager.get_framework_components()
+        main_fwk_comp = self.comp_registry.getEntry(fwk_comps[0])
+        self.sim_root = os.path.abspath(main_fwk_comp.services.get_config_param('SIM_ROOT'))
 
     def get_inq(self):
         """
@@ -466,11 +460,110 @@ class Framework(object):
             #stop(self.timers['run'])
             return False
 
+        self.required_fields = set(['CREATE_RUNSPACE', 'RUN_SETUP', 'RUN'])
+
+        checklist_file_exists = False
+        try:
+            main_fwk_comp = self.comp_registry.getEntry(fwk_comps[0])
+            self.sim_root = os.path.abspath(main_fwk_comp.services.get_config_param('SIM_ROOT'))
+            self.checklist_file = os.path.join(self.sim_root, 'checklist.conf')
+            conf = ConfigObj(self.checklist_file, interpolation = 'template',
+                             file_error = True)
+            checklist_file_exists = True
+        except IOError, ioe:
+            print 'Checklist config file "%s" could not be found, continuing without.' % self.checklist_file
+        except SyntaxError, (ex):
+            self.fwk.exception('Error parsing config file: %s' % self.checklist_file)
+            raise
+        except Exception, e:
+            self.exception('encountered exception during fwk.run() checklist configuration')
+            self.terminate_sim(status=Message.FAILURE)
+            #stop(self.timers['run'])
+            return False
+
+
+        # for debugging 
+#       checklist_file_exists = False
+        if checklist_file_exists:
+            try:
+                print 'checklist.conf file found, reading checklist values...'
+
+                self.create_runspace_done_str = conf['CREATE_RUNSPACE']
+#               print create_runspace_done_str
+                if self.create_runspace_done_str == 'DONE':
+                    self.create_runspace_done = True
+                elif self.create_runspace_done_str == 'NOT_DONE':
+                    self.create_runspace_done = False
+                else:
+                    self.exception('Invalid value found for CREATE_RUNSPACE in %s' % self.checklist_file)
+                    raise
+
+                self.run_setup_done_str = conf['RUN_SETUP']
+#               print run_setup_done_str
+                if self.run_setup_done_str == 'DONE':
+                    self.run_setup_done = True
+                elif self.run_setup_done_str == 'NOT_DONE':
+                    self.run_setup_done = False
+                else:
+                    self.exception('Invalid value found for RUN_SETUP in %s' % self.checklist_file)
+                    raise
+
+                self.run_done_str = conf['RUN']
+#               print run_done_str
+                if self.run_done_str == 'DONE':
+                    self.run_done = True
+                elif self.run_done_str == 'NOT_DONE':
+                    self.run_done = False
+                else:
+                    self.exception('Invalid value found for RUN in %s' % self.checklist_file)
+                    raise
+
+            except KeyError, (ex):
+                self.exception('Missing required parameters CREATE_RUNSPACE, RUN_SETUP, or RUN\
+                        in checklist file %s', self.checklist_file)
+                print 'Continuing without checklist file due to missing or incorrect parameters'
+                self.create_runspace_done_str = 'NOT_DONE'
+                self.run_setup_done_str = 'NOT_DONE'
+                self.run_done_str = 'NOT_DONE'
+                self.create_runspace_done = False
+                self.run_setup_done = False
+                self.run_done = False
+        else:
+            self.create_runspace_done_str = 'NOT_DONE'
+            self.run_setup_done_str = 'NOT_DONE'
+            self.run_done_str = 'NOT_DONE'
+            self.create_runspace_done = False
+            self.run_setup_done = False
+            self.run_done = False
+
         # All Framework components must finish their init() calls before 
         # proceeding to
         # execute step(), and invoke simulation components
+#       print 'For debugging purposes:'
+#       print 'OPTION:\t CREATE_RUNSPACE = %s\t RUN_SETUP = %s\t RUN = %s' % \
+#           (self.do_create_runspace, self.do_run_setup, self.do_run)
+#       print 'T_OR_F:\t CREATE_RUNSPACE = %s\t RUN_SETUP = %s\t RUN = %s' % \
+#           (self.create_runspace_done, self.run_setup_done, self.run_done)
+#       print 'STRING:\t CREATE_RUNSPACE = %s\t RUN_SETUP = %s\t RUN = %s' % \
+#           (self.create_runspace_done_str, self.run_setup_done_str, self.run_done_str)
 
-        self._invoke_framework_comps(fwk_comps, 'init')
+        if self.do_create_runspace and self.create_runspace_done:
+            self._invoke_framework_comps(fwk_comps, 'init')
+            self.create_runspace_done = True
+            self.create_runspace_done_str = 'DONE'
+        elif self.do_create_runspace and not self.create_runspace_done:
+            self._invoke_framework_comps(fwk_comps, 'init')
+            self.create_runspace_done = True
+            self.create_runspace_done_str = 'DONE'
+        elif not self.do_create_runspace and self.create_runspace_done:
+            print 'Skipping CREATE_RUNSPACE, option was %s but runspace exists' % \
+                self.do_create_runspace 
+            self.create_runspace_done = True
+            self.create_runspace_done_str = 'DONE'
+        else:
+            print 'Skipping CREATE_RUNSPACE, option was %s and CREATE_RUNSPACE_DONE = %s'
+            self.create_runspace_done = False
+            self.create_runspace_done_str = 'NOT_DONE'
 
         try:
             # Each Framework Component is treated as a stand-alone simulation
@@ -478,11 +571,16 @@ class Framework(object):
             for comp_id in fwk_comps:
                 msg_list = []
                 for method in ['step', 'finalize']:
-                    req_msg = ServiceRequestMessage(self.component_id,
-                                                    self.component_id, comp_id,
-                                                    'init_call', method, 0)
-                    msg_list.append(req_msg)
-                outstanding_sim_calls[comp_id] = msg_list
+                    if self.do_create_runspace:
+                        req_msg = ServiceRequestMessage(self.component_id,
+                                                        self.component_id, 
+                                                        comp_id,
+                                                        'init_call', method, 0)
+                        msg_list.append(req_msg)
+                if self.do_create_runspace:
+                    outstanding_sim_calls[comp_id] = msg_list
+
+
             # generate a queue of invocation messages for each simulation
             #   - the list will look like: [init_comp.init(),
             #                               init_comp.step(),
@@ -499,15 +597,73 @@ class Framework(object):
                             (self.resource_manager.num_nodes, self.resource_manager.ppn)
                 self._send_monitor_event(sim_name, 'IPS_RESOURCE_ALLOC', comment)
                 methods = []
-                if self.ftb:
-                    self._send_ftb_event('IPS_START')
-                if self.do_create_runspace:
+#               if self.ftb:
+#                   self._send_ftb_event('IPS_START')
+                if self.do_run_setup and self.create_runspace_done:
+                    self.run_setup_done = True
+                    self.run_setup_done_str = 'DONE'
                     methods.append('init')
-                if self.do_run_setup:
-                    methods.append('validate')
-                if self.do_run:
+                elif self.do_run_setup and not self.create_runspace_done:
+                    self.run_setup_done = False
+                    self.run_setup_done_str = 'NOT_DONE'
+                    print 'Unable to continue to RUN_SETUP step, CREATE_RUNSPACE = %s' % \
+                        self.create_runspace_done_str
+                elif not self.do_run_setup and self.create_runspace_done:
+                    self.run_setup_done = False
+                    self.run_setup_done_str = 'NOT_DONE'
+                    print 'Skipping RUN_SETUP, option was %s' % self.do_run_setup
+#                   print 'Unable to perform RUN_SETUP, CREATE_RUNSPACE = %s, but RUN_SETUP = %s' \
+#                       % (self.create_runspace_done_str, self.do_run_setup)
+                elif not self.do_run_setup and not self.create_runspace_done:
+                    self.run_setup_done = False
+                    self.run_setup_done_str = 'NOT_DONE'
+                    print 'Skipping RUN_SETUP, option was %s' % self.do_run_setup
+#                   print 'RUN_SETUP = %s and CREATE_RUNSPACE = %s. Skipping RUN_SETUP step.' \
+#                       % (self.do_run_setup, self.create_runspace_done_str)
+                else:
+                    self.run_setup_done = False
+                    self.run_setup_done_str = 'NOT_DONE'
+                    self.exception('Invalid combination of options for RUN_SETUP step, quitting')
+                    self.exception('RUN_SETUP = %s, CREATE_RUNSPACE = %s' % 
+                            (self.do_run_setup, self.create_runspace_done_str))
+                    self.terminate_sim(status=Message.FAILURE)
+                    return False
+                if self.do_run and self.create_runspace_done and self.run_setup_done:
+                    self.run_done = True
+                    self.run_done_str = 'DONE'
                     methods.append('step')
                     methods.append('finalize')
+                elif self.do_run and (not self.create_runspace_done or not self.run_setup_done):
+                    self.run_done = False 
+                    self.run_done_str = 'NOT_DONE'
+                    print 'Unable to continue to RUN step, CREATE_RUNSPACE = %s and RUN_SETUP = %s' % \
+                        (self.create_runspace_done_str, self.run_setup_done_str)
+                elif not self.do_run and (self.create_runspace_done and self.run_setup_done):
+                    self.run_done = False 
+                    self.run_done_str = 'NOT_DONE'
+                    print 'Skipping RUN, option was %s' % self.do_run
+#                   print 'Unable to RUN, CREATE_RUNSPACE = %s and RUN_SETUP = %s, but RUN = %s' \
+#                       % (self.create_runspace_done_str, self.run_setup_done_str, self.do_run)
+                elif not self.do_run or (not self.create_runspace_done and not self.run_setup_done):
+                    self.run_done = False 
+                    self.run_done_str = 'NOT_DONE'
+                    print 'Skipping RUN, option was %s' % self.do_run
+#                   print 'RUN = %s, CREATE_RUNSPACE = %s, RUN_SETUP = %s. Skipping RUN step.' \
+#                       % (self.do_run, self.create_runspace_done_str, self.run_setup_done_str)
+                elif not self.do_run and not self.create_runspace_done and not self.run_setup_done:
+                    self.run_done = False 
+                    self.run_done_str = 'NOT_DONE'
+                    print 'Skipping RUN, option was %s' % self.do_run
+#                   print 'RUN = %s, CREATE_RUNSPACE = %s, RUN_SETUP = %s. Skipping RUN step.' \
+#                       % (self.do_run, self.create_runspace_done_str, self.run_setup_done_str)
+                else:
+                    self.run_done = False 
+                    self.run_done_str = 'NOT_DONE'
+                    self.exception('Invalid combination of options for RUN step, quitting')
+                    self.exception('RUN = %s, RUN_SETUP = %s, CREATE_RUNSPACE = %s' % 
+                            (self.do_run, self.run_setup_done_str, self.create_runspace_done_str))
+                    self.terminate_sim(status=Message.FAILURE)
+                    return False
                 for comp_id in comp_list:
                     #for method in ['init', 'validate', 'step', 'finalize']:
                     for method in methods:
@@ -515,7 +671,8 @@ class Framework(object):
                                                         self.component_id, comp_id,
                                                         'init_call', method, 0)
                         msg_list.append(req_msg)
-                outstanding_sim_calls[sim_name] = msg_list
+                if msg_list:
+                    outstanding_sim_calls[sim_name] = msg_list
         except Exception, e:
             self.exception('encountered exception during fwk.run() genration of call messages')
             self.terminate_sim(status=Message.FAILURE)
@@ -602,6 +759,12 @@ class Framework(object):
         self.event_service._print_stats()
         #stop(self.timers['run'])
         #dumpAll()
+        checklist = open(os.path.abspath(self.checklist_file), 'w')
+        checklist.write('CREATE_RUNSPACE = %s\n' % self.create_runspace_done_str)
+        checklist.write('RUN_SETUP = %s\n' % self.run_setup_done_str)
+        checklist.write('RUN = %s\n' % self.run_done_str)
+        checklist.flush()
+        checklist.close()
         return True
 
     #@ipsTiming.TauWrap(TIMERS['_send_monitor_event'])
