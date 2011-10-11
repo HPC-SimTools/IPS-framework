@@ -116,7 +116,7 @@ class Framework(object):
                                  for this simulation.
                         
                 *SIM_ROOT*, *SIM_NAME*, and *LOG_FILE* must be unique across simulations.
-            log_file: [file] A file object where Framework logging messages are placed. 
+            log_file: [file] A file name where Framework logging messages are placed. 
             platform_file_name: [string] The name of the paltform configuration file used in the simulation.
             debug: [boolean] A flag indicating whether framework debugging messages are enabled (default = False)
             ftb: [boolean]  A flag indicating whether integration with the Fault tolerance Backplane 
@@ -180,14 +180,19 @@ class Framework(object):
             self.log_level = logging.DEBUG
         # create handler and set level to debug
         logger.setLevel(self.log_level)
-        ch = logging.StreamHandler(self.log_file)
-        ch.setLevel(self.log_level)
+        if log_file == 'sys.stdout':
+            print 'logging to ', log_file
+            self.ch = logging.StreamHandler(sys.stdout)
+        else:
+            print 'logging to ', log_file
+            self.ch = logging.FileHandler(self.log_file, 'w')
+        self.ch.setLevel(self.log_level)
         # create formatter
         formatter = logging.Formatter("%(asctime)s %(name)-15s %(levelname)-8s %(message)s")
         # add formatter to ch
-        ch.setFormatter(formatter)
+        self.ch.setFormatter(formatter)
         # add ch to logger
-        logger.addHandler(ch)
+        logger.addHandler(self.ch)
         self.logger = logger
         self.verbose_debug = verbose_debug
 
@@ -458,6 +463,7 @@ class Framework(object):
             self.exception('encountered exception during fwk.run() initialization')
             self.terminate_sim(status=Message.FAILURE)
             #stop(self.timers['run'])
+            #logging.shutdown()
             return False
 
         self.required_fields = set(['CREATE_RUNSPACE', 'RUN_SETUP', 'RUN'])
@@ -479,6 +485,7 @@ class Framework(object):
             self.exception('encountered exception during fwk.run() checklist configuration')
             self.terminate_sim(status=Message.FAILURE)
             #stop(self.timers['run'])
+            #logging.shutdown()
             return False
 
 
@@ -561,7 +568,8 @@ class Framework(object):
             self.create_runspace_done = True
             self.create_runspace_done_str = 'DONE'
         else:
-            print 'Skipping CREATE_RUNSPACE, option was %s and CREATE_RUNSPACE_DONE = %s'
+            print 'Skipping CREATE_RUNSPACE, option was %s and CREATE_RUNSPACE_DONE = %s' % \
+                (self.do_create_runspace, self.create_runspace_done)
             self.create_runspace_done = False
             self.create_runspace_done_str = 'NOT_DONE'
 
@@ -627,6 +635,7 @@ class Framework(object):
                     self.exception('RUN_SETUP = %s, CREATE_RUNSPACE = %s' % 
                             (self.do_run_setup, self.create_runspace_done_str))
                     self.terminate_sim(status=Message.FAILURE)
+                    #logging.shutdown()
                     return False
                 if self.do_run and self.create_runspace_done and self.run_setup_done:
                     self.run_done = True
@@ -663,6 +672,7 @@ class Framework(object):
                     self.exception('RUN = %s, RUN_SETUP = %s, CREATE_RUNSPACE = %s' % 
                             (self.do_run, self.run_setup_done_str, self.create_runspace_done_str))
                     self.terminate_sim(status=Message.FAILURE)
+                    #logging.shutdown()
                     return False
                 for comp_id in comp_list:
                     #for method in ['init', 'validate', 'step', 'finalize']:
@@ -677,6 +687,7 @@ class Framework(object):
             self.exception('encountered exception during fwk.run() genration of call messages')
             self.terminate_sim(status=Message.FAILURE)
             #stop(self.timers['run'])
+            #logging.shutdown()
             return False
 
         call_id_list = []
@@ -693,6 +704,7 @@ class Framework(object):
             self.exception('encountered exception during fwk.run() sending first round of invocations (init of inits and fwk comps)')
             self.terminate_sim(status=Message.FAILURE)
             #stop(self.timers['run'])
+            #logging.shutdown()
             return False
 
         while (len(call_id_list) > 0):
@@ -720,6 +732,7 @@ class Framework(object):
                         self.exception('Error dispatching service request message.')
                         self.terminate_sim(status=Message.FAILURE)
                         #stop(self.timers['run'])
+                        #logging.shutdown()
                         return False
                     continue
                 elif (msg.__class__.__name__ == 'MethodResultMessage'):
@@ -755,7 +768,6 @@ class Framework(object):
                                                     comment, ok)
                             if self.ftb:
                                 self._send_ftb_event('IPS_END')
-        self.terminate_sim(Message.SUCCESS)
         self.event_service._print_stats()
         #stop(self.timers['run'])
         #dumpAll()
@@ -765,6 +777,10 @@ class Framework(object):
         checklist.write('RUN = %s\n' % self.run_done_str)
         checklist.flush()
         checklist.close()
+
+        #self.log_file.close()
+        #logging.shutdown()
+        self.terminate_sim(Message.SUCCESS)
         return True
 
     #@ipsTiming.TauWrap(TIMERS['_send_monitor_event'])
@@ -880,13 +896,29 @@ class Framework(object):
                 except Exception, e:
                     self.exception('exception encountered while terminating comp %s', id)
                     print e
+
         time.sleep(1)
+
         try:
             self.config_manager.terminate(status)
         except Exception, e:
             self.exception('exception encountered while cleaning up config_manager')
+
+        x = list(self.logger.handlers)
+        print 'Deleting loggers...'
+        print 'len(x) = ', len(x)
+        for i in x:
+            self.logger.removeHandler(i)
+            i.flush()
+            i.close()
+
+        x = list(self.logger.handlers)
+        print 'loggers left...'
+        print 'len(x) = ', len(x)
+
         #sys.exit(status)
         #stop(self.timers['terminate_sim'])
+
 
 
 def printUsageMessage():
@@ -905,7 +937,7 @@ def main(argv=None):
     cfgFile_list = []
     platform_filename = ''
     simulation_filename = ''
-    log_file = sys.stdout
+    log_file = 'sys.stdout'
     # parse command line arguments
     if argv is None:
         argv = sys.argv
@@ -946,13 +978,13 @@ def main(argv=None):
             # run
             do_run = True
         elif (arg == '--log'):
-            log_file_name = value
-            try:
-                log_file = open(os.path.abspath(log_file_name), 'w')
-            except Exception, e:
-                print 'Error writing to log file ' , log_file_name
-                print str(e)
-                raise
+            log_file = value
+            #try:
+            #    log_file = open(os.path.abspath(log_file_name), 'w')
+            #except Exception, e:
+            #    print 'Error writing to log file ' , log_file_name
+            #    print str(e)
+            #    raise
         elif (arg == '--simulation'):
             simulation_filename = value
             cfgFile_list.append(value)
