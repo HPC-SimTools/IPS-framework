@@ -10,6 +10,7 @@ import time
 import unittest
 import logging
 from test_permutations import test_permutations
+from test_parameterized_cases import ParameterizedTestCase
 
 sys.path.append('../..')
 
@@ -23,9 +24,26 @@ from configobj import ConfigObj
 """
 
 class testIPS(unittest.TestCase):
+
+    class Parameterization(object):
+        """ Structure to hold the parameterization of 
+            a Framework object
+        """
+        def __init__(self):
+            self.do_create_runspace = None
+            self.do_run_setup = None
+            self.do_run = None
+            self.create_runspace_done = None
+            self.run_setup_done = None
+            self.run_done = None
+            self.cfgFile_list = []
+            self.log_file = None
+            self.platform_filename = None
+
     def printUsageMessage(self):
         print 'Usage: ips [--create-runspace | --run-setup | --run]+ --simulation=SIM_FILE_NAME --platform=PLATFORM_FILE_NAME --log=LOG_FILE_NAME [--debug | --ftb]'
 
+    """
     def test_basic_serial1(self):
         cfgFile_list = []
         cfgFile_list.append('basic_serial1_iter.conf')
@@ -60,15 +78,15 @@ class testIPS(unittest.TestCase):
         self.assertEquals('DONE', conf['CREATE_RUNSPACE'])
         self.assertEquals('DONE', conf['RUN_SETUP'])
         self.assertEquals('DONE', conf['RUN'])
-        return 0
+    """
 
     def test_basic_serial1_permutations(self):
         print 
         cfgFile_list = []
         cfgFile_list.append('basic_serial1_iter.conf')
         platform_filename = 'iter.conf'
-        log_file = 'sys.stdout'
-        #log_file = 'log_test_basic_serial1_on_iter.log'
+        #log_file = 'sys.stdout'
+        log_file = 'log_test_basic_serial1_on_iter.log'
         #log_file = open(os.path.abspath('log_test_basic_serial1_on_iter.log'), 'w')
         #log_file = sys.stdout
 
@@ -80,16 +98,19 @@ class testIPS(unittest.TestCase):
                     for run_setup_done in true_or_false:
                         for do_run in true_or_false: 
                             for run_done in true_or_false:
-                                test = test_permutations('runTest', 
-                                                         do_create_runspace,
-                                                         do_run_setup,
-                                                         do_run,
-                                                         create_runspace_done,
-                                                         run_setup_done,
-                                                         run_done)
-                                suite = test.suite()
+                                param = self.Parameterization()
+                                param.do_create_runspace = do_create_runspace
+                                param.do_run_setup = do_run_setup
+                                param.do_run = do_run
+                                param.create_runspace_done = create_runspace_done
+                                param.run_setup_done = run_setup_done
+                                param.run_done = run_done
+                                param.cfgFile_list = cfgFile_list
+                                param.log_file = log_file
+                                param.platform_filename = platform_filename
+                                suite = unittest.TestSuite()
+                                suite.addTest(ParameterizedTestCase.parametrize(test_permutations, param=param))
                                 res = unittest.TextTestRunner(verbosity=2).run(suite)
-        return 0
 
     """
     def test_basic_serial1_permutations(self):
@@ -173,7 +194,6 @@ class testIPS(unittest.TestCase):
                                 #for attr in dir(fwk):
                                 #    print 'fwk.%s = %s' % (attr, getattr(fwk,attr))
                                 #print '------------------------------------------------------------------------------------'
-        return 0
     """
 
 if __name__ == "__main__":
