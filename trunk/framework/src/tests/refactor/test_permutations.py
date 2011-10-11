@@ -24,7 +24,8 @@ class test_permutations(ParameterizedTestCase):
         print 'Usage: ips [--create-runspace | --run-setup | --run]+ --simulation=SIM_FILE_NAME --platform=PLATFORM_FILE_NAME --log=LOG_FILE_NAME [--debug | --ftb]'
 
     def setUp(self):
-        # create framework with config file
+        if self.param == None:
+            return
         print
         print '------------------------------------------------------------------------------------'
         print 'Parameterization for this test'
@@ -45,6 +46,8 @@ class test_permutations(ParameterizedTestCase):
 
     def test_given_parameters(self):
 
+        if self.param == None:
+            return
         # create the checklist.conf that Framework will use
 #       checklist_file_name = os.path.join(self.fwk.sim_root, 'checklist.conf')
         sim_conf = ConfigObj(self.param.cfgFile_list[0], interpolation='template',

@@ -905,16 +905,16 @@ class Framework(object):
             self.exception('exception encountered while cleaning up config_manager')
 
         x = list(self.logger.handlers)
-        print 'Deleting loggers...'
-        print 'len(x) = ', len(x)
+#       print 'Deleting loggers...'
+#       print 'len(x) = ', len(x)
         for i in x:
             self.logger.removeHandler(i)
             i.flush()
             i.close()
 
-        x = list(self.logger.handlers)
-        print 'loggers left...'
-        print 'len(x) = ', len(x)
+#       x = list(self.logger.handlers)
+#       print 'loggers left...'
+#       print 'len(x) = ', len(x)
 
         #sys.exit(status)
         #stop(self.timers['terminate_sim'])
@@ -932,7 +932,6 @@ def main(argv=None):
     """
     Check and parse args, create and run the framework.
     """
-    print "hello from main"
 
     cfgFile_list = []
     platform_filename = ''
@@ -1028,9 +1027,9 @@ def main(argv=None):
         printUsageMessage()
         return 1
     # if no options were specified
-    elif ((do_create_runspace + do_run_setup + do_run) == 0):
-        # do everything
-        do_create_runspace = do_run_setup = do_run = True
+#   elif ((do_create_runspace + do_run_setup + do_run) == 0):
+#       # do everything
+#       do_create_runspace = do_run_setup = do_run = True
 
     #print "got cmd ln args"
     #print 'cfgFile_list: ', cfgFile_list
