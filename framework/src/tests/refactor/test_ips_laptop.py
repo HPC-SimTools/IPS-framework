@@ -43,6 +43,7 @@ class testIPS(unittest.TestCase):
     def printUsageMessage(self):
         print 'Usage: ips [--create-runspace | --run-setup | --run]+ --simulation=SIM_FILE_NAME --platform=PLATFORM_FILE_NAME --log=LOG_FILE_NAME [--debug | --ftb]'
 
+    """
     def test_basic_serial1(self):
         cfgFile_list = []
         cfgFile_list.append('basic_serial1_laptop.conf')
@@ -77,7 +78,7 @@ class testIPS(unittest.TestCase):
         self.assertEquals('DONE', conf['CREATE_RUNSPACE'])
         self.assertEquals('DONE', conf['RUN_SETUP'])
         self.assertEquals('DONE', conf['RUN'])
-        return 0
+    """
 
     def test_basic_serial1_permutations(self):
         print 
@@ -110,7 +111,6 @@ class testIPS(unittest.TestCase):
                                 suite = unittest.TestSuite()
                                 suite.addTest(ParameterizedTestCase.parametrize(test_permutations, param=param))
                                 res = unittest.TextTestRunner(verbosity=2).run(suite)
-        return 0
 
     """
     def test_basic_serial1_permutations(self):
@@ -194,7 +194,6 @@ class testIPS(unittest.TestCase):
                                 #for attr in dir(fwk):
                                 #    print 'fwk.%s = %s' % (attr, getattr(fwk,attr))
                                 #print '------------------------------------------------------------------------------------'
-        return 0
     """
 
 if __name__ == "__main__":
