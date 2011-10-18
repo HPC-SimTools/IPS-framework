@@ -3,7 +3,7 @@
 tstart=0.0
 tend=1.0
 numFrames=10
-xlower=0.0
+xlower=-1.0
 xupper=1.0
 cells=16
 %>
@@ -23,6 +23,10 @@ verbosity = debug
     lower = [${xlower}]
     upper = [${xupper}]
     cells = [${cells}]
+
+    <% for i in ${nspecies}
+      import dataFile${dataFiles[i]}
+    %>
   </Grid>
 
 </euler1d-input>

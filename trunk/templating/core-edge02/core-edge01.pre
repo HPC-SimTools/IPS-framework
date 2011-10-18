@@ -1,0 +1,757 @@
+# -*- shell-script -*-
+# $Id: $
+# Same input as 1006 but now using new fmcfm interface to glf23
+
+# start and end time of simulation
+$ TSTART = 0.0
+#$ TEND = 35.0e-3
+$ TEND = 2.0e-3
+# time step to use for coupling
+$ INIT_DT = 100.0e-06
+# initial time step
+$ DT = INIT_DT
+
+## for now the sum of the loads must be an exactly equal to the number
+## of processors we are using
+# load for core component
+$ CORE_LOAD = 1.0
+# load for edge component
+$ EDGE_LOAD = 1.0
+
+# start and end times for simulation
+tStart = TSTART
+tEnd = TEND
+# number of output frames to write
+numFrames = 10
+# time-step to use: this is the coupling time step
+initDt = INIT_DT
+verbosity = info # one of debug, info, warning, error or critical
+
+# should we suppress log files?
+suppressLogFiles = 0 # 0 - write log files, 1 - do not write log files
+
+# normal sqrt(toroidal flux) coordinate where core-edge matching takes
+# place (must be consistent with uedge value). This is read in from
+# fluxgrid output.
+$ import fgCEinfo_g118897.01555.pre
+
+# this reflects the fact that the Dirichlet value received from edge
+# is located in the middle of the last cell. The max rho value must
+# be adjusted so that the last mid-cell rho == RO_LO_CE
+$ RHO_LIM = RHO_CE/(1.0 - 0.5/NCELLS)
+
+# this is the location of the left edge of the last cell in the core
+$ RHO_LEFT_EDGE = RHO_LIM*(1.0 - 1.0/NCELLS)
+
+# here is where GLF23 is turned off
+$ RHO_MAX = RHO_LIM - 0.2
+
+##
+# Top level simulation
+##
+<Component facets>
+  kind = updaterComponent
+
+##
+# Define core component
+##
+  <Component core>
+    kind = coreComponent
+
+# load of this component
+    load = CORE_LOAD
+#
+# boundary conditions at axis
+# A*q + B*flux = C
+#
+    <CoreBC axisBC>
+      A = [0.0 0.0 0.0]
+      B = [1.0 1.0 1.0]
+      C = [0.0 0.0 0.0]
+    </CoreBC>
+
+#
+# boundary conditions at edge
+# A*q + B*flux = C
+#
+    <CoreBC edgeBC>
+      A = [1.0 1.0 1.0]
+      B = [0.0 0.0 0.0]
+      C = [0.0 0.0 0.0]
+    </CoreBC>
+
+
+## Define domain
+
+    <Grid domain>
+      kind = cart1D
+      lower = [0.0] # min
+      upper = [RHO_LIM] # max
+      cells = [NCELLS]  # number of cells
+      periodicDirs = [] #
+    </Grid>
+
+## Define arrays
+
+    <DataStruct qOld>
+      kind = distArray1D
+      onGrid = domain
+      guard = [1 1]
+      numComponents = 3
+    </DataStruct>
+
+    <DataStruct qNew>
+      kind = distArray1D
+      onGrid = domain
+      guard = [1 1]
+      numComponents = 3
+      writeOut = 0
+    </DataStruct>
+
+    <DataStruct dQ>
+      kind = distArray1D
+      onGrid = domain
+      guard = [1 1]
+      numComponents = 3
+      writeOut = 0
+    </DataStruct>
+
+    <DataStruct density>
+      kind = distArray1D
+      onGrid = domain
+      guard = [1 1]
+      numComponents = 1
+      writeOut = 1
+    </DataStruct>
+
+    <DataStruct temperature_electron>
+      kind = distArray1D
+      onGrid = domain
+      guard = [1 1]
+      numComponents = 1
+      writeOut = 1
+    </DataStruct>
+
+    <DataStruct temperature_H2p1>
+      kind = distArray1D
+      onGrid = domain
+      guard = [1 1]
+      numComponents = 1
+      writeOut = 1
+    </DataStruct>
+
+## Define updaters
+
+# initialization
+
+    <Updater init>
+      kind = coreCellInitProfUpdater
+      onGrid = domain
+      in  = []
+      out = [qOld]
+
+      fieldNames = [dens_e enrg_e enrg_H2p1]
+      profiles = [density_electron, temperature_electron, temperature_H2p1]
+
+$ import psiFitDensityElectron_118897.01555.pre
+$ import psiFitTemperatureElectron_118897.01555.pre
+$ import psiFitTemperatureH2p1_118897.01555.pre
+
+    </Updater>
+
+# finalization (none)
+
+# advance
+
+    <Updater advance>
+      kind = coreCellImplicitMGUpdater
+      onGrid = domain
+      in  = [qOld]
+      out = [dQ]
+
+# Following are different flux models, they will be added together
+
+    <CoreFluxCalc flxGlf>
+       kind = fmFlux
+       model = "glf23"
+       
+       fieldNames = [dens_e enrg_e enrg_H2p1]
+
+       <Weight weight>
+         rhoLim = RHO_LEFT_EDGE
+	 rhoMax = RHO_MAX
+	 pi = 3.141592654
+         expr = "if (rho>rhoMax, cos(0.5*pi*(rho-rhoMax)/(rhoLim-rhoMax)), 1.0)"
+       </Weight>
+
+       rhoMax = RHO_MAX # where glf is turned off
+
+      <Flags flags>
+	basic_eigen = 0
+	basic_nroot = 12
+	# transFlags is an array
+	basic_rotationFlag = 1
+	basic_cExB = 1.0
+	basic_ifETG = 1
+      </Flags>
+
+      <Function f2>
+	kind = profileFunc
+	profiles = ["AvgImpurity_amu" "AvgImpurity_charge" "AvgImpurity_nprotons" "AvgImpurity_density" "AvgImpurity_gradDen" "AvgImpurity_temperature" "AvgImpurity_gradTemp"]
+	<Profile p>
+	    kind = interpProfile
+	    indVar = rho
+	    rho = [0.0 1.0]
+	    profiles = ["AvgImpurity_amu" "AvgImpurity_charge" "AvgImpurity_nprotons" "AvgImpurity_density" "AvgImpurity_gradDen" "AvgImpurity_temperature" "AvgImpurity_gradTemp"]
+	    
+	    AvgImpurity_amu = [12.0 12.0]
+	    AvgImpurity_nprotons = [6.0 6.0]
+	    AvgImpurity_charge = [6.0 6.0]
+	    AvgImpurity_density = [0.e14 0.e14]     # in m^{-3}
+	    AvgImpurity_gradDen = [-0.e14 -0.e14]   
+	    AvgImpurity_temperature = [0.0 0.0] # eV
+	    AvgImpurity_gradTemp = [-0.0 -0.0]
+	</Profile>
+      </Function>
+
+      <SurfVarFunction surfVars>
+	kind = profileFunc
+	profiles = ["wExb", "wExbDia", "wPara"]
+	<Profile p>
+	    kind = interpProfile
+	    indVar = rho
+	    profiles = ["wExb", "wExbDia", "wPara"]
+	    
+$ import flowShear.pre
+
+	</Profile>
+      </SurfVarFunction>
+
+    </CoreFluxCalc>
+
+    <CoreFluxCalc flxneo>
+       kind = neoChangHinton
+
+       <Weight weight>
+         rhoLim = RHO_LEFT_EDGE
+	 rhoMax = RHO_MAX
+	 pi = 3.141592654
+         expr = "if (rho>rhoMax, cos(0.5*pi*(rho-rhoMax)/(rhoLim-rhoMax)), 1.0)"
+       </Weight>
+
+       zImpurity = 6.0
+       # Deuterium plasma
+       zMain     = 1.0
+       aMain     = 2.0
+       <DataAssimilator data>
+           kind = dataUfiles
+	   ufiles = [A118897.NC A118897.ND]
+	   dataNames = [nC nD]
+	   nC = "CARBON IMPURITY DENSIN/CM**3"
+	   nD = "DEUTERIUM ION DENSITN/CM**3"
+	   <DataExpr nImpurity>
+	       expr = "nC/1.e13"
+	   </DataExpr>
+	   <DataExpr nDeuterium>
+	       expr = "nD/1.e13"
+	   </DataExpr>
+	   <DataExpr nTritium>
+	       expr = "0.0*nD" # zero
+	   </DataExpr>
+	   <DataExpr nAlpha>
+	       expr = "0.00001*nD/nD" # constant
+	   </DataExpr>
+       </DataAssimilator>
+    </CoreFluxCalc>
+
+    <CoreFluxCalc flxetg>
+       kind = anoHortonETGFlux
+
+       <Weight weight>
+         rhoLim = RHO_LEFT_EDGE
+	 rhoMax = RHO_MAX
+	 pi = 3.141592654
+         expr = "if (rho>rhoMax, cos(0.5*pi*(rho-rhoMax)/(rhoLim-rhoMax)), 1.0)"
+       </Weight>
+
+       zImpurity = 6.0
+      # Deuterium plasma
+       zMain     = 1.0
+       aMain     = 2.0
+       Zeff      = 1.6
+       #thresholdType = 0
+    </CoreFluxCalc>
+
+      <CoreFluxCalc flxDiff>
+
+	kind = diffCoeffProfs # static diffusivity profiles
+
+       <Weight weight>
+         rhoLim = RHO_LEFT_EDGE
+	 rhoMax = RHO_MAX
+	 pi = 3.141592654
+         expr = "if (rho>rhoMax, 1.0-cos(0.5*pi*(rho-rhoMax)/(rhoLim-rhoMax)), 0.0)"
+       </Weight>
+
+	fieldNames = [dens_e enrg_e enrg_H2p1]
+	rho =       [0.0 1.0]  # need at least 2 points, must span [0, 1]
+	dens_e =    [0.970385 0.970385]  # 
+	enrg_e =    [2.22182 2.22182]  # constant diffusivity coeffs, units are [m^2/s]
+	enrg_H2p1 = [0.42255 0.42255]  # .. for ions
+      </CoreFluxCalc>
+
+      <CoreFluxCalc flxDiffElc>
+
+	kind = diffCoeffProfs # static diffusivity profiles
+
+	fieldNames = [dens_e enrg_e enrg_H2p1]
+	rho =       [0.0  0.2  0.22 1.0]  # need at least 2 points, must span [0, 1]
+	dens_e =    [0.0  0.0  0.0  0.0]  # 
+	enrg_e =    [1.75 1.75 0.0  0.0]  # constant diffusivity coeffs, units are [m^2/s]
+	enrg_H2p1 = [0.0  0.0  0.0  0.0]  # .. for ions
+      </CoreFluxCalc>
+
+# Following are different source models, their contribution will be added together
+    <CoreSource src1>
+      kind = userProfiles
+$ import idbSource_118897.01555.pre
+
+    </CoreSource>
+
+    <CoreSource src2>
+      kind = userProfiles
+$ import idbOhmicSource_118897.01555.pre
+
+    </CoreSource>
+
+    <CoreSource src3>
+      kind = userProfiles
+$ import idbRadSource_118897.01555.pre
+
+    </CoreSource>
+
+    <xCoreSource equipartition>
+       # energy exchange between electrons and ions due to Coulomb collisions
+       kind = sourceExprProf
+       <ProfileExpr sdens_e>
+           expr = "0.0"
+       </ProfileExpr>
+       <ProfileExpr senrg_e>
+         expr = "18.3*(enrg_H2p1 - enrg_e)"
+       </ProfileExpr>
+       <ProfileExpr senrg_H2p1>
+         expr = "18.3*(enrg_e - enrg_H2p1)"
+       </ProfileExpr>
+    </xCoreSource>
+
+    <CoreMagnetic mag>
+	kind = userProfiles
+$ import fgMagGeom_g118897.01555.pre
+    </CoreMagnetic>
+
+      implicitness = 1.0
+
+      fieldNames           = [dens_e enrg_e enrg_H2p1]
+    # transport codes require positive values
+      fieldMinValues       = [0.01 0.01 0.01]
+
+    # select which profiles are evolved (1) and which are diagnostic (0)
+      predictiveProfiles   = [1 1 1]
+
+
+      # dt multiplicative factor upn success (>= 1)
+      dtMultFactorSuccess = 1.2
+      # dt divisor upon failure (< 1)
+      dtDivFactorFailure  = 3.0
+
+    # solver settings
+      levels = [2 1 0] # nested iteration path, eg [1 0] for coarse to fine
+      absTol =1.e-05
+      relTol =1.e-07
+      solTol =1.e-07
+      maxNumIter = 20
+      maxNumFunctCalls = 10000
+      verbosity = 1
+
+    </Updater>
+
+# zero
+
+    <Updater zero>
+      kind = linCombinerUpdater
+      onGrid = domain
+      in     = [qOld]
+      coeffs = [0.0]
+      out    = [dQ]
+    </Updater>
+
+# store
+
+    <Updater store>
+      kind = linCombinerUpdater
+      onGrid = domain
+      in     = [qOld dQ]
+      coeffs = [1.0 1.0]
+      out    = [qNew]
+    </Updater>
+
+# copy
+
+    <Updater copy>
+      kind = linCombinerUpdater
+      onGrid = domain
+      in     = [qNew]
+      coeffs = [1.0]
+      out    = [qOld]
+    </Updater>
+
+# convert internal core variables to density in m^-3
+    <Updater coreVars2Density>
+      kind = exprArrayUpdater
+      onGrid = domain
+      in = [qOld]
+      out = [density]
+
+# set independent variables: one per component of in array
+      indVars = [dens_e enrg_e enrg_H2p1]
+
+# constants for use in expressions
+      densNorm = 1.0e19 # to convert density to /m^3
+      tempNorm = 1.0e3 # to convert temperature to eV
+
+# list of pre-expressions
+
+# list of expressions: one per component of out array
+      exprs = ["dens_e*densNorm"]
+
+    </Updater>
+
+# convert internal core variables to electron temperature in eV
+    <Updater coreVars2ElcTemp>
+      kind = exprArrayUpdater
+      onGrid = domain
+      in = [qOld]
+      out = [temperature_electron]
+
+# set independent variables: one per component of in array
+      indVars = [dens_e enrg_e enrg_H2p1]
+
+# constants for use in expressions
+      densNorm = 1.0e19 # to convert density to /m^3
+      tempNorm = 1.0e3 # to convert temperature to eV
+
+# list of pre-expressions
+
+# list of expressions: one per component of out array
+      exprs = ["2/3*enrg_e/dens_e*tempNorm"]
+
+    </Updater>
+
+# convert internal core variables to ion temperature in eV
+    <Updater coreVars2IonTemp>
+      kind = exprArrayUpdater
+      onGrid = domain
+      in = [qOld]
+      out = [temperature_H2p1]
+
+# set independent variables: one per component of in array
+      indVars = [dens_e enrg_e enrg_H2p1]
+
+# constants for use in expressions
+      densNorm = 1.0e19 # to convert density to /m^3
+      tempNorm = 1.0e3 # to convert temperature to eV
+
+# list of pre-expressions
+
+# list of expressions: one per component of out array
+      exprs = ["2/3*enrg_H2p1/dens_e*tempNorm"]
+
+    </Updater>
+
+## Define update steps
+
+# init step
+
+    <UpdateStep initStep>
+      dtFrac = 1.0
+      updaters = [init]
+    </UpdateStep>
+
+
+# advance step
+
+    <UpdateStep advanceStep>
+      dtFrac = 1.0
+      updaters = [zero advance store copy]
+    </UpdateStep>
+
+# convert to SI/eV step
+
+    <UpdateStep convertToSIeVStep>
+      updaters = [coreVars2Density, coreVars2ElcTemp, coreVars2IonTemp]
+    </UpdateStep>
+
+## Define updater loop
+
+    <UpdateSequence sequence>
+      startOnly = [initStep]
+      loop      = [advanceStep]
+      writeOnly = [convertToSIeVStep]
+      endOnly   = [ ]
+    </UpdateSequence>
+
+  </Component>
+
+##
+# Define edge component
+##
+  <Component edge>
+    kind = uedgeComponent
+
+# load of this component
+    load = EDGE_LOAD
+
+# name of Python input file which desribes basic UEDGE simulation
+    initFile = uedge-inputfile.py
+# name of restore file
+    restoreFile = uedge-startup.h5
+
+  </Component>
+
+## Define initial BC setter updater
+  <Updater coreInitUpdater>
+    kind = componentBCInitUpdater
+
+# name of component to set
+    component = core
+
+# list of variables to set
+    variables = ["density_CE_H2p1", "density_CE_electron", "temperature_CE_electron" "temperature_CE_H2p1"]
+# values of those variables
+    values = [2.93336735e+19, 2.93336735e+19, 469.70575128, 463.07757771]
+
+  </Updater>
+
+## Define explicit coreEdge updater
+  <Updater myCoreEdgeUpdater>
+    kind = containerUpdater
+# names of components to run
+    components = [core, edge]
+
+# maximum time-step to use
+    maxDt = DT
+  </Updater>
+
+## Define data transfer from core -> edge
+  <Updater coupleCore2Edge>
+    kind = bcDataTransferUpdater
+
+# name of source component
+    fromComponent = core
+# name of destination component
+    toComponent = edge
+# name of interface
+    interface = CE
+
+# list of variables to get
+    getNames = ["energyFlux_CE_H2p1", "energyFlux_CE_electron", "ptclFlux_CE_electron"]
+# list of variables to set
+    setNames = ["energyFlux_CE_H2p1", "energyFlux_CE_electron", "ptclFlux_CE_H2p1"]
+  </Updater>
+
+## Define data transfer from edge -> core
+  <Updater coupleEdge2Core>
+    kind = bcDataTransferUpdater
+
+# name of source component
+    fromComponent = edge
+# name of destination component
+    toComponent = core
+# name of interface
+    interface = CE
+
+# list of variables to get
+    getNames = ["temperature_CE_electron", "temperature_CE_H2p1", "density_CE_H2p1"]
+# list of variables to set
+    setNames = ["temperature_CE_electron", "temperature_CE_H2p1", "density_CE_electron"]
+  </Updater>
+
+## Define updater to log core BC at CE boundary
+  <Updater coreVarTracker_1>
+    kind = componentVarTracker
+
+# name of component
+    component = core
+# variables to log
+    variables = ["energyFlux_CE_electron"]
+# file to log to
+    file = coreVars_energyFlux_CE_electron.txt
+  </Updater>
+
+## Define updater to log core BC at CE boundary
+  <Updater coreVarTracker_2>
+    kind = componentVarTracker
+
+# name of component
+    component = core
+# variables to log
+    variables = ["energyFlux_CE_H2p1"]
+# file to log to
+    file = coreVars_energyFlux_CE_H2p1.txt
+  </Updater>
+
+## Define updater to log core BC at CE boundary
+  <Updater coreVarTracker_3>
+    kind = componentVarTracker
+
+# name of component
+    component = core
+# variables to log
+    variables = ["temperature_CE_H2p1"]
+# file to log to
+    file = coreVars_temperature_CE_H2p1.txt
+  </Updater>
+
+## Define updater to log core BC at CE boundary
+  <Updater coreVarTracker_4>
+    kind = componentVarTracker
+
+# name of component
+    component = core
+# variables to log
+    variables = ["temperature_CE_electron"]
+# file to log to
+    file = coreVars_temperature_CE_electron.txt
+  </Updater>
+
+## Define updater to log core BC at CE boundary
+  <Updater coreVarTracker_5_5>
+    kind = componentVarTracker
+
+# name of component
+    component = core
+# variables to log
+    variables = ["ptclFlux_CE_electron"]
+# file to log to
+    file = coreVars_ptclFlux_CE_electron.txt
+  </Updater>
+
+## Define updater to log core BC at CE boundary
+  <Updater coreVarTracker_5>
+    kind = componentVarTracker
+
+# name of component
+    component = core
+# variables to log
+    variables = ["ptclFlux_CE_electron"]
+# file to log to
+    file = coreVars_ptclFlux_CE_H2p1.txt
+  </Updater>
+
+## Define updater to log core BC at CE boundary
+  <Updater coreVarTracker_6>
+    kind = componentVarTracker
+
+# name of component
+    component = core
+# variables to log
+    variables = ["density_CE_electron"]
+# file to log to
+    file = coreVars_density_CE_H2p1.txt
+  </Updater>
+
+## Define updater to log core BC at CE boundary
+  <Updater edgeVarTracker_1>
+    kind = componentVarTracker
+
+# name of component
+    component = edge
+# variables to log
+    variables = ["energyFlux_CE_electron"]
+# file to log to
+    file = edgeVars_energyFlux_CE_electron.txt
+  </Updater>
+
+## Define updater to log core BC at CE boundary
+  <Updater edgeVarTracker_2>
+    kind = componentVarTracker
+
+# name of component
+    component = edge
+# variables to log
+    variables = ["energyFlux_CE_H2p1"]
+# file to log to
+    file = edgeVars_energyFlux_CE_H2p1.txt
+  </Updater>
+
+## Define updater to log core BC at CE boundary
+  <Updater edgeVarTracker_3>
+    kind = componentVarTracker
+
+# name of component
+    component = edge
+# variables to log
+    variables = ["temperature_CE_H2p1"]
+# file to log to
+    file = edgeVars_temperature_CE_H2p1.txt
+  </Updater>
+
+## Define updater to log core BC at CE boundary
+  <Updater edgeVarTracker_4>
+    kind = componentVarTracker
+
+# name of component
+    component = edge
+# variables to log
+    variables = ["temperature_CE_electron"]
+# file to log to
+    file = edgeVars_temperature_CE_electron.txt
+  </Updater>
+
+## Define updater to log edge BC at CE boundary
+  <Updater edgeVarTracker_5>
+    kind = componentVarTracker
+
+# name of component
+    component = edge
+# variables to log
+    variables = ["ptclFlux_CE_H2p1"]
+# file to log to
+    file = edgeVars_ptclFlux_CE_H2p1.txt
+  </Updater>
+
+## Define updater to log edge BC at CE boundary
+  <Updater edgeVarTracker_6>
+    kind = componentVarTracker
+
+# name of component
+    component = edge
+# variables to log
+    variables = ["density_CE_H2p1"]
+# file to log to
+    file = edgeVars_density_CE_H2p1.txt
+  </Updater>
+
+## Define initial step
+  <UpdateStep initStep>
+    updaters = [coreInitUpdater]
+  </UpdateStep>
+
+## Define update step
+  <UpdateStep coreEdgeStep>
+  updaters = [myCoreEdgeUpdater coupleCore2Edge coupleEdge2Core]
+  </UpdateStep>
+
+## Define logging step
+  <UpdateStep varTrackerStep>
+     updaters = [edgeVarTracker_1 edgeVarTracker_2 edgeVarTracker_3 edgeVarTracker_4 edgeVarTracker_5 edgeVarTracker_6 \
+     coreVarTracker_1 coreVarTracker_2 coreVarTracker_3 coreVarTracker_4 coreVarTracker_5 coreVarTracker_6]
+  </UpdateStep>
+
+## Define update sequece
+  <UpdateSequence sequence>
+    startOnly = [initStep] # apply before simulation is run
+    loop = [coreEdgeStep, varTrackerStep] # apply at each time-step
+  </UpdateSequence>
+
+</Component>

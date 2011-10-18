@@ -72,9 +72,11 @@ def main():
          newattribs=getValuesInteractively(attribs)
       replaceCurrentValues(fileName,newattribs)
       #renderTemplateAmmar(fileName,newattribs)
-      renderTemplate(fileName,newattribs)
+      # Get extradata if particular is in subdir
+      #renderTemplateAmmar(fileName,extadata)
+      renderTemplate(fileName)
     else:
-      renderTemplate(fileName,newattribs)
+      renderTemplate(fileName)
 
 if __name__ == "__main__":
         main()
