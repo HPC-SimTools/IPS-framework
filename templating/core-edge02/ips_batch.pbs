@@ -1,0 +1,19 @@
+#! /bin/bash
+#PBS -A m876 
+#PBS -N CORE_EDGE
+#PBS -m e
+#PBS -j oe
+#PBS -l walltime=0:29:00
+#PBS -l mppwidth=4
+#PBS -q debug 
+#PBS -S /bin/bash
+
+cd $PBS_O_WORKDIR
+umask 0022
+
+source /project/projectdirs/m876/kruger/ips/swim.bashrc.franklin
+
+/project/projectdirs/m876/kruger/ips/bin/ips --config=core-edge.config --platform=franklin.conf --debug
+
+
+

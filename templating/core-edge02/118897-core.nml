@@ -1,0 +1,41 @@
+&FSQ
+! $Id: d3d-valid_tm.nml 2771 2009-03-23 21:24:54Z ammar $
+
+!Magnetic Geometry
+Zeff = 1.6,
+
+!Surface Variables
+!Nimp    = 1.e-6         ! impurity density
+Nfi	= 1.e-6,	! fast ion density
+vphi	= 0.0,		! toroidal velocity
+vpar	= 0.0,		! parallel velocity
+vperp	= 0.0,		! perpendicular velocity
+velAng	= 0.0,	        ! toroidal angular velocity
+w_ExB	= 0.0,	        ! ExB shearing rate
+w_ExB_dia=0.0,		! Diamagnetic ExB shearing rate
+w_paral = 0.0,		! parallel velocity shearing rate
+zeff	= 1.88,		! effective charge
+alphaMhd= 0.0,          ! MHD alpha
+Zimp	= 6.0,		! average impurity charge
+amassImp= 12.0,		! average impurity mass
+amassGas= 2.0,		! atomic number of working gas
+
+!Gradients (from examples I'm using averages)
+!remember, gradients are wrt rho_hat (normalized in input.f)
+gradNfi	= -0.0,
+gradNimp= -0.0,	        ! [gradNe-(gradNi+gradNfi)]/Zimp 
+/
+&GLF_FLAGS
+ifETG = 1,              ! compute fluxes for ETG modes
+/
+&MMM_FLAGS
+lprint = 0,
+fig(1)=0.8,
+fig(2)=0.8,
+fig(3)=0.8,
+fig(4)=0.8,
+fkb(1)=1.,
+fkb(2)=1.,
+fkb(3)=1.,
+fkb(4)=1.
+/		
