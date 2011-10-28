@@ -1,5 +1,3 @@
-add_subdirectory(tests)
-
 # Variable holding executable scripts
 set(SCRIPTS
       cca_es_spec.py component.py componentRegistry.py configobj.py
