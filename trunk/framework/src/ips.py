@@ -92,7 +92,7 @@ TIMERS = make_timers()
 class Framework(object):
     #@ipsTiming.TauWrap(TIMERS['__init__'])
     def __init__(self, do_create_runspace, do_run_setup, do_run, 
-            config_file_list, log_file, platform_file_name, debug=False, 
+            config_file_list, log_file, platform_file_name=None, debug=False, 
             ftb=False, verbose_debug = False, cmd_nodes = 0, cmd_ppn = 0):
         """
         Create an IPS Framework Instance to coordinate the execution of IPS simulations
@@ -117,7 +117,7 @@ class Framework(object):
                         
                 *SIM_ROOT*, *SIM_NAME*, and *LOG_FILE* must be unique across simulations.
             log_file: [file] A file name where Framework logging messages are placed. 
-            platform_file_name: [string] The name of the paltform configuration file used in the simulation.
+            platform_file_name: [string] The name of the platform configuration file used in the simulation.
             debug: [boolean] A flag indicating whether framework debugging messages are enabled (default = False)
             ftb: [boolean]  A flag indicating whether integration with the Fault tolerance Backplane 
                 Protocaol (FTB) is enabled (default = False)
@@ -148,8 +148,13 @@ class Framework(object):
         self.port_map = {}
 
         # saving these for access later by the RunspaceInit_Component
-        # platform file name
-        self.platform_file_name = platform_file_name
+        # platform file name as well as provenance information
+        if (not platform_file_name):
+            self.platform_file_name = platform_file_name
+        else:
+            print self.__file__
+            sys.exit()
+        if (not platform_file_name):
         # config file list
         self.config_file_list = config_file_list
 
