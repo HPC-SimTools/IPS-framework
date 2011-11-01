@@ -13,7 +13,9 @@ import string
 import subprocess
 from test_parameterized_cases import ParameterizedTestCase
 
-sys.path.append('../..')
+sys.path.append('..')
+from frameworkpath import *
+sys.path.append(fsrc)
 
 from ips import Framework
 from configobj import ConfigObj

@@ -1,6 +1,9 @@
-from component import Component
 import sys
 import os
+sys.path.append('../..')
+from frameworkpath import *
+sys.path.append(fsrc)
+from component import Component
 #import pytau
 
 class large_worker(Component):

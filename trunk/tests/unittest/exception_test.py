@@ -1,5 +1,7 @@
 import sys
-sys.path.append('../..')
+sys.path.append('..')
+from frameworkpath import *
+sys.path.append(fsrc)
 from ipsExceptions import BadResourceRequestException, InsufficientResourcesException
 
 def check_BRRE():

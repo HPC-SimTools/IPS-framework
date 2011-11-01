@@ -15,6 +15,7 @@ set(IPS_VERSION ${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH})
 
 # Required version
 cmake_minimum_required(VERSION 2.8.3)
+enable_testing()
 
 ######################################################################
 #
@@ -44,6 +45,7 @@ endif ()
 add_subdirectory(framework)
 add_subdirectory(share)
 add_subdirectory(components)
+add_subdirectory(tests)
 
 ######################################################################
 #
