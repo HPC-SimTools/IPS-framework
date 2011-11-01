@@ -5,11 +5,13 @@ as a typical SWIM run (similar number of input and output files, size
 of components, resource requirements, etc.).  This test scenario should
 always pass.
 """
-
-from component import Component
 import sys
 import os
 import time
+sys.path.append('../..')
+from frameworkpath import *
+sys.path.append(fsrc)
+from component import Component
 
 class basic_serial1(Component):
     def __init__(self, services, config):

@@ -1,7 +1,10 @@
-from component import Component
 import sys
 import os
 #import pytau
+sys.path.append('../..')
+from frameworkpath import *
+sys.path.append(fsrc)
+from component import Component
 
 class small_worker(Component):
     def __init__(self, services, config):

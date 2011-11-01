@@ -5,22 +5,17 @@
 # $Id:$
 #
 ######################################################################
+set(DATA test_parallel_codes)
 
-set(SCRIPTS
-    py_launch.py makefile test_parallel_codes
-)
+#SEK: Worry about this later
+add_executable(faulty_serial_sleep faulty_serial_sleep.c)
+add_executable(serial_sleep serial_sleep.c)
 
-install(PROGRAMS 
-    ${SCRIPTS}
-    DESTINATION bin/tests/bin
-    PERMISSIONS OWNER_READ OWNER_EXECUTE OWNER_WRITE
-                GROUP_READ GROUP_EXECUTE ${TX_GROUP_WRITE} ${TX_WORLD_PERMS}
-)
+if(parallel)
+add_executable(faulty_parallel_sleep faulty_parallel_sleep.c)
+add_executable(parallel_sleep parallel_sleep.c)
+endif()
 
-if (NOT WIN32)
-add_custom_target(tests-bin-scripts-stamp ALL
-    COMMAND ${CMAKE_SOURCE_DIR}/CMake/mklinks.sh txutils-scripts-stamp
-      ${CMAKE_CURRENT_SOURCE_DIR} ${DATA} ${SCRIPTS}
-    COMMAND chmod a+x *.py
-)
-endif ()
+set(PYSCRIPTS py_launch.py)
+
+include(${CMAKE_SOURCE_DIR}/tests/CmakeTests.cmake)

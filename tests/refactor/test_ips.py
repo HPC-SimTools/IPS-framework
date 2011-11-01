@@ -7,7 +7,9 @@ import traceback
 import time
 import unittest
 
-sys.path.append('../..')
+sys.path.append('..')
+from frameworkpath import *
+sys.path.append(fsrc)
 
 from ips import Framework
 from configobj import ConfigObj

@@ -3,7 +3,9 @@ import sys
 import socket
 import unittest
 import logging, logging.handlers
-sys.path.append('../..')
+sys.path.append('..')
+from frameworkpath import *
+sys.path.append(fsrc)
 from resourceManager import *
 from taskManager import *
 from ipsExceptions import *

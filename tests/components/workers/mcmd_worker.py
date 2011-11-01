@@ -1,6 +1,9 @@
-from component import Component
 import sys
 import os
+sys.path.append('../..')
+from frameworkpath import *
+sys.path.append(fsrc)
+from component import Component
 
 class MCMDWorker(Component):
     def __init__(self, services, config):
