@@ -20,6 +20,9 @@ NODE_ALLOCATION_MODE =  @NODE_ALLOCATION_MODE@
 # Provenance
 #######################################
 HOST = @HOSTNAME@
+USER = @USERNAME@
+HOME = @HOMENAME@
+SCRATCH = @SCRATCHNAME@
 
 ###
 ## DOCUMENTATION
