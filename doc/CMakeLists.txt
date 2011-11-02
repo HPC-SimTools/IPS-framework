@@ -57,7 +57,7 @@ add_custom_command(
    COMMAND ${SPHINXRUN} -b singlehtml ${SRCDIR} ${BLDDIR}/singlehtml)
 add_custom_target(docs-singlehtml DEPENDS ${SINGLEHTML_OUTPUT})
 
-set (PDF_OUTPUT ${BLDDIR}/pdf/SphinxExample.pdf)
+set (PDF_OUTPUT ${BLDDIR}/pdf/IntegratedPlasmaSimulatorIPS.pdf)
 add_custom_command(
    OUTPUT ${PDF_OUTPUT}
    COMMAND ${SPHINXRUN} -b latex ${SRCDIR} ${BLDDIR}/pdf && make -C ${BLDDIR}/pdf all-pdf)
