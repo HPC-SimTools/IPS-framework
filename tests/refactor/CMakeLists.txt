@@ -7,7 +7,7 @@
 ######################################################################
 # Variable holding shared data
 set(DATA
-      basic_serial1.conf 
+      basic_serial1.ips 
 )
 set(PYSCRIPTS
       test_ips.py 
