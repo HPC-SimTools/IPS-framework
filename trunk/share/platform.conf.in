@@ -2,8 +2,6 @@
 # LOCATIONS
 #######################################
 IPS_ROOT = @IPS_ROOT@
-PHYS_BIN_ROOT = @PHYS_BIN_ROOT@
-DATA_TREE_ROOT = @DATA_TREE_ROOT@
 PORTAL_URL = @PORTAL_URL@
 RUNID_URL  = @RUNID_URL@
 

@@ -1,0 +1,19 @@
+#######################################
+# LOCATIONS
+#######################################
+BIN_PATH = @BIN_PATH@
+PHYS_BIN_ROOT = @PHYS_BIN_ROOT@
+INPUT_DIR = @INPUT_DIR@
+DATA_TREE_ROOT = @DATA_TREE_ROOT@
+
+###
+## DOCUMENTATION
+#
+#############################################
+# BIN_PATH: Where to find component scripts
+# PHYS_BIN_ROOT: Where to find component binaries
+# INPUT_DIR: Where to find input files 
+# DATA_TREE_ROOT: Where to find data (eqdsk files, etc.)
+#############################################
+
+
