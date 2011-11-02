@@ -48,7 +48,7 @@ class testIPS(unittest.TestCase):
     def test_basic_serial1_permutations(self):
         print 
         cfgFile_list = []
-        cfgFile_list.append('basic_serial1.conf')
+        cfgFile_list.append('basic_serial1.ips')
 
 
         log_file = 'log_test_basic_serial1.log'
