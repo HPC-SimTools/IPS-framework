@@ -7,10 +7,11 @@
 ######################################################################
 
 foreach (targ ${PYSCRIPTS})
-      add_test(${targ} python ${targ})
+      get_filename_component(dirname ${CMAKE_CURRENT_BINARY_DIR} NAME_WE)
+      add_test(${dirname}-${targ} python ${targ})
 endforeach ()
 foreach (targ ${SHSCRIPTS})
-      add_test(${targ} ${targ})
+      add_test(${dirname}-${targ} ${targ})
 endforeach ()
 
 install(PROGRAMS 
@@ -27,7 +28,8 @@ add_custom_target(tests-${dirname}-scripts-stamp ALL
       ${CMAKE_CURRENT_SOURCE_DIR} ${DATA} ${PYSCRIPTS}
     COMMAND ${CMAKE_SOURCE_DIR}/CMake/mklinks.sh txutils-scripts-stamp
       ${CMAKE_CURRENT_SOURCE_DIR} ${DATA} ${SHSCRIPTS}
-    COMMAND chmod a+x *.py *.sh
+      #COMMAND chmod -f a+x *.py  *.sh
+    #    COMMAND chmod a+x *.py *.sh
 )
 else ()
 file(COPY ${PYSCRIPTS} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})

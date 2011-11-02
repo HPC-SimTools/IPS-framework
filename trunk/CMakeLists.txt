@@ -39,16 +39,6 @@ if (ENABLE_USERDOCS)
 endif ()
 ######################################################################
 #
-#  Do subdirectories after you find packages.
-#
-######################################################################
-add_subdirectory(framework)
-add_subdirectory(share)
-add_subdirectory(components)
-add_subdirectory(tests)
-
-######################################################################
-#
 # Set the variables needed for platform.conf and configure.
 #
 ######################################################################
@@ -83,6 +73,16 @@ TxPrintString("NODE_ALLOCATION_MODE  = ${NODE_ALLOCATION_MODE}")
 
 #Other variables in platform.conf.in (HOSTNAME already set
 set(IPS_ROOT "${CMAKE_BINARY_DIR}")  # Install needs to fix this
+
+######################################################################
+#
+#  Do subdirectories after you find packages.
+#
+######################################################################
+add_subdirectory(framework)
+add_subdirectory(share)
+add_subdirectory(components)
+add_subdirectory(tests)
 
 ######################################################################
 #

@@ -50,6 +50,12 @@
 
 """
 import sys
+import os
+import socket
+import getopt
+import time
+import logging
+import inspect
 import multiprocessing
 from messages import Message, ServiceRequestMessage, \
                     ServiceResponseMessage, MethodInvokeMessage
@@ -58,17 +64,12 @@ from taskManager import TaskManager
 from resourceManager import ResourceManager
 from dataManager import DataManager
 from componentRegistry import ComponentRegistry
-import socket
-import getopt
 from componentRegistry import ComponentID
 from ipsExceptions import BlockedMessageException
 from eventService import EventService
 from cca_es_spec import initialize_event_service
-import logging
 from ips_es_spec import eventManager
-import os
 import ipsTiming
-import time
 from configobj import ConfigObj
 #from ipsTiming import *
 
@@ -137,6 +138,10 @@ class Framework(object):
         # fault tolerance flag
         self.ftb = ftb
         # log file name if specified
+#SEK        if log_file==sys.stdout:
+#SEK            self.log_file = 'sys.stdout'
+#SEK        else:
+#SEK            self.log_file = log_file
         self.log_file = log_file
         # the multiprocessing queue
         self.in_queue = multiprocessing.Queue(0)
@@ -152,9 +157,22 @@ class Framework(object):
         if (not platform_file_name):
             self.platform_file_name = platform_file_name
         else:
-            print self.__file__
-            sys.exit()
-        if (not platform_file_name):
+            ipsPathName=inspect.getfile(inspect.currentframe())
+            ipsDir=os.path.dirname(ipsPathName)
+            ipsPDir0=os.path.dirname(ipsPathName)
+            ipsPDir1=os.path.dirname(ipsPDir0)
+            ipsPDir2=os.path.dirname(ipsPDir1)
+            pconf=os.path.join("share","platform.conf")
+            # This is if we've installed it
+            if os.path.exists(os.path.join(ipsPDir1,pconf)):
+                self.platform_file_name=os.path.join(ipsPDir1,pconf)
+            # This is looking in the build directory.
+            elif os.path.exists(os.path.join(ipsPDir2,pconf)):
+                self.platform_file_name=os.path.join(ipsPDir2,pconf)
+            else:
+               print "Need to specify a platform file"
+               sys.exit(Message.FAILURE)
+
         # config file list
         self.config_file_list = config_file_list
 
@@ -185,7 +203,8 @@ class Framework(object):
             self.log_level = logging.DEBUG
         # create handler and set level to debug
         logger.setLevel(self.log_level)
-        if log_file == 'sys.stdout':
+        #SEK if log_file == 'sys.stdout':
+        if log_file == sys.stdout:
             print 'logging to ', log_file
             self.ch = logging.StreamHandler(sys.stdout)
         else:
@@ -231,7 +250,8 @@ class Framework(object):
 
     def get_inq(self):
         """
-        Return handle to the Framework's input queue object (`multiprocessing.Queue <http://docs.python.org/library/multiprocessing.html>`_)
+        Return handle to the Framework's input queue object 
+         (`multiprocessing.Queue <http://docs.python.org/library/multiprocessing.html>`_)
         """
         return self.in_queue
 

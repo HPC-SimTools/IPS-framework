@@ -93,8 +93,11 @@ class ConfigurationManager(object):
         sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 0)
         self.platform_file = os.path.abspath(platform_file_name)
         self.platform_conf = {}
-        self.platform_keywords = ['MPIRUN', 'PHYS_BIN_ROOT', 'HOST',
-                                  'NODE_ALLOCATION_MODE']
+        loc_keys=['IPS_ROOT', 'PHYS_BIN_ROOT','DATA_TREE_ROOT','PORTAL_URL','RUNID_URL']
+        mach_keys=['MPIRUN','NODE_DETECTION','CORES_PER_NODE','SOCKETS_PER_NODE','NODE_ALLOCATION_MODE']
+        prov_keys=['HOST']
+        self.platform_keywords=loc_keys+mach_keys+prov_keys
+
         self.service_methods = ['get_port',
                                 'getPort',
                                 'get_config_parameter',
@@ -156,6 +159,7 @@ class ConfigurationManager(object):
             #stop(self.timers['initialize'])
             raise
         # get mandatory values
+        #SEK: Start here.
         for kw in self.platform_keywords:
             try:
                 val = self.platform_conf[kw]
