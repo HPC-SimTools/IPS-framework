@@ -73,7 +73,7 @@ class test_permutations(ParameterizedTestCase):
         checklist_file.close()
 
         call_args = []
-        call_args.append(sim_conf['IPS_ROOT'] + '/framework/src/ips.py')
+        call_args.append(fsrc + '/ips.py')
         if self.param.do_create_runspace:
             call_args.append('--create-runspace')
         if self.param.do_run_setup:
@@ -86,7 +86,8 @@ class test_permutations(ParameterizedTestCase):
             cfg_files_str += ',' + file
         call_args.append(cfg_files_str)
 
-        call_args.append('--platform=' + self.param.platform_filename)
+        if self.param.platform_filename:
+           call_args.append('--platform=' + self.param.platform_filename)
         call_args.append('--log=' + self.param.log_file)
 
         print string.join(call_args, ' ')

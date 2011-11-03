@@ -3,6 +3,7 @@ import shutil
 import os
 import sys
 import imp
+import inspect
 from services import ServicesProxy
 from componentRegistry import ComponentID, ComponentRegistry
 import messages
@@ -63,7 +64,7 @@ class ConfigurationManager(object):
             self.fwk_logger = None
 
    #@TauWrap(TIMERS['__init__'])
-    def __init__(self, fwk, config_file_list, platform_file_name):
+    def __init__(self, fwk, config_file_list, platform_file_name, compset_list):
         """
         Initialize the values to be used by the configuration manager.  Also 
         specified are the required fields of the simulation configuration 
@@ -93,7 +94,8 @@ class ConfigurationManager(object):
         sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 0)
         self.platform_file = os.path.abspath(platform_file_name)
         self.platform_conf = {}
-        loc_keys=['IPS_ROOT', 'PHYS_BIN_ROOT','DATA_TREE_ROOT','PORTAL_URL','RUNID_URL']
+        self.compset_list = compset_list
+        loc_keys=['IPS_ROOT','PORTAL_URL','RUNID_URL']
         mach_keys=['MPIRUN','NODE_DETECTION','CORES_PER_NODE','SOCKETS_PER_NODE','NODE_ALLOCATION_MODE']
         prov_keys=['HOST']
         self.platform_keywords=loc_keys+mach_keys+prov_keys
@@ -143,6 +145,7 @@ class ConfigurationManager(object):
         """
         # parse file
         try:
+            print self.platform_file
             self.platform_conf = ConfigObj(self.platform_file,
                                            interpolation='template',
                                            file_error=True)
@@ -238,7 +241,12 @@ class ConfigurationManager(object):
         """
         for conf_file in self.config_file_list:
             try:
-                conf = ConfigObj(conf_file, interpolation='template',
+                if self.compset_list:
+                   conf_list=[self.platform_file]+self.compset_list+[conf_file]
+                else:
+                   conf_list=[self.platform_file,conf_file]
+                conf_tuple=tuple(conf_list)
+                conf = ConfigObj(conf_tuple, interpolation='template',
                                  file_error=True)
             except IOError, (ex):
                 self.fwk.exception('Error opening config file %s: ', conf_file)
@@ -356,7 +364,9 @@ class ConfigurationManager(object):
         runspace_conf['CLASS'] = 'FWK'
         runspace_conf['SUB_CLASS'] = 'COMP'
         runspace_conf['NAME'] = 'RunspaceInit_Component'
-        runspace_conf['BIN_PATH'] = self.sim_map[self.fwk_sim_name].sim_conf['FWK_COMPS_PATH']
+        ipsPathName=inspect.getfile(inspect.currentframe())
+        ipsDir=os.path.dirname(ipsPathName)
+        runspace_conf['BIN_PATH'] = ipsDir
         runspace_conf['SCRIPT'] = os.path.join(runspace_conf['BIN_PATH'], 
                 'RunspaceInit_Component.py')
         runspace_conf['INPUT_DIR'] = '/dev/null'

@@ -15,6 +15,8 @@ from test_parameterized_cases import ParameterizedTestCase
 sys.path.append('..')
 from frameworkpath import *
 sys.path.append(fsrc)
+sys.path.append('../components/drivers')
+sys.path.append('../components/workers')
 
 from ips import Framework
 from configobj import ConfigObj

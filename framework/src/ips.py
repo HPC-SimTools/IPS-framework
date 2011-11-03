@@ -93,7 +93,8 @@ TIMERS = make_timers()
 class Framework(object):
     #@ipsTiming.TauWrap(TIMERS['__init__'])
     def __init__(self, do_create_runspace, do_run_setup, do_run, 
-            config_file_list, log_file, platform_file_name=None, debug=False, 
+            config_file_list, log_file, platform_file_name=None,
+            compset_list=None, debug=False, 
             ftb=False, verbose_debug = False, cmd_nodes = 0, cmd_ppn = 0):
         """
         Create an IPS Framework Instance to coordinate the execution of IPS simulations
@@ -118,10 +119,25 @@ class Framework(object):
                         
                 *SIM_ROOT*, *SIM_NAME*, and *LOG_FILE* must be unique across simulations.
             log_file: [file] A file name where Framework logging messages are placed. 
-            platform_file_name: [string] The name of the platform configuration file used in the simulation.
+            platform_file_name: [string] The name of the platform
+               configuration file used in the simulation.  If not specified it will try to find the
+               one installed in the share directory.
+            compset_list: [list] Other path information can be found in the
+               component-<component_name>.conf file in the share directory.  You can pass in
+               compset_list to use this file.
+               These files must contain
+
+                  * *BIN_PATH*   Location of component scripts
+                  * *INPUT_DIR*  Location of input files
+
+                If you are using  multiple files, then it is recommended to duplicate these
+                variables with a name spacing string to allow for a simulation file to use the
+                multiple locations.
+                If component list is not specified, then it is assumed that these variables are
+                defined in the platform.conf file (backward compatibility).
             debug: [boolean] A flag indicating whether framework debugging messages are enabled (default = False)
             ftb: [boolean]  A flag indicating whether integration with the Fault tolerance Backplane 
-                Protocaol (FTB) is enabled (default = False)
+                Protocol (FTB) is enabled (default = False)
             verbose_debug: [boolean] A flag adding more verbose framework debugging (default = False)
 
         """
@@ -138,10 +154,6 @@ class Framework(object):
         # fault tolerance flag
         self.ftb = ftb
         # log file name if specified
-#SEK        if log_file==sys.stdout:
-#SEK            self.log_file = 'sys.stdout'
-#SEK        else:
-#SEK            self.log_file = log_file
         self.log_file = log_file
         # the multiprocessing queue
         self.in_queue = multiprocessing.Queue(0)
@@ -152,9 +164,10 @@ class Framework(object):
         # map of ports
         self.port_map = {}
 
-        # saving these for access later by the RunspaceInit_Component
-        # platform file name as well as provenance information
-        if (not platform_file_name):
+        # Complicated here to allow for a generalization of previous functionality and to enable
+        # the automatic finding of the files.
+        self.compset_list=None
+        if (platform_file_name):
             self.platform_file_name = platform_file_name
         else:
             ipsPathName=inspect.getfile(inspect.currentframe())
@@ -162,16 +175,36 @@ class Framework(object):
             ipsPDir0=os.path.dirname(ipsPathName)
             ipsPDir1=os.path.dirname(ipsPDir0)
             ipsPDir2=os.path.dirname(ipsPDir1)
-            pconf=os.path.join("share","platform.conf")
             # This is if we've installed it
+            pconf=os.path.join('share','platform.conf')
             if os.path.exists(os.path.join(ipsPDir1,pconf)):
-                self.platform_file_name=os.path.join(ipsPDir1,pconf)
+                ipsShareDir=os.path.join(ipsPDir1,'share')
             # This is looking in the build directory.
             elif os.path.exists(os.path.join(ipsPDir2,pconf)):
-                self.platform_file_name=os.path.join(ipsPDir2,pconf)
+                ipsShareDir=os.path.join(ipsPDir2,'share')
             else:
                print "Need to specify a platform file"
                sys.exit(Message.FAILURE)
+            self.platform_file_name=os.path.join(ipsShareDir,'platform.conf')
+            checked_compset_list=[]
+            if compset_list:
+              for cname in compset_list:
+                cfile='component-'+cname+'.conf'
+                fullcfile=os.path.join(ipsShareDir,cfile)
+                if os.path.exists(fullcfile):
+                    checked_compset_list.append(fullcfile)
+              if len(checked_compset_list):
+                print "Cannot find specified component configuration files."
+                print "  Assuming that variables are defined anyway"
+              else:
+                self.compset_list=checked_compset_list
+            else: 
+                if os.path.exists(os.path.join(ipsShareDir,'component-generic.conf')):
+                  checked_compset_list.append(os.path.join(ipsShareDir,'component-generic.conf'))
+                  self.compset_list=checked_compset_list
+                else:
+                  print "Cannot find any component configuration files."
+                  print "  Assuming that variables are defined anyway"
 
         # config file list
         self.config_file_list = config_file_list
@@ -187,7 +220,7 @@ class Framework(object):
         initialize_event_service(self.event_service)
         self.event_manager = eventManager(self)
         self.config_manager = \
-             ConfigurationManager(self, config_file_list, platform_file_name)
+             ConfigurationManager(self, self.config_file_list,self.platform_file_name, self.compset_list)
         self.resource_manager = ResourceManager(self)
         self.data_manager = DataManager(self)
         self.task_manager = TaskManager(self)
@@ -959,6 +992,7 @@ def main(argv=None):
     """
 
     cfgFile_list = []
+    compset_list = []
     platform_filename = ''
     simulation_filename = ''
     log_file = 'sys.stdout'
@@ -972,7 +1006,7 @@ def main(argv=None):
     try:
         opts, args = getopt.gnu_getopt(argv[first_arg:], '',
                                        ["create-runspace", "run-setup", "run", 
-                                        "simulation=", "platform=", "log=", 
+                                        "simulation=", "compset_list=","platform=", "log=", 
                                         "nodes=", "ppn=",
                                         "debug", "verbose", "ftb"])
     except getopt.error, msg:
@@ -1010,12 +1044,14 @@ def main(argv=None):
             #    print str(e)
             #    raise
         elif (arg == '--simulation'):
-            simulation_filename = value
-            cfgFile_list.append(value)
+            cfgFile_list=value.split(',')
             simulation_file_specified = True
         elif (arg == '--platform'):
             platform_filename = value
             platform_file_specified = True
+        elif (arg == '--compset_list'):
+            compset_list=value.split(',')
+            compset_specified = True
         elif (arg == '--nodes'):
             cmd_nodes = int(value)
         elif (arg == '--ppn'):
@@ -1029,14 +1065,14 @@ def main(argv=None):
 
     # if a --platform file was not specified, use default
     # if the default doesn't exist, raise an exception
-    if (not platform_file_specified):
-        platform_filename = 'platform.conf'
-        try:
-            platform_file = open(os.path.abspath(platform_filename), 'r')
-        except Exception, e:
-            print 'Error reading from platform.conf file '
-            print str(e)
-            raise
+    #if (not platform_file_specified):
+    #    platform_filename = 'platform.conf'
+    #    try:
+    #        platform_file = open(os.path.abspath(platform_filename), 'r')
+    #    except Exception, e:
+    #        print 'Error reading from platform.conf file '
+    #        print str(e)
+    #        raise
 
     if (not simulation_file_specified):
         simulation_filename = 'core-edge.conf'
@@ -1061,7 +1097,7 @@ def main(argv=None):
     # create framework with config file
     try:
         fwk = Framework(do_create_runspace, do_run_setup, do_run, cfgFile_list, 
-                log_file, platform_filename, debug, ftb, verbose_debug, 
+                log_file, platform_filename, compset_list, debug, ftb, verbose_debug, 
                 cmd_nodes, cmd_ppn)
         fwk.run()
         ipsTiming.dumpAll('framework')

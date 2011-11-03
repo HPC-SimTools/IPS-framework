@@ -1190,8 +1190,14 @@ class ConfigObj(Section):
                     h.write('')
                     h.close()
                 infile = []
-        elif isinstance(infile, (list, tuple)):
+        elif isinstance(infile, list):
             infile = list(infile)
+        elif isinstance(infile, tuple):
+            all_lines=''
+            for file in list(infile):
+               filelines = open(file).read() or []
+               all_lines=all_lines+filelines
+            infile=all_lines
         elif isinstance(infile, dict):
             # initialise self
             # the Section class handles creating subsections
@@ -1552,6 +1558,7 @@ class ConfigObj(Section):
                 #
                 key = self._unquote(key)
                 if this_section.has_key(key):
+                    print "Duplicate key: ", key
                     self._handle_error(
                         'Duplicate keyword name at line %s.',
                         DuplicateError, infile, cur_index)
