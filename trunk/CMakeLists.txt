@@ -48,7 +48,7 @@ set(RUNID_URL       "http://swim.gat.com:4040/runid.esp"
     CACHE STRING "URL of runId")
 set(MPIRUN          "mpiexec"
     CACHE STRING "Executable of mpi to submit jobs")
-set(NODE_DETECTION  "checkjob"
+set(NODE_DETECTION  "manual"
     CACHE STRING "Resource detection method")
 set(CORES_PER_NODE  "1"
     CACHE STRING "Cores per node")

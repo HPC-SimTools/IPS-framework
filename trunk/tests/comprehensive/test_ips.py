@@ -22,7 +22,6 @@ from ips import Framework
 class testIPS(unittest.TestCase):
     def printUsageMessage(self):
         print 'Usage: ips [--config=CONFIG_FILE_NAME]+ --platform=PLATFORM_FILE_NAME --log=LOG_FILE_NAME'
-    """
     def test_basic_serial1(self):
         cfgFile_list = []
         cfgFile_list.append('basic_serial1.conf')

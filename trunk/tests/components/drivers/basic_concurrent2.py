@@ -2,6 +2,7 @@ import sys
 import os
 import time
 sys.path.append('../..')
+sys.path.append('..')
 from frameworkpath import *
 sys.path.append(fsrc)
 from component import Component
