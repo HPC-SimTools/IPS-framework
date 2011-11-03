@@ -6,6 +6,5 @@
 #
 ######################################################################
 
-add_subdirectory(lsa_scripts)
 add_subdirectory(src)
 add_subdirectory(utils)
