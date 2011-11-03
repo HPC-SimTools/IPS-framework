@@ -33,6 +33,8 @@ class RunspaceInit_Component(Component):
 
         # get the simRootDir
         self.simRootDir = services.get_config_param('SIM_ROOT')
+        if not self.simRootDir.startswith("/"):
+          self.simRootDir=os.path.abspath(self.simRootDir)
 
         # try making the simulation root directory
         try: 
