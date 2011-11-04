@@ -2,11 +2,12 @@
 set(SCRIPTS
       cca_es_spec.py component.py componentRegistry.py configobj.py
       configurationManager.py create_batch_script.py dataManager.py
-      debug.py eventService.py eventServiceProxy.py ftbBridge.py ips.py
-      ipsExceptions.py ipsLogging.py ipsTiming.py ipsutil.py ips-config.py
-      ips_es_spec.py messages.py node_structure.py portalBridge.py
-      resourceHelper.py resourceManager.py sendPost.py services.py
-      taskManager.py test_ips.py test_resource_parsing.py topicManager.py
+      debug.py eventService.py eventServiceProxy.py ftbBridge.py
+      ips-config.py ips.py ipsExceptions.py ipsLogging.py ipsTiming.py
+      ips_es_spec.py ipsutil.py messages.py node_structure.py
+      portalBridge.py resourceHelper.py resourceManager.py
+      runspaceInitComponent.py sendPost.py services.py taskManager.py
+      test_ips.py test_resource_parsing.py topicManager.py
 )
 
 # Installing executable scripts

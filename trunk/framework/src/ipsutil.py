@@ -12,7 +12,7 @@ def copyFiles(src_dir, src_file_list, target_dir, prefix='', keep_old = False):
        Wild-cards in file name specification are allowed. 
     """
     # copyFiles no longer attempts to make the directory, if this is not done by
-    # the RunspaceInit_Component, then we can't continue
+    # the runspaceInitComponent, then we can't continue
 
     #try:
     #    os.makedirs(target_dir)

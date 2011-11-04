@@ -9,7 +9,7 @@ import time
 import zipfile
 from component import Component
 
-class RunspaceInit_Component(Component):
+class runspaceInitComponent(Component):
 
     def __init__(self, services, config):
         Component.__init__(self, services, config)
@@ -20,14 +20,14 @@ class RunspaceInit_Component(Component):
 #
 # init function
 #
-# RunspaceInit_Component init function creates base directory, copies IPS and 
+# runspaceInitComponent init function creates base directory, copies IPS and 
 # FacetsComposer input files.
 #
 # ------------------------------------------------------------------------------
 
     def init(self, timeStamp):
 
-        print 'RunspaceInit_Component.init() called'
+        print 'runspaceInitComponent.init() called'
 
         services = self.services
 
@@ -94,7 +94,7 @@ class RunspaceInit_Component(Component):
 # ------------------------------------------------------------------------------
 
     def validate(self, timestamp=0):
-        print 'RunspaceInit_Component.validate() called'
+        print 'runspaceInitComponent.validate() called'
         return
 
 # ------------------------------------------------------------------------------
@@ -107,7 +107,7 @@ class RunspaceInit_Component(Component):
 
     def step(self, timestamp=0):
 
-        print 'RunspaceInit_Component.step() called'
+        print 'runspaceInitComponent.step() called'
 
         services = self.services
 
@@ -154,16 +154,21 @@ class RunspaceInit_Component(Component):
 #               print 'comp_conf[\'INPUT_FILES\'] = ', comp_conf['INPUT_FILES']
 #               print 'os.path.abspath(comp_conf[\'BIN_PATH\']) = ', os.path.abspath(comp_conf['BIN_PATH'])
 
-                ipsutil.copyFiles(os.path.abspath(comp_conf['BIN_PATH']),
+                ipsutil.copyFiles(os.path.abspath(comp_conf['INPUT_DIR']),
                                   os.path.basename(comp_conf['INPUT_FILES']),
                                   workdir)
 
+                #SEK: Need to figure out the right directories
+                ipsutil.copyFiles(os.path.abspath(comp_conf['DATA_TREE_ROOT']),
+                                  os.path.basename(comp_conf['DATA_FILES']),
+                                  workdir)
+
                 # copy the component's script to the simulation_setup directory
-                ipsutil.copyFiles(os.path.dirname(comp_conf['SCRIPT']),
+                ipsutil.copyFiles(os.path.dirname(comp_conf['BIN_DIR']),
                                   [os.path.basename(comp_conf['SCRIPT'])],
                                   simulation_setup)
 
-            # get the working directory from the RunspaceInit_Component
+            # get the working directory from the runspaceInitComponent
             workdir = services.get_working_dir()
 
             # create the working directory for this component
@@ -189,7 +194,7 @@ class RunspaceInit_Component(Component):
 
     def checkpoint(self, timestamp=0.0):
 
-        print 'RunspaceInit_Component.checkpoint() called'
+        print 'runspaceInitComponent.checkpoint() called'
 
         # save restart files
         # services = self.services
@@ -208,7 +213,7 @@ class RunspaceInit_Component(Component):
 
 
     def finalize(self, timestamp=0.0):
-        print 'RunspaceInit_Component.finalize() called'
+        print 'runspaceInitComponent.finalize() called'
 
         services = self.services 
 

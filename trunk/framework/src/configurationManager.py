@@ -359,18 +359,19 @@ class ConfigurationManager(object):
         #pytau.start(self.timers['_initialize_fwk_components'])
         #start(self.timers['_initialize_fwk_components'])
         
-        # set up the RunspaceInit component
+        # set up the runspaceInit component
         runspace_conf = {}
         runspace_conf['CLASS'] = 'FWK'
         runspace_conf['SUB_CLASS'] = 'COMP'
-        runspace_conf['NAME'] = 'RunspaceInit_Component'
+        runspace_conf['NAME'] = 'runspaceInitComponent'
         ipsPathName=inspect.getfile(inspect.currentframe())
         ipsDir=os.path.dirname(ipsPathName)
         runspace_conf['BIN_PATH'] = ipsDir
         runspace_conf['SCRIPT'] = os.path.join(runspace_conf['BIN_PATH'], 
-                'RunspaceInit_Component.py')
+                'runspaceInitComponent.py')
         runspace_conf['INPUT_DIR'] = '/dev/null'
         runspace_conf['INPUT_FILES'] = ''
+        runspace_conf['DATA_FILES'] = ''
         runspace_conf['OUTPUT_FILES'] = ''
         runspace_conf['NPROC'] = 1
         runspace_conf['LOG_LEVEL'] = 'WARNING'
@@ -391,6 +392,7 @@ class ConfigurationManager(object):
         portal_conf['SCRIPT'] = os.path.join(portal_conf['BIN_PATH'], 'portalBridge.py')
         portal_conf['INPUT_DIR'] = '/dev/null'
         portal_conf['INPUT_FILES']  = ''
+        portal_conf['DATA_FILES']  = ''
         portal_conf['OUTPUT_FILES'] = ''
         portal_conf['NPROC'] = 1
         portal_conf['LOG_LEVEL'] = 'WARNING'
@@ -417,6 +419,7 @@ class ConfigurationManager(object):
             ftb_conf['SCRIPT'] = os.path.join(ftb_conf['BIN_PATH'], 'ftbBridge.py')
             ftb_conf['INPUT_DIR'] = ''
             ftb_conf['INPUT_FILES']  = ''
+            ftb_conf['DATA_FILES']  = ''
             ftb_conf['OUTPUT_FILES'] = ''
             ftb_conf['NPROC'] = 1
             ftb_conf['LOG_LEVEL'] = 'WARNING'
