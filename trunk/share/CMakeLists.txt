@@ -9,4 +9,6 @@
 # Platform
 configure_file(platform.conf.in  platform.conf)
 configure_file(component-generic.conf.in  component-generic.conf)
-install(FILES ${CMAKE_BINARY_DIR}/platform.conf component-generic.conf DESTINATION  ${CMAKE_INSTALL_PREFIX}/share)
+install(FILES ${CMAKE_BINARY_DIR}/share/platform.conf
+              ${CMAKE_BINARY_DIR}/share/component-generic.conf 
+        DESTINATION  ${CMAKE_INSTALL_PREFIX}/share)
