@@ -62,6 +62,7 @@ def make_timers_child():
             'get_time_loop':ipsTiming.create_timer("services", "get_time_loop", pid),
             'get_working_dir':ipsTiming.create_timer("services", "get_working_dir", pid),
             'stage_input_files':ipsTiming.create_timer("services", "stage_input_files", pid),
+            'stage_data_files':ipsTiming.create_timer("services", "stage_data_files", pid),
             'stage_output_files':ipsTiming.create_timer("services", "stage_output_files", pid),
             'stage_nonPS_output_files':ipsTiming.create_timer("services", "stage_nonPS_output_files", pid),
             'stage_PS_output_files':ipsTiming.create_timer("services", "stage_PS_output_files", pid),
@@ -1222,6 +1223,41 @@ class ServicesProxy(object):
         """
         self.warning('stageInputFiles() deprecated - use stage_input_files() instead')
         return self.stage_input_files(input_file_list)
+
+    def stage_data_files(self, data_file_list):
+        """
+        Copy component data files to the component working directory
+        (as obtained via a call to :py:meth:`ServicesProxy.get_working_dir`). Input files
+        are assumed to be originally located in the directory variable
+        *DATA_TREE_ROOT* in the component configuration section.
+        """
+        workdir = self.get_working_dir()
+        conf = self.component_ref.config
+        dataDir = conf['DATA_DIR']
+        ipsutil.copyFiles(dataDir, data_file_list, workdir)
+
+        # Copy input files into a central place in the output tree
+        simroot = self.sim_conf['SIM_ROOT']
+        try:
+            outprefix =  self.sim_conf['OUTPUT_PREFIX']
+        except KeyError, e:
+            outprefix=''
+
+        targetdir = os.path.join(simroot , 'simulation_setup',
+                                 self.full_comp_id)
+        try:
+            ipsutil.copyFiles(dataDir, data_file_list, targetdir, outprefix)
+        except Exception, e:
+            self._send_monitor_event('IPS_STAGE_DATA',
+                                           'Files = ' + str(data_file_list) + \
+                                           ' Exception raised : ' + str(e),
+                                           ok='False')
+            self.exception('Error in stage_data_files')
+            raise e
+        self._send_monitor_event('IPS_STAGE_DATA','Files = '+str(data_file_list))
+
+        return
+
 
     def stage_nonPS_output_files(self, timeStamp, file_list, keep_old_files = True):
         """
