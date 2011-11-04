@@ -93,6 +93,7 @@ TxPrintString("DATA_TREE_ROOT  = ${DATA_TREE_ROOT}")
 #  Do subdirectories after you find packages.
 #
 ######################################################################
+add_subdirectory(bin)
 add_subdirectory(framework)
 add_subdirectory(share)
 add_subdirectory(components)
