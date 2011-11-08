@@ -1,9 +1,13 @@
 #######################################
+# CONTAINTER FILE
+#######################################
+CONTAINER_FILE_EXT = @CONTAINER_FILE_EXT@
+
+#######################################
 # LOCATIONS
 #######################################
 BIN_PATH = @BIN_PATH@
 PHYS_BIN_ROOT = @PHYS_BIN_ROOT@
-INPUT_DIR = @INPUT_DIR@
 DATA_TREE_ROOT = @DATA_TREE_ROOT@
 
 ###

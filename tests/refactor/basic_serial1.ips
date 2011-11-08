@@ -22,15 +22,10 @@ CURRENT_STATE =
 PRIOR_STATE = 
 NEXT_STATE = 
 CURRENT_EQDSK = 
+USE_PORTAL=False
 
 LOG_FILE = $SIM_ROOT/$SIM_NAME.log
 LOG_LEVEL = DEBUG                   # Possible values: DEBUG, INFO, WARNING, ERROR, CRITICAL
-
-PLATFORM =                                          # Simulation Platform
-BATCH_SYSTEM =                                      # Which Batch system to use
-SIMULATION_MODE = SINGLE_STEP | RESTART             # Simulation mode 
-INITIALIZATION_MODE =                               # Initialization Mode
-MACHINE_CONFIG_FILE =                               # Machine configuration file
 
 [PORTS]
    NAMES = DRIVER WORKER1 WORKER2 WORKER3
@@ -57,7 +52,6 @@ MACHINE_CONFIG_FILE =                               # Machine configuration file
     NAME = basic_concurrent1
     NPROC = 1
     BIN_PATH = $IPS_ROOT/tests/components/drivers
-    INPUT_DIR = $BIN_PATH
     INPUT_FILES = file1 sfile1 sfile2 ofile1 ofile2
     OUTPUT_FILES = ofile1 ofile2  
     SCRIPT = $BIN_PATH/basic_concurrent1.py
@@ -68,7 +62,6 @@ MACHINE_CONFIG_FILE =                               # Machine configuration file
     NAME = basic_concurrent2
     NPROC = 1
     BIN_PATH = $IPS_ROOT/tests/components/drivers
-    INPUT_DIR = $BIN_PATH
     INPUT_FILES = file1 sfile1 sfile2 ofile1 ofile2
     OUTPUT_FILES = ofile1 ofile2  
     SCRIPT = $BIN_PATH/basic_concurrent2.py
@@ -79,7 +72,6 @@ MACHINE_CONFIG_FILE =                               # Machine configuration file
     NAME = basic_concurrent3
     NPROC = 1
     BIN_PATH = $IPS_ROOT/tests/components/drivers
-    INPUT_DIR = $BIN_PATH
     INPUT_FILES = file1 sfile1 sfile2 ofile1 ofile2
     OUTPUT_FILES = ofile1 ofile2  
     SCRIPT = $BIN_PATH/basic_concurrent3.py
@@ -90,7 +82,6 @@ MACHINE_CONFIG_FILE =                               # Machine configuration file
     NAME = basic_serial1
     NPROC = 1
     BIN_PATH = $IPS_ROOT/tests/components/drivers
-    INPUT_DIR = $BIN_PATH
     INPUT_FILES = file1 sfile1 sfile2 ofile1 ofile2
     OUTPUT_FILES = ofile1 ofile2  
     SCRIPT = $BIN_PATH/basic_serial1.py
@@ -101,7 +92,6 @@ MACHINE_CONFIG_FILE =                               # Machine configuration file
     NAME = basic_serial2
     NPROC = 1
     BIN_PATH = $IPS_ROOT/tests/components/drivers
-    INPUT_DIR = $BIN_PATH
     INPUT_FILES = file1 sfile1 sfile2 ofile1 ofile2
     OUTPUT_FILES = ofile1 ofile2  
     SCRIPT = $BIN_PATH/basic_serial2.py
@@ -112,7 +102,6 @@ MACHINE_CONFIG_FILE =                               # Machine configuration file
     NAME = basic_serial3
     NPROC = 1
     BIN_PATH = $IPS_ROOT/tests/components/drivers
-    INPUT_DIR = $BIN_PATH
     INPUT_FILES = file1 sfile1 sfile2 ofile1 ofile2
     OUTPUT_FILES = ofile1 ofile2  
     SCRIPT = $BIN_PATH/basic_serial3.py
@@ -122,44 +111,40 @@ MACHINE_CONFIG_FILE =                               # Machine configuration file
     SUB_CLASS = testing
     NAME = small_worker
     NPROC = 1
-    BIN_PATH = $IPS_ROOT/tests/bin
-    INPUT_DIR = $IPS_ROOT/tests/components/workers
+    BIN_PATH = $IPS_ROOT/tests/components/workers
     INPUT_FILES =
     OUTPUT_FILES = $CURRENT_STATE
-    SCRIPT = $INPUT_DIR/small_worker.py
+    SCRIPT = $BIN_PATH/small_worker.py
 
 [MEDIUM_WORKER]
     CLASS = workers
     SUB_CLASS = testing
     NAME = medium_worker
     NPROC = 1
-    BIN_PATH = $IPS_ROOT/tests/bin
-    INPUT_DIR = $IPS_ROOT/tests/components/workers
+    BIN_PATH = $IPS_ROOT/tests/components/workers
     INPUT_FILES =
     OUTPUT_FILES = $CURRENT_STATE
-    SCRIPT = $INPUT_DIR/medium_worker.py
+    SCRIPT = $BIN_PATH/medium_worker.py
 
 [LARGE_WORKER]
     CLASS = workers
     SUB_CLASS = testing
     NAME = large_worker
     NPROC = 1
-    BIN_PATH = $IPS_ROOT/tests/bin
-    INPUT_DIR = $IPS_ROOT/tests/components/workers
+    BIN_PATH = $IPS_ROOT/tests/components/workers
     INPUT_FILES =
     OUTPUT_FILES = $CURRENT_STATE
-    SCRIPT = $INPUT_DIR/large_worker.py
+    SCRIPT = $BIN_PATH/large_worker.py
 
 [XL_WORKER]
     CLASS = workers
     SUB_CLASS = testing
     NAME = XL_worker
     NPROC = 1
-    BIN_PATH = $IPS_ROOT/tests/bin
-    INPUT_DIR = $IPS_ROOT/tests/components/workers
+    BIN_PATH = $IPS_ROOT/tests/components/workers
     INPUT_FILES =
     OUTPUT_FILES = $CURRENT_STATE
-    SCRIPT = $INPUT_DIR/XL_worker.py
+    SCRIPT = $BIN_PATH/XL_worker.py
 
 # Time loop sepecification (two modes for now) EXPLICIT | REGULAR
 # For MODE = REGULAR, the framework uses the variables START, FINIS, and NSTEP
