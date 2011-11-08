@@ -82,10 +82,13 @@ set(INPUT_DIR  "${CMAKE_INSTALL_DIR}/share"
     CACHE PATH "Location of component input files")
 set(DATA_TREE_ROOT  "${CMAKE_INSTALL_DIR}/share"
     CACHE PATH "Location of physics data files")
+set(CONTAINER_FILE_EXT          "ctz"
+    CACHE STRING "File extension for container file")
 TxPrintString("BIN_ROOT  = ${BIN_ROOT}")
 TxPrintString("PHYS_BIN_ROOT  = ${PHYS_BIN_ROOT}")
 TxPrintString("INPUT_DIR  = ${INPUT_DIR}")
 TxPrintString("DATA_TREE_ROOT  = ${DATA_TREE_ROOT}")
+TxPrintString("CONTAINTER_FILE_EXT  = ${CONTAINTER_FILE_EXT}")
 
 
 ######################################################################

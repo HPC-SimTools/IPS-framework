@@ -236,8 +236,7 @@ class Framework(object):
             self.log_level = logging.DEBUG
         # create handler and set level to debug
         logger.setLevel(self.log_level)
-        #SEK if log_file == 'sys.stdout':
-        if log_file == sys.stdout:
+        if log_file == 'sys.stdout':
             print 'logging to ', log_file
             self.ch = logging.StreamHandler(sys.stdout)
         else:
@@ -255,7 +254,8 @@ class Framework(object):
 
         # add the handler to the root logger
         try:
-            # each manager should create their own event manager if they want to send and receive events
+            # each manager should create their own event manager if they
+            # want to send and receive events
             self.config_manager.initialize(self.data_manager,
                                            self.resource_manager,
                                            self.task_manager,
@@ -635,8 +635,10 @@ class Framework(object):
             # Each Framework Component is treated as a stand-alone simulation
             # generate the queues of invocation messages for each framework component
             for comp_id in fwk_comps:
+                print "XXX> ", comp_id
                 msg_list = []
                 for method in ['step', 'finalize']:
+                    print "XXX> ", comp_id, method
                     if self.do_create_runspace:
                         req_msg = ServiceRequestMessage(self.component_id,
                                                         self.component_id, 
@@ -665,73 +667,61 @@ class Framework(object):
                 methods = []
 #               if self.ftb:
 #                   self._send_ftb_event('IPS_START')
-                if self.do_run_setup and self.create_runspace_done:
+
+                ###
+                ## The logic of the create_runspace and run_setup
+                #
+                if  self.create_runspace_done:
+                  if self.do_run_setup:
                     self.run_setup_done = True
                     self.run_setup_done_str = 'DONE'
                     methods.append('init')
-                elif self.do_run_setup and not self.create_runspace_done:
+                  else:
                     self.run_setup_done = False
                     self.run_setup_done_str = 'NOT_DONE'
-                    print 'Unable to continue to RUN_SETUP step, CREATE_RUNSPACE = %s' % \
-                        self.create_runspace_done_str
-                elif not self.do_run_setup and self.create_runspace_done:
-                    self.run_setup_done = False
-                    self.run_setup_done_str = 'NOT_DONE'
-                    print 'Skipping RUN_SETUP, option was %s' % self.do_run_setup
+                    print 'Skipping RUN_SETUP (a), option was %s' % self.do_run_setup
 #                   print 'Unable to perform RUN_SETUP, CREATE_RUNSPACE = %s, but RUN_SETUP = %s' \
 #                       % (self.create_runspace_done_str, self.do_run_setup)
-                elif not self.do_run_setup and not self.create_runspace_done:
-                    self.run_setup_done = False
-                    self.run_setup_done_str = 'NOT_DONE'
-                    print 'Skipping RUN_SETUP, option was %s' % self.do_run_setup
-#                   print 'RUN_SETUP = %s and CREATE_RUNSPACE = %s. Skipping RUN_SETUP step.' \
-#                       % (self.do_run_setup, self.create_runspace_done_str)
                 else:
-                    self.run_setup_done = False
-                    self.run_setup_done_str = 'NOT_DONE'
-                    self.exception('Invalid combination of options for RUN_SETUP step, quitting')
-                    self.exception('RUN_SETUP = %s, CREATE_RUNSPACE = %s' % 
-                            (self.do_run_setup, self.create_runspace_done_str))
-                    self.terminate_sim(status=Message.FAILURE)
-                    #logging.shutdown()
-                    return False
-                if self.do_run and self.create_runspace_done and self.run_setup_done:
+                  self.run_setup_done = False
+                  self.run_setup_done_str = 'NOT_DONE'
+                  if self.do_run_setup:
+                    print 'Unable to continue to RUN_SETUP step, CREATE_RUNSPACE = %s' % \
+                        self.create_runspace_done_str
+                  else:
+                    print 'Skipping RUN_SETUP (b), option was %s' % self.do_run_setup
+
+                ###
+                ## The logic of the run with runspace and create_runspace_done
+                #
+                if self.do_run:
+                  if self.create_runspace_done and self.run_setup_done:
                     self.run_done = True
                     self.run_done_str = 'DONE'
                     methods.append('step')
                     methods.append('finalize')
-                elif self.do_run and (not self.create_runspace_done or not self.run_setup_done):
+                  elif not self.create_runspace_done or not self.run_setup_done:
                     self.run_done = False 
                     self.run_done_str = 'NOT_DONE'
                     print 'Unable to continue to RUN step, CREATE_RUNSPACE = %s and RUN_SETUP = %s' % \
                         (self.create_runspace_done_str, self.run_setup_done_str)
-                elif not self.do_run and (self.create_runspace_done and self.run_setup_done):
-                    self.run_done = False 
-                    self.run_done_str = 'NOT_DONE'
-                    print 'Skipping RUN, option was %s' % self.do_run
-#                   print 'Unable to RUN, CREATE_RUNSPACE = %s and RUN_SETUP = %s, but RUN = %s' \
-#                       % (self.create_runspace_done_str, self.run_setup_done_str, self.do_run)
-                elif not self.do_run or (not self.create_runspace_done and not self.run_setup_done):
-                    self.run_done = False 
-                    self.run_done_str = 'NOT_DONE'
-                    print 'Skipping RUN, option was %s' % self.do_run
-#                   print 'RUN = %s, CREATE_RUNSPACE = %s, RUN_SETUP = %s. Skipping RUN step.' \
-#                       % (self.do_run, self.create_runspace_done_str, self.run_setup_done_str)
-                elif not self.do_run and not self.create_runspace_done and not self.run_setup_done:
-                    self.run_done = False 
-                    self.run_done_str = 'NOT_DONE'
-                    print 'Skipping RUN, option was %s' % self.do_run
-#                   print 'RUN = %s, CREATE_RUNSPACE = %s, RUN_SETUP = %s. Skipping RUN step.' \
-#                       % (self.do_run, self.create_runspace_done_str, self.run_setup_done_str)
+                  else:
+                      self.run_done = False 
+                      self.run_done_str = 'NOT_DONE'
+                      self.exception('Invalid combination of options for RUN step, quitting')
+                      self.exception('RUN = %s, RUN_SETUP = %s, CREATE_RUNSPACE = %s' % 
+                              (self.do_run, self.run_setup_done_str, self.create_runspace_done_str))
+                      self.terminate_sim(status=Message.FAILURE)
+                      #logging.shutdown()
+                      print 'returning'
+                      return False
                 else:
-                    self.run_done = False 
-                    self.run_done_str = 'NOT_DONE'
-                    self.exception('Invalid combination of options for RUN step, quitting')
-                    self.exception('RUN = %s, RUN_SETUP = %s, CREATE_RUNSPACE = %s' % 
-                            (self.do_run, self.run_setup_done_str, self.create_runspace_done_str))
-                    self.terminate_sim(status=Message.FAILURE)
-                    #logging.shutdown()
-                    return False
+                  self.run_done = False 
+                  self.run_done_str = 'NOT_DONE'
+                  print 'Unable to RUN, CREATE_RUNSPACE = %s and RUN_SETUP = %s, but RUN = %s' \
+                        % (self.create_runspace_done_str, self.run_setup_done_str, self.do_run)
+
+                # Now for this logic
                 for comp_id in comp_list:
                     #for method in ['init', 'validate', 'step', 'finalize']:
                     for method in methods:
@@ -755,6 +745,7 @@ class Framework(object):
             for sim_name, msg_list in outstanding_sim_calls.items():
                 msg = msg_list.pop(0)
                 self.debug('Framework sending message %s ', msg.__dict__)
+                print 'mmmFramework sending message %s ', msg.__dict__
                 call_id = self.task_manager.init_call(msg, manage_return=False)
                 call_queue_map[call_id] = msg_list
                 call_id_list.append(call_id)
@@ -1115,7 +1106,3 @@ if __name__ == "__main__":
     #argv = args.split(' ')
     #argv = sys.argv
     sys.exit(main())
-
-#if __name__ == "__main__":
-#    fwk = Framework()
-#    fwk.run()

@@ -53,6 +53,7 @@ class ConfigurationManager(object):
             self.sim_root = None
             self.sim_conf = None
             self.conf_file = None
+            self.conf_file_dir = None
             self.driver_comp = None
             self.init_comp = None
             self.port_map = {}
@@ -80,8 +81,7 @@ class ConfigurationManager(object):
         self.resource_mgr = None
         self.task_mgr = None
         self.comp_registry = ComponentRegistry()
-        self.required_fields = set(['CLASS', 'SUB_CLASS',
-                                    'NAME', 'BIN_PATH', 'INPUT_DIR', 'SCRIPT',
+        self.required_fields = set(['CLASS', 'SUB_CLASS', 'NAME', 'SCRIPT',
                                     'INPUT_FILES', 'OUTPUT_FILES', 'NPROC'])
         self.config_file_list = []
         for conf_file in config_file_list:
@@ -99,6 +99,7 @@ class ConfigurationManager(object):
         mach_keys=['MPIRUN','NODE_DETECTION','CORES_PER_NODE','SOCKETS_PER_NODE','NODE_ALLOCATION_MODE']
         prov_keys=['HOST']
         self.platform_keywords=loc_keys+mach_keys+prov_keys
+        self.compset_keywords=['BIN_PATH','PHYS_BIN_ROOT','DATA_TREE_ROOT']
 
         self.service_methods = ['get_port',
                                 'getPort',
@@ -162,7 +163,6 @@ class ConfigurationManager(object):
             #stop(self.timers['initialize'])
             raise
         # get mandatory values
-        #SEK: Start here.
         for kw in self.platform_keywords:
             try:
                 val = self.platform_conf[kw]
@@ -236,6 +236,32 @@ class ConfigurationManager(object):
         self.platform_conf['CORES_PER_NODE'] = user_def_cpn
         self.platform_conf['SOCKETS_PER_NODE'] = user_def_spn
                 
+
+        """
+        Engine (compset) configuration Configuration
+        """
+        # parse file
+        self.compset_conf=[]
+        for csfile in self.compset_list:
+          try:
+              print csfile
+              csconf = ConfigObj(csfile, interpolation='template', file_error=True)
+          except IOError, (ex):
+              self.fwk.exception('Error opening config file: %s', csfile)
+              raise
+          except SyntaxError, (ex):
+              self.fwk.exception('Error parsing config file: %s', csfile)
+              raise
+          # get mandatory values
+          for kw in self.compset_keywords:
+              try:
+                  val = csconf[kw]
+              except KeyError, ex:
+                  self.fwk.exception('Missing required parameter %s in %s config file',
+                                     kw, csfile)
+                  raise
+          self.compset_conf.append(csconf)
+ 
         """
         Simulation Configuration
         """
@@ -273,6 +299,19 @@ class ConfigurationManager(object):
                 #pytau.stop(self.timers['initialize'])
                 #stop(self.timers['initialize'])
                 raise
+            # Allow propagation of entries from compset config file(s) to simulation
+            # config file.  For the required keywords, we are only going
+            # to propogate the first csconf file
+            firstPass=False
+            for csconf in self.compset_conf:
+              for keyword in self.platform_conf.keys():
+                  if keyword not in conf.keys():
+                      if keyword in self.compset_keywords and not firstPass:
+                        conf[keyword] = self.platform_conf[keyword]
+                        firstPass=True
+                      else:
+                        conf[keyword] = self.platform_conf[keyword]
+
             if (sim_name in sim_name_list):
                 self.fwk.exception('Error: Duplicate SIM_NAME in configuration files')
                 #pytau.stop(self.timers['initialize'])
@@ -294,6 +333,7 @@ class ConfigurationManager(object):
             new_sim = self.SimulationData(sim_name)
             new_sim.sim_conf = conf
             new_sim.conf_file = conf_file
+            new_sim.conf_file_dir=os.path.dirname(os.path.abspath(conf_file))
             new_sim.sim_root = sim_root
             new_sim.log_file = log_file
             new_sim.log_pipe_name = tempfile.mktemp('.logpipe', 'ips_')
@@ -371,6 +411,7 @@ class ConfigurationManager(object):
                 'runspaceInitComponent.py')
         runspace_conf['INPUT_DIR'] = '/dev/null'
         runspace_conf['INPUT_FILES'] = ''
+        runspace_conf['IPS_CONFFILE_DIR'] = ''
         runspace_conf['DATA_FILES'] = ''
         runspace_conf['OUTPUT_FILES'] = ''
         runspace_conf['NPROC'] = 1
@@ -382,31 +423,45 @@ class ConfigurationManager(object):
                                                self.sim_map[self.fwk_sim_name])
         self.fwk_components.append(runspace_component_id)
 
-        """
         # set up The Portal bridge
-        portal_conf={}
-        portal_conf['CLASS'] = 'FWK'
-        portal_conf['SUB_CLASS'] = 'COMP'
-        portal_conf['NAME'] = 'PortalBridge'
-        portal_conf['BIN_PATH'] = self.sim_map[self.fwk_sim_name].sim_conf['FWK_COMPS_PATH']
-        portal_conf['SCRIPT'] = os.path.join(portal_conf['BIN_PATH'], 'portalBridge.py')
-        portal_conf['INPUT_DIR'] = '/dev/null'
-        portal_conf['INPUT_FILES']  = ''
-        portal_conf['DATA_FILES']  = ''
-        portal_conf['OUTPUT_FILES'] = ''
-        portal_conf['NPROC'] = 1
-        portal_conf['LOG_LEVEL'] = 'WARNING'
-        if (self.fwk.log_level == logging.DEBUG):
+        use_portal=True
+        if self.sim_map[self.fwk_sim_name].sim_conf.has_key('USE_PORTAL'):
+          use_portal=self.sim_map[self.fwk_sim_name].sim_conf['USE_PORTAL']
+          if use_portal.lower()=="false": use_portal=False
+        if use_portal:
+          portal_conf={}
+          portal_conf['CLASS'] = 'FWK'
+          portal_conf['SUB_CLASS'] = 'COMP'
+          portal_conf['NAME'] = 'PortalBridge'
+          if self.sim_map[self.fwk_sim_name].sim_conf.has_key('FWK_COMPS_PATH'):
+            portal_conf['BIN_PATH'] = self.sim_map[self.fwk_sim_name].sim_conf['FWK_COMPS_PATH']
+          else:
+            portal_conf['BIN_PATH'] = ipsDir
+          portal_conf['SCRIPT'] = os.path.join(portal_conf['BIN_PATH'], 'portalBridge.py')
+          portal_conf['INPUT_DIR'] = '/dev/null'
+          portal_conf['INPUT_FILES']  = ''
+          portal_conf['DATA_FILES']  = ''
+          portal_conf['OUTPUT_FILES'] = ''
+          portal_conf['NPROC'] = 1
+          portal_conf['LOG_LEVEL'] = 'WARNING'
+          havePortal=True
+          if (self.fwk.log_level == logging.DEBUG):
             portal_conf['LOG_LEVEL'] = 'DEBUG'
-        try:
-            portal_conf['PORTAL_URL'] = self.get_platform_parameter('PORTAL_URL', silent = True)
-            portal_conf['RUNID_URL'] = self.get_platform_parameter('RUNID_URL', silent = True)
-        except KeyError:
-            pass
 
-        component_id = self._create_component(portal_conf,
-                                              self.sim_map[self.fwk_sim_name])
-        self.fwk_components.append(component_id)
+          try:
+            portal_conf['PORTAL_URL']=self.sim_map[self.fwk_sim_name].sim_conf.has_key('PORTAL_URL')
+            portal_conf['RUNID_URL']=self.sim_map[self.fwk_sim_name].sim_conf.has_key('RUNID_URL')
+          except KeyError:
+            try:
+              portal_conf['PORTAL_URL'] = self.get_platform_parameter('PORTAL_URL', silent = True)
+              portal_conf['RUNID_URL'] = self.get_platform_parameter('RUNID_URL', silent = True)
+            except KeyError:
+              havePortal=False
+
+          if havePortal:
+            component_id = self._create_component(portal_conf,
+                                                self.sim_map[self.fwk_sim_name])
+            self.fwk_components.append(component_id)
 
 
         # set up the FTB
@@ -430,7 +485,6 @@ class ConfigurationManager(object):
                                                       self.sim_map[self.fwk_sim_name])
             self.fwk_components.append(ftb_component_id)
 
-        """
 
         #pytau.stop(self.timers['_initialize_fwk_components'])
         #stop(self.timers['_initialize_fwk_components'])
@@ -498,6 +552,15 @@ class ConfigurationManager(object):
                 #stop(self.timers['_initialize_sim'])
                 sys.exit(1)
             conf_fields = set(comp_conf.keys())
+            # If INPUT_DIR not set in conf file, then make it the
+            # same level as the conf file
+            if not comp_conf.has_key('INPUT_DIR'):
+              comp_conf['INPUT_DIR']=sim_data.conf_file_dir
+            #SEK: WORKING HERE
+            if not comp_conf.has_key('DATA_TREE_ROOT'):
+              comp_conf['DATA_TREE_ROOT']=sim_data.conf_file_dir
+            if not comp_conf.has_key('BIN_DIR'):
+              comp_conf['BIN_DIR']=sim_data.conf_file_dir
             if (not self.required_fields.issubset(conf_fields)):
                 self.fwk.exception('Error: missing required entries %s \
                     in simulation %s component %s configuration section' ,

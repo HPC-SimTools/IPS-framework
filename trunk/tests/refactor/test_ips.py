@@ -55,7 +55,7 @@ class testIPS(unittest.TestCase):
 
         log_file = 'log_test_basic_serial1.log'
         #log_file = open(os.path.abspath('log_test_basic_serial1_on_iter.log'), 'w')
-        #log_file = sys.stdout
+        #log_file = 'sys.stdout'
 
         # create framework with config file
         true_or_false = [True, False]

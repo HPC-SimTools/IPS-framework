@@ -151,22 +151,34 @@ class runspaceInitComponent(Component):
                         raise
                 
                 # copy the input files into the working directory
-#               print 'comp_conf[\'INPUT_FILES\'] = ', comp_conf['INPUT_FILES']
-#               print 'os.path.abspath(comp_conf[\'BIN_PATH\']) = ', os.path.abspath(comp_conf['BIN_PATH'])
-
                 ipsutil.copyFiles(os.path.abspath(comp_conf['INPUT_DIR']),
                                   os.path.basename(comp_conf['INPUT_FILES']),
                                   workdir)
 
-                #SEK: Need to figure out the right directories
-                ipsutil.copyFiles(os.path.abspath(comp_conf['DATA_TREE_ROOT']),
-                                  os.path.basename(comp_conf['DATA_FILES']),
-                                  workdir)
+                # This is a bit tricky because we want to look either in the same 
+                # place as the input files or the data_tree root
+                if comp_conf.has_key('DATA_FILES'):
+                  filesCopied=False
+                  if comp_conf.has_key('DATA_TREE_ROOT'):
+                    dtrdir=os.path.abspath(comp_conf['DATA_TREE_ROOT'])
+                    if os.path.exists(os.path.join(dtrdir,comp_conf['DATA_FILES'][0])):
+                      ipsutil.copyFiles(dtrdir,os.path.basename(comp_conf['DATA_FILES']),
+                                        workdir)
+                      filesCopied=True
+                  if not filesCopied:
+                     ipsutil.copyFiles(os.path.abspath(comp_conf['INPUT_DIR']),
+                                       os.path.basename(comp_conf['DATA_FILES']),
+                                       workdir)
 
                 # copy the component's script to the simulation_setup directory
-                ipsutil.copyFiles(os.path.dirname(comp_conf['BIN_DIR']),
-                                  [os.path.basename(comp_conf['SCRIPT'])],
-                                  simulation_setup)
+                if os.path.abspath(comp_conf['SCRIPT'])==comp_conf['SCRIPT']:
+                  ipsutil.copyFiles(os.path.dirname(comp_conf['SCRIPT']),
+                                    [os.path.basename(comp_conf['SCRIPT'])],
+                                    simulation_setup)
+                else:
+                  ipsutil.copyFiles(comp_conf['BIN_DIR'],
+                                    [os.path.basename(comp_conf['SCRIPT'])],
+                                    simulation_setup)
 
             # get the working directory from the runspaceInitComponent
             workdir = services.get_working_dir()
@@ -217,12 +229,12 @@ class runspaceInitComponent(Component):
 
         services = self.services 
 
-        os.chdir(self.simRootDir)
-
         # zip up all of the needed files for debugging later
+        rootdir=os.path.abspath(os.path.join(self.simRootDir,'..'))
         basename = os.path.basename(self.simRootDir)
         basename = ''.join([basename, '.zip'])
-        debug_zip_file = zipfile.ZipFile(basename,'w')
+        containerName = os.path.join(rootdir,basename)
+        debug_zip_file = zipfile.ZipFile(containerName,'w')
         debug_zip_file.write(self.platform_file)
         debug_zip_file.write('resource_usage')
         (head, tail) = os.path.split(self.main_log_file)
