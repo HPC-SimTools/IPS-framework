@@ -635,10 +635,8 @@ class Framework(object):
             # Each Framework Component is treated as a stand-alone simulation
             # generate the queues of invocation messages for each framework component
             for comp_id in fwk_comps:
-                print "XXX> ", comp_id
                 msg_list = []
                 for method in ['step', 'finalize']:
-                    print "XXX> ", comp_id, method
                     if self.do_create_runspace:
                         req_msg = ServiceRequestMessage(self.component_id,
                                                         self.component_id, 
@@ -745,7 +743,6 @@ class Framework(object):
             for sim_name, msg_list in outstanding_sim_calls.items():
                 msg = msg_list.pop(0)
                 self.debug('Framework sending message %s ', msg.__dict__)
-                print 'mmmFramework sending message %s ', msg.__dict__
                 call_id = self.task_manager.init_call(msg, manage_return=False)
                 call_queue_map[call_id] = msg_list
                 call_id_list.append(call_id)
