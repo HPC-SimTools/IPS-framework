@@ -62,6 +62,27 @@ class runspaceInitComponent(Component):
 #       print 'tail ', tail
         ipsutil.copyFiles(head, self.platform_file, self.simRootDir) 
 
+        # zip up all of the needed files for debugging later
+        rootdir=os.path.abspath(os.path.join(self.simRootDir,'..'))
+        basename = os.path.basename(self.simRootDir)
+        basename = ''.join([basename, '.zip'])
+        containerName = os.path.join(rootdir,basename)
+        self.debug_zip_file = zipfile.ZipFile(containerName,'w')
+
+        sim_comps = services.fwk.config_manager.get_component_map()
+        registry = services.fwk.comp_registry
+        # for each simulation component
+        for sim_name, comp_list in sim_comps.items():
+            # for each component_id in the list of components
+            for comp_id in comp_list:
+                registry = services.fwk.comp_registry
+                comp_conf = registry.getEntry(comp_id).component_ref.config
+                file_list = comp_conf['INPUT_FILES'].split()
+                for file in file_list:
+                    input_file = os.path.join(os.path.relpath(comp_conf['INPUT_DIR']), 
+                        os.path.basename(file))
+                    self.debug_zip_file.write(input_file)
+
         try:
             os.chdir(self.simRootDir)
         except OSError, (errno, strerror):
@@ -82,6 +103,8 @@ class runspaceInitComponent(Component):
         #(head, tail) = os.path.split(os.path.abspath(self.fc_files))
         #ipsutil.copyFiles(os.path.dirname(self.fc_files),
         #                  os.path.basename(self.fc_files), simRootDir) 
+
+
 
         return
 
@@ -155,6 +178,7 @@ class runspaceInitComponent(Component):
                                   os.path.basename(comp_conf['INPUT_FILES']),
                                   workdir)
 
+
                 # This is a bit tricky because we want to look either in the same 
                 # place as the input files or the data_tree root
                 if comp_conf.has_key('DATA_FILES'):
@@ -169,6 +193,7 @@ class runspaceInitComponent(Component):
                      ipsutil.copyFiles(os.path.abspath(comp_conf['INPUT_DIR']),
                                        os.path.basename(comp_conf['DATA_FILES']),
                                        workdir)
+
 
                 # copy the component's script to the simulation_setup directory
                 if os.path.abspath(comp_conf['SCRIPT'])==comp_conf['SCRIPT']:
@@ -229,17 +254,15 @@ class runspaceInitComponent(Component):
 
         services = self.services 
 
-        # zip up all of the needed files for debugging later
-        rootdir=os.path.abspath(os.path.join(self.simRootDir,'..'))
-        basename = os.path.basename(self.simRootDir)
-        basename = ''.join([basename, '.zip'])
-        containerName = os.path.join(rootdir,basename)
-        debug_zip_file = zipfile.ZipFile(containerName,'w')
-        debug_zip_file.write(self.platform_file)
-        debug_zip_file.write('resource_usage')
+        (head, tail) = os.path.split(os.path.abspath(self.platform_file))
+        self.debug_zip_file.write(tail)
+        self.debug_zip_file.write('resource_usage')
         (head, tail) = os.path.split(self.main_log_file)
-        debug_zip_file.write(tail)
+        self.debug_zip_file.write(tail)
         for file in self.config_files:
-            debug_zip_file.write(file)
+            self.debug_zip_file.write(file)
+
+
+        self.debug_zip_file.close()
 
         return
