@@ -1,8 +1,19 @@
 #!/bin/sh
+
 source ../frameworkpath.py
+
+###
+##  Some initial setting up
+#
 if test -d test_basic_serial1_0; then
   /bin/rm -rf test_basic_serial1_0
 fi
+if test -e test_basic_serial1_0.zip ; then
+  /bin/rm -f test_basic_serial1_0.zip
+fi
+
+touch file1  ofile1  ofile2  sfile1  sfile2
+
 #-------------------------------------------------------
 echo; echo; echo
 echo "Testing runspace creation"
@@ -13,12 +24,12 @@ echo; echo; echo
 echo "Testing run setup"
 #-------------------------------------------------------
 ${fsrc}/ips.py --run-setup  --simulation=basic_serial1.ips
-exit
 #-------------------------------------------------------
 echo; echo; echo
 echo "Testing running under ips"
 #-------------------------------------------------------
 ${fsrc}/ips.py --run --simulation=basic_serial1.ips
+exit
 #
 #-------------------------------------------------------
 echo; echo; echo

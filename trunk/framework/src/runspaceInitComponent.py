@@ -33,78 +33,74 @@ class runspaceInitComponent(Component):
 
         # get the simRootDir
         self.simRootDir = services.get_config_param('SIM_ROOT')
+        container_ext = services.get_config_param('CONTAINER_FILE_EXT')
         if not self.simRootDir.startswith("/"):
           self.simRootDir=os.path.abspath(self.simRootDir)
 
         # try making the simulation root directory
         try: 
-            os.makedirs(self.simRootDir)
+          os.makedirs(self.simRootDir)
         except OSError, (errno, strerror):
-            if (errno != 17):
-                self.services.exception('Error creating directory %s : %s' ,
+          if (errno != 17):
+            self.services.exception('Error creating directory %s : %s' ,
                         workdir, strerror)
 
         self.config_files = services.fwk.config_file_list
         self.platform_file = services.fwk.platform_file_name
         self.main_log_file = services.get_config_param('LOG_FILE')
-#       print 'log_file = ', self.main_log_file
+        #DBG print 'log_file = ', self.main_log_file
 
         # uncomment when implemented
         # self.fc_files = services.fwk.facets_composer_files
 
         # copy these to the SIM_ROOT
         (head,tail) = os.path.split(os.path.abspath(self.config_files[0]))
-#       print 'head ', head
-#       print 'tail ', tail
         ipsutil.copyFiles(head, self.config_files, self.simRootDir)
         (head, tail) = os.path.split(os.path.abspath(self.platform_file))
-#       print 'head ', head
-#       print 'tail ', tail
         ipsutil.copyFiles(head, self.platform_file, self.simRootDir) 
-
-        # zip up all of the needed files for debugging later
-        rootdir=os.path.abspath(os.path.join(self.simRootDir,'..'))
-        basename = os.path.basename(self.simRootDir)
-        basename = ''.join([basename, '.zip'])
-        containerName = os.path.join(rootdir,basename)
-        self.debug_zip_file = zipfile.ZipFile(containerName,'w')
 
         sim_comps = services.fwk.config_manager.get_component_map()
         registry = services.fwk.comp_registry
         # for each simulation component
         for sim_name, comp_list in sim_comps.items():
-            # for each component_id in the list of components
-            for comp_id in comp_list:
-                registry = services.fwk.comp_registry
-                comp_conf = registry.getEntry(comp_id).component_ref.config
-                file_list = comp_conf['INPUT_FILES'].split()
-                for file in file_list:
-                    input_file = os.path.join(os.path.relpath(comp_conf['INPUT_DIR']), 
-                        os.path.basename(file))
-                    self.debug_zip_file.write(input_file)
+          # Redoing the same container_file name calculation as in configuration manager because I
+          # can't figure out where to put it such that I can get it where I need
+          self.container_file=sim_name+os.path.extsep+container_ext
+          # The w here means that it is overwritten -- we are creating a new container file here
+          container_write = zipfile.ZipFile(os.path.abspath(self.container_file),'w')
+          ipsutil.writeToContainer(container_write, '', self.platform_file)
+          ipsutil.writeToContainer(container_write, '', self.config_files)
 
+          # for each component_id in the list of components
+          for comp_id in comp_list:
+            registry = services.fwk.comp_registry
+            comp_conf = registry.getEntry(comp_id).component_ref.config
+            file_list = comp_conf['INPUT_FILES'].split()
+            for file in file_list:
+              ipsutil.writeToContainer(container_write, os.path.relpath(comp_conf['INPUT_DIR']), 
+                  os.path.basename(file))
+        container_write.close()
+
+        curdir=os.path.abspath(os.path.curdir)
         try:
-            os.chdir(self.simRootDir)
+          os.chdir(self.simRootDir)
         except OSError, (errno, strerror):
-            self.services.debug('Working directory %s does not exist - will attempt creation',
-                                self.simRootDir)
-            try:
-                os.makedirs(self.simRootDir)
-            except OSError, (errno, strerror):
-                self.services.exception('Error creating directory %s : %s' ,
-                                        workdir, strerror)
-                #pytau.stop(timer)
-                raise
-        os.chdir(self.simRootDir)
+          self.services.debug('Working directory %s does not exist - will attempt creation',
+                              self.simRootDir)
+          try:
+              os.makedirs(self.simRootDir)
+          except OSError, (errno, strerror):
+              self.services.exception('Error creating directory %s : %s' ,
+                                      workdir, strerror)
+              #pytau.stop(timer)
+              raise
 
-        # get the configuration files and platform file
+        os.chdir(curdir) # Get back to where you once belonged
 
         # uncomment when implemented
         #(head, tail) = os.path.split(os.path.abspath(self.fc_files))
         #ipsutil.copyFiles(os.path.dirname(self.fc_files),
         #                  os.path.basename(self.fc_files), simRootDir) 
-
-
 
         return
 
@@ -247,22 +243,12 @@ class runspaceInitComponent(Component):
 #
 # ------------------------------------------------------------------------------
 
-
-
     def finalize(self, timestamp=0.0):
         print 'runspaceInitComponent.finalize() called'
 
-        services = self.services 
-
-        (head, tail) = os.path.split(os.path.abspath(self.platform_file))
-        self.debug_zip_file.write(tail)
-        self.debug_zip_file.write('resource_usage')
-        (head, tail) = os.path.split(self.main_log_file)
-        self.debug_zip_file.write(tail)
-        for file in self.config_files:
-            self.debug_zip_file.write(file)
-
-
-        self.debug_zip_file.close()
+        container_write=zipfile.ZipFile(os.path.abspath(self.container_file),'a')
+        ipsutil.writeToContainer(container_write, '', self.main_log_file)
+        ipsutil.writeToContainer(container_write, self.simRootDir, 'resource_usage')
+        container_write.close()
 
         return

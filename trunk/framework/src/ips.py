@@ -56,6 +56,7 @@ import getopt
 import time
 import logging
 import inspect
+import optparse
 import multiprocessing
 from messages import Message, ServiceRequestMessage, \
                     ServiceResponseMessage, MethodInvokeMessage
@@ -70,6 +71,7 @@ from eventService import EventService
 from cca_es_spec import initialize_event_service
 from ips_es_spec import eventManager
 import ipsTiming
+import checklist
 from configobj import ConfigObj
 #from ipsTiming import *
 
@@ -93,7 +95,7 @@ TIMERS = make_timers()
 class Framework(object):
     #@ipsTiming.TauWrap(TIMERS['__init__'])
     def __init__(self, do_create_runspace, do_run_setup, do_run, 
-            config_file_list, log_file, platform_file_name=None,
+            config_file_list, log_file_name, platform_file_name=None,
             compset_list=None, debug=False, 
             ftb=False, verbose_debug = False, cmd_nodes = 0, cmd_ppn = 0):
         """
@@ -118,7 +120,7 @@ class Framework(object):
                                  for this simulation.
                         
                 *SIM_ROOT*, *SIM_NAME*, and *LOG_FILE* must be unique across simulations.
-            log_file: [file] A file name where Framework logging messages are placed. 
+            log_file_name: [file] A file name where Framework logging messages are placed. 
             platform_file_name: [string] The name of the platform
                configuration file used in the simulation.  If not specified it will try to find the
                one installed in the share directory.
@@ -144,17 +146,19 @@ class Framework(object):
         #self.timers = make_timers()
         #start(self.timers['__init__'])
 
-        # create runspace with init.init() flag
-        self.do_create_runspace = do_create_runspace
-        # validate inputs with sim_comps.init() flags
-        self.do_run_setup = do_run_setup
-        # do run
-        self.do_run = do_run
+        self.ips_dosteps={}
+        self.ips_dosteps['create_runspace'] = do_create_runspace # create runspace: init.init()
+        self.ips_dosteps['run_setup']       = do_run_setup    # validate inputs: sim_comps.init() 
+        self.ips_dosteps['run']             = do_run          # Main part of simulation
 
         # fault tolerance flag
         self.ftb = ftb
         # log file name if specified
-        self.log_file = log_file
+        self.log_file_name = log_file_name
+        if log_file_name == 'sys.stdout':
+          self.log_file=sys.stdout
+        else:
+          self.log_file = open(os.path.abspath(log_file_name), 'w')
         # the multiprocessing queue
         self.in_queue = multiprocessing.Queue(0)
         # registry of components for calling
@@ -221,6 +225,7 @@ class Framework(object):
         self.event_manager = eventManager(self)
         self.config_manager = \
              ConfigurationManager(self, self.config_file_list,self.platform_file_name, self.compset_list)
+
         self.resource_manager = ResourceManager(self)
         self.data_manager = DataManager(self)
         self.task_manager = TaskManager(self)
@@ -236,21 +241,18 @@ class Framework(object):
             self.log_level = logging.DEBUG
         # create handler and set level to debug
         logger.setLevel(self.log_level)
-        if log_file == 'sys.stdout':
-            print 'logging to ', log_file
-            self.ch = logging.StreamHandler(sys.stdout)
-        else:
-            print 'logging to ', log_file
-            self.ch = logging.FileHandler(self.log_file, 'w')
-        self.ch.setLevel(self.log_level)
+        ch = logging.StreamHandler(self.log_file)
+        ch.setLevel(self.log_level)
         # create formatter
         formatter = logging.Formatter("%(asctime)s %(name)-15s %(levelname)-8s %(message)s")
         # add formatter to ch
-        self.ch.setFormatter(formatter)
+        ch.setFormatter(formatter)
         # add ch to logger
-        logger.addHandler(self.ch)
+        logger.addHandler(ch)
         self.logger = logger
         self.verbose_debug = verbose_debug
+        self.outstanding_calls_list=[]
+        self.call_queue_map = {}
 
         # add the handler to the root logger
         try:
@@ -526,303 +528,183 @@ class Framework(object):
 
         self.required_fields = set(['CREATE_RUNSPACE', 'RUN_SETUP', 'RUN'])
 
-        checklist_file_exists = False
-        try:
-            main_fwk_comp = self.comp_registry.getEntry(fwk_comps[0])
-            self.sim_root = os.path.abspath(main_fwk_comp.services.get_config_param('SIM_ROOT'))
-            self.checklist_file = os.path.join(self.sim_root, 'checklist.conf')
-            conf = ConfigObj(self.checklist_file, interpolation = 'template',
-                             file_error = True)
-            checklist_file_exists = True
-        except IOError, ioe:
-            print 'Checklist config file "%s" could not be found, continuing without.' % self.checklist_file
-        except SyntaxError, (ex):
-            self.fwk.exception('Error parsing config file: %s' % self.checklist_file)
-            raise
-        except Exception, e:
-            self.exception('encountered exception during fwk.run() checklist configuration')
-            self.terminate_sim(status=Message.FAILURE)
-            #stop(self.timers['run'])
-            #logging.shutdown()
-            return False
+        main_fwk_comp = self.comp_registry.getEntry(fwk_comps[0])
 
+        if self.ips_dosteps['create_runspace']:
+          self._invoke_framework_comps(fwk_comps, 'init')
 
-        # for debugging 
-#       checklist_file_exists = False
-        if checklist_file_exists:
-            try:
-                print 'checklist.conf file found, reading checklist values...'
-
-                self.create_runspace_done_str = conf['CREATE_RUNSPACE']
-#               print create_runspace_done_str
-                if self.create_runspace_done_str == 'DONE':
-                    self.create_runspace_done = True
-                elif self.create_runspace_done_str == 'NOT_DONE':
-                    self.create_runspace_done = False
-                else:
-                    self.exception('Invalid value found for CREATE_RUNSPACE in %s' % self.checklist_file)
-                    raise
-
-                self.run_setup_done_str = conf['RUN_SETUP']
-#               print run_setup_done_str
-                if self.run_setup_done_str == 'DONE':
-                    self.run_setup_done = True
-                elif self.run_setup_done_str == 'NOT_DONE':
-                    self.run_setup_done = False
-                else:
-                    self.exception('Invalid value found for RUN_SETUP in %s' % self.checklist_file)
-                    raise
-
-                self.run_done_str = conf['RUN']
-#               print run_done_str
-                if self.run_done_str == 'DONE':
-                    self.run_done = True
-                elif self.run_done_str == 'NOT_DONE':
-                    self.run_done = False
-                else:
-                    self.exception('Invalid value found for RUN in %s' % self.checklist_file)
-                    raise
-
-            except KeyError, (ex):
-                self.exception('Missing required parameters CREATE_RUNSPACE, RUN_SETUP, or RUN\
-                        in checklist file %s', self.checklist_file)
-                print 'Continuing without checklist file due to missing or incorrect parameters'
-                self.create_runspace_done_str = 'NOT_DONE'
-                self.run_setup_done_str = 'NOT_DONE'
-                self.run_done_str = 'NOT_DONE'
-                self.create_runspace_done = False
-                self.run_setup_done = False
-                self.run_done = False
-        else:
-            self.create_runspace_done_str = 'NOT_DONE'
-            self.run_setup_done_str = 'NOT_DONE'
-            self.run_done_str = 'NOT_DONE'
-            self.create_runspace_done = False
-            self.run_setup_done = False
-            self.run_done = False
-
-        # All Framework components must finish their init() calls before 
-        # proceeding to
-        # execute step(), and invoke simulation components
-#       print 'For debugging purposes:'
-#       print 'OPTION:\t CREATE_RUNSPACE = %s\t RUN_SETUP = %s\t RUN = %s' % \
-#           (self.do_create_runspace, self.do_run_setup, self.do_run)
-#       print 'T_OR_F:\t CREATE_RUNSPACE = %s\t RUN_SETUP = %s\t RUN = %s' % \
-#           (self.create_runspace_done, self.run_setup_done, self.run_done)
-#       print 'STRING:\t CREATE_RUNSPACE = %s\t RUN_SETUP = %s\t RUN = %s' % \
-#           (self.create_runspace_done_str, self.run_setup_done_str, self.run_done_str)
-
-        if self.do_create_runspace and self.create_runspace_done:
-            self._invoke_framework_comps(fwk_comps, 'init')
-            self.create_runspace_done = True
-            self.create_runspace_done_str = 'DONE'
-        elif self.do_create_runspace and not self.create_runspace_done:
-            self._invoke_framework_comps(fwk_comps, 'init')
-            self.create_runspace_done = True
-            self.create_runspace_done_str = 'DONE'
-        elif not self.do_create_runspace and self.create_runspace_done:
-            print 'Skipping CREATE_RUNSPACE, option was %s but runspace exists' % \
-                self.do_create_runspace 
-            self.create_runspace_done = True
-            self.create_runspace_done_str = 'DONE'
-        else:
-            print 'Skipping CREATE_RUNSPACE, option was %s and CREATE_RUNSPACE_DONE = %s' % \
-                (self.do_create_runspace, self.create_runspace_done)
-            self.create_runspace_done = False
-            self.create_runspace_done_str = 'NOT_DONE'
+        self.ips_status={}
 
         try:
-            # Each Framework Component is treated as a stand-alone simulation
-            # generate the queues of invocation messages for each framework component
-            for comp_id in fwk_comps:
-                msg_list = []
-                for method in ['step', 'finalize']:
-                    if self.do_create_runspace:
-                        req_msg = ServiceRequestMessage(self.component_id,
-                                                        self.component_id, 
-                                                        comp_id,
-                                                        'init_call', method, 0)
-                        msg_list.append(req_msg)
-                if self.do_create_runspace:
-                    outstanding_sim_calls[comp_id] = msg_list
+          # Each Framework Component is treated as a stand-alone simulation
+          # generate the queues of invocation messages for each framework component
+          for comp_id in fwk_comps:
+            msg_list = []
+            for method in ['step', 'finalize']:
+              if self.ips_dosteps['create_runspace']:
+                req_msg = ServiceRequestMessage(self.component_id, self.component_id, 
+                                                comp_id, 'init_call', method, 0)
+                msg_list.append(req_msg)
 
+            if self.ips_dosteps['create_runspace']:
+              outstanding_sim_calls[comp_id] = msg_list
 
-            # generate a queue of invocation messages for each simulation
-            #   - the list will look like: [init_comp.init(),
-            #                               init_comp.step(),
-            #                               init_comp.finalize(),
-            #                               driver.init(),
-            #                               driver.step(),
-            #                               driver.finalize()]
-            # these messages will be sent on a FIFO basis, thus running the init components,
-            # then the corresponding drivers.
-            for sim_name, comp_list in sim_comps.items():
-                msg_list = []
-                self._send_monitor_event(sim_name, 'IPS_START', 'Starting IPS Simulation')
-                comment = 'Nodes = %d   PPN = %d' % \
-                            (self.resource_manager.num_nodes, self.resource_manager.ppn)
-                self._send_monitor_event(sim_name, 'IPS_RESOURCE_ALLOC', comment)
-                methods = []
-#               if self.ftb:
-#                   self._send_ftb_event('IPS_START')
+          # generate a queue of invocation messages for each simulation
+          #   - list will look like: [init_comp.init(), init_comp.step(), init_comp.finalize(),
+          #                           driver.init(), driver.step(), driver.finalize()]
+          # these messages will be sent on a FIFO basis, thus running the init components,
+          # then the corresponding drivers.
+          for sim_name, comp_list in sim_comps.items():
+            msg_list = []
+            self._send_monitor_event(sim_name, 'IPS_START', 'Starting IPS Simulation')
+            comment = 'Nodes = %d   PPN = %d' % \
+                        (self.resource_manager.num_nodes, self.resource_manager.ppn)
+            self._send_monitor_event(sim_name, 'IPS_RESOURCE_ALLOC', comment)
+            methods = []
+            if self.ftb:
+                self._send_ftb_event('IPS_START')
 
-                ###
-                ## The logic of the create_runspace and run_setup
-                #
-                if  self.create_runspace_done:
-                  if self.do_run_setup:
-                    self.run_setup_done = True
-                    self.run_setup_done_str = 'DONE'
-                    methods.append('init')
-                  else:
-                    self.run_setup_done = False
-                    self.run_setup_done_str = 'NOT_DONE'
-                    print 'Skipping RUN_SETUP (a), option was %s' % self.do_run_setup
-#                   print 'Unable to perform RUN_SETUP, CREATE_RUNSPACE = %s, but RUN_SETUP = %s' \
-#                       % (self.create_runspace_done_str, self.do_run_setup)
-                else:
-                  self.run_setup_done = False
-                  self.run_setup_done_str = 'NOT_DONE'
-                  if self.do_run_setup:
-                    print 'Unable to continue to RUN_SETUP step, CREATE_RUNSPACE = %s' % \
-                        self.create_runspace_done_str
-                  else:
-                    print 'Skipping RUN_SETUP (b), option was %s' % self.do_run_setup
+            ###
+            ## Get the status of the simulation 
+            #
+            checklist_file=self.config_manager.sim_map[sim_name].checklist_file
+            errmsg, self.ips_status[sim_name]=checklist.get_status(checklist_file)
+            if len(errmsg)>0:
+              self.exception(errmsg)
+              self.terminate_sim(status=Message.FAILURE)
+    
+            if not self.ips_status[sim_name]['create_runspace']:
+              self.ips_status[sim_name]['create_runspace'] = True
 
-                ###
-                ## The logic of the run with runspace and create_runspace_done
-                #
-                if self.do_run:
-                  if self.create_runspace_done and self.run_setup_done:
-                    self.run_done = True
-                    self.run_done_str = 'DONE'
-                    methods.append('step')
-                    methods.append('finalize')
-                  elif not self.create_runspace_done or not self.run_setup_done:
-                    self.run_done = False 
-                    self.run_done_str = 'NOT_DONE'
-                    print 'Unable to continue to RUN step, CREATE_RUNSPACE = %s and RUN_SETUP = %s' % \
-                        (self.create_runspace_done_str, self.run_setup_done_str)
-                  else:
-                      self.run_done = False 
-                      self.run_done_str = 'NOT_DONE'
-                      self.exception('Invalid combination of options for RUN step, quitting')
-                      self.exception('RUN = %s, RUN_SETUP = %s, CREATE_RUNSPACE = %s' % 
-                              (self.do_run, self.run_setup_done_str, self.create_runspace_done_str))
-                      self.terminate_sim(status=Message.FAILURE)
-                      #logging.shutdown()
-                      print 'returning'
-                      return False
-                else:
-                  self.run_done = False 
-                  self.run_done_str = 'NOT_DONE'
-                  print 'Unable to RUN, CREATE_RUNSPACE = %s and RUN_SETUP = %s, but RUN = %s' \
-                        % (self.create_runspace_done_str, self.run_setup_done_str, self.do_run)
+            ###
+            ## The logic of the create_runspace and run_setup
+            #
+            if  self.ips_status[sim_name]['create_runspace']:
+              if self.ips_dosteps['run_setup']:
+                methods.append('init')
+                self.ips_status[sim_name]['run_setup'] = True
+            else:
+              self.ips_status[sim_name]['run_setup'] = False
+              if self.ips_dosteps['run_setup']:
+                self.exception('Unable to continue to RUN_SETUP step, CREATE_RUNSPACE = not done')
+                #SEK: May need to automatically invoke create_runspace if run_setup is called.
+                return False
 
-                # Now for this logic
-                for comp_id in comp_list:
-                    #for method in ['init', 'validate', 'step', 'finalize']:
-                    for method in methods:
-                        req_msg = ServiceRequestMessage(self.component_id,
-                                                        self.component_id, comp_id,
-                                                        'init_call', method, 0)
-                        msg_list.append(req_msg)
-                if msg_list:
-                    outstanding_sim_calls[sim_name] = msg_list
+            ###
+            ## The logic of the run with runspace and create_runspace
+            #
+            if self.ips_dosteps['run']:
+              if self.ips_status[sim_name]['create_runspace'] and self.ips_status[sim_name]['run_setup']:
+                methods.append('step')
+                methods.append('finalize')
+                self.ips_status[sim_name]['run'] = True
+              else:
+                #SEK: Currently: if run_setup is done then create_runspace is done: May change
+                self.exception('Unable to continue to RUN step, RUN_SETUP = not done')
+                self.terminate_sim(status=Message.FAILURE)
+                return False
+
+            # Now for this logic
+            for comp_id in comp_list:
+              #for method in ['init', 'validate', 'step', 'finalize']:
+              for method in methods:
+                req_msg = ServiceRequestMessage(self.component_id, self.component_id, comp_id,
+                                                'init_call', method, 0)
+                msg_list.append(req_msg)
+            if msg_list:
+                outstanding_sim_calls[sim_name] = msg_list
+
         except Exception, e:
-            self.exception('encountered exception during fwk.run() genration of call messages')
-            self.terminate_sim(status=Message.FAILURE)
-            #stop(self.timers['run'])
-            #logging.shutdown()
-            return False
+          self.exception('encountered exception during fwk.run() genration of call messages')
+          self.terminate_sim(status=Message.FAILURE)
+          #stop(self.timers['run'])
+          #logging.shutdown()
+          return False
 
         call_id_list = []
         call_queue_map = {}
         # send off first round of invocations...
         try:
-            for sim_name, msg_list in outstanding_sim_calls.items():
-                msg = msg_list.pop(0)
-                self.debug('Framework sending message %s ', msg.__dict__)
-                call_id = self.task_manager.init_call(msg, manage_return=False)
-                call_queue_map[call_id] = msg_list
-                call_id_list.append(call_id)
+          for sim_name, msg_list in outstanding_sim_calls.items():
+            msg = msg_list.pop(0)
+            self.debug('Framework sending message %s ', msg.__dict__)
+            call_id = self.task_manager.init_call(msg, manage_return=False)
+            call_queue_map[call_id] = msg_list
+            call_id_list.append(call_id)
         except Exception, e:
-            self.exception('encountered exception during fwk.run() sending first round of invocations (init of inits and fwk comps)')
-            self.terminate_sim(status=Message.FAILURE)
-            #stop(self.timers['run'])
-            #logging.shutdown()
-            return False
+          self.exception('encountered exception during fwk.run() sending first round of invocations (init of inits and fwk comps)')
+          self.terminate_sim(status=Message.FAILURE)
+          #stop(self.timers['run'])
+          #logging.shutdown()
+          return False
 
         while (len(call_id_list) > 0):
+          if (self.verbose_debug):
+              self.debug("Framework waiting for message")
+          # get new messages
+          try:
+              msg = self.in_queue.get()
+          except:
+              continue
+          if (self.verbose_debug):
+              self.debug("Framework received Message : %s", str(msg.__dict__))
+          
+          # add blocked messages to message list for reprocessing
+          msg_list = [msg] + self.blocked_messages
+          self.blocked_messages = []
+          # process new and blocked messages
+          for msg in msg_list:
             if (self.verbose_debug):
-                self.debug("Framework waiting for message")
-            # get new messages
-            try:
-                msg = self.in_queue.get()
-            except:
+                self.debug('Framework processing message %s ', msg.message_id)
+            if (msg.__class__.__name__ == 'ServiceRequestMessage'):
+              try:
+                self._dispatch_service_request(msg)
+              except Exception:
+                self.exception('Error dispatching service request message.')
+                self.terminate_sim(status=Message.FAILURE)
+                #stop(self.timers['run'])
+                #logging.shutdown()
+                return False
+              continue
+            elif (msg.__class__.__name__ == 'MethodResultMessage'):
+              if msg.call_id not in call_id_list:
+                self.task_manager.return_call(msg)
                 continue
-            if (self.verbose_debug):
-                self.debug("Framework received Message : %s", str(msg.__dict__))
-            
-            # add blocked messages to message list for reprocessing
-            msg_list = [msg] + self.blocked_messages
-            self.blocked_messages = []
-            # process new and blocked messages
-            for msg in msg_list:
-                if (self.verbose_debug):
-                    self.debug('Framework processing message %s ', msg.message_id)
-                if (msg.__class__.__name__ == 'ServiceRequestMessage'):
-                    try:
-                        self._dispatch_service_request(msg)
-                    except Exception:
-                        self.exception('Error dispatching service request message.')
-                        self.terminate_sim(status=Message.FAILURE)
-                        #stop(self.timers['run'])
-                        #logging.shutdown()
-                        return False
-                    continue
-                elif (msg.__class__.__name__ == 'MethodResultMessage'):
-                    if msg.call_id not in call_id_list:
-                        self.task_manager.return_call(msg)
-                        continue
-                    # Message is a result from a framework invocation
-                    call_id_list.remove(msg.call_id)
-                    sim_msg_list = call_queue_map[msg.call_id]
-                    del call_queue_map[msg.call_id]
-                    if (msg.status == Message.FAILURE):
-                        self.error('received a failure message from component %s : %s',
-                                   msg.sender_id, str(msg.args))
-                        # No need to process remaining messages for this simulation
-                        sim_msg_list = []
-                        comment = 'Simulation Execution Error'
-                        ok = False
-                        # self.terminate_sim(status=Message.FAILURE)
-                        # return False
-                    else:
-                        comment = 'Simulation Ended'
-                        ok = True
-                    try:
-                        next_call_msg =  sim_msg_list.pop(0)
-                        call_id = self.task_manager.init_call(next_call_msg,
-                                                              manage_return=False)
-                        call_id_list.append(call_id)
-                        call_queue_map[call_id] = sim_msg_list
-                    except IndexError:
-                        sim_name = msg.sender_id.get_sim_name()
-                        if sim_name in sim_comps.keys():
-                            self._send_monitor_event(sim_name, 'IPS_END',
-                                                    comment, ok)
-                            if self.ftb:
-                                self._send_ftb_event('IPS_END')
+              # Message is a result from a framework invocation
+              call_id_list.remove(msg.call_id)
+              sim_msg_list = call_queue_map[msg.call_id]
+              del call_queue_map[msg.call_id]
+              if (msg.status == Message.FAILURE):
+                self.error('received a failure message from component %s : %s',
+                           msg.sender_id, str(msg.args))
+                # No need to process remaining messages for this simulation
+                sim_msg_list = []
+                comment = 'Simulation Execution Error'
+                ok = False
+                # self.terminate_sim(status=Message.FAILURE)
+                # return False
+              else:
+                comment = 'Simulation Ended'
+                ok = True
+              try:
+                next_call_msg =  sim_msg_list.pop(0)
+                call_id = self.task_manager.init_call(next_call_msg,
+                                                      manage_return=False)
+                call_id_list.append(call_id)
+                call_queue_map[call_id] = sim_msg_list
+              except IndexError:
+                sim_name = msg.sender_id.get_sim_name()
+                if sim_name in sim_comps.keys():
+                  self._send_monitor_event(sim_name, 'IPS_END', comment, ok)
+                  if self.ftb:
+                      self._send_ftb_event('IPS_END')
+        for sim_name in self.ips_status.keys():
+          container_file=self.config_manager.sim_map[sim_name].container_file
+          checklist_file=self.config_manager.sim_map[sim_name].checklist_file
+          errmsg=checklist.update(checklist_file,container_file,self.ips_status[sim_name])
         self.event_service._print_stats()
         #stop(self.timers['run'])
         #dumpAll()
-        checklist = open(os.path.abspath(self.checklist_file), 'w')
-        checklist.write('CREATE_RUNSPACE = %s\n' % self.create_runspace_done_str)
-        checklist.write('RUN_SETUP = %s\n' % self.run_setup_done_str)
-        checklist.write('RUN = %s\n' % self.run_done_str)
-        checklist.flush()
-        checklist.close()
 
         #self.log_file.close()
         #logging.shutdown()
@@ -965,128 +847,66 @@ class Framework(object):
         #sys.exit(status)
         #stop(self.timers['terminate_sim'])
 
-
-
-def printUsageMessage():
-    """
-    Print message on how to run the IPS.
-    """
-    # with files
-    print 'Usage: ips [--create-runspace | --run-setup | --run]+ --simulation=SIM_FILE_NAME --platform=PLATFORM_FILE_NAME --log=LOG_FILE_NAME [--debug | --ftb]'
+def filelist_callback(options, opt_str, values, parser):
+  setattr(parser.values, options.dest, values.split(','))
 
 def main(argv=None):
     """
     Check and parse args, create and run the framework.
     """
+    runopts="[--create-runspace | --run-setup | --run] "
+    fileopts="--simulation=SIM_FILE_NAME --platform=PLATFORM_FILE_NAME "
+    miscopts="[--component=COMPONENT_FILE_NAME(S)] [--log=LOG_FILE_NAME] "
+    debugopts="[--debug | --ftb] [--verbose] "
 
+    parser = optparse.OptionParser(usage="%prog "+runopts+debugopts+fileopts+miscopts)
+    parser.add_option('-t','--create-runspace',dest='do_create_runspace', action='store_true',
+                      help='Create the runspace')
+    parser.add_option('-s','--run-setup',dest='do_run_setup', action='store_true',
+                      help='Run the setup (init of the driver)')
+    parser.add_option('-r','--run',dest='do_run', action='store_true',
+                      help='Run')
+    parser.add_option('-d','--debug',dest='debug', action='store_false',
+                      help='Turn on debugging')
+    parser.add_option('-v','--verbose',dest='verbose_debug', action='store_false',
+                      help='Run IPS verbosely')
+    parser.add_option('-f','--ftb',dest='ftb', action='store_false',
+                      help='Turn on FTP capability')
+    parser.add_option('-p', '--platform', dest='platform_filename', default='',
+                      type="string", help='IPS platform configuration file')
+    parser.add_option('-i', '--simulation', 
+                      action='callback', callback=filelist_callback,
+                      type="string", help='IPS simulation file')
+    parser.add_option('-c', '--component', 
+                      action='callback', callback=filelist_callback,
+                      type="string", help='IPS component configuration file(s)')
+    parser.add_option('-l', '--log', dest='log_file', default='sys.stdout',
+                      type="string", help='IPS Log file')
+    parser.add_option('-n', '--nodes', dest='cmd_nodes', default='0',
+                      type="int", help='Computer nodes')
+    parser.add_option('-o', '--ppn', dest='cmd_ppn', default='0',
+                      type="int", help='Computer processor per nodes')
+
+    options, args = parser.parse_args()
+
+    # Simulation files
     cfgFile_list = []
-    compset_list = []
-    platform_filename = ''
-    simulation_filename = ''
-    log_file = 'sys.stdout'
-    # parse command line arguments
-    if argv is None:
-        argv = sys.argv
-        first_arg = 1
+    if options.simulation:
+       cfgFile_list=options.simulation
     else:
-        first_arg = 0
+      print "Must specify simulation file(s)"
+      return
+
+    # Component files
+    compset_list = []
+    if options.simulation:
+       compset_list=options.component
 
     try:
-        opts, args = getopt.gnu_getopt(argv[first_arg:], '',
-                                       ["create-runspace", "run-setup", "run", 
-                                        "simulation=", "compset_list=","platform=", "log=", 
-                                        "nodes=", "ppn=",
-                                        "debug", "verbose", "ftb"])
-    except getopt.error, msg:
-        print 'Invalid command line arguments', msg
-        printUsageMessage()
-        return 1
-    debug = False
-    ftb = False
-    verbose_debug = False
-    cmd_nodes = 0
-    cmd_ppn = 0
-    # flags for the action to perform
-    do_create_runspace = False
-    do_run_setup = False
-    do_run = False
-    # flag for platform file present
-    platform_file_specified = False
-    simulation_file_specified = False
-    for arg, value in opts:
-        if (arg == '--create-runspace'):
-            # create the runspace
-            do_create_runspace = True
-        elif (arg == '--run-setup'):
-            # setup for run
-            do_run_setup = True
-        elif (arg == '--run'):
-            # run
-            do_run = True
-        elif (arg == '--log'):
-            log_file = value
-            #try:
-            #    log_file = open(os.path.abspath(log_file_name), 'w')
-            #except Exception, e:
-            #    print 'Error writing to log file ' , log_file_name
-            #    print str(e)
-            #    raise
-        elif (arg == '--simulation'):
-            cfgFile_list=value.split(',')
-            simulation_file_specified = True
-        elif (arg == '--platform'):
-            platform_filename = value
-            platform_file_specified = True
-        elif (arg == '--compset_list'):
-            compset_list=value.split(',')
-            compset_specified = True
-        elif (arg == '--nodes'):
-            cmd_nodes = int(value)
-        elif (arg == '--ppn'):
-            cmd_ppn = int(value)
-        elif (arg == '--debug'):
-            debug = True
-        elif (arg == '--ftb'):
-            ftb = True
-        elif (arg == '--verbose'):
-            verbose_debug = True
-
-    # if a --platform file was not specified, use default
-    # if the default doesn't exist, raise an exception
-    #if (not platform_file_specified):
-    #    platform_filename = 'platform.conf'
-    #    try:
-    #        platform_file = open(os.path.abspath(platform_filename), 'r')
-    #    except Exception, e:
-    #        print 'Error reading from platform.conf file '
-    #        print str(e)
-    #        raise
-
-    if (not simulation_file_specified):
-        simulation_filename = 'core-edge.conf'
-        try:
-            simulation_file = open(os.path.abspath(simulation_filename), 'r')
-        except Exception, e:
-            print 'Error reading from core-edge.conf file '
-            print str(e)
-            raise
-
-    # if no config files were specified, print usage and exit
-    if (len(cfgFile_list) == 0):
-        printUsageMessage()
-        return 1
-    # if no options were specified
-#   elif ((do_create_runspace + do_run_setup + do_run) == 0):
-#       # do everything
-#       do_create_runspace = do_run_setup = do_run = True
-
-    #print "got cmd ln args"
-    #print 'cfgFile_list: ', cfgFile_list
-    # create framework with config file
-    try:
-        fwk = Framework(do_create_runspace, do_run_setup, do_run, cfgFile_list, 
-                log_file, platform_filename, compset_list, debug, ftb, verbose_debug, 
-                cmd_nodes, cmd_ppn)
+        fwk = Framework(options.do_create_runspace, options.do_run_setup, options.do_run, 
+                cfgFile_list, options.log_file, options.platform_filename, 
+                compset_list, options.debug, options.ftb, options.verbose_debug, 
+                options.cmd_nodes, options.cmd_ppn)
         fwk.run()
         ipsTiming.dumpAll('framework')
     except :
@@ -1098,8 +918,4 @@ def main(argv=None):
 if __name__ == "__main__":
     print "Starting IPS"
     sys.stdout.flush()
-    #args = '--config=sim.conf --config=sim2.conf --platform=jaguar.conf'
-    #args = '--config=basic_concurrent1.conf --platform=odin.conf'
-    #argv = args.split(' ')
-    #argv = sys.argv
     sys.exit(main())

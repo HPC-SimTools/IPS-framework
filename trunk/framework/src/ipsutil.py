@@ -59,6 +59,52 @@ def copyFiles(src_dir, src_file_list, target_dir, prefix='', keep_old = False):
         except:
             raise
 
+def writeToContainer(ziphandle, src_dir, src_file_list):
+  """
+  Write files to the ziphandle.  Because when one wants to unzip the
+  file, one typically doesn't want the full path, this handles getting
+  just the shorter path name.  
+  src_file_list can be a single string
+  If src_dir is specified:
+     relative 
+  If it is not specified:
+     relative 
+  filename in the zip file.
+  """
+  try:
+      file_list = src_file_list.split()
+  except AttributeError : # srcFileList is not a string
+      file_list = src_file_list
+
+  # The logic for directories in the current directory follows that of
+  # not specifying a src directory at all
+  if src_dir==".": src_dir=""
+
+  curdir=os.path.curdir
+  if src_dir:
+    for file in file_list:
+      sfile=os.path.join(src_dir,file)
+      if os.path.exists(sfile):
+        shutil.copy(sfile, file)
+        ziphandle.write(file)
+        os.remove(file)
+      else:
+        raise Exception('No such file : %s in directory %s', file, src_dir)
+  else:
+    for file in file_list:
+      if os.path.exists(file):
+        # If it is a full path, copy it locally, write to zip, remove
+        if os.path.dirname(file):
+          absfile=os.path.abspath(file)
+          (sdir, sfile) = os.path.split(absfile)
+          shutil.copy(absfile, sfile)
+          ziphandle.write(sfile)
+          os.remove(sfile)
+        else:
+          ziphandle.write(file)
+      else:
+        raise Exception('No such file : %s', file)
+
 def getTimeString(timeArg=None):
     """
     Return a string representation of *timeArg*. *timeArg* is expected
