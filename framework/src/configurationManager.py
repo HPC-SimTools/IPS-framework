@@ -56,6 +56,7 @@ class ConfigurationManager(object):
             self.conf_file_dir = None
             self.driver_comp = None
             self.init_comp = None
+            self.all_comps = []
             self.port_map = {}
             self.component_process = None
             self.log_file = None
@@ -84,6 +85,11 @@ class ConfigurationManager(object):
         self.required_fields = set(['CLASS', 'SUB_CLASS', 'NAME', 'SCRIPT',
                                     'INPUT_FILES', 'OUTPUT_FILES', 'NPROC'])
         self.config_file_list = []
+        self.sim_name_list = None
+        self.sim_root_list = None
+        self.log_file_list = None
+        self.log_dynamic_sim_queue = Queue(0)
+        
         for conf_file in config_file_list:
             abs_path = os.path.abspath(conf_file)
             if (abs_path not in self.config_file_list):
@@ -200,7 +206,7 @@ class ConfigurationManager(object):
             node_alloc_mode = self.platform_conf['NODE_ALLOCATION_MODE'].upper()
             if node_alloc_mode not in ['EXCLUSIVE', 'SHARED']:
                 self.fwk.exception("bad value for NODE_ALLOCATION_MODE. expected 'EXCLUSIVE' or 'SHARED'.")
-                raise                 
+                raise
         except:
             self.fwk.exception("missing value or bad type for NODE_ALLOCATION_MODE.  expected 'EXCLUSIVE' or 'SHARED'.")
             raise
@@ -312,6 +318,10 @@ class ConfigurationManager(object):
                       else:
                         conf[keyword] = self.platform_conf[keyword]
 
+            container_ext = 'zip'
+            if conf.has_key('CONTAINER_FILE_EXT'):
+              container_ext = conf['CONTAINER_FILE_EXT']
+
             if (sim_name in sim_name_list):
                 self.fwk.exception('Error: Duplicate SIM_NAME in configuration files')
                 #pytau.stop(self.timers['initialize'])
@@ -337,6 +347,10 @@ class ConfigurationManager(object):
             new_sim.sim_root = sim_root
             new_sim.log_file = log_file
             new_sim.log_pipe_name = tempfile.mktemp('.logpipe', 'ips_')
+            # Determine the file name for the container file
+            new_sim.container_file=sim_name+os.path.extsep+container_ext
+            new_sim.checklist_file = os.path.join(sim_root, 'checklist.conf')
+
             self.log_daemon.add_sim_log(new_sim.log_pipe_name,
                                         new_sim.log_file)
             self.sim_map[sim_name] = new_sim
@@ -357,6 +371,7 @@ class ConfigurationManager(object):
             new_sim.fwk_logger = logging.getLogger(sim_name + '_FRAMEWORK')
             new_sim.fwk_logger.setLevel(real_log_level)
             new_sim.fwk_logger.addHandler(socketHandler)
+            #SEK: It'd be nice to log to the zip file but I don't understand the handles
 
             # Use first simulation for framework components
             if (not self.fwk_sim_name):
@@ -365,6 +380,8 @@ class ConfigurationManager(object):
                 fwk_sim = self.SimulationData(fwk_sim_conf['SIM_NAME'])
                 fwk_sim.sim_conf = fwk_sim_conf
                 fwk_sim.sim_root = new_sim.sim_root
+                fwk_sim.container_file = new_sim.container_file
+                fwk_sim.checklist_file = new_sim.checklist_file
                 fwk_sim.log_file = self.fwk.log_file #sys.stdout
                 fwk_sim.log_pipe_name = tempfile.mktemp('.logpipe', 'ips_')
                 fwk_sim_conf['LOG_LEVEL'] = 'DEBUG'
@@ -504,27 +521,8 @@ class ConfigurationManager(object):
         ports_config = sim_conf['PORTS']
         ports_list  = ports_config['NAMES'].split()
 
-        # get the simRootDir, then make it
         simRootDir = self.get_sim_parameter(sim_name, 'SIM_ROOT')
 
-        # not making directories in configurationManager anymore
-        #try:
-        #    os.makedirs(simRootDir)
-        #except OSError, (errno, strerror):
-        #    if (errno != 17):
-        #        self.fwk.exception('Error creating Simulation directory %s : %d %s' ,
-        #                           simRootDir, errno, strerror)
-                #pytau.stop(self.timers['_initialize_sim'])
-                #stop(self.timers['_initialize_sim'])
-        #        raise
-        #try:
-        #    shutil.rmtree(os.path.join(simRootDir, 'work'))
-        #except OSError, (errno, strerror):
-        #    if (errno == 2):
-        #        pass
-        #    else:
-        #        raise
-            
         # set simulation level partial_nodes
         try:
             pn_simconf = sim_conf['NODE_ALLOCATION_MODE']
