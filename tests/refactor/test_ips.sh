@@ -18,8 +18,10 @@ touch file1  ofile1  ofile2  sfile1  sfile2
 echo; echo; echo
 echo "Testing runspace creation"
 #-------------------------------------------------------
-${fsrc}/ips.py --create-runspace --simulation=basic_serial1.ips
+#${fsrc}/ips.py --create-runspace --simulation=basic_serial1.ips --sim_name=basic_foo
+${fsrc}/ips.py --create-runspace --simulation=basic_foo1:b1.ips,basic_foo2:b2.ips --sim_name=basic_foo
 #-------------------------------------------------------
+exit
 echo; echo; echo
 echo "Testing run setup"
 #-------------------------------------------------------
