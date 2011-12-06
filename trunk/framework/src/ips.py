@@ -58,6 +58,7 @@ import logging
 import inspect
 import optparse
 import multiprocessing
+import shutil
 from messages import Message, ServiceRequestMessage, \
                     ServiceResponseMessage, MethodInvokeMessage
 from configurationManager import ConfigurationManager
@@ -848,15 +849,15 @@ class Framework(object):
         #stop(self.timers['terminate_sim'])
 
 def filelist_callback(options, opt_str, values, parser):
-  setattr(parser.values, options.dest, values.split(','))
+    setattr(parser.values, options.dest, values.split(','))
 
 def main(argv=None):
     """
     Check and parse args, create and run the framework.
     """
-    runopts="[--create-runspace | --run-setup | --run] "
+    runopts="[--create-runspace | --clone | --run-setup | --run] "
     fileopts="--simulation=SIM_FILE_NAME --platform=PLATFORM_FILE_NAME "
-    miscopts="[--component=COMPONENT_FILE_NAME(S)] [--log=LOG_FILE_NAME] "
+    miscopts="[--component=COMPONENT_FILE_NAME(S)] [--sim_name=SIM_NAME] [--log=LOG_FILE_NAME] "
     debugopts="[--debug | --ftb] [--verbose] "
 
     parser = optparse.OptionParser(usage="%prog "+runopts+debugopts+fileopts+miscopts)
@@ -877,9 +878,15 @@ def main(argv=None):
     parser.add_option('-i', '--simulation', 
                       action='callback', callback=filelist_callback,
                       type="string", help='IPS simulation file')
+    parser.add_option('-y', '--clone', 
+                      action='callback', callback=filelist_callback,
+                      type="string", help='Clone container file')
     parser.add_option('-c', '--component', 
                       action='callback', callback=filelist_callback,
                       type="string", help='IPS component configuration file(s)')
+    parser.add_option('-e', '--sim_name',
+                      action='store', dest='sim_name',
+                      type="string", help='Simulation name to replace in the IPS simulation file')
     parser.add_option('-l', '--log', dest='log_file', default='sys.stdout',
                       type="string", help='IPS Log file')
     parser.add_option('-n', '--nodes', dest='cmd_nodes', default='0',
@@ -892,7 +899,39 @@ def main(argv=None):
     # Simulation files
     cfgFile_list = []
     if options.simulation:
-       cfgFile_list=options.simulation
+      cfgFile_list=options.simulation
+      # create a new list for file names that have been scrubbed of ':'
+      cleaned_file_list = []
+
+      # iterate over the list of files 
+      for file in cfgFile_list:
+        # if the file name contains ':', we must replace SIM_NAME in the 
+        # file with the new value and remove the new SIM_NAME and ':' 
+        # from the string for IPS to read the modified .ips file.
+        if file.find(':') != -1:
+            # split the mapping
+            (new_sim_name, file_name) = file.split(':')
+
+            # open the file, create the config object
+            cfg_file = ConfigObj(file_name, 
+                                 interpolation='template', 
+                                 file_error=True)
+
+            # modify the SIM_NAME value to the new value
+            cfg_file['SIM_NAME'] = new_sim_name
+
+            #write and close to avoid multiple references to these files
+            cfg_file.write()
+
+            # replace file with name specified after ':'
+            file = file_name
+
+        # append file to the list of cleaned names that don't contain ':'
+        cleaned_file_list.append(file)
+
+      # replace cfgFile_list with a list that won't have any ':' or sim_names
+      cfgFile_list = cleaned_file_list
+
     else:
       print "Must specify simulation file(s)"
       return
@@ -900,7 +939,39 @@ def main(argv=None):
     # Component files
     compset_list = []
     if options.simulation:
-       compset_list=options.component
+      compset_list=options.component
+
+#   if options.clone:
+#     # copy IPS file from container to
+#     container = zipfile.open(
+#
+#     # copy all input files to current directory
+#
+#     # replace SIM_NAME in new IPS file
+#     ips_file = ConfigObj(open(cfgFile_list
+
+    # if this option is specified, it overrides any other 
+    # sim_name:sim_file.ips mappings in --simulation.
+    if options.sim_name:
+      cleaned_file_list = []
+      for file in cfgFile_list:
+        if file.find('.ips') != -1:
+          new_file = options.sim_name+".ips"
+          shutil.copy(file, new_file)
+          file = new_file
+        cfg_file = ConfigObj(file, 
+                             interpolation='template', 
+                             file_error=True)
+        print 'cfg_file[\'SIM_NAME\'] was:', cfg_file['SIM_NAME']
+        cfg_file['SIM_NAME'] = options.sim_name
+        print 'cfg_file[\'SIM_NAME\'] is now:', cfg_file['SIM_NAME']
+        cfg_file.write()
+
+        # append file to the list of modified files, so that we use
+        # copied versions of the files if they've been copied.
+        cleaned_file_list.append(file)
+      # replacing the list of files
+      cfgFile_list = cleaned_file_list
 
     try:
         fwk = Framework(options.do_create_runspace, options.do_run_setup, options.do_run, 
@@ -911,6 +982,14 @@ def main(argv=None):
         ipsTiming.dumpAll('framework')
     except :
         raise 
+
+    # post running cleanup of working files.
+    if options.sim_name:
+      cleaned_file_list = []
+      for file in cfgFile_list:
+        if file.find('.ips') != -1:
+          os.remove(file)
+
     return 0
 
 # ----- end main -----
