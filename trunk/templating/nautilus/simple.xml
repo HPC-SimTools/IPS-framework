@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 	<run>
-	    <tool>
-	        <about>Nautilus is a totally awesome tool</about>
-	    </tool>
+	    <template>
+	        <about>This is a Nautilus template for the sod shock</about>
+	    </template>
 	    <input>
 	        <number id="pLeft">
 	            <about>
