@@ -3,7 +3,7 @@
 	    <template>
 	        <about>This is a Nautilus template for the sod shock</about>
 	    </template>
-	    <input>
+
 	        <number id="pLeft">
 	            <about>
 	                <label>pressure on the left half of the domain</label>
@@ -13,6 +13,7 @@
 	            <min>0.0</min>
 	            <default>1.0e5</default>
             </number>
+            
 	        <number id="pRight">
 	            <about>
 	                <label>pressure on the right half of the domain</label>
@@ -22,8 +23,7 @@
 	            <min>0.0</min>
 	            <default>1.0e5</default>
 	        </number>
-	    </input>
-        <input>
+
 	        <number id="rhoLeft">
 	            <about>
 	                <label>density on the left half of the domain</label>
@@ -33,6 +33,7 @@
 	            <min>0.0</min>
 	            <default>1.0</default>
             </number>
+            
 	        <number id="rhoRight">
 	            <about>
 	                <label>density on the right half of the domain</label>
@@ -42,5 +43,5 @@
 	            <min>0.0</min>
 	            <default>0.1</default>
 	        </number>
-	    </input>
+
 	</run>
