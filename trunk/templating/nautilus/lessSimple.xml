@@ -61,6 +61,60 @@
 	            
 	            <default>0.0</default>
             </formula>
+            
+            <choice id="limiter">
+                <about>
+                    <label>Choose the limiter</label>
+                    <description>Method of reducing oscillations at shocks.</description>
+                </about>
+
+                <option>
+                    <about>
+                        <label>component limiter</label>
+                    </about>
+                    <value>componentMinMod</label>
+                </option>
+
+                <option>
+                    <about>
+                        <label>characteristic</label>
+                    </about>
+                    <value>characteristicMinMod</value>
+                </option>
+
+                <default>characteristicMinMod</default>
+            </choice>
+            
+            <choice id="numericalFlux">
+                <about>
+                    <label>Choose the numericalFlux</label>
+                    <description>Approximation of the flux across a face</description>
+                </about>
+
+                <option>
+                    <about>
+                        <label>local Lax flux</label>
+                    </about>
+                    <value>localLaxFlux</label>
+                </option>
+
+                <option>
+                    <about>
+                        <label>fWave flux</label>
+                    </about>
+                    <value>fWaveFlux</value>
+                </option>
+                
+                <option>
+                    <about>
+                        <label>hllc flux</label>
+                    </about>
+                    <value>hllcFlux</value>
+                </option>
+
+                <default>characteristicMinMod</default>
+            </choice>
+            
         </input>
 
 	</run>
