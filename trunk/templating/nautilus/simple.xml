@@ -3,7 +3,7 @@
 	    <template>
 	        <about>This is a Nautilus template for the sod shock</about>
 	    </template>
-
+        <input>
 	        <number id="pLeft">
 	            <about>
 	                <label>pressure on the left half of the domain</label>
@@ -43,5 +43,5 @@
 	            <min>0.0</min>
 	            <default>0.1</default>
 	        </number>
-
+        </input>
 	</run>
