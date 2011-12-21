@@ -76,6 +76,7 @@ def update(checklist_file,containerFilename,ips_status):
   checklist.close()
 
   container = zipfile.ZipFile(containerFilename,'a')
+  # SEK: Need to delete the checklist file if it exists.
   ipsutil.writeToContainer(container, "", os.path.abspath(checklist_file))
   container.close()
   return

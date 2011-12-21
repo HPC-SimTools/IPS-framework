@@ -11,10 +11,10 @@ fi
 if test -e test_basic_serial1_0.ctz ; then
   /bin/rm -f test_basic_serial1_0.ctz
 fi
-if test -d basic_serial02; then
+if test -d test_basic_serial02; then
   /bin/rm -rf test_basic_serial1_0
 fi
-if test -e basic_serial02.ctz ; then
+if test -e test_basic_serial02.ctz ; then
   /bin/rm -f basic_serial02.ctz
 fi
 
@@ -24,19 +24,19 @@ touch file1  ofile1  ofile2  sfile1  sfile2
 echo; echo; echo
 echo "Testing runspace creation"
 #-------------------------------------------------------
-${fsrc}/ips.py --create-runspace --simulation=basic_serial1.ips 
+${fsrc}/ips.py --create-runspace --simulation=basic_serial1.ips,basic_serial2.ips
 
 #-------------------------------------------------------
 echo; echo; echo
 echo "Testing run setup"
 #-------------------------------------------------------
-${fsrc}/ips.py --run-setup  --simulation=basic_serial1.ips
+${fsrc}/ips.py --run-setup  --simulation=basic_serial1.ips,basic_serial2.ips
 
 #-------------------------------------------------------
 echo; echo; echo
 echo "Testing running under ips"
 #-------------------------------------------------------
-${fsrc}/ips.py --run --simulation=basic_serial1.ips
+${fsrc}/ips.py --run --simulation=basic_serial1.ips,basic_serial2.ips
 
 
 #-------------------------------------------------------
@@ -51,14 +51,14 @@ ${fsrc}/ips.py --run --simulation=basic_serial1.ips
 echo; echo; echo
 echo "Testing runspace creation using --clone"
 #-------------------------------------------------------
-${fsrc}/ips.py --clone=test_basic_serial1_0.ctz  --sim_name=basic_serial02
+${fsrc}/ips.py --clone=test_basic_serial1_0.ctz,test_basic_serial2_0.ctz --sim_name=basic_serial03,basic_serial04
 #-------------------------------------------------------
 echo; echo; echo
 echo "Testing run_setup from cloned directory"
 #-------------------------------------------------------
-${fsrc}/ips.py --run-setup  --sim_name=basic_serial02
+${fsrc}/ips.py --run-setup  --sim_name=basic_serial03,basic_serial04
 #-------------------------------------------------------
 echo; echo; echo
 echo "Testing run from cloned directory"
 #-------------------------------------------------------
-${fsrc}/ips.py --run   --sim_name=basic_serial02
+${fsrc}/ips.py --run   --sim_name=basic_serial03,basic_serial04

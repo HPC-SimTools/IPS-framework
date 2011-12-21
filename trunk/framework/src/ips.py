@@ -50,6 +50,7 @@
 
 """
 import sys
+import glob, fnmatch
 import os
 import socket
 import getopt
@@ -59,6 +60,7 @@ import inspect
 import optparse
 import multiprocessing
 import shutil
+import zipfile
 from messages import Message, ServiceRequestMessage, \
                     ServiceResponseMessage, MethodInvokeMessage
 from configurationManager import ConfigurationManager
@@ -191,6 +193,7 @@ class Framework(object):
                print "Need to specify a platform file"
                sys.exit(Message.FAILURE)
             self.platform_file_name=os.path.join(ipsShareDir,'platform.conf')
+            self.platform_file_name=os.path.abspath(self.platform_file_name)
             checked_compset_list=[]
             if compset_list:
               for cname in compset_list:
@@ -848,6 +851,43 @@ class Framework(object):
         #sys.exit(status)
         #stop(self.timers['terminate_sim'])
 
+def modifyConfigObjFile(configFile,parameter,newValue):
+    # open the file, create the config object
+    cfg_file = ConfigObj(configFile, interpolation='template', file_error=True)
+
+    # modify the SIM_NAME value to the new value
+    if cfg_file.has_key(parameter):
+       cfg_file[parameter] = newValue
+    else: 
+      print configFile + " has no parameter: "+parameter
+      return
+
+    #write and close to avoid multiple references to these files
+    cfg_file.write()
+
+#---------------------------------------------------------------------------
+def extractIpsFile(containerFile,newSimName):
+  """
+  Given a container file, get the ips file in it and write it to current
+  directory so that it can be used
+  """
+  oldIpsFile=os.path.splitext(containerFile)[0]+os.extsep+"ips"
+
+  zf=zipfile.ZipFile(containerFile,"r")
+
+  foundFile=""
+  # Assume that container file contains 1 ips file.
+  oldIpsFile=fnmatch.filter(zf.namelist(),"*.ips")[0]
+  ifile=zf.read(oldIpsFile)
+  ipsFile=newSimName+".ips"
+  if os.path.exists(ipsFile):
+    print "Moving "+ipsFile+" to "+"Save"+ipsFile
+    shutil.copy(ipsFile, "Save"+ipsFile)
+  ff=open(ipsFile,"w")
+  ff.write(ifile)
+  ff.close()
+  return ipsFile
+
 def filelist_callback(options, opt_str, values, parser):
     setattr(parser.values, options.dest, values.split(','))
 
@@ -861,70 +901,115 @@ def main(argv=None):
     debugopts="[--debug | --ftb] [--verbose] "
 
     parser = optparse.OptionParser(usage="%prog "+runopts+debugopts+fileopts+miscopts)
-    parser.add_option('-t','--create-runspace',dest='do_create_runspace', action='store_true',
-                      help='Create the runspace')
-    parser.add_option('-s','--run-setup',dest='do_run_setup', action='store_true',
-                      help='Run the setup (init of the driver)')
-    parser.add_option('-r','--run',dest='do_run', action='store_true',
-                      help='Run')
     parser.add_option('-d','--debug',dest='debug', action='store_false',
                       help='Turn on debugging')
     parser.add_option('-v','--verbose',dest='verbose_debug', action='store_false',
                       help='Run IPS verbosely')
     parser.add_option('-f','--ftb',dest='ftb', action='store_false',
-                      help='Turn on FTP capability')
+                      help='Turn on FTB capability')
     parser.add_option('-p', '--platform', dest='platform_filename', default='',
                       type="string", help='IPS platform configuration file')
+    parser.add_option('-c', '--component', 
+                      action='callback', callback=filelist_callback,
+                      type="string", help='IPS component configuration file(s)')
     parser.add_option('-i', '--simulation', 
                       action='callback', callback=filelist_callback,
                       type="string", help='IPS simulation file')
     parser.add_option('-y', '--clone', 
                       action='callback', callback=filelist_callback,
                       type="string", help='Clone container file')
-    parser.add_option('-c', '--component', 
-                      action='callback', callback=filelist_callback,
-                      type="string", help='IPS component configuration file(s)')
     parser.add_option('-e', '--sim_name',
-                      action='store', dest='sim_name',
-                      type="string", help='Simulation name to replace in the IPS simulation file')
+                      action='callback', callback=filelist_callback,
+                      type="string", help='Simulation name to replace in the IPS simulation file or a directory that has an ips file')
     parser.add_option('-l', '--log', dest='log_file', default='sys.stdout',
                       type="string", help='IPS Log file')
     parser.add_option('-n', '--nodes', dest='cmd_nodes', default='0',
                       type="int", help='Computer nodes')
     parser.add_option('-o', '--ppn', dest='cmd_ppn', default='0',
                       type="int", help='Computer processor per nodes')
+    parser.add_option('-t','--create-runspace',dest='do_create_runspace', action='store_true',
+                      help='Create the runspace')
+    parser.add_option('-s','--run-setup',dest='do_run_setup', action='store_true',
+                      help='Run the setup (init of the driver)')
+    parser.add_option('-r','--run',dest='do_run', action='store_true',
+                      help='Run')
 
     options, args = parser.parse_args()
 
-    # Simulation files
+    ##------------------------------------------------------------------------------------------
+    ##  Three ways of specifying where to find the config_file
+    ##   1. --simulation: Specify directly
+    ##   2. --sim_name: Either rename simulation files, or use sim_name/sim_name.ips
+    ##   3. --clone: Look for IPS file in container file.  --sim_name must be specified to rename
+    ##
+    ##  See tests/refactor/test_ips.sh for motivation
+    ##
+    ##------------------------------------------------------------------------------------------
+    ipsFilesToRemove=[]
+
+    ###
+    ##  Some initial processing of the --simulation, --sim_name, clone
+    ##  for basic checking and ease in processing better.
+    #
     cfgFile_list = []
+    usedSimulation=False
     if options.simulation:
       cfgFile_list=options.simulation
-      # create a new list for file names that have been scrubbed of ':'
-      cleaned_file_list = []
+      nCfgFile=len(cfgFile_list)
+      usedSimulation=True
 
+    simName_list = []
+    usedSim_name=False
+    if options.sim_name:
+      simName_list=options.sim_name
+      nSimName=len(simName_list)
+      usedSim_name=True
+      if usedSimulation:
+        if nSimName != nCfgFile and usedSimulation:
+          print "When using both --simulation and --sim_name the list length must be the same"
+          return
+
+    clone_list = []
+    usedClone=False
+    if options.clone:
+      if not usedSim_name:
+        print "Must specify SIM_NAME using --sim_name when cloning"
+        return
+      if usedSimulation:
+        print "Cannot use both --simulation and --clone"
+        return
+      clone_list=options.clone
+      nClone=len(clone_list)
+      usedClone=True
+      if nSimName != nClone:
+        print "When using both --clone and --sim_name the list length must be the same"
+        return
+
+    ###
+    ##  Now process the simulation files 
+    ##  Two methods for replacing the SIM_NAME:
+    ##   1. colon syntax:   NEW_SIM_NAME:ips_file
+    ##   2. sim_name parameter list
+    #
+    if usedSimulation:
+      cleaned_file_list = []; ipsFilesToRemove= []
       # iterate over the list of files 
+      i=-1
       for file in cfgFile_list:
         # if the file name contains ':', we must replace SIM_NAME in the 
         # file with the new value and remove the new SIM_NAME and ':' 
         # from the string for IPS to read the modified .ips file.
         if file.find(':') != -1:
-            # split the mapping
+            # split the mapping.  new_sim_name gets replaced below
             (new_sim_name, file_name) = file.split(':')
+            file = file_name                            # Clean up the list
 
-            # open the file, create the config object
-            cfg_file = ConfigObj(file_name, 
-                                 interpolation='template', 
-                                 file_error=True)
-
-            # modify the SIM_NAME value to the new value
-            cfg_file['SIM_NAME'] = new_sim_name
-
-            #write and close to avoid multiple references to these files
-            cfg_file.write()
-
-            # replace file with name specified after ':'
-            file = file_name
+        if usedSim_name:
+          i=i+1
+          new_sim_name=simName_list[i]
+          iFile=modifyConfigObjFile(file,'SIM_NAME',new_sim_name)
+          file=iFile
+          ipsFilesToRemove.append(file)
 
         # append file to the list of cleaned names that don't contain ':'
         cleaned_file_list.append(file)
@@ -932,46 +1017,57 @@ def main(argv=None):
       # replace cfgFile_list with a list that won't have any ':' or sim_names
       cfgFile_list = cleaned_file_list
 
-    else:
-      print "Must specify simulation file(s)"
-      return
+
+    ###
+    ##  Now process container files when cloning
+    #
+    if usedClone:
+      options.do_create_runspace=True
+      cleaned_file_list = []
+      # iterate over the list of files 
+      i=-1
+      for clone_file in clone_list:
+        i=i+1
+        new_sim_name=simName_list[i]
+        iFile=extractIpsFile(clone_file,new_sim_name)
+        modifyConfigObjFile(iFile,'SIM_NAME',new_sim_name)
+
+        # append file to the list of cleaned names that don't contain ':'
+        cleaned_file_list.append(iFile)
+
+      # replace cfgFile_list with a list that won't have any ':' or sim_names
+      cfgFile_list = cleaned_file_list
+      ipsFilesToRemove=cleaned_file_list
+
+
+    ###
+    ##  sim_name specified without simulation or clone means 
+    ##  look for the IPS file in sim_name subdirectory
+    #
+    if usedSim_name and not (usedSimulation or usedClone):
+      cleaned_file_list = []
+      for simname in simName_list:
+        new_file_name=os.path.join(simname,simname+".ips")
+        foundFile=""
+        for testFile in glob.glob(simname+"/*.ips"):
+           cfg_file = ConfigObj(testFile,interpolation='template')
+           if cfg_file.has_key("SIM_NAME"):
+             testSimName=cfg_file["SIM_NAME"]
+             if testSimName == simname:
+               foundFile=testFile
+
+        if foundFile:
+          cleaned_file_list.append(foundFile)
+        else:
+          print "Cannot find ips file associated with SIM_NAME= ", simname
+          return
+
+      cfgFile_list = cleaned_file_list
 
     # Component files
     compset_list = []
-    if options.simulation:
+    if options.component:
       compset_list=options.component
-
-#   if options.clone:
-#     # copy IPS file from container to
-#     container = zipfile.open(
-#
-#     # copy all input files to current directory
-#
-#     # replace SIM_NAME in new IPS file
-#     ips_file = ConfigObj(open(cfgFile_list
-
-    # if this option is specified, it overrides any other 
-    # sim_name:sim_file.ips mappings in --simulation.
-    if options.sim_name:
-      cleaned_file_list = []
-      for file in cfgFile_list:
-        if file.find('.ips') != -1:
-          new_file = options.sim_name+".ips"
-          shutil.copy(file, new_file)
-          file = new_file
-        cfg_file = ConfigObj(file, 
-                             interpolation='template', 
-                             file_error=True)
-        print 'cfg_file[\'SIM_NAME\'] was:', cfg_file['SIM_NAME']
-        cfg_file['SIM_NAME'] = options.sim_name
-        print 'cfg_file[\'SIM_NAME\'] is now:', cfg_file['SIM_NAME']
-        cfg_file.write()
-
-        # append file to the list of modified files, so that we use
-        # copied versions of the files if they've been copied.
-        cleaned_file_list.append(file)
-      # replacing the list of files
-      cfgFile_list = cleaned_file_list
 
     try:
         fwk = Framework(options.do_create_runspace, options.do_run_setup, options.do_run, 
@@ -984,11 +1080,9 @@ def main(argv=None):
         raise 
 
     # post running cleanup of working files.
-    if options.sim_name:
-      cleaned_file_list = []
-      for file in cfgFile_list:
-        if file.find('.ips') != -1:
-          os.remove(file)
+    if len(ipsFilesToRemove)>0:
+      for file in ipsFilesToRemove:
+        os.remove(file)
 
     return 0
 
