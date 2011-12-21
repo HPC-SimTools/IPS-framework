@@ -152,7 +152,6 @@ class ConfigurationManager(object):
         """
         # parse file
         try:
-            print self.platform_file
             self.platform_conf = ConfigObj(self.platform_file,
                                            interpolation='template',
                                            file_error=True)
@@ -250,7 +249,7 @@ class ConfigurationManager(object):
         self.compset_conf=[]
         for csfile in self.compset_list:
           try:
-              print csfile
+              #DBG print csfile
               csconf = ConfigObj(csfile, interpolation='template', file_error=True)
           except IOError, (ex):
               self.fwk.exception('Error opening config file: %s', csfile)
