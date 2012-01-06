@@ -860,10 +860,11 @@ def modifyConfigObjFile(configFile,parameter,newValue):
        cfg_file[parameter] = newValue
     else: 
       print configFile + " has no parameter: "+parameter
-      return
+      return 
 
+    newFile = open(newValue + '.ips', "w")
     #write and close to avoid multiple references to these files
-    cfg_file.write()
+    cfg_file.write(newFile)
 
 #---------------------------------------------------------------------------
 def extractIpsFile(containerFile,newSimName):
@@ -1007,8 +1008,8 @@ def main(argv=None):
         if usedSim_name:
           i=i+1
           new_sim_name=simName_list[i]
-          iFile=modifyConfigObjFile(file,'SIM_NAME',new_sim_name)
-          file=iFile
+          modifyConfigObjFile(file,'SIM_NAME',new_sim_name)
+          file = new_sim_name + '.ips'
           ipsFilesToRemove.append(file)
 
         # append file to the list of cleaned names that don't contain ':'
