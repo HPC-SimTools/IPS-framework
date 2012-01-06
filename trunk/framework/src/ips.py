@@ -948,6 +948,8 @@ def main(argv=None):
     ##------------------------------------------------------------------------------------------
     ipsFilesToRemove=[]
 
+    sim_file_map = {}
+
     ###
     ##  Some initial processing of the --simulation, --sim_name, clone
     ##  for basic checking and ease in processing better.
@@ -986,6 +988,12 @@ def main(argv=None):
         print "When using both --clone and --sim_name the list length must be the same"
         return
 
+
+
+    # initialize list for each sim_name
+    for sim_name in simName_list:
+      sim_file_map[sim_name] = []
+
     ###
     ##  Now process the simulation files 
     ##  Two methods for replacing the SIM_NAME:
@@ -1001,9 +1009,12 @@ def main(argv=None):
         # file with the new value and remove the new SIM_NAME and ':' 
         # from the string for IPS to read the modified .ips file.
         if file.find(':') != -1:
-            # split the mapping.  new_sim_name gets replaced below
-            (new_sim_name, file_name) = file.split(':')
-            file = file_name                            # Clean up the list
+          # split the mapping.  new_sim_name gets replaced below
+          (new_sim_name, file_name) = file.split(':')
+          modifyConfigObjFile(file_name,'SIM_NAME',new_sim_name)
+          file = new_sim_name + '.ips'
+          ipsFilesToRemove.append(file)
+          sim_file_map[new_sim_name].append(file)
 
         if usedSim_name:
           i=i+1
@@ -1011,6 +1022,7 @@ def main(argv=None):
           modifyConfigObjFile(file,'SIM_NAME',new_sim_name)
           file = new_sim_name + '.ips'
           ipsFilesToRemove.append(file)
+          sim_file_map[new_sim_name].append(file)
 
         # append file to the list of cleaned names that don't contain ':'
         cleaned_file_list.append(file)
@@ -1032,6 +1044,7 @@ def main(argv=None):
         new_sim_name=simName_list[i]
         iFile=extractIpsFile(clone_file,new_sim_name)
         modifyConfigObjFile(iFile,'SIM_NAME',new_sim_name)
+        sim_file_map[new_sim_name].append(iFile)
 
         # append file to the list of cleaned names that don't contain ':'
         cleaned_file_list.append(iFile)
@@ -1071,11 +1084,13 @@ def main(argv=None):
       compset_list=options.component
 
     try:
-        fwk = Framework(options.do_create_runspace, options.do_run_setup, options.do_run, 
+        for sim_name in simName_list:
+          cfgFile_list = sim_file_map[sim_name]
+          fwk = Framework(options.do_create_runspace, options.do_run_setup, options.do_run, 
                 cfgFile_list, options.log_file, options.platform_filename, 
                 compset_list, options.debug, options.ftb, options.verbose_debug, 
                 options.cmd_nodes, options.cmd_ppn)
-        fwk.run()
+          fwk.run()
         ipsTiming.dumpAll('framework')
     except :
         raise 
