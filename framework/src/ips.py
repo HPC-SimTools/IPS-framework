@@ -1084,14 +1084,22 @@ def main(argv=None):
       compset_list=options.component
 
     try:
-        for sim_name in simName_list:
-          cfgFile_list = sim_file_map[sim_name]
-          fwk = Framework(options.do_create_runspace, options.do_run_setup, options.do_run, 
-                cfgFile_list, options.log_file, options.platform_filename, 
-                compset_list, options.debug, options.ftb, options.verbose_debug, 
-                options.cmd_nodes, options.cmd_ppn)
-          fwk.run()
-        ipsTiming.dumpAll('framework')
+        if simName_list:
+            for sim_name in simName_list:
+              cfgFile_list = sim_file_map[sim_name]
+              fwk = Framework(options.do_create_runspace, options.do_run_setup, options.do_run, 
+                    cfgFile_list, options.log_file, options.platform_filename, 
+                    compset_list, options.debug, options.ftb, options.verbose_debug, 
+                    options.cmd_nodes, options.cmd_ppn)
+              fwk.run()
+            ipsTiming.dumpAll('framework')
+        else:
+            fwk = Framework(options.do_create_runspace, options.do_run_setup, options.do_run, 
+                  cfgFile_list, options.log_file, options.platform_filename, 
+                  compset_list, options.debug, options.ftb, options.verbose_debug, 
+                  options.cmd_nodes, options.cmd_ppn)
+            fwk.run()
+            ipsTiming.dumpAll('framework')
     except :
         raise 
 
