@@ -34,7 +34,7 @@ set(SIMYAN_REV "${PROJECT_REV}")
 ######################################################################
 include(CMake/TxDocLogic.cmake)
 # Documentation sudirectories
-if (ENABLE_USERDOCS)
+if (SPHINX_FOUND)
   add_subdirectory(doc)
 endif ()
 ######################################################################
