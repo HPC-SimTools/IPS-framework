@@ -11,8 +11,12 @@
 #
 set (SRCDIR ${CMAKE_SOURCE_DIR}/doc)
 set (BLDDIR ${CMAKE_BINARY_DIR}/doc)
-set (SPHINXOPTS -D mathjax_path=${MATHJAXJS} -d ${BLDDIR}/doctrees ${SPHINX_OPTS} )
-set (SPHINXRUN ${SPHINX_EXECUTABLE} ${SPHINXOPTS})
+set(
+  SPHINXOPTS -D mathjax_path=${Sphinx_MathJax_js} -d ${BLDDIR}/doctrees ${SPHINX_OPTS}
+)
+message(STATUS "userdocs: SPHINXOPTS = ${SPHINXOPTS}.")
+set(SPHINXRUN ${Sphinx_EXECUTABLE} ${SPHINXOPTS})
+file(GLOB_RECURSE Sphinx_FILES *.rst)
 
 if(${ENABLE_WEBDOCS})
   message(STATUS "enable webdocs is on")
