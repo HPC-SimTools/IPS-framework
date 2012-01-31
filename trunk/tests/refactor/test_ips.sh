@@ -26,7 +26,7 @@ echo "-------------------------------------------------------"
 echo "Testing runspace creation"
 echo "-------------------------------------------------------"
 #-------------------------------------------------------------
-${fsrc}/ips.py --create-runspace --simulation=b1.ips 
+${fsrc}/ips.py --create-runspace --simulation=basic_serial1.ips 
 
 #-------------------------------------------------------------
 echo; echo; echo
@@ -34,7 +34,7 @@ echo "-------------------------------------------------------"
 echo "Testing run setup"
 echo "-------------------------------------------------------"
 #-------------------------------------------------------------
-${fsrc}/ips.py --run-setup --simulation=b1.ips
+${fsrc}/ips.py --run-setup  --simulation=basic_serial1.ips
 
 #-------------------------------------------------------------
 echo; echo; echo
@@ -42,14 +42,10 @@ echo "-------------------------------------------------------"
 echo "Testing running under ips"
 echo "-------------------------------------------------------"
 #-------------------------------------------------------------
-${fsrc}/ips.py --run --simulation=b1.ips
+${fsrc}/ips.py --run --simulation=basic_serial1.ips
 
-echo "-------------------------------------------------------"
-echo "Testing all with two ips files and two names"
-echo "-------------------------------------------------------"
-${fsrc}/ips.py --create-runspace --run-setup --run --simulation=b1.ips,b2.ips --sim_name=b,c
 
-exit;
+
 #-------------------------------------------------------------
 #  The above is similar to the above except we first
 #  start off by using the container file above to create 
@@ -65,6 +61,7 @@ echo "Testing runspace creation using --clone"
 echo "-------------------------------------------------------"
 #-------------------------------------------------------------
 ${fsrc}/ips.py --clone=test_basic_serial1_0.ctz  --sim_name=basic_serial02
+
 #-------------------------------------------------------------
 echo; echo; echo
 echo "-------------------------------------------------------"
@@ -72,6 +69,8 @@ echo "Testing run_setup from cloned directory"
 echo "-------------------------------------------------------"
 #-------------------------------------------------------------
 ${fsrc}/ips.py --run-setup  --sim_name=basic_serial02
+exit
+
 #-------------------------------------------------------------
 echo; echo; echo
 echo "-------------------------------------------------------"

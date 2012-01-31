@@ -6,13 +6,17 @@
 #
 ######################################################################
 
+if (DEFINED PYSCRIPTS)
 foreach (targ ${PYSCRIPTS})
       get_filename_component(dirname ${CMAKE_CURRENT_BINARY_DIR} NAME_WE)
       add_test(${dirname}-${targ} python ${targ})
 endforeach ()
+endif ()
+if (DEFINED SHSCRIPTS)
 foreach (targ ${SHSCRIPTS})
       add_test(${dirname}-${targ} ${targ})
 endforeach ()
+endif ()
 
 install(PROGRAMS 
     ${PYSCRIPTS} ${SHSCRIPTS}
