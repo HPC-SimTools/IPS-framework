@@ -851,7 +851,7 @@ class Framework(object):
         #sys.exit(status)
         #stop(self.timers['terminate_sim'])
 
-def modifyConfigObjFile(configFile,parameter,newValue):
+def modifyConfigObjFile(configFile,parameter,newValue,writeNew=True):
     # open the file, create the config object
     cfg_file = ConfigObj(configFile, interpolation='template', file_error=True)
 
@@ -860,11 +860,16 @@ def modifyConfigObjFile(configFile,parameter,newValue):
        cfg_file[parameter] = newValue
     else: 
       print configFile + " has no parameter: "+parameter
-      return 
+      return ""
 
-    newFile = open(newValue + '.ips', "w")
-    #write and close to avoid multiple references to these files
-    cfg_file.write(newFile)
+    newFileName = newValue + '.ips'
+    newFile = open(newFileName, "w")
+    if writeNew:
+       cfg_file.write(newFile)    #write & close to avoid multiple references to these files
+    else:
+       cfg_file.write()
+
+    return newFileName
 
 #---------------------------------------------------------------------------
 def extractIpsFile(containerFile,newSimName):
@@ -948,8 +953,6 @@ def main(argv=None):
     ##------------------------------------------------------------------------------------------
     ipsFilesToRemove=[]
 
-    sim_file_map = {}
-
     ###
     ##  Some initial processing of the --simulation, --sim_name, clone
     ##  for basic checking and ease in processing better.
@@ -988,9 +991,8 @@ def main(argv=None):
         print "When using both --clone and --sim_name the list length must be the same"
         return
 
-
-
     # initialize list for each sim_name
+    sim_file_map = {}
     for sim_name in simName_list:
       sim_file_map[sim_name] = []
 
@@ -1011,16 +1013,18 @@ def main(argv=None):
         if file.find(':') != -1:
           # split the mapping.  new_sim_name gets replaced below
           (new_sim_name, file_name) = file.split(':')
-          modifyConfigObjFile(file_name,'SIM_NAME',new_sim_name)
-          file = new_sim_name + '.ips'
-          ipsFilesToRemove.append(file)
-          sim_file_map[new_sim_name].append(file)
+          if usedSim_name:
+            file=modifyConfigObjFile(file_name,'SIM_NAME',new_sim_name)
+            ipsFilesToRemove.append(file)
+            sim_file_map[new_sim_name].append(file)
+          else:
+            iFile=modifyConfigObjFile(file,'SIM_NAME',new_sim_name,)
+            #ipsFilesToRemove.append(file)
 
         if usedSim_name:
           i=i+1
           new_sim_name=simName_list[i]
-          modifyConfigObjFile(file,'SIM_NAME',new_sim_name)
-          file = new_sim_name + '.ips'
+          file=modifyConfigObjFile(file,'SIM_NAME',new_sim_name)
           ipsFilesToRemove.append(file)
           sim_file_map[new_sim_name].append(file)
 
@@ -1043,7 +1047,7 @@ def main(argv=None):
         i=i+1
         new_sim_name=simName_list[i]
         iFile=extractIpsFile(clone_file,new_sim_name)
-        modifyConfigObjFile(iFile,'SIM_NAME',new_sim_name)
+        file=modifyConfigObjFile(iFile,'SIM_NAME',new_sim_name,writeNew=False)
         sim_file_map[new_sim_name].append(iFile)
 
         # append file to the list of cleaned names that don't contain ':'
@@ -1069,7 +1073,9 @@ def main(argv=None):
              testSimName=cfg_file["SIM_NAME"]
              if testSimName == simname:
                foundFile=testFile
+               sim_file_map[sim_name].append(foundFile)
 
+        print "FOUND FILE", foundFile
         if foundFile:
           cleaned_file_list.append(foundFile)
         else:

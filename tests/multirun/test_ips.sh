@@ -5,18 +5,8 @@ source ../frameworkpath.py
 ###
 ##  Some initial setting up
 #
-if test -d test_basic_serial1_0; then
-  /bin/rm -rf test_basic_serial1_0
-fi
-if test -e test_basic_serial1_0.ctz ; then
-  /bin/rm -f test_basic_serial1_0.ctz
-fi
-if test -d basic_serial02; then
-  /bin/rm -rf test_basic_serial1_0
-fi
-if test -e basic_serial02.ctz ; then
-  /bin/rm -f basic_serial02.ctz
-fi
+/bin/rm -rf b c test_basic_serial1_0
+/bin/rm -f b.ctz c.ctz test_basic_serial1_0.ctz
 
 touch file1  ofile1  ofile2  sfile1  sfile2
 
@@ -52,7 +42,7 @@ echo "Testing all with two ips files and two names"
 echo "-------------------------------------------------------"
 ${fsrc}/ips.py --create-runspace --run-setup --run --simulation=b1.ips,b2.ips --sim_name=b,c
 
-exit;
+exit
 #-------------------------------------------------------------
 #  The above is similar to the above except we first
 #  start off by using the container file above to create 
