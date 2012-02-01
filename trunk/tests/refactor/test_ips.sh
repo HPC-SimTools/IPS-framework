@@ -69,7 +69,6 @@ echo "Testing run_setup from cloned directory"
 echo "-------------------------------------------------------"
 #-------------------------------------------------------------
 ${fsrc}/ips.py --run-setup  --sim_name=basic_serial02
-exit
 
 #-------------------------------------------------------------
 echo; echo; echo
@@ -78,3 +77,4 @@ echo "Testing run from cloned directory"
 echo "-------------------------------------------------------"
 #-------------------------------------------------------------
 ${fsrc}/ips.py --run   --sim_name=basic_serial02
+exit

@@ -7,6 +7,7 @@ set(SCRIPTS
       ips_es_spec.py ipsutil.py messages.py node_structure.py
       portalBridge.py resourceHelper.py resourceManager.py
       runspaceInitComponent.py sendPost.py services.py taskManager.py
+      checklist.py
       test_ips.py test_resource_parsing.py topicManager.py
 )
 
