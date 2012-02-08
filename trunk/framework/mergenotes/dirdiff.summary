@@ -6,20 +6,24 @@ FILES THAT ARE THE DIFFERENT:
 
 component.py
 componentRegistry.py
-configobj.py
 configurationManager.py
 ips-config.py
 ips.py
-ipsLogging.py
 ipsutil.py
 messages.py
-node_structure.py
-portalBridge.py
 resourceHelper.py
 resourceManager.py
 services.py
 taskManager.py
 test_ips.py
+
+NO MODS BY WAEL:
+configobj.py
+
+NO MODS BY NICK OR SCOTT:
+portalBridge.py
+node_structure.py
+ipsLogging.py
 test_resource_parsing.py
 
 
