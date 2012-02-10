@@ -556,6 +556,7 @@ class ServicesProxy(object):
                 whole_socks = True
         
         try:
+            # SIMYAN: added working_dir to component method invocation
             msg_id = self._invoke_service(self.fwk.component_id,
                                           'init_task', nproc, binary, 
                                           working_dir, task_ppn, block, 
@@ -615,6 +616,7 @@ class ServicesProxy(object):
         wsocks = keywords['whole_sockets']
 
         try:
+            # SIMYAN: added working_dir to component method invocation
             msg_id = self._invoke_service(self.fwk.component_id,
                                           'init_task', nproc, binary,
                                           working_dir, task_ppn,
@@ -1224,6 +1226,8 @@ class ServicesProxy(object):
         self.warning('stageInputFiles() deprecated - use stage_input_files() instead')
         return self.stage_input_files(input_file_list)
 
+    # SIMYAN: added method to specifically enable components to stage 
+    # data files to the component working directory
     def stage_data_files(self, data_file_list):
         """
         Copy component data files to the component working directory

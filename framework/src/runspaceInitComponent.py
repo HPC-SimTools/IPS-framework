@@ -35,15 +35,15 @@ class runspaceInitComponent(Component):
         self.simRootDir = services.get_config_param('SIM_ROOT')
         container_ext = services.get_config_param('CONTAINER_FILE_EXT')
         if not self.simRootDir.startswith("/"):
-          self.simRootDir=os.path.abspath(self.simRootDir)
+            self.simRootDir=os.path.abspath(self.simRootDir)
 
         # try making the simulation root directory
         try: 
-          os.makedirs(self.simRootDir)
+            os.makedirs(self.simRootDir)
         except OSError, (errno, strerror):
-          if (errno != 17):
-            self.services.exception('Error creating directory %s : %s' ,
-                        workdir, strerror)
+            if (errno != 17):
+                self.services.exception('Error creating directory %s : %s' ,
+                                        workdir, strerror)
 
         self.config_files = services.fwk.config_file_list
         self.platform_file = services.fwk.platform_file_name
@@ -63,37 +63,38 @@ class runspaceInitComponent(Component):
         registry = services.fwk.comp_registry
         # for each simulation component
         for sim_name, comp_list in sim_comps.items():
-          # Redoing the same container_file name calculation as in configuration manager because I
-          # can't figure out where to put it such that I can get it where I need
-          self.container_file=sim_name+os.path.extsep+container_ext
-          # The w here means that it is overwritten -- we are creating a new container file here
-          container_write = zipfile.ZipFile(os.path.abspath(self.container_file),'w')
-          ipsutil.writeToContainer(container_write, '', self.platform_file)
-          ipsutil.writeToContainer(container_write, '', self.config_files)
+            # Redoing the same container_file name calculation as in configuration manager because I
+            # can't figure out where to put it such that I can get it where I need
+            self.container_file=sim_name+os.path.extsep+container_ext
+            # The w here means that it is overwritten -- we are creating a new container file here
+            container_write = zipfile.ZipFile(os.path.abspath(self.container_file),'w')
+            ipsutil.writeToContainer(container_write, '', self.platform_file)
+            ipsutil.writeToContainer(container_write, '', self.config_files)
 
-          # for each component_id in the list of components
-          for comp_id in comp_list:
-            registry = services.fwk.comp_registry
-            comp_conf = registry.getEntry(comp_id).component_ref.config
-            file_list = comp_conf['INPUT_FILES'].split()
-            for file in file_list:
-              ipsutil.writeToContainer(container_write, os.path.relpath(comp_conf['INPUT_DIR']), 
-                  os.path.basename(file))
+            # for each component_id in the list of components
+            for comp_id in comp_list:
+                registry = services.fwk.comp_registry
+                comp_conf = registry.getEntry(comp_id).component_ref.config
+                file_list = comp_conf['INPUT_FILES'].split()
+                for file in file_list:
+                    ipsutil.writeToContainer(container_write, 
+                                             os.path.relpath(comp_conf['INPUT_DIR']), 
+                                             os.path.basename(file))
         container_write.close()
 
         curdir=os.path.abspath(os.path.curdir)
         try:
-          os.chdir(self.simRootDir)
+            os.chdir(self.simRootDir)
         except OSError, (errno, strerror):
-          self.services.debug('Working directory %s does not exist - will attempt creation',
+            self.services.debug('Working directory %s does not exist - will attempt creation',
                               self.simRootDir)
-          try:
-              os.makedirs(self.simRootDir)
-          except OSError, (errno, strerror):
-              self.services.exception('Error creating directory %s : %s' ,
-                                      workdir, strerror)
-              #pytau.stop(timer)
-              raise
+            try:
+                os.makedirs(self.simRootDir)
+            except OSError, (errno, strerror):
+                self.services.exception('Error creating directory %s : %s' ,
+                                        workdir, strerror)
+                #pytau.stop(timer)
+                raise
 
         os.chdir(curdir) # Get back to where you once belonged
 
@@ -178,28 +179,28 @@ class runspaceInitComponent(Component):
                 # This is a bit tricky because we want to look either in the same 
                 # place as the input files or the data_tree root
                 if comp_conf.has_key('DATA_FILES'):
-                  filesCopied=False
-                  if comp_conf.has_key('DATA_TREE_ROOT'):
-                    dtrdir=os.path.abspath(comp_conf['DATA_TREE_ROOT'])
-                    if os.path.exists(os.path.join(dtrdir,comp_conf['DATA_FILES'][0])):
-                      ipsutil.copyFiles(dtrdir,os.path.basename(comp_conf['DATA_FILES']),
-                                        workdir)
-                      filesCopied=True
-                  if not filesCopied:
-                     ipsutil.copyFiles(os.path.abspath(comp_conf['INPUT_DIR']),
-                                       os.path.basename(comp_conf['DATA_FILES']),
-                                       workdir)
+                    filesCopied=False
+                    if comp_conf.has_key('DATA_TREE_ROOT'):
+                        dtrdir=os.path.abspath(comp_conf['DATA_TREE_ROOT'])
+                        if os.path.exists(os.path.join(dtrdir,comp_conf['DATA_FILES'][0])):
+                            ipsutil.copyFiles(dtrdir,os.path.basename(comp_conf['DATA_FILES']),
+                                              workdir)
+                            filesCopied=True
+                    if not filesCopied:
+                         ipsutil.copyFiles(os.path.abspath(comp_conf['INPUT_DIR']),
+                                           os.path.basename(comp_conf['DATA_FILES']),
+                                           workdir)
 
 
                 # copy the component's script to the simulation_setup directory
                 if os.path.abspath(comp_conf['SCRIPT'])==comp_conf['SCRIPT']:
-                  ipsutil.copyFiles(os.path.dirname(comp_conf['SCRIPT']),
-                                    [os.path.basename(comp_conf['SCRIPT'])],
-                                    simulation_setup)
+                    ipsutil.copyFiles(os.path.dirname(comp_conf['SCRIPT']),
+                                      [os.path.basename(comp_conf['SCRIPT'])],
+                                      simulation_setup)
                 else:
-                  ipsutil.copyFiles(comp_conf['BIN_DIR'],
-                                    [os.path.basename(comp_conf['SCRIPT'])],
-                                    simulation_setup)
+                    ipsutil.copyFiles(comp_conf['BIN_DIR'],
+                                      [os.path.basename(comp_conf['SCRIPT'])],
+                                      simulation_setup)
 
             # get the working directory from the runspaceInitComponent
             workdir = services.get_working_dir()

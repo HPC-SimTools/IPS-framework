@@ -74,10 +74,12 @@ class Component(object):
         tmp = sys.exit
         sys.exit = self.__my_exit__
         self.sys_exit = tmp
+        # SIMYAN: now it is the component's responsibility to enter the working 
+        # directory in init(),step(),finalize(). This was removed because it 
+        # would attempt to make the directory when the component ran, which did
+        # not fit the model of --create-runspace, --run-setup, --run workflows.
         #workdir = self.services.get_working_dir()
 
-        # now it is the component's responsibility to enter the working 
-        # directory in init(),step(),finalize()
         #try:
         #    os.chdir(workdir)
         #except OSError, (errno, strerror):
@@ -135,6 +137,8 @@ class Component(object):
         self.services.debug('init() method called')
         pass
 
+    # SIMYAN: this is a placeholder for future validation methods (i.e. 
+    # checking data)
     def validate(self, timestamp=0.0):
         """
         Produce some default debugging information before the rest of the code

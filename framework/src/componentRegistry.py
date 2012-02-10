@@ -137,6 +137,8 @@ class ComponentRegistry(Singleton):
             raise e
         return
 
+    # SIMYAN: this was added to provide an easy way to use the component
+    # registry to get a registry entry
     def getEntry(self, component_id):
         """
         Return a registry entry.

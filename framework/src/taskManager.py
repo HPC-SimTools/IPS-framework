@@ -218,6 +218,7 @@ class TaskManager(object):
 
         1. *binary*: full path to the executable to launch
 
+        # SIMYAN: added this to deal with the component directory change 
         2. *working_dir*: full path to directory where the task will be launched
         
         3. *tppn*: processes per node for this task.  (0 indicates that the default ppn is used.)
@@ -233,12 +234,14 @@ class TaskManager(object):
         caller_id = init_task_msg.sender_id
         nproc = int(init_task_msg.args[0])
         binary = init_task_msg.args[1]
+        # SIMYAN: working_dir stored 
         working_dir = init_task_msg.args[2]
         tppn = int(init_task_msg.args[3]) #task processes per node
         block = init_task_msg.args[4]  # Block waiting for available resources
         wnodes = init_task_msg.args[5]
         wsocks = init_task_msg.args[6]
 
+        # SIMYAN: increased arguments
         cmd_args = init_task_msg.args[7:]
         # handle for task related things
         task_id = self.get_task_id()
@@ -275,6 +278,7 @@ class TaskManager(object):
         except Exception, e:
             raise 
 
+        # SIMYAN: moved up a few lines and ret_data, node_file added
         self.curr_task_table[task_id] = {'component'  : caller_id,
                                          'status'     : 'init_task',
                                          'binary'     : binary,
@@ -285,6 +289,7 @@ class TaskManager(object):
                                          'node_file': None}
         if partial_node:
             nodes = ','.join(nodelist)
+            # SIMYAN: added working_dir to cmd
             cmd = self.build_launch_cmd(nproc, binary, cmd_args, working_dir,
                                         ppn, max_ppn, 
                                         nodes, accurateNodes, partial_node, 
@@ -294,13 +299,16 @@ class TaskManager(object):
                 nodes = ','.join(nodelist)
             else:
                 nodes = ''
+            # SIMYAN: added working_dir to cmd
             cmd = self.build_launch_cmd(nproc, binary, cmd_args, working_dir, ppn, max_ppn, 
                                         nodes, accurateNodes, False, task_id)
+        # SIMYAN: store launch command
         task_data = self.curr_task_table[task_id]
         task_data['launch_cmd'] =  cmd
         return (task_id, cmd)
 
 
+    # SIMYAN: added working_dir to method to build the launch command
     def build_launch_cmd(self, nproc, binary, cmd_args, working_dir, ppn, max_ppn, nodes, 
                          accurateNodes, partial_nodes, task_id, core_list=''):
         """
@@ -339,13 +347,16 @@ class TaskManager(object):
                                 ppn_flag, str(ppn)])
                 if accurateNodes:
                     if partial_nodes:
+                        # SIMYAN: removed dependence on cwd
                         hfname = "_gen_hf_" + str(task_id)
+                        # SIMYAN: using working_dir instead of cwd
                         hfname = os.path.join(working_dir, hfname)
                         hfile = open(hfname, 'w')
                         i = 0
                         for s in core_list:
                             print >> hfile, '%s slots=%s' % (s[0], len(s[1]))
                         cmd = ' '.join([cmd, host_file, hfname, proc_bind_option])
+                        # SIMYAN: store hfname here
                         self.curr_task_table[task_id]['node_file'] = hfname
                     else:
                         cmd = ' '.join([cmd, host_select, nodes])
@@ -357,6 +368,7 @@ class TaskManager(object):
             ppn_flag = '-npernode'
             if smp_node:
                 cmd = ' '.join([self.task_launch_cmd, nproc_flag, str(nproc)])
+            # SIMYAN: added more to iter-specific MPI configuration
             elif self.host == 'iter':
                 cfg_fname = "node_config_" + str(task_id)
                 cfg_fname = os.path.join(working_dir, cfg_fname)
@@ -458,6 +470,7 @@ class TaskManager(object):
             
             if partial_node:
                 nodes = ','.join(nodelist)
+                # SIMYAN: added working_dir
                 cmd = self.build_launch_cmd(nproc, binary, cmd_args, working_dir, ppn,
                                             max_ppn, nodes, accurateNodes, partial_node,
                                             task_id, core_list=corelist)
@@ -466,6 +479,7 @@ class TaskManager(object):
                     nodes = ','.join(nodelist)
                 else:
                     nodes = ''
+                # SIMYAN: added working_dir
                 cmd = self.build_launch_cmd(nproc, binary, cmd_args, working_dir,
                                             ppn, max_ppn,
                                             nodes, accurateNodes, False, task_id)
@@ -495,6 +509,7 @@ class TaskManager(object):
         caller_id = finish_task_msg.sender_id
         task_id = finish_task_msg.args[0]
         task_data = finish_task_msg.args[1]
+        # SIMYAN: added node_file not used now
         node_file = self.curr_task_table[task_id]['node_file']
         try:
             self.resource_mgr.release_allocation(task_id, task_data)

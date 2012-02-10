@@ -53,10 +53,10 @@ class ConfigurationManager(object):
             self.sim_root = None
             self.sim_conf = None
             self.conf_file = None
+            # SIMYAN: used for the directory of the platform conf file
             self.conf_file_dir = None
             self.driver_comp = None
             self.init_comp = None
-            self.all_comps = []
             self.port_map = {}
             self.component_process = None
             self.log_file = None
@@ -66,6 +66,8 @@ class ConfigurationManager(object):
             self.fwk_logger = None
 
    #@TauWrap(TIMERS['__init__'])
+    # SIMYAN: accept a compset_list to find specific configuration files for 
+    # the components
     def __init__(self, fwk, config_file_list, platform_file_name, compset_list):
         """
         Initialize the values to be used by the configuration manager.  Also 
@@ -82,14 +84,11 @@ class ConfigurationManager(object):
         self.resource_mgr = None
         self.task_mgr = None
         self.comp_registry = ComponentRegistry()
+        # SIMYAN: here is where we removed the requirement for BIN_PATH, etc.
+        # from the required fields.
         self.required_fields = set(['CLASS', 'SUB_CLASS', 'NAME', 'SCRIPT',
                                     'INPUT_FILES', 'OUTPUT_FILES', 'NPROC'])
         self.config_file_list = []
-        self.sim_name_list = None
-        self.sim_root_list = None
-        self.log_file_list = None
-        self.log_dynamic_sim_queue = Queue(0)
-        
         for conf_file in config_file_list:
             abs_path = os.path.abspath(conf_file)
             if (abs_path not in self.config_file_list):
@@ -100,11 +99,13 @@ class ConfigurationManager(object):
         sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 0)
         self.platform_file = os.path.abspath(platform_file_name)
         self.platform_conf = {}
+        # SIMYAN: breaking up the keyswords a little bit 
         self.compset_list = compset_list
         loc_keys=['IPS_ROOT','PORTAL_URL','RUNID_URL']
         mach_keys=['MPIRUN','NODE_DETECTION','CORES_PER_NODE','SOCKETS_PER_NODE','NODE_ALLOCATION_MODE']
         prov_keys=['HOST']
         self.platform_keywords=loc_keys+mach_keys+prov_keys
+        # SIMYAN: keywords specific to individual components
         self.compset_keywords=['BIN_PATH','PHYS_BIN_ROOT','DATA_TREE_ROOT']
 
         self.service_methods = ['get_port',
@@ -241,7 +242,7 @@ class ConfigurationManager(object):
         self.platform_conf['CORES_PER_NODE'] = user_def_cpn
         self.platform_conf['SOCKETS_PER_NODE'] = user_def_spn
                 
-
+        # SIMYAN: section to parse component conf files
         """
         Engine (compset) configuration Configuration
         """
@@ -272,6 +273,8 @@ class ConfigurationManager(object):
         """
         for conf_file in self.config_file_list:
             try:
+                # SIMYAN: logic to handle merging component & simulation conf 
+                # files while maintaining backwards compatibility
                 if self.compset_list:
                    conf_list=[self.platform_file]+self.compset_list+[conf_file]
                 else:
@@ -304,9 +307,9 @@ class ConfigurationManager(object):
                 #pytau.stop(self.timers['initialize'])
                 #stop(self.timers['initialize'])
                 raise
-            # Allow propagation of entries from compset config file(s) to simulation
-            # config file.  For the required keywords, we are only going
-            # to propogate the first csconf file
+            # SIMYAN: Allow propagation of entries from compset config file(s) 
+            # to simulation config file.  For the required keywords, we are 
+            # only going to propogate the first csconf file
             firstPass=False
             for csconf in self.compset_conf:
               for keyword in self.platform_conf.keys():
@@ -317,6 +320,7 @@ class ConfigurationManager(object):
                       else:
                         conf[keyword] = self.platform_conf[keyword]
 
+            # SIMYAN allow for a container file with default .zip extension
             container_ext = 'zip'
             if conf.has_key('CONTAINER_FILE_EXT'):
               container_ext = conf['CONTAINER_FILE_EXT']
@@ -342,11 +346,12 @@ class ConfigurationManager(object):
             new_sim = self.SimulationData(sim_name)
             new_sim.sim_conf = conf
             new_sim.conf_file = conf_file
+            # SIMYAN: store the directory of the configuration file
             new_sim.conf_file_dir=os.path.dirname(os.path.abspath(conf_file))
             new_sim.sim_root = sim_root
             new_sim.log_file = log_file
             new_sim.log_pipe_name = tempfile.mktemp('.logpipe', 'ips_')
-            # Determine the file name for the container file
+            # SIMYAN: Determine the file name for the container file
             new_sim.container_file=sim_name+os.path.extsep+container_ext
             new_sim.checklist_file = os.path.join(sim_root, 'checklist.conf')
 
@@ -379,6 +384,8 @@ class ConfigurationManager(object):
                 fwk_sim = self.SimulationData(fwk_sim_conf['SIM_NAME'])
                 fwk_sim.sim_conf = fwk_sim_conf
                 fwk_sim.sim_root = new_sim.sim_root
+                # SIMYAN: store the container and checklist files for the 
+                # runspaceInit_component
                 fwk_sim.container_file = new_sim.container_file
                 fwk_sim.checklist_file = new_sim.checklist_file
                 fwk_sim.log_file = self.fwk.log_file #sys.stdout
@@ -391,7 +398,6 @@ class ConfigurationManager(object):
         self.log_process = Process(target=self.log_daemon.__run__)
         self.log_process.start()
 
-        # sim_map is a map of sim_name to sim_data objects
         for sim_name, sim_data in self.sim_map.items():
             if (sim_name != self.fwk_sim_name):
                 self._initialize_sim(sim_data)
@@ -415,11 +421,12 @@ class ConfigurationManager(object):
         #pytau.start(self.timers['_initialize_fwk_components'])
         #start(self.timers['_initialize_fwk_components'])
         
-        # set up the runspaceInit component
+        # SIMYAN: set up the runspaceInit component
         runspace_conf = {}
         runspace_conf['CLASS'] = 'FWK'
         runspace_conf['SUB_CLASS'] = 'COMP'
         runspace_conf['NAME'] = 'runspaceInitComponent'
+        # SIMYAN: using inspect to grab the ipsPathName from the current frame
         ipsPathName=inspect.getfile(inspect.currentframe())
         ipsDir=os.path.dirname(ipsPathName)
         runspace_conf['BIN_PATH'] = ipsDir
@@ -439,7 +446,7 @@ class ConfigurationManager(object):
                                                self.sim_map[self.fwk_sim_name])
         self.fwk_components.append(runspace_component_id)
 
-        # set up The Portal bridge
+        # SIMYAN: set up The Portal bridge, allowing for an absense of a portal
         use_portal=True
         if self.sim_map[self.fwk_sim_name].sim_conf.has_key('USE_PORTAL'):
           use_portal=self.sim_map[self.fwk_sim_name].sim_conf['USE_PORTAL']
@@ -486,10 +493,12 @@ class ConfigurationManager(object):
             ftb_conf['CLASS'] = 'FWK'
             ftb_conf['SUB_CLASS'] = 'COMP'
             ftb_conf['NAME'] = 'FTBBridge'
+            # SIMYAN: set the BIN_PATH from the FWK_COMPS_PATH
             ftb_conf['BIN_PATH'] = self.sim_map[self.fwk_sim_name].sim_conf['FWK_COMPS_PATH']
             ftb_conf['SCRIPT'] = os.path.join(ftb_conf['BIN_PATH'], 'ftbBridge.py')
             ftb_conf['INPUT_DIR'] = ''
             ftb_conf['INPUT_FILES']  = ''
+            # SIMYAN: initialize the DATA_FILES value to ''
             ftb_conf['DATA_FILES']  = ''
             ftb_conf['OUTPUT_FILES'] = ''
             ftb_conf['NPROC'] = 1
@@ -522,6 +531,8 @@ class ConfigurationManager(object):
 
         simRootDir = self.get_sim_parameter(sim_name, 'SIM_ROOT')
 
+        #SIMYAN: removed code that would make the simrootDir from here and 
+        # moved it to the runspaceInit component 
         # set simulation level partial_nodes
         try:
             pn_simconf = sim_conf['NODE_ALLOCATION_MODE']
@@ -549,8 +560,8 @@ class ConfigurationManager(object):
                 #stop(self.timers['_initialize_sim'])
                 sys.exit(1)
             conf_fields = set(comp_conf.keys())
-            # If INPUT_DIR not set in conf file, then make it the
-            # same level as the conf file
+            # SIMYAN: If INPUT_DIR, DATA_TREE_ROOT, and BIN_DIR are not set in 
+            # conf file, then make it the same level as the conf file
             if not comp_conf.has_key('INPUT_DIR'):
               comp_conf['INPUT_DIR']=sim_data.conf_file_dir
             #SEK: WORKING HERE
@@ -584,7 +595,7 @@ class ConfigurationManager(object):
            
         conf_file = sim_data.conf_file
 
-        # No longer doing this in configurationManager.py
+        # SIMYAN: No longer doing this in configurationManager.py
         # Copy the configuration and platform files to the simRootDir
         #ipsutil.copyFiles(os.path.dirname(conf_file), 
         #                  os.path.basename(conf_file), simRootDir)
@@ -599,7 +610,7 @@ class ConfigurationManager(object):
         except:
             haveStateDir=False
 
-        # if we have statedir specified, make it
+        # SIMYAN: removed from configurationManager
         # if haveStateDir:
         #   try:
         #       os.makedirs(statedir)
@@ -631,25 +642,21 @@ class ConfigurationManager(object):
             path = [comp_conf['SCRIPT'][0:endpath], 
                     comp_conf['SCRIPT'][0:endpath] + '/' + script, 
                     comp_conf['SCRIPT'][0:endpath] + '/' + script + '.py']
-            class_name = comp_conf['NAME']
-            try:
-                (modFile, pathname, description) = imp.find_module(script, path)
-                module = imp.load_module(script, modFile, pathname, description)
-                component_class = getattr(module, class_name)
-            except Exception, e:
-                self.fwk.error('Error in configuration file : NAME = %s   SCRIPT = %s', 
-                               comp_conf['NAME'], comp_conf['SCRIPT'] )
-                self.fwk.exception('Error instantiating IPS component %s From %s', class_name, script)
-                #pytau.stop(self.timers['_create_component'])
-                raise
-        #else:
-        #  not making directories or copying files in configurationManager anymore
-        #    ipsutil.copyFiles(os.path.dirname(comp_conf['SCRIPT']), 
-        #                      [os.path.basename(comp_conf['SCRIPT'])],
-        #                      os.path.join(sim_data.sim_conf['SIM_ROOT'], 
-        #                                   'simulation_setup'))
+        class_name = comp_conf['NAME']
+        try:
+            (modFile, pathname, description) = imp.find_module(script, path)
+            module = imp.load_module(script, modFile, pathname, description)
+            component_class = getattr(module, class_name)
+        except Exception, e:
+            self.fwk.error('Error in configuration file : NAME = %s   SCRIPT = %s', 
+                           comp_conf['NAME'], comp_conf['SCRIPT'] )
+            self.fwk.exception('Error instantiating IPS component %s From %s', class_name, script)
+            #pytau.stop(self.timers['_create_component'])
+            raise
 
-        #print "successful component creations!!!!!!"
+        # SIMYAN: removed else conditional, copying files in runspaceInit 
+        # component now
+
         svc_response_q = Queue(0)
         invocation_q = Queue(0)
         component_id = ComponentID(class_name, sim_name)
