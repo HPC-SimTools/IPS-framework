@@ -1190,6 +1190,9 @@ class ConfigObj(Section):
                     h.write('')
                     h.close()
                 infile = []
+        # SIMYAN: this was a small change to ConfigObj that would make it 
+        # easier to handle the tuple case of multiple input simulation 
+        # and component configuration files
         elif isinstance(infile, list):
             infile = list(infile)
         elif isinstance(infile, tuple):
@@ -1558,7 +1561,9 @@ class ConfigObj(Section):
                 #
                 key = self._unquote(key)
                 if this_section.has_key(key):
-                    print "Duplicate key: ", key
+                    # SIMYAN: just an extra sanity check bit that was used to
+                    # debug duplicate key issues.
+                    #print "Duplicate key: ", key
                     self._handle_error(
                         'Duplicate keyword name at line %s.',
                         DuplicateError, infile, cur_index)

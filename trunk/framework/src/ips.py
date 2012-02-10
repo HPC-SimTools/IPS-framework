@@ -97,6 +97,8 @@ TIMERS = make_timers()
 
 class Framework(object):
     #@ipsTiming.TauWrap(TIMERS['__init__'])
+    # SIMYAN: added options for creating runspace, run-setup, and running,
+    # added compset_list for list of components to load config files for
     def __init__(self, do_create_runspace, do_run_setup, do_run, 
             config_file_list, log_file_name, platform_file_name=None,
             compset_list=None, debug=False, 
@@ -149,6 +151,7 @@ class Framework(object):
         #self.timers = make_timers()
         #start(self.timers['__init__'])
 
+        # SIMYAN: collect the steps to do in this invocation of the Framework
         self.ips_dosteps={}
         self.ips_dosteps['create_runspace'] = do_create_runspace # create runspace: init.init()
         self.ips_dosteps['run_setup']       = do_run_setup    # validate inputs: sim_comps.init() 
@@ -156,7 +159,8 @@ class Framework(object):
 
         # fault tolerance flag
         self.ftb = ftb
-        # log file name if specified
+        # SIMYAN: set the logging to either file or sys.stdout based on 
+        # command line option
         self.log_file_name = log_file_name
         if log_file_name == 'sys.stdout':
           self.log_file=sys.stdout
@@ -171,8 +175,8 @@ class Framework(object):
         # map of ports
         self.port_map = {}
 
-        # Complicated here to allow for a generalization of previous functionality and to enable
-        # the automatic finding of the files.
+        # SIMYAN: Complicated here to allow for a generalization of previous 
+        # functionality and to enable the automatic finding of the files
         self.compset_list=None
         if (platform_file_name):
             self.platform_file_name = platform_file_name
@@ -223,10 +227,11 @@ class Framework(object):
         self.service_handler = {}
         self.cur_time = time.time()
         self.start_time = self.cur_time
-        # 
         self.event_service = EventService(self)
         initialize_event_service(self.event_service)
         self.event_manager = eventManager(self)
+        # SIMYAN: added a few parameters to Configuration Manager for 
+        # component files
         self.config_manager = \
              ConfigurationManager(self, self.config_file_list,self.platform_file_name, self.compset_list)
 
@@ -255,9 +260,6 @@ class Framework(object):
         logger.addHandler(ch)
         self.logger = logger
         self.verbose_debug = verbose_debug
-        self.outstanding_calls_list=[]
-        self.call_queue_map = {}
-
         # add the handler to the root logger
         try:
             # each manager should create their own event manager if they
@@ -283,6 +285,7 @@ class Framework(object):
             raise 
         self.blocked_messages = []
         #stop(self.timers['__init__'])
+        # SIMYAN: determine the sim_root for the Framework to use later
         fwk_comps = self.config_manager.get_framework_components()
         main_fwk_comp = self.comp_registry.getEntry(fwk_comps[0])
         self.sim_root = os.path.abspath(main_fwk_comp.services.get_config_param('SIM_ROOT'))
@@ -527,191 +530,196 @@ class Framework(object):
             self.exception('encountered exception during fwk.run() initialization')
             self.terminate_sim(status=Message.FAILURE)
             #stop(self.timers['run'])
-            #logging.shutdown()
             return False
 
+        # SIMYAN: required fields for the checklist file
         self.required_fields = set(['CREATE_RUNSPACE', 'RUN_SETUP', 'RUN'])
 
+        # SIMYAN: get the runspaceInit_component and invoke its init() method
+        # this creates the base directory and container file for the simulation 
+        # and copies the conf files into both and change directory to base dir
         main_fwk_comp = self.comp_registry.getEntry(fwk_comps[0])
 
         if self.ips_dosteps['create_runspace']:
-          self._invoke_framework_comps(fwk_comps, 'init')
+            self._invoke_framework_comps(fwk_comps, 'init')
 
         self.ips_status={}
 
         try:
-          # Each Framework Component is treated as a stand-alone simulation
-          # generate the queues of invocation messages for each framework component
-          for comp_id in fwk_comps:
-            msg_list = []
-            for method in ['step', 'finalize']:
-              if self.ips_dosteps['create_runspace']:
-                req_msg = ServiceRequestMessage(self.component_id, self.component_id, 
-                                                comp_id, 'init_call', method, 0)
-                msg_list.append(req_msg)
+            # Each Framework Component is treated as a stand-alone simulation
+            # generate the queues of invocation messages for each framework component
+            for comp_id in fwk_comps:
+                msg_list = []
+                for method in ['step', 'finalize']:
+                    # SIMYAN: if --create_runspace was specified, add calls 
+                    # to step() and finalize() for the framework components
+                    if self.ips_dosteps['create_runspace']:
+                        req_msg = ServiceRequestMessage(self.component_id, self.component_id, 
+                                                        comp_id, 'init_call', method, 0)
+                        msg_list.append(req_msg)
 
-            if self.ips_dosteps['create_runspace']:
-              outstanding_sim_calls[comp_id] = msg_list
+                # SIMYAN: add those calls to the outstanding call map
+                if self.ips_dosteps['create_runspace']:
+                    outstanding_sim_calls[comp_id] = msg_list
+  
+            # generate a queue of invocation messages for each simulation
+            #   - list will look like: [init_comp.init(), init_comp.step(), init_comp.finalize(),
+            #                           driver.init(), driver.step(), driver.finalize()]
+            # these messages will be sent on a FIFO basis, thus running the init components,
+            # then the corresponding drivers.
+            for sim_name, comp_list in sim_comps.items():
+                msg_list = []
+                self._send_monitor_event(sim_name, 'IPS_START', 'Starting IPS Simulation')
+                comment = 'Nodes = %d   PPN = %d' % \
+                          (self.resource_manager.num_nodes, self.resource_manager.ppn)
+                self._send_monitor_event(sim_name, 'IPS_RESOURCE_ALLOC', comment)
+                # SIMYAN: ordered list of methods to call
+                methods = []
+                if self.ftb:
+                    self._send_ftb_event('IPS_START')
 
-          # generate a queue of invocation messages for each simulation
-          #   - list will look like: [init_comp.init(), init_comp.step(), init_comp.finalize(),
-          #                           driver.init(), driver.step(), driver.finalize()]
-          # these messages will be sent on a FIFO basis, thus running the init components,
-          # then the corresponding drivers.
-          for sim_name, comp_list in sim_comps.items():
-            msg_list = []
-            self._send_monitor_event(sim_name, 'IPS_START', 'Starting IPS Simulation')
-            comment = 'Nodes = %d   PPN = %d' % \
-                        (self.resource_manager.num_nodes, self.resource_manager.ppn)
-            self._send_monitor_event(sim_name, 'IPS_RESOURCE_ALLOC', comment)
-            methods = []
-            if self.ftb:
-                self._send_ftb_event('IPS_START')
+                ### SIMYAN:
+                ## Get the status of the simulation 
+                #
+                checklist_file=self.config_manager.sim_map[sim_name].checklist_file
+                errmsg, self.ips_status[sim_name]=checklist.get_status(checklist_file)
+                if len(errmsg)>0:
+                    self.exception(errmsg)
+                    self.terminate_sim(status=Message.FAILURE)
+        
+                if not self.ips_status[sim_name]['create_runspace']:
+                    self.ips_status[sim_name]['create_runspace'] = True
 
-            ###
-            ## Get the status of the simulation 
-            #
-            checklist_file=self.config_manager.sim_map[sim_name].checklist_file
-            errmsg, self.ips_status[sim_name]=checklist.get_status(checklist_file)
-            if len(errmsg)>0:
-              self.exception(errmsg)
-              self.terminate_sim(status=Message.FAILURE)
-    
-            if not self.ips_status[sim_name]['create_runspace']:
-              self.ips_status[sim_name]['create_runspace'] = True
+                ### SIMYAN:
+                ## The logic of the create_runspace and run_setup
+                #
+                if  self.ips_status[sim_name]['create_runspace']:
+                    if self.ips_dosteps['run_setup']:
+                        methods.append('init')
+                        self.ips_status[sim_name]['run_setup'] = True
+                else:
+                    self.ips_status[sim_name]['run_setup'] = False
+                    if self.ips_dosteps['run_setup']:
+                        self.exception('Unable to continue to RUN_SETUP step, CREATE_RUNSPACE = not done')
+                        #SEK: May need to automatically invoke create_runspace if run_setup is called.
+                        return False
 
-            ###
-            ## The logic of the create_runspace and run_setup
-            #
-            if  self.ips_status[sim_name]['create_runspace']:
-              if self.ips_dosteps['run_setup']:
-                methods.append('init')
-                self.ips_status[sim_name]['run_setup'] = True
-            else:
-              self.ips_status[sim_name]['run_setup'] = False
-              if self.ips_dosteps['run_setup']:
-                self.exception('Unable to continue to RUN_SETUP step, CREATE_RUNSPACE = not done')
-                #SEK: May need to automatically invoke create_runspace if run_setup is called.
-                return False
+                ### SIMYAN:
+                ## The logic of the run with runspace and create_runspace
+                #
+                if self.ips_dosteps['run']:
+                    if self.ips_status[sim_name]['create_runspace'] and self.ips_status[sim_name]['run_setup']:
+                        methods.append('step')
+                        methods.append('finalize')
+                        self.ips_status[sim_name]['run'] = True
+                    else:
+                        #SEK: Currently: if run_setup is done then create_runspace is done: May change
+                        self.exception('Unable to continue to RUN step, RUN_SETUP = not done')
+                        self.terminate_sim(status=Message.FAILURE)
+                        return False
 
-            ###
-            ## The logic of the run with runspace and create_runspace
-            #
-            if self.ips_dosteps['run']:
-              if self.ips_status[sim_name]['create_runspace'] and self.ips_status[sim_name]['run_setup']:
-                methods.append('step')
-                methods.append('finalize')
-                self.ips_status[sim_name]['run'] = True
-              else:
-                #SEK: Currently: if run_setup is done then create_runspace is done: May change
-                self.exception('Unable to continue to RUN step, RUN_SETUP = not done')
-                self.terminate_sim(status=Message.FAILURE)
-                return False
-
-            # Now for this logic
-            for comp_id in comp_list:
-              #for method in ['init', 'validate', 'step', 'finalize']:
-              for method in methods:
-                req_msg = ServiceRequestMessage(self.component_id, self.component_id, comp_id,
-                                                'init_call', method, 0)
-                msg_list.append(req_msg)
-            if msg_list:
-                outstanding_sim_calls[sim_name] = msg_list
+                # SIMYAN: add each method call to the msg_list
+                for comp_id in comp_list:
+                    for method in methods:
+                        req_msg = ServiceRequestMessage(self.component_id, 
+                                                        self.component_id, 
+                                                        comp_id,
+                                                        'init_call', method, 0)
+                        msg_list.append(req_msg)
+                    # SIMYAN: add the msg_list to the outstanding sim calls
+                    if msg_list:
+                        outstanding_sim_calls[sim_name] = msg_list
 
         except Exception, e:
-          self.exception('encountered exception during fwk.run() genration of call messages')
-          self.terminate_sim(status=Message.FAILURE)
-          #stop(self.timers['run'])
-          #logging.shutdown()
-          return False
+            self.exception('encountered exception during fwk.run() genration of call messages')
+            self.terminate_sim(status=Message.FAILURE)
+            #stop(self.timers['run'])
+            return False
 
         call_id_list = []
         call_queue_map = {}
         # send off first round of invocations...
         try:
-          for sim_name, msg_list in outstanding_sim_calls.items():
-            msg = msg_list.pop(0)
-            self.debug('Framework sending message %s ', msg.__dict__)
-            call_id = self.task_manager.init_call(msg, manage_return=False)
-            call_queue_map[call_id] = msg_list
-            call_id_list.append(call_id)
+            for sim_name, msg_list in outstanding_sim_calls.items():
+                msg = msg_list.pop(0)
+                self.debug('Framework sending message %s ', msg.__dict__)
+                call_id = self.task_manager.init_call(msg, manage_return=False)
+                call_queue_map[call_id] = msg_list
+                call_id_list.append(call_id)
         except Exception, e:
-          self.exception('encountered exception during fwk.run() sending first round of invocations (init of inits and fwk comps)')
-          self.terminate_sim(status=Message.FAILURE)
-          #stop(self.timers['run'])
-          #logging.shutdown()
-          return False
+            self.exception('encountered exception during fwk.run() sending first round of invocations (init of inits and fwk comps)')
+            self.terminate_sim(status=Message.FAILURE)
+            #stop(self.timers['run'])
+            return False
 
         while (len(call_id_list) > 0):
-          if (self.verbose_debug):
-              self.debug("Framework waiting for message")
-          # get new messages
-          try:
-              msg = self.in_queue.get()
-          except:
-              continue
-          if (self.verbose_debug):
-              self.debug("Framework received Message : %s", str(msg.__dict__))
-          
-          # add blocked messages to message list for reprocessing
-          msg_list = [msg] + self.blocked_messages
-          self.blocked_messages = []
-          # process new and blocked messages
-          for msg in msg_list:
             if (self.verbose_debug):
-                self.debug('Framework processing message %s ', msg.message_id)
-            if (msg.__class__.__name__ == 'ServiceRequestMessage'):
-              try:
-                self._dispatch_service_request(msg)
-              except Exception:
-                self.exception('Error dispatching service request message.')
-                self.terminate_sim(status=Message.FAILURE)
-                #stop(self.timers['run'])
-                #logging.shutdown()
-                return False
-              continue
-            elif (msg.__class__.__name__ == 'MethodResultMessage'):
-              if msg.call_id not in call_id_list:
-                self.task_manager.return_call(msg)
+                self.debug("Framework waiting for message")
+            # get new messages
+            try:
+                msg = self.in_queue.get()
+            except:
                 continue
-              # Message is a result from a framework invocation
-              call_id_list.remove(msg.call_id)
-              sim_msg_list = call_queue_map[msg.call_id]
-              del call_queue_map[msg.call_id]
-              if (msg.status == Message.FAILURE):
-                self.error('received a failure message from component %s : %s',
-                           msg.sender_id, str(msg.args))
-                # No need to process remaining messages for this simulation
-                sim_msg_list = []
-                comment = 'Simulation Execution Error'
-                ok = False
-                # self.terminate_sim(status=Message.FAILURE)
-                # return False
-              else:
-                comment = 'Simulation Ended'
-                ok = True
-              try:
-                next_call_msg =  sim_msg_list.pop(0)
-                call_id = self.task_manager.init_call(next_call_msg,
-                                                      manage_return=False)
-                call_id_list.append(call_id)
-                call_queue_map[call_id] = sim_msg_list
-              except IndexError:
-                sim_name = msg.sender_id.get_sim_name()
-                if sim_name in sim_comps.keys():
-                  self._send_monitor_event(sim_name, 'IPS_END', comment, ok)
-                  if self.ftb:
-                      self._send_ftb_event('IPS_END')
+            if (self.verbose_debug):
+                self.debug("Framework received Message : %s", str(msg.__dict__))
+          
+            # add blocked messages to message list for reprocessing
+            msg_list = [msg] + self.blocked_messages
+            self.blocked_messages = []
+            # process new and blocked messages
+            for msg in msg_list:
+                if (self.verbose_debug):
+                    self.debug('Framework processing message %s ', msg.message_id)
+                if (msg.__class__.__name__ == 'ServiceRequestMessage'):
+                    try:
+                        self._dispatch_service_request(msg)
+                    except Exception:
+                        self.exception('Error dispatching service request message.')
+                        self.terminate_sim(status=Message.FAILURE)
+                        #stop(self.timers['run'])
+                        return False
+                    continue
+                elif (msg.__class__.__name__ == 'MethodResultMessage'):
+                    if msg.call_id not in call_id_list:
+                        self.task_manager.return_call(msg)
+                        continue
+                    # Message is a result from a framework invocation
+                    call_id_list.remove(msg.call_id)
+                    sim_msg_list = call_queue_map[msg.call_id]
+                    del call_queue_map[msg.call_id]
+                    if (msg.status == Message.FAILURE):
+                        self.error('received a failure message from component %s : %s',
+                                   msg.sender_id, str(msg.args))
+                        # No need to process remaining messages for this simulation
+                        sim_msg_list = []
+                        comment = 'Simulation Execution Error'
+                        ok = False
+                        # self.terminate_sim(status=Message.FAILURE)
+                        # return False
+                    else:
+                        comment = 'Simulation Ended'
+                        ok = True
+                    try:
+                        next_call_msg =  sim_msg_list.pop(0)
+                        call_id = self.task_manager.init_call(next_call_msg,
+                                                              manage_return=False)
+                        call_id_list.append(call_id)
+                        call_queue_map[call_id] = sim_msg_list
+                    except IndexError:
+                        sim_name = msg.sender_id.get_sim_name()
+                        if sim_name in sim_comps.keys():
+                            self._send_monitor_event(sim_name, 'IPS_END', comment, ok)
+                            if self.ftb:
+                                self._send_ftb_event('IPS_END')
+        # SIMYAN: update the status of the simulation after all calls have
+        # been executed
         for sim_name in self.ips_status.keys():
-          container_file=self.config_manager.sim_map[sim_name].container_file
-          checklist_file=self.config_manager.sim_map[sim_name].checklist_file
-          errmsg=checklist.update(checklist_file,container_file,self.ips_status[sim_name])
+            container_file=self.config_manager.sim_map[sim_name].container_file
+            checklist_file=self.config_manager.sim_map[sim_name].checklist_file
+            errmsg=checklist.update(checklist_file,container_file,self.ips_status[sim_name])
         self.event_service._print_stats()
         #stop(self.timers['run'])
         #dumpAll()
-
-        #self.log_file.close()
-        #logging.shutdown()
         self.terminate_sim(Message.SUCCESS)
         return True
 
@@ -828,72 +836,61 @@ class Framework(object):
                 except Exception, e:
                     self.exception('exception encountered while terminating comp %s', id)
                     print e
-
         time.sleep(1)
-
         try:
             self.config_manager.terminate(status)
         except Exception, e:
             self.exception('exception encountered while cleaning up config_manager')
-
-        x = list(self.logger.handlers)
-#       print 'Deleting loggers...'
-#       print 'len(x) = ', len(x)
-        for i in x:
-            self.logger.removeHandler(i)
-            i.flush()
-            i.close()
-
-#       x = list(self.logger.handlers)
-#       print 'loggers left...'
-#       print 'len(x) = ', len(x)
-
         #sys.exit(status)
         #stop(self.timers['terminate_sim'])
 
+# SIMYAN: method for modifying the config file with the given parameter to
+# the new value given
 def modifyConfigObjFile(configFile,parameter,newValue,writeNew=True):
     # open the file, create the config object
     cfg_file = ConfigObj(configFile, interpolation='template', file_error=True)
 
     # modify the SIM_NAME value to the new value
     if cfg_file.has_key(parameter):
-       cfg_file[parameter] = newValue
+        cfg_file[parameter] = newValue
     else: 
-      print configFile + " has no parameter: "+parameter
-      return ""
+        print configFile + " has no parameter: "+parameter
+        return ""
 
     newFileName = newValue + '.ips'
     newFile = open(newFileName, "w")
     if writeNew:
-       cfg_file.write(newFile)    #write & close to avoid multiple references to these files
+        cfg_file.write(newFile)    #write & close to avoid multiple references to these files
     else:
-       cfg_file.write()
+        cfg_file.write()
 
     return newFileName
 
-#---------------------------------------------------------------------------
+# SIMYAN: method for extracting the needed files to the current directory 
+# for cloning runs from a container file
 def extractIpsFile(containerFile,newSimName):
-  """
-  Given a container file, get the ips file in it and write it to current
-  directory so that it can be used
-  """
-  oldIpsFile=os.path.splitext(containerFile)[0]+os.extsep+"ips"
+    """
+    Given a container file, get the ips file in it and write it to current
+    directory so that it can be used
+    """
+    oldIpsFile=os.path.splitext(containerFile)[0]+os.extsep+"ips"
+  
+    zf=zipfile.ZipFile(containerFile,"r")
+  
+    foundFile=""
+    # Assume that container file contains 1 ips file.
+    oldIpsFile=fnmatch.filter(zf.namelist(),"*.ips")[0]
+    ifile=zf.read(oldIpsFile)
+    ipsFile=newSimName+".ips"
+    if os.path.exists(ipsFile):
+        print "Moving "+ipsFile+" to "+"Save"+ipsFile
+        shutil.copy(ipsFile, "Save"+ipsFile)
+    ff=open(ipsFile,"w")
+    ff.write(ifile)
+    ff.close()
+    return ipsFile
 
-  zf=zipfile.ZipFile(containerFile,"r")
-
-  foundFile=""
-  # Assume that container file contains 1 ips file.
-  oldIpsFile=fnmatch.filter(zf.namelist(),"*.ips")[0]
-  ifile=zf.read(oldIpsFile)
-  ipsFile=newSimName+".ips"
-  if os.path.exists(ipsFile):
-    print "Moving "+ipsFile+" to "+"Save"+ipsFile
-    shutil.copy(ipsFile, "Save"+ipsFile)
-  ff=open(ipsFile,"w")
-  ff.write(ifile)
-  ff.close()
-  return ipsFile
-
+# callback function for options needing a file list
 def filelist_callback(options, opt_str, values, parser):
     setattr(parser.values, options.dest, values.split(','))
 
@@ -901,11 +898,13 @@ def main(argv=None):
     """
     Check and parse args, create and run the framework.
     """
+    # SIMYAN: setting options for command line invocation of the Framework
     runopts="[--create-runspace | --clone | --run-setup | --run] "
     fileopts="--simulation=SIM_FILE_NAME --platform=PLATFORM_FILE_NAME "
     miscopts="[--component=COMPONENT_FILE_NAME(S)] [--sim_name=SIM_NAME] [--log=LOG_FILE_NAME] "
     debugopts="[--debug | --ftb] [--verbose] "
 
+    # SIMYAN: add the options to the options parser
     parser = optparse.OptionParser(usage="%prog "+runopts+debugopts+fileopts+miscopts)
     parser.add_option('-d','--debug',dest='debug', action='store_false',
                       help='Turn on debugging')
@@ -940,9 +939,11 @@ def main(argv=None):
     parser.add_option('-r','--run',dest='do_run', action='store_true',
                       help='Run')
 
+    # SIMYAN: parse the options from command line
     options, args = parser.parse_args()
 
-    ##------------------------------------------------------------------------------------------
+    ##-SIMYAN:----------------------------------------------------------------------------------
+    ##
     ##  Three ways of specifying where to find the config_file
     ##   1. --simulation: Specify directly
     ##   2. --sim_name: Either rename simulation files, or use sim_name/sim_name.ips
@@ -953,151 +954,155 @@ def main(argv=None):
     ##------------------------------------------------------------------------------------------
     ipsFilesToRemove=[]
 
-    ###
+    ### SIMYAN:
     ##  Some initial processing of the --simulation, --sim_name, clone
     ##  for basic checking and ease in processing better.
     #
     cfgFile_list = []
     usedSimulation=False
     if options.simulation:
-      cfgFile_list=options.simulation
-      nCfgFile=len(cfgFile_list)
-      usedSimulation=True
+        cfgFile_list=options.simulation
+        nCfgFile=len(cfgFile_list)
+        usedSimulation=True
 
+    # SIMYAN: grab the list of sim_names for multirun situations
     simName_list = []
     usedSim_name=False
     if options.sim_name:
-      simName_list=options.sim_name
-      nSimName=len(simName_list)
-      usedSim_name=True
-      if usedSimulation:
-        if nSimName != nCfgFile and usedSimulation:
-          print "When using both --simulation and --sim_name the list length must be the same"
-          return
+        simName_list=options.sim_name
+        nSimName=len(simName_list)
+        usedSim_name=True
+        if usedSimulation:
+            if nSimName != nCfgFile and usedSimulation:
+                print "When using both --simulation and --sim_name the list length must be the same"
+                return
 
+    # SIMYAN: grab the list of clone container files, and make sure the 
+    # new sim_names are given for each
     clone_list = []
     usedClone=False
     if options.clone:
-      if not usedSim_name:
-        print "Must specify SIM_NAME using --sim_name when cloning"
-        return
-      if usedSimulation:
-        print "Cannot use both --simulation and --clone"
-        return
-      clone_list=options.clone
-      nClone=len(clone_list)
-      usedClone=True
-      if nSimName != nClone:
-        print "When using both --clone and --sim_name the list length must be the same"
-        return
+        if not usedSim_name:
+            print "Must specify SIM_NAME using --sim_name when cloning"
+            return
+        if usedSimulation:
+            print "Cannot use both --simulation and --clone"
+            return
+        clone_list=options.clone
+        nClone=len(clone_list)
+        usedClone=True
+        if nSimName != nClone:
+            print "When using both --clone and --sim_name the list length must be the same"
+            return
 
-    # initialize list for each sim_name
+    # SIMYAN: initialize list for each sim_name
     sim_file_map = {}
     for sim_name in simName_list:
-      sim_file_map[sim_name] = []
+        sim_file_map[sim_name] = []
 
-    ###
+    ### SIMYAN:
     ##  Now process the simulation files 
     ##  Two methods for replacing the SIM_NAME:
     ##   1. colon syntax:   NEW_SIM_NAME:ips_file
     ##   2. sim_name parameter list
     #
     if usedSimulation:
-      cleaned_file_list = []; ipsFilesToRemove= []
-      # iterate over the list of files 
-      i=-1
-      for file in cfgFile_list:
-        # if the file name contains ':', we must replace SIM_NAME in the 
-        # file with the new value and remove the new SIM_NAME and ':' 
-        # from the string for IPS to read the modified .ips file.
-        if file.find(':') != -1:
-          # split the mapping.  new_sim_name gets replaced below
-          (new_sim_name, file_name) = file.split(':')
-          if usedSim_name:
-            file=modifyConfigObjFile(file_name,'SIM_NAME',new_sim_name)
-            ipsFilesToRemove.append(file)
-            sim_file_map[new_sim_name].append(file)
-          else:
-            iFile=modifyConfigObjFile(file,'SIM_NAME',new_sim_name,)
-            #ipsFilesToRemove.append(file)
+        cleaned_file_list = []; ipsFilesToRemove= []
+        # iterate over the list of files 
+        i=-1
+        for file in cfgFile_list:
+            # if the file name contains ':', we must replace SIM_NAME in the 
+            # file with the new value and remove the new SIM_NAME and ':' 
+            # from the string for IPS to read the modified .ips file.
+            if file.find(':') != -1:
+                # split the mapping.  new_sim_name gets replaced below
+                (new_sim_name, file_name) = file.split(':')
+                if usedSim_name:
+                    file=modifyConfigObjFile(file_name,'SIM_NAME',new_sim_name)
+                    ipsFilesToRemove.append(file)
+                    sim_file_map[new_sim_name].append(file)
+                else:
+                    iFile=modifyConfigObjFile(file,'SIM_NAME',new_sim_name,)
+                    #ipsFilesToRemove.append(file)
+  
+            if usedSim_name:
+                i=i+1
+                new_sim_name=simName_list[i]
+                file=modifyConfigObjFile(file,'SIM_NAME',new_sim_name)
+                ipsFilesToRemove.append(file)
+                sim_file_map[new_sim_name].append(file)
 
-        if usedSim_name:
-          i=i+1
-          new_sim_name=simName_list[i]
-          file=modifyConfigObjFile(file,'SIM_NAME',new_sim_name)
-          ipsFilesToRemove.append(file)
-          sim_file_map[new_sim_name].append(file)
+            # append file to the list of cleaned names that don't contain ':'
+            cleaned_file_list.append(file)
 
-        # append file to the list of cleaned names that don't contain ':'
-        cleaned_file_list.append(file)
-
-      # replace cfgFile_list with a list that won't have any ':' or sim_names
-      cfgFile_list = cleaned_file_list
+        # replace cfgFile_list with a list that won't have any ':' or sim_names
+        cfgFile_list = cleaned_file_list
 
 
-    ###
+    ### SIMYAN:
     ##  Now process container files when cloning
     #
     if usedClone:
-      options.do_create_runspace=True
-      cleaned_file_list = []
-      # iterate over the list of files 
-      i=-1
-      for clone_file in clone_list:
-        i=i+1
-        new_sim_name=simName_list[i]
-        iFile=extractIpsFile(clone_file,new_sim_name)
-        file=modifyConfigObjFile(iFile,'SIM_NAME',new_sim_name,writeNew=False)
-        sim_file_map[new_sim_name].append(iFile)
+        options.do_create_runspace=True
+        cleaned_file_list = []
+        # iterate over the list of files 
+        i=-1
+        for clone_file in clone_list:
+            i=i+1
+            new_sim_name=simName_list[i]
+            iFile=extractIpsFile(clone_file,new_sim_name)
+            file=modifyConfigObjFile(iFile,'SIM_NAME',new_sim_name,writeNew=False)
+            sim_file_map[new_sim_name].append(iFile)
 
-        # append file to the list of cleaned names that don't contain ':'
-        cleaned_file_list.append(iFile)
+            # append file to the list of cleaned names that don't contain ':'
+            cleaned_file_list.append(iFile)
 
-      # replace cfgFile_list with a list that won't have any ':' or sim_names
-      cfgFile_list = cleaned_file_list
-      ipsFilesToRemove=cleaned_file_list
+        # replace cfgFile_list with a list that won't have any ':' or sim_names
+        cfgFile_list = cleaned_file_list
+        ipsFilesToRemove=cleaned_file_list
 
 
-    ###
+    ### SIMYAN:
     ##  sim_name specified without simulation or clone means 
     ##  look for the IPS file in sim_name subdirectory
     #
     if usedSim_name and not (usedSimulation or usedClone):
-      cleaned_file_list = []
-      for simname in simName_list:
-        new_file_name=os.path.join(simname,simname+".ips")
-        foundFile=""
-        for testFile in glob.glob(simname+"/*.ips"):
-           cfg_file = ConfigObj(testFile,interpolation='template')
-           if cfg_file.has_key("SIM_NAME"):
-             testSimName=cfg_file["SIM_NAME"]
-             if testSimName == simname:
-               foundFile=testFile
-               sim_file_map[sim_name].append(foundFile)
+        cleaned_file_list = []
+        for simname in simName_list:
+            new_file_name=os.path.join(simname,simname+".ips")
+            foundFile=""
+            for testFile in glob.glob(simname+"/*.ips"):
+                cfg_file = ConfigObj(testFile,interpolation='template')
+                if cfg_file.has_key("SIM_NAME"):
+                    testSimName=cfg_file["SIM_NAME"]
+                    if testSimName == simname:
+                        foundFile=testFile
+                        sim_file_map[sim_name].append(foundFile)
+  
+            print "FOUND FILE", foundFile
+            if foundFile:
+                cleaned_file_list.append(foundFile)
+            else:
+                print "Cannot find ips file associated with SIM_NAME= ", simname
+                return
 
-        print "FOUND FILE", foundFile
-        if foundFile:
-          cleaned_file_list.append(foundFile)
-        else:
-          print "Cannot find ips file associated with SIM_NAME= ", simname
-          return
+        cfgFile_list = cleaned_file_list
 
-      cfgFile_list = cleaned_file_list
-
-    # Component files
+    # SIMYAN: process component files
     compset_list = []
     if options.component:
-      compset_list=options.component
+        compset_list=options.component
 
     try:
+        # SIMYAN: added logic to handle multiple runs in sequence
         if simName_list:
             for sim_name in simName_list:
-              cfgFile_list = sim_file_map[sim_name]
-              fwk = Framework(options.do_create_runspace, options.do_run_setup, options.do_run, 
-                    cfgFile_list, options.log_file, options.platform_filename, 
-                    compset_list, options.debug, options.ftb, options.verbose_debug, 
-                    options.cmd_nodes, options.cmd_ppn)
-              fwk.run()
+                cfgFile_list = sim_file_map[sim_name]
+                fwk = Framework(options.do_create_runspace, options.do_run_setup, options.do_run, 
+                      cfgFile_list, options.log_file, options.platform_filename, 
+                      compset_list, options.debug, options.ftb, options.verbose_debug, 
+                      options.cmd_nodes, options.cmd_ppn)
+                fwk.run()
             ipsTiming.dumpAll('framework')
         else:
             fwk = Framework(options.do_create_runspace, options.do_run_setup, options.do_run, 
@@ -1109,10 +1114,11 @@ def main(argv=None):
     except :
         raise 
 
-    # post running cleanup of working files.
+    # SIMYAN: post running cleanup of working files, so there aren't
+    # leftover files from doing clones or renaming simulations
     if len(ipsFilesToRemove)>0:
-      for file in ipsFilesToRemove:
-        os.remove(file)
+        for file in ipsFilesToRemove:
+            os.remove(file)
 
     return 0
 

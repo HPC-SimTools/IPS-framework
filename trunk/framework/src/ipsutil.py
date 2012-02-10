@@ -11,15 +11,7 @@ def copyFiles(src_dir, src_file_list, target_dir, prefix='', keep_old = False):
        (default).
        Wild-cards in file name specification are allowed. 
     """
-    # copyFiles no longer attempts to make the directory, if this is not done by
-    # the runspaceInitComponent, then we can't continue
-
-    #try:
-    #    os.makedirs(target_dir)
-    #except OSError, (errno, strerror):
-    #    if (errno != 17):
-    #        print 'Error creating directory %s : %d-%s' % (target_dir, errno, strerror)
-    #        raise
+    # SIMYAN: copyFiles no longer attempts to make the directory, 
     try:
         file_list = src_file_list.split()
     except AttributeError : # srcFileList is not a string
@@ -59,6 +51,7 @@ def copyFiles(src_dir, src_file_list, target_dir, prefix='', keep_old = False):
         except:
             raise
 
+# SIMYAN: added a utility method to write to the container file
 def writeToContainer(ziphandle, src_dir, src_file_list):
   """
   Write files to the ziphandle.  Because when one wants to unzip the
