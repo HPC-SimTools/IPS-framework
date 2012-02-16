@@ -26,6 +26,7 @@ List of Components:
 
  * Monitor Component - (location of documentation) (brief description)
  * Portal Bridge Component - (location of documentation) (brief description)
+ * Runspace Init Component - (location of documentation) (brief description)
  * FTB Bridge Component - (location of documentation) (brief description)
  * AORSA - (location of documentation) (brief description)
  * TSC - (location of documentation) (brief description)
