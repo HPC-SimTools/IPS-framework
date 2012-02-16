@@ -10,22 +10,24 @@ import zipfile
 from component import Component
 
 class runspaceInitComponent(Component):
+    """
+    Framework component to manage runspace initialization, container file
+    management, and file staging for simulation and analysis runs.
+    """
 
     def __init__(self, services, config):
+        """
+        Declaration of private variables and initialization of 
+        :py:class:`component.Component` object.
+        """
         Component.__init__(self, services, config)
         print 'Created %s' % (self.__class__)
 
 
-# ------------------------------------------------------------------------------
-#
-# init function
-#
-# runspaceInitComponent init function creates base directory, copies IPS and 
-# FacetsComposer input files.
-#
-# ------------------------------------------------------------------------------
-
     def init(self, timeStamp):
+        """
+        Creates base directory, copies IPS and FacetsComposer input files.
+        """
 
         print 'runspaceInitComponent.init() called'
 
@@ -105,27 +107,19 @@ class runspaceInitComponent(Component):
 
         return
 
-# ------------------------------------------------------------------------------
-#
-# parse function
-#
-# does nothing
-#
-# ------------------------------------------------------------------------------
 
-    def validate(self, timestamp=0):
+    def validate(self, timestamp=0.0):
+        """
+        Placeholder for future validation step of runspace management.
+        """
         print 'runspaceInitComponent.validate() called'
         return
 
-# ------------------------------------------------------------------------------
-#
-# step function
-#
-# copies individual subcomponent input files into working subdirectories
-#
-# ------------------------------------------------------------------------------
 
-    def step(self, timestamp=0):
+    def step(self, timestamp=0.0):
+        """
+        Copies individual subcomponent input files into working subdirectories.
+        """
 
         print 'runspaceInitComponent.step() called'
 
@@ -218,16 +212,10 @@ class runspaceInitComponent(Component):
         return
 
 
-# ------------------------------------------------------------------------------
-#
-# checkpoint function
-#
-# does nothing
-#
-# ------------------------------------------------------------------------------
-
     def checkpoint(self, timestamp=0.0):
-
+        """
+        Placeholder
+        """
         print 'runspaceInitComponent.checkpoint() called'
 
         # save restart files
@@ -236,15 +224,11 @@ class runspaceInitComponent(Component):
 
         return
 
-# ------------------------------------------------------------------------------
-#
-# finalize function
-#
-# does nothing for now
-#
-# ------------------------------------------------------------------------------
 
     def finalize(self, timestamp=0.0):
+        """
+        Writes final log_file and resource_usage file to the container and closes
+        """
         print 'runspaceInitComponent.finalize() called'
 
         container_write=zipfile.ZipFile(os.path.abspath(self.container_file),'a')
