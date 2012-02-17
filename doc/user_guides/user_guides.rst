@@ -32,7 +32,13 @@ This directory has all of the user guides for using the IPS (see the component a
     This guide contains the elements of components and drivers, suggestions on how to construct a simulation, how to add the new component to a simulation and the repository, as well as, an IPS services guide to have handy when writing components and drivers.  This guide is for components and drivers based on the *generic driver* model.  More sophisticated logic and execution models are covered in the following document.
 
 :doc:`The New IPS for Driver and Component Developers<advanced_guide_new>`:
-    This guide contains workflow concepts, the elements of components and drivers, suggestions on how to construct a simulation, how to add the new component to a simulation and the repository, as well as, an IPS services guide to have handy when writing components and drivers.  This guide is for components and drivers based on the *generic driver* model.  More sophisticated logic and execution models are covered in the following document.
+    This guide contains the elements of a simulation and an introduction to complex workflow management and the use of the Framework for managing multiple runs.
+
+:doc:`Developing against the Framework Application Programming Interface<api_guide>`:
+    Explanation of the various API features the Framework uses and offers. The Services API provides access to the Component Invocation API, Task Launch API, Data Management API, Configuration Parameter Access API, Logging API, Fault Tolerance API, Event Service API, and other miscilaneous interfaces.
+
+:doc:`Developing Drivers and Components for IPS Simulations<component_guide>`:
+    Explanations of the design of components, how to write components to include new physics binaries and manage data coupling, how to write a component and add it to the build system, and how to test and debug a component. Further explanations on driver development are also included.
 
 :doc:`Fundamentals of the Advanced Features of the IPS<advanced_parallelism>`:
     Explanation of the different levels of parallelism, and other advanced features of the IPS in abstract terms, followed by examples.  This is for the planning stages of simulation composition.
