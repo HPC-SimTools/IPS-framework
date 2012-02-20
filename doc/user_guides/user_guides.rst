@@ -31,7 +31,7 @@ This directory has all of the user guides for using the IPS (see the component a
 :doc:`The IPS for Driver and Component Developers<advanced_guide>`:
     This guide contains the elements of components and drivers, suggestions on how to construct a simulation, how to add the new component to a simulation and the repository, as well as, an IPS services guide to have handy when writing components and drivers.  This guide is for components and drivers based on the *generic driver* model.  More sophisticated logic and execution models are covered in the following document.
 
-:doc:`The New IPS for Driver and Component Developers<advanced_guide_new>`:
+:doc:`The New IPS for Simulators and Developers<advanced_guide_new>`:
     This guide contains the elements of a simulation and an introduction to complex workflow management and the use of the Framework for managing multiple runs.
 
 :doc:`Developing against the Framework Application Programming Interface<api_guide>`:
