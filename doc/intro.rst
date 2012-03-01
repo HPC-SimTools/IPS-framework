@@ -18,7 +18,24 @@ Where to Start?
 
 For those who have never run the IPS before, you should start with :doc:`Getting Started<getting_started/getting_started>`.  It starts from the beginning with how to obtain the IPS code, build and run some sample simulations on two different platforms.
 
-The :doc:`User Guides<user_guides/user_guides>` section has documents on basic and advanced user topics.  For those who have used the IPS before or have done the tutorial and are ready to create their own run, the :doc:`Reference Guide for Running IPS Simulations<user_guides/basic_guide>` document walks you through the process of using the IPS to examine a computational or physics problem, with practical hints on what to consider through out the preparation, running and analysis/debugging processes.  Additional documentation for basic simulation construction include :doc:`The Configuration File - Explained<user_guides/config_file>` and :doc:`Using the Plasma State<user_guides/plasma_state>`.  :doc:`The IPS for Driver and Component Developers<user_guides/advanced_guide>` provides component developers with basic information on the construction of a component and integrating it into the IPS, guidance on how to construct drivers and IPS services API reference.  Additional documents on advanced topics such as multiple levels of parallelism, computational considerations, fault tolerance and performance analysis are located in the :doc:`User Guides<user_guides/user_guides>` chapter.
+The :doc:`User Guides<user_guides/user_guides>` section has documents on
+basic and advanced user topics.  For those who have used the IPS before
+or have done the tutorial and are ready to create their own run, the
+:doc:`Reference Guide for Running IPS
+Simulations<user_guides/basic_guide>` document walks you through the
+process of using the IPS to examine a computational or physics problem,
+with practical hints on what to consider through out the preparation,
+running and analysis/debugging processes.  Additional documentation for
+basic simulation construction include :doc:`The Configuration File -
+Explained<user_guides/config_file>` and :doc:`Using the Plasma
+State<user_guides/plasma_state>`.  :doc:`The IPS for Driver and
+Component Developers<user_guides/advanced_guide>` provides component
+developers with basic information on the construction of a component and
+integrating it into the IPS, guidance on how to construct drivers and
+IPS services API reference.  Additional documents on advanced topics
+such as multiple levels of parallelism, computational considerations,
+fault tolerance and performance analysis are located in the :doc:`User
+Guides<user_guides/user_guides>` chapter.
 
 Developers of the IPS framework and services, or brave souls who wish to understand how these pieces work, should look at the :doc:`Developer Guides<developer_guides/developer_guides>` and code listings.  The code listings here will include internal and external APIs.  The developer guides include information about the design of the IPS at a high level and the framework and managers at a lower level to acquaint developers with the structures and mechanisms that are used in the IPS framework source code.
 

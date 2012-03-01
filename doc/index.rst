@@ -14,6 +14,7 @@ Contents:
    intro
    pubs
    getting_started/getting_started
+   getting_started/getting_started_new
    user_guides/user_guides
    component_guides/component_guides
    developer_guides/developer_guides

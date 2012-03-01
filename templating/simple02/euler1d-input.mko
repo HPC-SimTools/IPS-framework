@@ -1,8 +1,9 @@
 ##available to all input files
+#
 <%
 tstart=0.0
 tend=1.0
-numFrames=10
+numFrames=5
 xlower=-1.0
 xupper=1.0
 cells=16
