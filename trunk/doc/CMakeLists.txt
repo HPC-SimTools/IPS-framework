@@ -52,26 +52,33 @@ set (HTML_OUTPUT ${BLDDIR}/html/index.html)
 add_custom_command(
    OUTPUT ${HTML_OUTPUT}
    COMMAND ${SPHINXRUN} -b html ${SRCDIR} ${BLDDIR}/html
+   DEPENDS ${Sphinx_FILES}
 )
 add_custom_target(docs-html DEPENDS ${HTML_OUTPUT})
 
 set (SINGLEHTML_OUTPUT ${BLDDIR}/singlehtml/index.html)
 add_custom_command(
    OUTPUT ${SINGLEHTML_OUTPUT}
-   COMMAND ${SPHINXRUN} -b singlehtml ${SRCDIR} ${BLDDIR}/singlehtml)
+   COMMAND ${SPHINXRUN} -b singlehtml ${SRCDIR} ${BLDDIR}/singlehtml
+   DEPENDS ${Sphinx_FILES}
+)
 add_custom_target(docs-singlehtml DEPENDS ${SINGLEHTML_OUTPUT})
 
 set (PDF_OUTPUT ${BLDDIR}/pdf/IntegratedPlasmaSimulatorIPS.pdf)
 add_custom_command(
    OUTPUT ${PDF_OUTPUT}
-   COMMAND ${SPHINXRUN} -b latex ${SRCDIR} ${BLDDIR}/pdf && make -C ${BLDDIR}/pdf all-pdf)
+   COMMAND ${SPHINXRUN} -b latex ${SRCDIR} ${BLDDIR}/pdf && make -C ${BLDDIR}/pdf all-pdf
+   DEPENDS ${Sphinx_FILES}
+)
 add_custom_target(docs-pdf DEPENDS ${PDF_OUTPUT})
 
 
 set (MAN_OUTPUT ${BLDDIR}/man/index.man)
 add_custom_command(
    OUTPUT ${MAN_OUTPUT}
-   COMMAND ${SPHINXRUN} -b man ${SRCDIR} ${BLDDIR}/man)
+   COMMAND ${SPHINXRUN} -b man ${SRCDIR} ${BLDDIR}/man
+   DEPENDS ${Sphinx_FILES}
+)
 add_custom_target(docs-man DEPENDS ${MAN_OUTPUT})
 
 add_dependencies(docs docs-html docs-pdf docs-man)

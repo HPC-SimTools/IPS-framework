@@ -1,24 +1,15 @@
-Getting Started
-===============
-
-This document will guide you through the process of running an IPS simulation and describe the overall structure of the IPS.  It is designed to help you build and run your first IPS simulation.  It will serve as a tutorial on how to get, build, and run your first IPS simulation, but not serve as a general reference for constructing and running IPS simulations.  See the :doc:`Basic User Guides<../user_guides/user_guides>` for a handy reference on running and constructing simulations in general, and for more in-depth explanations of how and why the IPS works.
-
-======================================
-Obtaining, Dependencies, Platforms
+Getting Started with the Simyan Branch
 ======================================
 
-The IPS code is currently located in the SWIM project's Subversion (SVN) repository.  In order to checkout a copy, you must have SVN installed on the machine you will be using and be given permission to check out the IPS from the SWIM project.  (SVN is installed on the machines used in the examples below.)  See the SWIM_ project's website for details and instructions on how to sign up.
-
-Once you have permission to access the repository, replace <cswim_user> with your user name and check out the IPS trunk thusly::
-
-      svn co https://<cswim_user>@cswim.org/svn/cswim/ips/trunk ips
-
-.. _SWIM: http://cswim.org
-
-
-For the simyan branch, the URL currently is::
-
-      svn co https://ice.txcorp.com/svnrepos/code/simyan/trunk ips
+This document will guide you through the process of running an IPS
+simulation and describe the overall structure of the IPS.  It is
+designed to help you build and run your first IPS simulation.  It will
+serve as a tutorial on how to get, build, and run your first IPS
+simulation, but not serve as a general reference for constructing and
+running IPS simulations.  See the :doc:`Basic User
+Guides<../user_guides/user_guides>` for a handy reference on running and
+constructing simulations in general, and for more in-depth explanations
+of how and why the IPS works.
 
 ^^^^^^^^^^^^^^^^^^^
 Dependencies
@@ -26,11 +17,20 @@ Dependencies
 
 **IPS Proper**
 
-The IPS framework is written in Python_, and requires Python 2.5+ [#]_.  There are a few other packages that may be needed for certain components or utilities.  For Python packages listed below, we recommend using easy_install_ (it is what the developers use and like).  The framework does use the Python package ConfigObj_, however the source is already included and no package installation is necessary (likewise for Python 2.5 and the processing module).
+The valtools repo will build the entire dependency tree for IPS,
+related repos, and the dependencies using Bilder_.   See the main
+documentation for the dependencies.
+
+For more inf
 
 **Portal**
 
-The portal is a web interface for monitoring IPS runs and requires only a connection to the internet and a web browser.  Advanced features on the portal require an OpenID account backed by ORNL's XCAMS.  Information on getting an XCAMS backed OpenID can be found on the SWIM_ website.  There are also visualization utilities that can be accessed that require Elvis_ or PCMF (see below).
+The portal is a web interface for monitoring IPS runs and requires only
+a connection to the internet and a web browser.  Advanced features on
+the portal require an OpenID account backed by ORNL's XCAMS.
+Information on getting an XCAMS backed OpenID can be found on the SWIM_
+website.  There are also visualization utilities that can be accessed
+that require Elvis_ or PCMF (see below).
 
 ::::::::::::::::
 Other Utilities
@@ -67,53 +67,77 @@ Other Utilities
 .. _Numpy/Scipy: http://numpy.scipy.org/
 .. _Elvis: http://w3.pppl.gov/elvis/
 .. _docutils: http://docutils.sourceforge.net/
-.. _easy_install: http://packages.python.org/distribute/easy_install.html
 .. _ConfigObj: http://www.voidspace.org.uk/python/configobj.html
 .. _Python: http://python.org/
 .. _processing: http://pypi.python.org/pypi/processing
 .. _multiprocessing: http://docs.python.org/library/multiprocessing.html
+.. _Bilder: https://ice.txcorp.com/trac/bilder
 
-========================================
-Building and Setting up Your Environment
-========================================
+=====================================================
+Building and Setting up Your Environment Using Bilder
+=====================================================
+  
+The IPS code is currently located in the SWIM project's Subversion (SVN)
+repository.  In this documentation, we will discuss using it from the
+Tech-X repos to discuss the new repos.  IPS is currently part of the
+Simyan repo which is svn:external'd from the ValtoolsAll repo.  The
+valtoolsall repo is for enabling a simplified environment for python
+packages.  To check out the valtoolsall repo::
 
-The IPS has been ported to and is in regular use on the following platforms.  See :doc:`../user_guides/platform` for more information:
+      svn co https://ice.txcorp.com/svnrepos/code/valtoolsall/trunk valtoolsall
 
-* Franklin_ - Cray XT4
-* Hopper_ - Cray XE6
-* Stix_ - SMP
-* Pacman - Linux Cluster
+Using bilder and the valtoolsall project::
 
-.. _Hopper: http://www.nersc.gov/users/computational-systems/hopper/
-.. _Franklin: http://www.nersc.gov/users/computational-systems/franklin/
-.. _Pacman: http://www.arsc.edu/resources/pacman.html
-.. _Stix: http://beowulf.pppl.gov/
+  cd valtoolsall
+  ./mkvaltoolsall-default.sh -n
 
-It is not hard to port the IPS to another platform, but it may not be trivial.  *Please contact the framework developers before attempting it on your own.*  For this tutorial, we will be using Franklin and Stix as our example platforms.  It is **strongly** recommended that you use one of these two platforms as the example scripts and data files are located on these machines.
+After running bilder, the output file will tell you where things are
+installed (<INSTALL_DIR>) and where things are built (<BUILD_DIR>).  To
+configure your environment, you need to source the configuration files.
+For bash users::
 
-To build the IPS on one of the locations it has been ported to:
+   source <INSTALL_DIR>/valtoolsall.sh
 
-1. Checkout or copy the ips trunk to the machine of your choice::
+For tcsh users::
 
-     head_node: ~ > svn co https://cswim_user@cswim.org/svn/cswim/ips/trunk ips
+   source <INSTALL_DIR>/valtoolsall.csh
 
-or with the branch.
+To test the builds::
 
-#. Configure your shell (assumes you are using bash).  If you use a different shell, type ``bash`` at the command line before sourcing the swim.bashrc.* file::
+  cd <BUILD_DIR>/simyan/ser
+  make test
 
-     head_node: ~/ips > cd ips
+This will run all of the tests.  The documentation, assuming the `-D`
+flag was passed to bilder, will be in the webdocs build directory
+(`<BUILD_DIR>/simyan/webdocs`).
 
-#. Configure the file in a build subdirectory::
 
+===========================================================
+Building and Setting up Your Environment direct from repo
+===========================================================
+
+Assuming you have the dependencies installed, you can jst check out the
+repo and configure directly.  To obtain the rep::
+
+      https://ice.txcorp.com/svnrepos/code/simyan/trunk ips
+
+#. Assuming your dependencies are installed in /usr/local or /contrib,
+   you can configure the file in a build subdirectory::
+  
   mkdir build
   cd build
   cmake \
-    -DCMAKE_INSTALL_PREFIX:PATH=/scr_gabrielle/kruger/volatile-gnu/webdocs/simyan \
+    -DCMAKE_INSTALL_PREFIX:PATH=$INSTALL_DIR/simyan \
     -DCMAKE_BUILD_TYPE:STRING=RELEASE \
     -DCMAKE_VERBOSE_MAKEFILE:BOOL=TRUE \
     -DCMAKE_INSTALL_ALWAYS:BOOL=TRUE \
     -DSUPRA_SEARCH_PATH='/usr/local;/contrb' \
     -DENABLE_WEBDOCS:BOOL=ON \
+    -DMPIRUN:STRING=aprun \
+    -DNODE_DETECTION:STRING=manual \
+    -DCORES_PER_NODE:INTEGER=4 \
+    -DSOCKETS_PER_NODE:INTEGER=2 \
+    -DNODE_ALLOCATION_MODE:SHARED=shared \
     $PWD/..
 
 # After configuring, to build IPS, the documentation, and run the tests
@@ -129,69 +153,17 @@ tests are located in the tests subdirectory.
 
 Now you are ready to set up your configuration files, and run simulations.
 
-^^^^^^^^^^^^^^^^^^^^^^^^
-IPS Directory Structure
-^^^^^^^^^^^^^^^^^^^^^^^^
-
-Before running your first simulation, we should go over the contents of these selected ``ips`` subdirectories.
-
-*ips/*
-
-     *bin/*
-
-         Transient. Installation directory for all executable objects (binaries, scripts) which are generally expected to be invoked by users.  Also expected installation location for executables from external packages which IPS needs to operate.
-
-     *components/*
-
-         *class1/*
-
-         *class2/*
-
-         *...*
-
-             Subversion.  Each class of component wrapper gets its own
-             directory tree.  Underneath each class may be multiple
-             implementations targeting specific packages.  Various
-             component wrappers of a given class will share some source
-             code, and require some individual code.
-
-     *doc/*
-
-         Subversion. Documentation. Hierarchy is not specifically designed, but would generally be expected to relate to the various components and packages involved in IPS.
-
-     *framework/*
-
-	  Subversion. Framework source code and utilities reside here. Generally used by framework developers. Relevant Python scripts are placed in ips/bin/ during make install for execution.
-
-----------------------------------
-
-**Explanation and Rationale**
-
-
-The IPS directory hierarchy is designed to provide a (mostly)
-self-contained work space for IPS developers and users.  Multiple
-instances of the IPS tree (with different names, of course), can
-coexist in the same parent directory without interference.
-
-The caveat "mostly", above, arises from the fact that not all required
-packages will be under version control by the SWIM project.  The
-expectation is that such packages will be built separately, but
-installed into directories within the ips/ tree, and that ips/bin,
-ips/lib, etc. will be the only directories users will have to add to
-their paths to use their IPS installation.
-
-Subdirectories in the tree are either transient or under Subversion
-control.  Transient directories are created and populated as part of
-the installation process of either IPS code or external code.  They
-should never appear within the Subversion repository.  In fact, the
-Subversion repository is configured to ignore directories marked below
-as transient.
 
 ===================================
 Running Your First IPS Simulations
 ===================================
 
-This section will take you step-by-step through running a "hello world" example and a "model physics" example.  These examples contain all of the configuration, batch script, component, executables and input files needed to run them.  To run IPS simulations in general, these will need to be borrowed, modified or created.  See the :doc:`Basic User Guides<../user_guides/user_guides>` for more information.
+This section will take you step-by-step through running a "hello world" example
+and a "model physics" example.  These examples contain all of the
+configuration, batch script, component, executables and input files needed to
+run them.  To run IPS simulations in general, these will need to be borrowed,
+modified or created.  See the :doc:`Basic User
+Guides<../user_guides/user_guides>` for more information.
 
 Before getting started, you will want to make sure you have a copy of the ips checked out and built on either Franklin or Stix.
 
@@ -203,7 +175,15 @@ Before getting started, you will want to make sure you have a copy of the ips ch
 Hello World Example
 ^^^^^^^^^^^^^^^^^^^^
 
-This example simply uses the IPS to print "Hello World," using a single driver component and worker component.  The driver component (hello_driver.py) invokes the worker component (hello_worker.py) that then prints a message.  The implementations of these components reside in ``ips/components/drivers/hello/``, if you would like to examine them.  In this example, the *call()* and *launch_task()* interfaces are demonstrated.  In this tutorial, we are focusing on running simulations and will cover the internals of components and constructing simulation scenarios in the various User Guides (see :doc:`Index<../index>`).
+This example simply uses the IPS to print "Hello World," using a single driver
+component and worker component.  The driver component (hello_driver.py) invokes
+the worker component (hello_worker.py) that then prints a message.  The
+implementations of these components reside in
+``ips/components/drivers/hello/``, if you would like to examine them.  In this
+example, the *call()* and *launch_task()* interfaces are demonstrated.  In this
+tutorial, we are focusing on running simulations and will cover the internals
+of components and constructing simulation scenarios in the various User Guides
+(see :doc:`Index<../index>`).
 
 1. Copy the following files to your working directory:
 

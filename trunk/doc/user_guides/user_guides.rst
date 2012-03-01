@@ -13,11 +13,14 @@ This directory has all of the user guides for using the IPS (see the component a
 :doc:`Introduction to the IPS<basic_guide>`
     A handy reference for constructing and running applications, this document helps users through the process of running a simulation based on existing components.  It also includes: terminology, examples, and guidance on how to translate a computational or scientific question into a series of IPS runs.
 
-:doc:`The Configuration File - Explained<config_file>`:
-    Annotated version of the configuration file with explanations of how and why the values are used in the framework and components.
-
 :doc:`Using the Plasma State<plasma_state>`:
     Essential guide to what the Plasma State is, the data it contains, and how to use it.  This will go more in-depth than the component and driver writing guide, but less than the developers guide.  It should contain how the PS is supposed to be used in various coupled simulation scenarios.
+
+:doc:`The Configuration Files (simulation, component and platform files) Explained<config_file_new>`:
+    Annotated version of the configuration file with explanations of how and why the values are used in the framework and components.
+
+:doc:`The Configuration File - Explained<config_file>`:
+    Annotated version of the configuration file with explanations of how and why the values are used in the framework and components.
 
 :doc:`Platform Configuration File - Explained<platform>`:
     Annotated platform configuration file and explanation of the manual allocation specification interface.
