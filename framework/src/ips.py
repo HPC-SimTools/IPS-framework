@@ -587,8 +587,11 @@ class Framework(object):
                     self.exception(errmsg)
                     self.terminate_sim(status=Message.FAILURE)
         
-                if not self.ips_status[sim_name]['create_runspace']:
+                if self.ips_dosteps['create_runspace']:
                     self.ips_status[sim_name]['create_runspace'] = True
+                elif not self.ips_status[sim_name]['create_runspace']:
+                    self.exception('Unable to continue, no runspace created or present')
+                    raise
 
                 ### SIMYAN:
                 ## The logic of the create_runspace and run_setup
@@ -602,10 +605,10 @@ class Framework(object):
                     if self.ips_dosteps['run_setup']:
                         self.exception('Unable to continue to RUN_SETUP step, CREATE_RUNSPACE = not done')
                         #SEK: May need to automatically invoke create_runspace if run_setup is called.
-                        return False
+                        raise
 
                 ### SIMYAN:
-                ## The logic of the run with runspace and create_runspace
+                ## The logic of the run with run_setup and create_runspace
                 #
                 if self.ips_dosteps['run']:
                     if self.ips_status[sim_name]['create_runspace'] and self.ips_status[sim_name]['run_setup']:
@@ -616,7 +619,7 @@ class Framework(object):
                         #SEK: Currently: if run_setup is done then create_runspace is done: May change
                         self.exception('Unable to continue to RUN step, RUN_SETUP = not done')
                         self.terminate_sim(status=Message.FAILURE)
-                        return False
+                        raise
 
                 # SIMYAN: add each method call to the msg_list
                 for comp_id in comp_list:
