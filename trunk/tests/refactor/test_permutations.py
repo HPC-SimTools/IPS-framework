@@ -31,9 +31,9 @@ class test_permutations(ParameterizedTestCase):
         print
         print '------------------------------------------------------------------------------------'
         print 'Parameterization for this test'
-        print 'DO_CREATE_RUNSPACE = %s DO_RUN_SETUP = %s DO_RUN = %s' % \
+        print 'Command   - DO_CREATE_RUNSPACE = %s\t DO_RUN_SETUP = %s\t DO_RUN = %s' % \
             (self.param.do_create_runspace, self.param.do_run_setup, self.param.do_run)
-        print 'CREATE_RUNSPACE_DONE = %s RUN_SETUP_DONE = %s RUN_DONE = %s' % \
+        print 'Checklist - CREATE_RUNSPACE_DONE = %s\t RUN_SETUP_DONE = %s\t RUN_DONE = %s' % \
             (self.param.create_runspace_done, self.param.run_setup_done, self.param.run_done)
         print '------------------------------------------------------------------------------------'
 #       self.fwk = Framework(self.param.do_create_runspace, 
