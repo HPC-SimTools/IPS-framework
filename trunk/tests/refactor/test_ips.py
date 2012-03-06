@@ -47,6 +47,33 @@ class testIPS(unittest.TestCase):
     def printUsageMessage(self):
         print 'Usage: ips [--create-runspace | --run-setup | --run]+ --simulation=SIM_FILE_NAME --platform=PLATFORM_FILE_NAME --log=LOG_FILE_NAME [--debug | --ftb]'
 
+    """
+    def test_single_permutation(self):
+        print
+        cfgFile_list = []
+        cfgFile_list.append('basic_serial1.ips')
+
+
+        log_file = 'log_test_basic_serial1.log'
+        param = self.Parameterization()
+        param.do_create_runspace = True
+        param.do_run_setup = False
+        param.do_run = True
+        param.create_runspace_done = False
+        param.run_setup_done = False
+        param.run_done = True
+        param.cfgFile_list = cfgFile_list
+        param.log_file = log_file
+        try:
+           param.platform_filename = platform_filename
+        except:
+           print "Getting platform file from build"
+        suite = unittest.TestSuite()
+        suite.addTest(ParameterizedTestCase.parametrize(test_permutations, param=param))
+        res = unittest.TextTestRunner(verbosity=2).run(suite)
+    """
+
+#   """
     def test_basic_serial1_permutations(self):
         print 
         cfgFile_list = []
@@ -81,6 +108,7 @@ class testIPS(unittest.TestCase):
                                 suite = unittest.TestSuite()
                                 suite.addTest(ParameterizedTestCase.parametrize(test_permutations, param=param))
                                 res = unittest.TextTestRunner(verbosity=2).run(suite)
+#   """
 
 
 if __name__ == "__main__":

@@ -60,6 +60,7 @@ import inspect
 import optparse
 import multiprocessing
 import shutil
+import ipsutil
 import zipfile
 from messages import Message, ServiceRequestMessage, \
                     ServiceResponseMessage, MethodInvokeMessage
@@ -153,9 +154,9 @@ class Framework(object):
 
         # SIMYAN: collect the steps to do in this invocation of the Framework
         self.ips_dosteps={}
-        self.ips_dosteps['create_runspace'] = do_create_runspace # create runspace: init.init()
-        self.ips_dosteps['run_setup']       = do_run_setup    # validate inputs: sim_comps.init() 
-        self.ips_dosteps['run']             = do_run          # Main part of simulation
+        self.ips_dosteps['CREATE_RUNSPACE'] = do_create_runspace # create runspace: init.init()
+        self.ips_dosteps['RUN_SETUP']       = do_run_setup    # validate inputs: sim_comps.init() 
+        self.ips_dosteps['RUN']             = do_run          # Main part of simulation
 
         # fault tolerance flag
         self.ftb = ftb
@@ -538,12 +539,31 @@ class Framework(object):
         # SIMYAN: get the runspaceInit_component and invoke its init() method
         # this creates the base directory and container file for the simulation 
         # and copies the conf files into both and change directory to base dir
-        main_fwk_comp = self.comp_registry.getEntry(fwk_comps[0])
-
-        if self.ips_dosteps['create_runspace']:
-            self._invoke_framework_comps(fwk_comps, 'init')
-
         self.ips_status={}
+        main_fwk_comp = self.comp_registry.getEntry(fwk_comps[0])
+        self.sim_root = os.path.abspath(main_fwk_comp.services.get_config_param('SIM_ROOT'))
+        self.checklist_file = os.path.join(self.sim_root, 'checklist.conf')
+        ### SIMYAN:
+        ## Get the status of the simulation 
+        #
+        self.ips_status=checklist.get_status(self.checklist_file)
+
+        if self.ips_dosteps['CREATE_RUNSPACE'] and self.ips_status['CREATE_RUNSPACE']:
+            self._invoke_framework_comps(fwk_comps, 'init')
+            self.ips_status['CREATE_RUNSPACE'] = True
+            self.ips_status['RUN_SETUP'] = False
+            self.ips_status['RUN'] = False
+        elif self.ips_dosteps['CREATE_RUNSPACE'] and not self.ips_status['CREATE_RUNSPACE']:
+            self._invoke_framework_comps(fwk_comps, 'init')
+            self.ips_status['CREATE_RUNSPACE'] = True
+            self.ips_status['RUN_SETUP'] = False
+            self.ips_status['RUN'] = False
+        elif not self.ips_dosteps['CREATE_RUNSPACE'] and self.ips_status['CREATE_RUNSPACE']:
+            print 'Skipping CREATE_RUNSPACE, option was %s but runspace exists' % \
+                    self.ips_dosteps['CREATE_RUNSPACE']
+        else:
+            print 'Skipping CREATE_RUNSPACE, option was %s and runspace did not exist' % \
+                    self.ips_dosteps['CREATE_RUNSPACE']
 
         try:
             # Each Framework Component is treated as a stand-alone simulation
@@ -553,13 +573,13 @@ class Framework(object):
                 for method in ['step', 'finalize']:
                     # SIMYAN: if --create_runspace was specified, add calls 
                     # to step() and finalize() for the framework components
-                    if self.ips_dosteps['create_runspace']:
+                    if self.ips_dosteps['CREATE_RUNSPACE']:
                         req_msg = ServiceRequestMessage(self.component_id, self.component_id, 
                                                         comp_id, 'init_call', method, 0)
                         msg_list.append(req_msg)
 
                 # SIMYAN: add those calls to the outstanding call map
-                if self.ips_dosteps['create_runspace']:
+                if self.ips_dosteps['CREATE_RUNSPACE']:
                     outstanding_sim_calls[comp_id] = msg_list
   
             # generate a queue of invocation messages for each simulation
@@ -578,48 +598,35 @@ class Framework(object):
                 if self.ftb:
                     self._send_ftb_event('IPS_START')
 
-                ### SIMYAN:
-                ## Get the status of the simulation 
-                #
-                checklist_file=self.config_manager.sim_map[sim_name].checklist_file
-                errmsg, self.ips_status[sim_name]=checklist.get_status(checklist_file)
-                if len(errmsg)>0:
-                    self.exception(errmsg)
-                    self.terminate_sim(status=Message.FAILURE)
-        
-                if self.ips_dosteps['create_runspace']:
-                    self.ips_status[sim_name]['create_runspace'] = True
-                elif not self.ips_status[sim_name]['create_runspace']:
-                    self.exception('Unable to continue, no runspace created or present')
-                    raise
-
-                ### SIMYAN:
-                ## The logic of the create_runspace and run_setup
-                #
-                if  self.ips_status[sim_name]['create_runspace']:
-                    if self.ips_dosteps['run_setup']:
-                        methods.append('init')
-                        self.ips_status[sim_name]['run_setup'] = True
+                if self.ips_dosteps['RUN_SETUP'] and self.ips_status['CREATE_RUNSPACE']:
+                    self.ips_status['RUN_SETUP'] = True
+                    methods.append('init')
+                elif self.ips_dosteps['RUN_SETUP'] and not self.ips_status['CREATE_RUNSPACE']:
+                    self.ips_status['RUN_SETUP'] = False
+                    print 'RUN_SETUP was requested, but a runspace does not exist...'
+                elif self.ips_status['RUN_SETUP'] and self.ips_status['CREATE_RUNSPACE']:
+                    print 'RUN_SETUP already performed by a previous run, continuing...'
+                elif self.ips_status['RUN_SETUP'] and not self.ips_status['CREATE_RUNSPACE']:
+                    self.ips_status['RUN_SETUP'] = False
+                    print 'RUN_SETUP is marked as complete, but a runspace does not exist...'
                 else:
-                    self.ips_status[sim_name]['run_setup'] = False
-                    if self.ips_dosteps['run_setup']:
-                        self.exception('Unable to continue to RUN_SETUP step, CREATE_RUNSPACE = not done')
-                        #SEK: May need to automatically invoke create_runspace if run_setup is called.
-                        raise
+                    self.ips_status['RUN'] = False
+                    
+                    
+                if self.ips_dosteps['RUN'] and self.ips_status['RUN_SETUP']:
+                    self.ips_status['RUN'] = True
+                    methods.append('step')
+                    methods.append('finalize')
+                elif self.ips_dosteps['RUN'] and not self.ips_status['RUN_SETUP']:
+                    self.ips_status['RUN'] = False
+                    print 'RUN was requested, but run setup hasn\'t been performed...'
+                elif self.ips_status['RUN'] and self.ips_dosteps['RUN_SETUP']:
+                    self.ips_status['RUN'] = False
+                    print 'RUN was not requested, but had been performed.'
+                else:
+                    self.ips_status['RUN'] = False
 
-                ### SIMYAN:
-                ## The logic of the run with run_setup and create_runspace
-                #
-                if self.ips_dosteps['run']:
-                    if self.ips_status[sim_name]['create_runspace'] and self.ips_status[sim_name]['run_setup']:
-                        methods.append('step')
-                        methods.append('finalize')
-                        self.ips_status[sim_name]['run'] = True
-                    else:
-                        #SEK: Currently: if run_setup is done then create_runspace is done: May change
-                        self.exception('Unable to continue to RUN step, RUN_SETUP = not done')
-                        self.terminate_sim(status=Message.FAILURE)
-                        raise
+                errmsg=checklist.update(self.checklist_file,self.ips_status)
 
                 # SIMYAN: add each method call to the msg_list
                 for comp_id in comp_list:
@@ -632,6 +639,7 @@ class Framework(object):
                     # SIMYAN: add the msg_list to the outstanding sim calls
                     if msg_list:
                         outstanding_sim_calls[sim_name] = msg_list
+
 
         except Exception, e:
             self.exception('encountered exception during fwk.run() genration of call messages')
@@ -716,11 +724,13 @@ class Framework(object):
                                 self._send_ftb_event('IPS_END')
         # SIMYAN: update the status of the simulation after all calls have
         # been executed
-        for sim_name in self.ips_status.keys():
-            container_file=self.config_manager.sim_map[sim_name].container_file
-            checklist_file=self.config_manager.sim_map[sim_name].checklist_file
-            errmsg=checklist.update(checklist_file,container_file,self.ips_status[sim_name])
+
         self.event_service._print_stats()
+        main_fwk_comp = self.comp_registry.getEntry(fwk_comps[0])
+        container_ext = main_fwk_comp.services.get_config_param('CONTAINER_FILE_EXT')
+        self.container_file = os.path.basename(self.sim_root) + os.path.extsep + container_ext
+        container_write=zipfile.ZipFile(os.path.abspath(self.container_file),'a')
+        ipsutil.writeToContainer(container_write, self.sim_root, 'checklist.conf') 
         #stop(self.timers['run'])
         #dumpAll()
         self.terminate_sim(Message.SUCCESS)

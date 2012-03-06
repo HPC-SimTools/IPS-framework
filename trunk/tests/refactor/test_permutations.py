@@ -31,20 +31,17 @@ class test_permutations(ParameterizedTestCase):
         print
         print '------------------------------------------------------------------------------------'
         print 'Parameterization for this test'
-        print 'Command   - DO_CREATE_RUNSPACE = %s\t DO_RUN_SETUP = %s\t DO_RUN = %s' % \
-            (self.param.do_create_runspace, self.param.do_run_setup, self.param.do_run)
-        print 'Checklist - CREATE_RUNSPACE_DONE = %s\t RUN_SETUP_DONE = %s\t RUN_DONE = %s' % \
-            (self.param.create_runspace_done, self.param.run_setup_done, self.param.run_done)
+        print 'Command   -  DO_CREATE_RUNSPACE   =', ("F","T")[self.param.do_create_runspace],
+        print '    DO_RUN_SETUP   =', ("F","T")[self.param.do_run_setup],
+        print '    DO_RUN   =', ("F","T")[self.param.do_run]
+#       print 'Command   - DO_CREATE_RUNSPACE   = %s   DO_RUN_SETUP   = %s   DO_RUN   = %s' % \
+#           (self.param.do_create_runspace, self.param.do_run_setup, self.param.do_run)
+        print 'Checklist -  CREATE_RUNSPACE_DONE =', ("F","T")[self.param.create_runspace_done],
+        print '    RUN_SETUP_DONE =', ("F","T")[self.param.run_setup_done],
+        print '    RUN_DONE =', ("F","T")[self.param.run_done]
+#       print 'Checklist - CREATE_RUNSPACE_DONE = %s   RUN_SETUP_DONE = %s   RUN_DONE = %s' % \
+#           (self.param.create_runspace_done, self.param.run_setup_done, self.param.run_done)
         print '------------------------------------------------------------------------------------'
-#       self.fwk = Framework(self.param.do_create_runspace, 
-#                       self.param.do_run_setup,
-#                       self.param.do_run, 
-#                       self.param.cfgFile_list, 
-#                       self.param.log_file, 
-#                       self.param.platform_filename)
-
-#   def tearDown(self):
-#       self.fwk = None
 
     def test_given_parameters(self):
 
@@ -104,11 +101,15 @@ class test_permutations(ParameterizedTestCase):
         # set correct result of RUN_SETUP parameterization
         if self.param.do_run_setup and self.create_runspace_result == 'DONE':
             self.run_setup_result = 'DONE'
+        elif self.param.run_setup_done and self.param.create_runspace_done:
+            self.run_setup_result = 'DONE'
         else:
             self.run_setup_result = 'NOT_DONE'
             
         # set correct result of RUN parameterization
         if self.param.do_run and self.run_setup_result == 'DONE':
+            self.run_result = 'DONE'
+        elif not self.param.do_run and self.param.run_done:
             self.run_result = 'DONE'
         else:
             self.run_result = 'NOT_DONE'

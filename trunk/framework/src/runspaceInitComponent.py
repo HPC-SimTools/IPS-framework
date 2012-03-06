@@ -63,17 +63,16 @@ class runspaceInitComponent(Component):
 
         sim_comps = services.fwk.config_manager.get_component_map()
         registry = services.fwk.comp_registry
-        # for each simulation component
-        for sim_name, comp_list in sim_comps.items():
-            # Redoing the same container_file name calculation as in configuration manager because I
-            # can't figure out where to put it such that I can get it where I need
-            self.container_file=sim_name+os.path.extsep+container_ext
-            # The w here means that it is overwritten -- we are creating a new container file here
-            container_write = zipfile.ZipFile(os.path.abspath(self.container_file),'w')
-            ipsutil.writeToContainer(container_write, '', self.platform_file)
-            ipsutil.writeToContainer(container_write, '', self.config_files)
+        # Redoing the same container_file name calculation as in configuration manager because I
+        # can't figure out where to put it such that I can get it where I need
+        self.container_file = os.path.basename(services.get_config_param('SIM_ROOT')) + os.path.extsep + container_ext
+        # The w here means that it is overwritten -- we are creating a new container file here
+        container_write = zipfile.ZipFile(os.path.abspath(self.container_file),'w')
+        ipsutil.writeToContainer(container_write, '', self.platform_file)
+        ipsutil.writeToContainer(container_write, '', self.config_files)
 
-            # for each component_id in the list of components
+        # for each component_id in the list of components
+        for sim_name, comp_list in sim_comps.items():
             for comp_id in comp_list:
                 registry = services.fwk.comp_registry
                 comp_conf = registry.getEntry(comp_id).component_ref.config

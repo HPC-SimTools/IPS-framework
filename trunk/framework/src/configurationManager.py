@@ -321,9 +321,9 @@ class ConfigurationManager(object):
                         conf[keyword] = self.platform_conf[keyword]
 
             # SIMYAN allow for a container file with default .zip extension
-            container_ext = 'zip'
+            self.container_ext = 'zip'
             if conf.has_key('CONTAINER_FILE_EXT'):
-              container_ext = conf['CONTAINER_FILE_EXT']
+              self.container_ext = conf['CONTAINER_FILE_EXT']
 
             if (sim_name in sim_name_list):
                 self.fwk.exception('Error: Duplicate SIM_NAME in configuration files')
@@ -351,9 +351,6 @@ class ConfigurationManager(object):
             new_sim.sim_root = sim_root
             new_sim.log_file = log_file
             new_sim.log_pipe_name = tempfile.mktemp('.logpipe', 'ips_')
-            # SIMYAN: Determine the file name for the container file
-            new_sim.container_file=sim_name+os.path.extsep+container_ext
-            new_sim.checklist_file = os.path.join(sim_root, 'checklist.conf')
 
             self.log_daemon.add_sim_log(new_sim.log_pipe_name,
                                         new_sim.log_file)
@@ -384,10 +381,6 @@ class ConfigurationManager(object):
                 fwk_sim = self.SimulationData(fwk_sim_conf['SIM_NAME'])
                 fwk_sim.sim_conf = fwk_sim_conf
                 fwk_sim.sim_root = new_sim.sim_root
-                # SIMYAN: store the container and checklist files for the 
-                # runspaceInit_component
-                fwk_sim.container_file = new_sim.container_file
-                fwk_sim.checklist_file = new_sim.checklist_file
                 fwk_sim.log_file = self.fwk.log_file #sys.stdout
                 fwk_sim.log_pipe_name = tempfile.mktemp('.logpipe', 'ips_')
                 fwk_sim_conf['LOG_LEVEL'] = 'DEBUG'
