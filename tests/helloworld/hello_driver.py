@@ -8,6 +8,7 @@ class HelloDriver(Component):
         print 'Created %s' % (self.__class__)
 
     def init(self, timeStamp=0.0):
+        print 'HelloDriver: init'
         return
 
     def step(self, timeStamp=0.0):
