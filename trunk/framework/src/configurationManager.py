@@ -442,42 +442,43 @@ class ConfigurationManager(object):
         # SIMYAN: set up The Portal bridge, allowing for an absense of a portal
         use_portal=True
         if self.sim_map[self.fwk_sim_name].sim_conf.has_key('USE_PORTAL'):
-          use_portal=self.sim_map[self.fwk_sim_name].sim_conf['USE_PORTAL']
-          if use_portal.lower()=="false": use_portal=False
+            use_portal=self.sim_map[self.fwk_sim_name].sim_conf['USE_PORTAL']
+            if use_portal.lower()=="false": use_portal=False
         if use_portal:
-          portal_conf={}
-          portal_conf['CLASS'] = 'FWK'
-          portal_conf['SUB_CLASS'] = 'COMP'
-          portal_conf['NAME'] = 'PortalBridge'
-          if self.sim_map[self.fwk_sim_name].sim_conf.has_key('FWK_COMPS_PATH'):
-            portal_conf['BIN_PATH'] = self.sim_map[self.fwk_sim_name].sim_conf['FWK_COMPS_PATH']
-          else:
-            portal_conf['BIN_PATH'] = ipsDir
-          portal_conf['SCRIPT'] = os.path.join(portal_conf['BIN_PATH'], 'portalBridge.py')
-          portal_conf['INPUT_DIR'] = '/dev/null'
-          portal_conf['INPUT_FILES']  = ''
-          portal_conf['DATA_FILES']  = ''
-          portal_conf['OUTPUT_FILES'] = ''
-          portal_conf['NPROC'] = 1
-          portal_conf['LOG_LEVEL'] = 'WARNING'
-          havePortal=True
-          if (self.fwk.log_level == logging.DEBUG):
-            portal_conf['LOG_LEVEL'] = 'DEBUG'
+            portal_conf={}
+            portal_conf['CLASS'] = 'FWK'
+            portal_conf['SUB_CLASS'] = 'COMP'
+            portal_conf['NAME'] = 'PortalBridge'
+            if self.sim_map[self.fwk_sim_name].sim_conf.has_key('FWK_COMPS_PATH'):
+                portal_conf['BIN_PATH'] = self.sim_map[self.fwk_sim_name].sim_conf['FWK_COMPS_PATH']
+            else:
+                portal_conf['BIN_PATH'] = ipsDir
+            portal_conf['SCRIPT'] = os.path.join(portal_conf['BIN_PATH'], 'portalBridge.py')
+            portal_conf['INPUT_DIR'] = '/dev/null'
+            portal_conf['INPUT_FILES']  = ''
+            portal_conf['DATA_FILES']  = ''
+            portal_conf['OUTPUT_FILES'] = ''
+            portal_conf['NPROC'] = 1
+            portal_conf['LOG_LEVEL'] = 'WARNING'
+            havePortal=True
+            if (self.fwk.log_level == logging.DEBUG):
+                portal_conf['LOG_LEVEL'] = 'DEBUG'
 
-          try:
-            portal_conf['PORTAL_URL']=self.sim_map[self.fwk_sim_name].sim_conf.has_key('PORTAL_URL')
-            portal_conf['RUNID_URL']=self.sim_map[self.fwk_sim_name].sim_conf.has_key('RUNID_URL')
-          except KeyError:
+            # does not work, this returns True, not a url
+#           try:
+#               portal_conf['PORTAL_URL']=self.sim_map[self.fwk_sim_name].sim_conf.has_key('PORTAL_URL')
+#               portal_conf['RUNID_URL']=self.sim_map[self.fwk_sim_name].sim_conf.has_key('RUNID_URL')
+#           except KeyError:
             try:
-              portal_conf['PORTAL_URL'] = self.get_platform_parameter('PORTAL_URL', silent = True)
-              portal_conf['RUNID_URL'] = self.get_platform_parameter('RUNID_URL', silent = True)
+                portal_conf['PORTAL_URL'] = self.get_platform_parameter('PORTAL_URL', silent = True)
+                portal_conf['RUNID_URL'] = self.get_platform_parameter('RUNID_URL', silent = True)
             except KeyError:
-              havePortal=False
+                havePortal=False
 
-          if havePortal:
-            component_id = self._create_component(portal_conf,
+            if havePortal:
+                component_id = self._create_component(portal_conf,
                                                 self.sim_map[self.fwk_sim_name])
-            self.fwk_components.append(component_id)
+                self.fwk_components.append(component_id)
 
 
         # set up the FTB

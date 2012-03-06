@@ -170,13 +170,15 @@ class PortalBridge(Component):
         self.services.debug('PORTAL_RUNID_URL = %s', str(self.runid_url))
         if (self.runid_url != None):
             try:
-#                raise urllib2.URLError('TEXT')
+#               raise urllib2.URLError('TEXT')
+                print 'self.runid_url =', str(self.runid_url)
                 f = urllib2.urlopen(self.runid_url)
                 sim_data.portal_runid = f.read().strip()
             except (urllib2.URLError), e :
                 self.services.error('Error obtaining runID from service at %s : %s' % \
                                     (self.runid_url, str(e)))
                 self.services.error('Using a UUID instead')
+
         self.services.set_config_param('PORTAL_RUNID', sim_data.portal_runid,
                                        target_sim_name = sim_name)
 
