@@ -5,79 +5,75 @@ import zipfile
 
 
 def get_status(checklist_file):
-  ips_status={}
-  ips_status['create_runspace'] = False
-  ips_status['run_setup'] = False
-  ips_status['run'] = False
+    ips_status={}
+    ips_status['CREATE_RUNSPACE'] = False
+    ips_status['RUN_SETUP'] = False
+    ips_status['RUN'] = False
 
-  try:
-      conf = ConfigObj(checklist_file, interpolation = 'template', file_error = True)
-  except IOError, ioe:
-      #SEK: Remove because for the create_runspace it is not there?
-      #print 'Checklist config file "%s" could not be found, continuing without.' % checklist_file
-      return '', ips_status
-  except SyntaxError, (ex):
-      errmsg='Error parsing config file: '+checklist_file
-      return errmsg, ips_status
-  except Exception, e:
-      print e
-      return 'encountered exception during fwk.run() checklist status', ips_status
+    try:
+        f = open(checklist_file,'r')
+        conf = ConfigObj(checklist_file, interpolation = 'template', file_error = True)
 
-  try:
-    create_runspace_str = conf['CREATE_RUNSPACE']
-    if create_runspace_str == 'DONE':
-      ips_status['create_runspace'] = True
-    elif create_runspace_str == 'NOT_DONE':
-      ips_status['create_runspace'] = False
-    else:
-      errmsg='Invalid value found for CREATE_RUNSPACE in '+checklist_file
-      return errmsg, ips_status
+        if conf['CREATE_RUNSPACE'] == 'DONE':
+            ips_status['CREATE_RUNSPACE'] = True
+        elif conf['CREATE_RUNSPACE'] == 'NOT_DONE':
+            ips_status['CREATE_RUNSPACE'] = False
 
-    run_setup_str = conf['RUN_SETUP']
-    if run_setup_str == 'DONE':
-      ips_status['run_setup'] = True
-    elif run_setup_str == 'NOT_DONE':
-      ips_status['run_setup'] = False
-    else:
-      errmsg='Invalid value found for RUN_SETUP in '+checklist_file
-      return errmsg, ips_status
+        if conf['RUN_SETUP'] == 'DONE':
+            ips_status['RUN_SETUP'] = True
+        elif conf['RUN_SETUP'] == 'NOT_DONE':
+            ips_status['RUN_SETUP'] = False
 
-    run_str = conf['RUN']
-    if run_str == 'DONE':
-      ips_status['run'] = True
-    elif run_str == 'NOT_DONE':
-      ips_status['run'] = False
-    else:
-      errmsg='Invalid value found for RUN in '+checklist_file
-      return errmsg, ips_status
+        if conf['RUN'] == 'DONE':
+            ips_status['RUN'] = True
+        elif conf['RUN'] == 'NOT_DONE':
+            ips_status['RUN'] = False
+      
+    except IOError, ioe:
+        print 'Checklist config file "%s" could not be found, continuing without.' % checklist_file
+    except SyntaxError, (ex):
+        print 'Error parsing config file: %s' % checklist_file
+        raise
+    except Exception, e:
+        print 'encountered exception during fwk.run() checklist configuration'
+    finally:
+        f = open(checklist_file, 'w')
+        conf = ConfigObj(checklist_file, interpolation = 'template', file_error = True)
+        conf['CREATE_RUNSPACE'] = False
+        conf['RUN_SETUP'] = False
+        conf['RUN'] = False
+        conf.write()
 
-  except KeyError, (ex):
-      print 'Missing required parameters CREATE_RUNSPACE, RUN_SETUP, or RUN in checklist file '+checklist_file
-      print 'Continuing without checklist file due to missing or incorrect parameters'
-      ips_status['create_runspace'] = False
-      ips_status['run_setup'] = False
-      ips_status['run'] = False
-
-  return '', ips_status
+    return ips_status
 
 
 
-def update(checklist_file,containerFilename,ips_status):
-  # Make it general to be able to take fullpath or relative path
-  checklist_dir=os.path.dirname(os.path.abspath(checklist_file))
-  checklist = open(checklist_file, 'w')
-  for step in ['create_runspace','run_setup','run']:
-    if ips_status[step]:
-      step_line=step.upper() + " = DONE\n"
-    else:
-      step_line=step.upper() + " = NOT_DONE\n"
-    checklist.write(step_line)
-  checklist.flush()
-  checklist.close()
+def update(checklist_file,ips_status):
 
-  container = zipfile.ZipFile(containerFilename,'a')
-  # SEK: Need to delete the checklist file if it exists.
-  ipsutil.writeToContainer(container, "", os.path.abspath(checklist_file))
-  container.close()
-  return
+    try:
+        conf = ConfigObj(checklist_file, interpolation = 'template', file_error = True)
+    except IOError, ioe:
+        #SEK: Remove because for the create_runspace it is not there?
+        #print 'Checklist config file "%s" could not be found, continuing without.' % checklist_file
+        return '', ips_status
+    except SyntaxError, (ex):
+        errmsg='Error parsing config file: ' + checklist_file
+        return errmsg, ips_status
+    except Exception, e:
+        print e
+        return 'encountered exception during fwk.run() checklist status', ips_status
+    # Make it general to be able to take fullpath or relative path
+    for step in ['CREATE_RUNSPACE','RUN_SETUP','RUN']:
+        if ips_status[step]:
+            conf[step] = 'DONE'
+        else:
+            conf[step] = 'NOT_DONE'
+        print step + ' = ' + conf[step]
+    conf.write()
+  
+    #container = zipfile.ZipFile(containerFilename,'a')
+    # SEK: Need to delete the checklist file if it exists.
+    #ipsutil.writeToContainer(container, "", os.path.abspath(checklist_file))
+    #container.close()
+    return
 
