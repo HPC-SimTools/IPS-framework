@@ -6,7 +6,7 @@
 #
 ######################################################################
 
-#add_subdirectory(bin)
+add_subdirectory(bin)
 add_subdirectory(helloworld)
 add_subdirectory(components)
 add_subdirectory(comprehensive)
