@@ -1,7 +1,6 @@
 import os
 from configobj import ConfigObj
 import ipsutil
-import zipfile
 
 
 def get_status(checklist_file):
@@ -71,9 +70,5 @@ def update(checklist_file,ips_status):
         print step + ' = ' + conf[step]
     conf.write()
   
-    #container = zipfile.ZipFile(containerFilename,'a')
-    # SEK: Need to delete the checklist file if it exists.
-    #ipsutil.writeToContainer(container, "", os.path.abspath(checklist_file))
-    #container.close()
     return
 

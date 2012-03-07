@@ -6,7 +6,6 @@ import shutil
 import string
 import ipsutil
 import time
-import zipfile
 from component import Component
 
 class runspaceInitComponent(Component):
@@ -67,9 +66,8 @@ class runspaceInitComponent(Component):
         # can't figure out where to put it such that I can get it where I need
         self.container_file = os.path.basename(services.get_config_param('SIM_ROOT')) + os.path.extsep + container_ext
         # The w here means that it is overwritten -- we are creating a new container file here
-        container_write = zipfile.ZipFile(os.path.abspath(self.container_file),'w')
-        ipsutil.writeToContainer(container_write, '', self.platform_file)
-        ipsutil.writeToContainer(container_write, '', self.config_files)
+        ipsutil.writeToContainer(self.container_file, '', self.platform_file)
+        ipsutil.writeToContainer(self.container_file, '', self.config_files)
 
         # for each component_id in the list of components
         for sim_name, comp_list in sim_comps.items():
@@ -78,10 +76,9 @@ class runspaceInitComponent(Component):
                 comp_conf = registry.getEntry(comp_id).component_ref.config
                 file_list = comp_conf['INPUT_FILES'].split()
                 for file in file_list:
-                    ipsutil.writeToContainer(container_write, 
+                    ipsutil.writeToContainer(self.container_file, 
                                              os.path.relpath(comp_conf['INPUT_DIR']), 
                                              os.path.basename(file))
-        container_write.close()
 
         curdir=os.path.abspath(os.path.curdir)
         try:
@@ -230,9 +227,7 @@ class runspaceInitComponent(Component):
         """
         print 'runspaceInitComponent.finalize() called'
 
-        container_write=zipfile.ZipFile(os.path.abspath(self.container_file),'a')
-        ipsutil.writeToContainer(container_write, '', self.main_log_file)
-        ipsutil.writeToContainer(container_write, self.simRootDir, 'resource_usage')
-        container_write.close()
+        ipsutil.writeToContainer(self.container_file, '', self.main_log_file)
+        ipsutil.writeToContainer(self.container_file, self.simRootDir, 'resource_usage')
 
         return
