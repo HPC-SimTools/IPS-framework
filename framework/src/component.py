@@ -2,6 +2,8 @@ from messages import Message, MethodResultMessage
 import sys
 import os
 import ipsTiming
+import weakref
+
 try:
     if os.environ['IPS_TIMING'] == '1':
         try:
@@ -26,7 +28,7 @@ class Component(object):
         #pytau.start(timer)
         self.component_id = None
         self.invocation_q = None
-        self.services = services
+        self.services = weakref.proxy(services)
         self.config = config
         self.start_time=0.0
         self.sys_exit = None

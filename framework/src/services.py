@@ -20,6 +20,7 @@ import glob
 import ipsExceptions
 import ipsTiming
 from symbol import except_clause
+import weakref
 
 MY_VERSION = float(sys.version[:3])
 #import pytau
@@ -144,7 +145,7 @@ class ServicesProxy(object):
         This method is for use only by the IPS framework.
         """
         
-        self.component_ref = component_ref
+        self.component_ref = weakref.proxy(component_ref)
         conf = self.component_ref.config
         self.full_comp_id =  '_'.join([conf['CLASS'], conf['SUB_CLASS'],
                                        conf['NAME'],
@@ -284,7 +285,7 @@ class ServicesProxy(object):
                     if (r.request_msg_id not in
                         self.incomplete_calls.keys()):
                         self.error('Mismatched service response msg_id %s',
-                                   str(r.request_msg_id, msg_id))
+                                   str(r.request_msg_id))
 #                        dumpAll()
                         raise Exception('Mismatched service response msg_id.')
                     else:
@@ -337,6 +338,7 @@ class ServicesProxy(object):
         on to the component.  If the status of the response is failure 
         (``Message.FAILURE``), then the exception body is raised.
         """
+        #print "in _get_service_response"
         self.debug('_get_service_response(%s)', str(msg_id))
         response = self._wait_msg_response(msg_id, block)
         self.debug('_get_service_response(%s), response = %s', str(msg_id), str(response))
@@ -554,17 +556,17 @@ class ServicesProxy(object):
                 whole_socks = False
             else:
                 whole_socks = True
-        
+
+        #print "about to call init task"
         try:
             # SIMYAN: added working_dir to component method invocation
             msg_id = self._invoke_service(self.fwk.component_id,
                                           'init_task', nproc, binary, 
                                           working_dir, task_ppn, block, 
                                           whole_nodes, whole_socks, *args)
-            (task_id, command) = self._get_service_response(msg_id, block=True)
+            (task_id, command, env_update) = self._get_service_response(msg_id, block=True)
         except Exception, e:
-            self.exception('Error initiating task %s %s on %d nodes' % \
-                                (binary, str(args), int(nproc)))
+            #self.exception('Error initiating task %s %s on %d nodes' %  (binary, str(args), int(nproc)))
             raise
 
         log_filename = None
@@ -581,16 +583,25 @@ class ServicesProxy(object):
                 self.exception('Error opening log file %s : using stdout', log_filename)
 
         cmd_lst = command.split(' ')
+
         try:
             self.debug('Launching command : %s', command)
-            process = subprocess.Popen(cmd_lst, stdout = task_stdout,
-                                                stderr = subprocess.STDOUT,
-                                                cwd = working_dir)
+            if env_update:
+                new_env = os.environ
+                new_env.update(env_update)
+                process = subprocess.Popen(cmd_lst, stdout = task_stdout,
+                                           stderr = subprocess.STDOUT,
+                                           cwd = working_dir,
+                                           env = new_env)
+            else:
+                process = subprocess.Popen(cmd_lst, stdout = task_stdout,
+                                           stderr = subprocess.STDOUT,
+                                           cwd = working_dir)
         except Exception, e:
             self.exception('Error executing command : %s', command)
             raise
-        self._send_monitor_event('IPS_LAUNCH_TASK', 'task_id = %s , Tag = %s , Target = %s'  % \
-                                      (str(task_id), tag, command))
+        self._send_monitor_event('IPS_LAUNCH_TASK', 'task_id = %s , Tag = %s , nproc = %d , Target = %s'  % \
+                                      (str(task_id), tag, int(nproc), command))
 
         # FIXME: process Monitoring Command : ps --no-headers -o pid,state pid1  pid2 pid3 ...
 
@@ -621,7 +632,7 @@ class ServicesProxy(object):
                                           'init_task', nproc, binary,
                                           working_dir, task_ppn,
                                           block, wnodes, wsocks, *args)
-            (task_id, command) = self._get_service_response(msg_id, block=True)
+            (task_id, command, env_update) = self._get_service_response(msg_id, block=True)
         except Exception, e:
             self.exception('Error initiating task %s %s on %d nodes' % \
                                 (binary, str(args), int(nproc)))
@@ -643,9 +654,17 @@ class ServicesProxy(object):
         cmd_lst = command.split(' ')
         try:
             self.debug('Launching command : %s', command)
-            process = subprocess.Popen(cmd_lst, stdout = task_stdout,
-                                                stderr = subprocess.STDOUT,
-                                                cwd = working_dir)
+            if env_update:
+                new_env = os.environ
+                new_env.update(env_update)
+                process = subprocess.Popen(cmd_lst, stdout = task_stdout,
+                                           stderr = subprocess.STDOUT,
+                                           cwd = working_dir,
+                                           env = new_env)
+            else:
+                process = subprocess.Popen(cmd_lst, stdout = task_stdout,
+                                           stderr = subprocess.STDOUT,
+                                           cwd = working_dir)
         except Exception, e:                    
             self.exception('Error executing command : %s', command)
             raise
@@ -705,7 +724,7 @@ class ServicesProxy(object):
         for task_name in allocated_tasks.keys():
             #(nproc, working_dir, binary, args, keywords) = queued_tasks[task_name]
             task = queued_tasks[task_name]
-            (task_id, command) = allocated_tasks[task_name]
+            (task_id, command, env_update) = allocated_tasks[task_name]
             tag = 'None'
             try:
                 tag = task.keywords['tag']
@@ -728,14 +747,22 @@ class ServicesProxy(object):
             cmd_lst = command.split(' ')
             try:
                 self.debug('Launching command : %s', command)
-                process = subprocess.Popen(cmd_lst, stdout = task_stdout,
-                                                    stderr = subprocess.STDOUT,
-                                                    cwd = task.working_dir)
+                if env_update:
+                    new_env = os.environ
+                    new_env.update(env_update)
+                    process = subprocess.Popen(cmd_lst, stdout = task_stdout,
+                                               stderr = subprocess.STDOUT,
+                                               cwd = task.working_dir,
+                                               env = new_env)
+                else:
+                    process = subprocess.Popen(cmd_lst, stdout = task_stdout,
+                                               stderr = subprocess.STDOUT,
+                                               cwd = task.working_dir)
             except Exception, e:
                 self.exception('Error executing task %s - command : %s', task_name, command)
                 raise
-            self._send_monitor_event('IPS_LAUNCH_TASK_POOL', 'task_id = %s , Tag = %s , Target = %s , task_name = %s'  % \
-                                      (str(task_id), str(tag), command, task_name))
+            self._send_monitor_event('IPS_LAUNCH_TASK_POOL', 'task_id = %s , Tag = %s , nproc = %d , Target = %s , task_name = %s'  % \
+                                      (str(task_id), str(tag), int(task.nproc), command, task_name))
     
             self.task_map[task_id] = (process, time.time())
             active_tasks[task_name] = task_id
@@ -808,6 +835,7 @@ class ServicesProxy(object):
         """
         Check the status of task *task_id*.  Return the return value of the task when finished successfully.  Raise exceptions if the task is not found, or if there are problems finalizing the task.
         """
+        print "in wait task"
         try:
             process, start_time = self.task_map[task_id]
         except KeyError, e:
@@ -1053,8 +1081,8 @@ class ServicesProxy(object):
         if (num_chkpt == 0):
             return
         
-        if (mode not in ['WALLTIME_REGULAR',  'WALLTIME_EXPLICIT'
-                          ,'PHYSTIME_REGULAR', 'PHYSTIME_EXPLICIT']):
+        if (mode not in ['WALLTIME_REGULAR',  'WALLTIME_EXPLICIT',
+                         'PHYSTIME_REGULAR', 'PHYSTIME_EXPLICIT']):
             self.error('Invalid MODE = %s in checkpoint configuration', mode)
             raise Exception('Invalid MODE = %s in checkpoint configuration'% (mode))
         
@@ -1066,7 +1094,7 @@ class ServicesProxy(object):
                 return None
         elif (mode == 'WALLTIME_EXPLICIT'):
             try:
-                wt_values = chkpt_conf['WALLTIME_VALUES'].split(' ')
+                wt_values = chkpt_conf['WALLTIME_VALUES'].split()
             except AttributeError:
                 wt_values = chkpt_conf['WALLTIME_VALUES']
                 
@@ -1087,12 +1115,13 @@ class ServicesProxy(object):
             else:
                 return None
         elif(mode == 'PHYSTIME_EXPLICIT'):
+            #print ">>>>>>> chkpt_conf['PHYSTIME_VALUES'] = ", chkpt_conf['PHYSTIME_VALUES']
             try:
-                pt_values = chkpt_conf['PHYSTIME_VALUES'].split(' ')
+                pt_values = chkpt_conf['PHYSTIME_VALUES'].split()
             except AttributeError:
                 pt_values = chkpt_conf['PHYSTIME_VALUES']
             pt_values = [float(t) for t in pt_values]
-           
+            #print ">>>>>>> pt_values = ", pt_values    
             pt_current = float(time_stamp)
             for pt in pt_values:
                 if (pt_current >= pt and 
@@ -2128,6 +2157,18 @@ class ServicesProxy(object):
         del self.task_pools[task_pool_name]
         return
     
+    def create_simulation(self, config_file, override):
+        try:
+            msg_id = self._invoke_service(self.fwk.component_id,
+                                        'create_simulation', config_file, override)
+            self.debug('create_simulation() msg_id = %s', msg_id)
+            sim_name = self._get_service_response(msg_id, block=True)
+            self.debug('Created simulation %s', sim_name)
+        except Exception:
+            self.exception('Error creating new simulation')
+            raise
+        return sim_name
+
 class TaskPool(object):
     """
     Class to contain and manage a pool of tasks.

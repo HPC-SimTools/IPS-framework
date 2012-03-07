@@ -18,23 +18,6 @@ from ipsTiming import create_timer, start, stop, TauWrap
 import ipsutil
 
 
-# import things for events service
-# from event_service_spec import PublisherEventService,SubscriberEventService,EventListener,Topic,EventServiceException
-
-#def make_timers():
-#    mypid = str(os.getpid())
-#    timer_funcs = ['__init__','initialize',  '_initialize_fwk_components',
-#                   '_initialize_sim', '_create_component', 'get_component_map',
-#                   'get_driver_components', 'get_framework_components', 'get_init_components',
-#                   'get_sim_parameter', 'get_framework_logger', 'process_service_request',
-#                   'get_port', 'get_platform_parameter', 'terminate']
-#    timer_dict = {}
-#    for i in range(len(timer_funcs)):
-#        timer_dict[timer_funcs[i]] = create_timer("configMgr", timer_funcs[i], mypid)
-#    return timer_dict
-
-#TIMERS = make_timers()
-
 class ConfigurationManager(object):
     """
     The configuration manager is responsible for paring the simulation and 
@@ -52,11 +35,12 @@ class ConfigurationManager(object):
             self.sim_name = sim_name
             self.sim_root = None
             self.sim_conf = None
-            self.conf_file = None
+            self.config_file = None
             # SIMYAN: used for the directory of the platform conf file
             self.conf_file_dir = None
             self.driver_comp = None
             self.init_comp = None
+            self.all_comps = []
             self.port_map = {}
             self.component_process = None
             self.log_file = None
@@ -89,6 +73,11 @@ class ConfigurationManager(object):
         self.required_fields = set(['CLASS', 'SUB_CLASS', 'NAME', 'SCRIPT',
                                     'INPUT_FILES', 'OUTPUT_FILES', 'NPROC'])
         self.config_file_list = []
+        self.sim_name_list = None
+        self.sim_root_list = None
+        self.log_file_list = None
+        self.log_dynamic_sim_queue = Queue(0)
+        
         for conf_file in config_file_list:
             abs_path = os.path.abspath(conf_file)
             if (abs_path not in self.config_file_list):
@@ -112,10 +101,12 @@ class ConfigurationManager(object):
                                 'getPort',
                                 'get_config_parameter',
                                 'set_config_parameter',
-                                'getTimeLoop']
+                                'getTimeLoop',
+                                'create_simulation']
         self.fwk.register_service_handler(self.service_methods,
                                   getattr(self,'process_service_request'))
         self.sim_map = {}
+        self.finished_sim_map = {}
         self.fwk_sim_name = None  #"Fake" simconf for framework components
         self.fwk_components = [] #List of framework specific components
         # create publisher event service object
@@ -123,7 +114,7 @@ class ConfigurationManager(object):
         # get a topic to publish on
         #self.myTopic = self.publisherES.getTopic("test")
         self.myTopic = None
-        self.log_daemon = ipsLogging.ipsLogger()
+        self.log_daemon = ipsLogging.ipsLogger(self.log_dynamic_sim_queue)
         self.log_process = None
         #pytau.stop(self.timers['__init__'])
         #stop(self.timers['__init__'])
@@ -144,9 +135,9 @@ class ConfigurationManager(object):
         self.task_mgr = task_mgr
         self.FTB = ftb
         #Parse configuration files into configuration map
-        sim_root_list = []
-        sim_name_list = []
-        log_file_list = []
+        sim_root_list = self.sim_root_list = []
+        sim_name_list = self.sim_name_list = []
+        log_file_list = self.log_file_list = [] 
 
         """
         Platform Configuration
@@ -197,6 +188,11 @@ class ConfigurationManager(object):
                 pass
         self.platform_conf['USER'] = user
 
+        try:
+            mpirun_version = self.platform_conf['MPIRUN_VERSION']
+        except KeyError:
+            mpirun_version = 'OpenMPI-generic'
+
         # node allocation mode describes how node allocation should be handled
         # in the IPS.
         #  EXCLUSIVE - only one application can run on a single node.
@@ -211,6 +207,15 @@ class ConfigurationManager(object):
             self.fwk.exception("missing value or bad type for NODE_ALLOCATION_MODE.  expected 'EXCLUSIVE' or 'SHARED'.")
             raise
             
+        try:
+            uan_val = self.platform_conf['USE_ACCURATE_NODES'].upper()
+            if uan_val in ['OFF', 'FALSE']:
+                use_accurate_nodes = False
+            else:
+                use_accurate_nodes = True
+        except:
+            use_accurate_nodes = True
+
         try:
             user_def_tprocs = int(self.platform_conf['TOTAL_PROCS'])
         except KeyError:
@@ -241,6 +246,8 @@ class ConfigurationManager(object):
         self.platform_conf['PROCS_PER_NODE'] = user_def_ppn
         self.platform_conf['CORES_PER_NODE'] = user_def_cpn
         self.platform_conf['SOCKETS_PER_NODE'] = user_def_spn
+        self.platform_conf['USE_ACCURATE_NODES'] = use_accurate_nodes
+        self.platform_conf['MPIRUN_VERSION'] = mpirun_version
                 
         # SIMYAN: section to parse component conf files
         """
@@ -345,7 +352,7 @@ class ConfigurationManager(object):
             log_file_list.append(log_file)
             new_sim = self.SimulationData(sim_name)
             new_sim.sim_conf = conf
-            new_sim.conf_file = conf_file
+            new_sim.config_file = conf_file
             # SIMYAN: store the directory of the configuration file
             new_sim.conf_file_dir=os.path.dirname(os.path.abspath(conf_file))
             new_sim.sim_root = sim_root
@@ -587,7 +594,7 @@ class ConfigurationManager(object):
             self.fwk.warning('Missing INIT specification in ' +
                              'config file for simulation %s' , sim_data.sim_name)
            
-        conf_file = sim_data.conf_file
+        conf_file = sim_data.config_file
 
         # SIMYAN: No longer doing this in configurationManager.py
         # Copy the configuration and platform files to the simRootDir
@@ -669,6 +676,7 @@ class ConfigurationManager(object):
         p = Process(target=new_component.__run__)
         p.start()
         sim_data.process_list.append(p)
+        sim_data.all_comps.append(component_id)
         #pytau.stop(self.timers['_create_component'])
         return component_id
 
@@ -680,15 +688,19 @@ class ConfigurationManager(object):
         """
         #pytau.start(self.timers['get_component_map'])
         sim_comps ={}
-        for sim_name, sim_data in self.sim_map.items():
+        for sim_name in self.sim_map.keys():
             if (sim_name == self.fwk_sim_name):
                 continue
-            sim_comps[sim_name]=[]
-            if (sim_data.init_comp):
-                sim_comps[sim_name].append(sim_data.init_comp)
-            sim_comps[sim_name].append(sim_data.driver_comp)
-        #pytau.stop(self.timers['get_component_map'])
+            sim_comps[sim_name]= self.get_simulation_components(sim_name)
         return sim_comps
+   
+    def get_simulation_components(self, sim_name):
+        comp_list = []
+        sim_data = self.sim_map[sim_name]
+        if (sim_data.init_comp):
+            comp_list.append(sim_data.init_comp)
+        comp_list.append(sim_data.driver_comp)
+        return comp_list
 
     def get_driver_components(self):
         """
@@ -728,7 +740,10 @@ class ConfigurationManager(object):
         *sim_name*.
         """
         #pytau.start(self.timers['get_sim_parameter'])
-        sim_data = self.sim_map[sim_name]
+        try:
+            sim_data = self.sim_map[sim_name]
+        except KeyError:
+            sim_data = self.finished_sim_map[sim_name]
         #self.fwk.debug('CONFIG VALUES =  %s', str(sim_data.sim_conf))
         try:
             val = sim_data.sim_conf[param]
@@ -737,15 +752,6 @@ class ConfigurationManager(object):
         self.fwk.debug('Returning value = %s for config parameter %s in simulation %s', val, param, sim_name)
         #pytau.start(self.timers['get_sim_parameter'])
         return val
-
-    def get_framework_logger(self, sim_name):
-        """
-        Return framework logger for simulation *sim_name*.
-        """
-        #pytau.start(self.timers['get_framework_logger'])
-        sim_data = self.sim_map[sim_name]
-        #pytau.stop(self.timers['get_framework_logger'])
-        return sim_data.fwk_logger
 
     def get_sim_names(self):
         """
@@ -768,6 +774,67 @@ class ConfigurationManager(object):
         #pytau.start(self.timers['process_service_request'])
         return retval
 
+    def create_simulation(self, sim_name, config_file, override):
+        try:
+            conf = ConfigObj(config_file, interpolation='template',
+                            file_error=True)
+        except IOError, (ex):
+            self.fwk.exception('Error opening config file %s: ', config_file)
+            raise
+        except SyntaxError, (ex):
+            self.fwk.exception(' Error parsing config file %s: ', config_file)
+            raise
+        # Allow propagation of entries from platform config file to simulation
+        # config file
+        for keyword in self.platform_conf.keys():
+            if keyword not in conf.keys(): 
+                conf[keyword] = self.platform_conf[keyword]
+        if (override):
+            for kw in override.keys():
+                conf[kw] = override[kw]
+        try:
+            sim_name = conf['SIM_NAME']
+            sim_root = conf['SIM_ROOT']
+            log_file = os.path.abspath(conf['LOG_FILE'])
+        except KeyError, (ex):
+            self.fwk.exception('Missing required parameters SIM_NAME, SIM_ROOT or LOG_FILE\
+in configuration file %s', config_file)
+            raise
+        if (sim_name in self.sim_name_list):
+            self.fwk.error('Error: Duplicate SIM_NAME %s in configuration files' % (sim_name))
+            raise Exception('Duplicate SIM_NAME %s in configuration files' % (sim_name))
+        if (sim_root in self.sim_root_list):
+            self.fwk.exception('Error: Duplicate SIM_ROOT in configuration files')
+            raise Exception('Duplicate SIM_ROOT in configuration files')
+        if (log_file in self.log_file_list):
+            self.fwk.exception('Error: Duplicate LOG_FILE in configuration files')
+            raise Exception('Duplicate LOG_FILE in configuration files')
+        self.sim_name_list.append(sim_name)
+        self.sim_root_list.append(sim_root)
+        self.log_file_list.append(log_file)
+        new_sim = self.SimulationData(sim_name)
+        new_sim.sim_conf = conf
+        new_sim.config_file = config_file
+        new_sim.sim_root = sim_root
+        new_sim.log_file = log_file
+        new_sim.log_pipe_name = tempfile.mktemp('.logpipe', 'ips_')
+        log_level = 'DEBUG'
+        try:
+            log_level = conf['LOG_LEVEL']
+        except KeyError:
+            pass
+        try:
+            real_log_level = getattr(logging, log_level)
+        except AttributeError:
+            self.fwk.exception('Invalid LOG_LEVEL value %s in config file %s ',
+                  log_level, config_file)
+            raise
+        self.log_dynamic_sim_queue.put('CREATE_SIM  %s  %s' % (new_sim.log_pipe_name, new_sim.log_file))
+        self.sim_map[sim_name] = new_sim
+        self._initialize_sim(new_sim)
+        self.fwk.initiate_new_simulation(sim_name)
+        return sim_name
+    
     def getPort(self, sim_name, port_name):
         """
         .. deprecated:: 1.0 Use :py:meth:`.get_port`
@@ -804,8 +871,12 @@ class ConfigurationManager(object):
         else:
             target_sims = [target_sim_name]
         for sim_name in target_sims:
+            self.fwk.debug('Setting %s to %s in simulation %s', param, value, sim_name)
+            try:
+                sim_data = self.sim_map[sim_name]
+            except KeyError:
+                sim_data = self.finished_sim_map[sim_name]
             self.fwk.debug('Setting %s to %s in simulation %s', param, value, sim_name) 
-            sim_data = self.sim_map[sim_name]
             sim_conf = sim_data.sim_conf
             sim_conf[param] = value
 
@@ -831,30 +902,37 @@ class ConfigurationManager(object):
         #pytau.stop(self.timers['get_platform_parameter'])
         return val
 
+    def terminate_sim(self, sim_name):
+        sim_data = self.sim_map[sim_name]
+        all_sim_components = sim_data.all_comps
+        msg = 'END_SIM %s' % (sim_data.log_pipe_name)
+        self.log_dynamic_sim_queue.put(msg)
+        proc_list = sim_data.process_list
+        for p in proc_list:
+            #p.terminate()
+            p.join()
+        try:
+            os.remove(sim_data.log_pipe_name)
+        except :
+            pass
+        for comp_id in all_sim_components:
+            self.comp_registry.removeEntry(comp_id)
+        sim_data.logger = None
+        sim_data.process_list=[]
+        self.finished_sim_map[sim_name] = sim_data
+        del self.sim_map[sim_name]
+        return
+        
     def terminate(self, status):
         """
         Terminates all processes attached to the framework.  *status* not used.
         """
-        #pytau.start(self.timers['terminate'])
         try:
-            for sim_data in self.sim_map.values():
-                proc_list = sim_data.process_list
-                for p in proc_list:
-#                    if (status == messages.Message.FAILURE):
-#                        p.terminate()
-#                    else:
-#                        p.join()
-                    p.terminate()
-            self.log_process.terminate()
-            for sim_data in self.sim_map.values():
-                try:
-                    os.remove(sim_data.log_pipe_name)
-                except :
-                    pass
+            for sim_name in self.sim_map.keys():
+                self.terminate_sim(sim_name)
         except:
             print 'Encountered exception when terminating simulation'
-            #pytau.stop(self.timers['terminate'])
             raise
-        #pytau.stop(self.timers['terminate'])
-        #print ##pytau.getProfileGroup('configMgr')
-        #pytau.dbDump()
+        for k in self.sim_map.keys():
+            del self.sim_map[k] 
+        self.log_process.terminate()

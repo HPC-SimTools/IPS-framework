@@ -44,15 +44,15 @@ def main(argv=None):
     config_key=''
     compset_list=[]
     if options.cfgFile:
-      cfgFile=os.path.abspath(options.cfgFile)
+        cfgFile=os.path.abspath(options.cfgFile)
     else:
-      print "config file required"
-      return
+        print "config file required"
+        return
     if options.var:
-      config_key=options.var
+        config_key=options.var
     else:
-      print "config variable required"
-      return
+        print "config variable required"
+        return
 
     # Try to see if we can find the platform file
     ipsPathName=inspect.getfile(inspect.currentframe())
@@ -64,28 +64,28 @@ def main(argv=None):
     pconf=os.path.join('share','platform.conf')
     platform_list=[]
     if os.path.exists(os.path.join(ipsPDir1,pconf)):
-      ipsShareDir=os.path.join(ipsPDir1,'share')
-      platform_list=[os.path.join(ipsShareDir,'platform.conf')]
+        ipsShareDir=os.path.join(ipsPDir1,'share')
+        platform_list=[os.path.join(ipsShareDir,'platform.conf')]
     # This is looking in the build directory.
     elif os.path.exists(os.path.join(ipsPDir2,pconf)):
-      ipsShareDir=os.path.join(ipsPDir2,'share')
-      platform_list=[os.path.join(ipsShareDir,'platform.conf')]
+        ipsShareDir=os.path.join(ipsPDir2,'share')
+        platform_list=[os.path.join(ipsShareDir,'platform.conf')]
 
     # Try to see if we can find a component file.  Can ask for one
     compset_list=[]
     if options.compset:
-      cfile='component-'+options.compset+'.conf'
-      fullcfile=os.path.join(ipsShareDir,cfile)
-      if os.path.exists(fullcfile):
-        compset_list.append(fullcfile)
-      else:
-        print "Could not find: ", cfile
+        cfile='component-'+options.compset+'.conf'
+        fullcfile=os.path.join(ipsShareDir,cfile)
+        if os.path.exists(fullcfile):
+            compset_list.append(fullcfile)
+        else:
+            print "Could not find: ", cfile
     else: 
-      if os.path.exists(os.path.join(ipsShareDir,'component-generic.conf')):
-        compset_list.append(os.path.join(ipsShareDir,'component-generic.conf'))
-      else:
-        print "Cannot find any component configuration files."
-        print "  Assuming that variables are defined anyway"
+        if os.path.exists(os.path.join(ipsShareDir,'component-generic.conf')):
+            compset_list.append(os.path.join(ipsShareDir,'component-generic.conf'))
+        else:
+            print "Cannot find any component configuration files."
+            print "  Assuming that variables are defined anyway"
 
     # Construct list of all configuration files
     conf_list=platform_list+compset_list+[cfgFile]
@@ -103,24 +103,24 @@ def main(argv=None):
 
     # Now get data as needed
     if config_key == 'CP_FILES':
-      try:
-        print 'call getCpFilesFromIps'
-        val = getCpFilesFromIps(conf)
-      except KeyError:
-        print 'Error: cannot get copy files in config file %s' %(str(conf_tuple))
-        return 1
-      else:
-        print val
-        return 0
+        try:
+            print 'call getCpFilesFromIps'
+            val = getCpFilesFromIps(conf)
+        except KeyError:
+            print 'Error: cannot get copy files in config file %s' %(str(conf_tuple))
+            return 1
+        else:
+            print val
+            return 0
     else:
-      try:
-        val = conf[config_key]
-      except KeyError:
-        print 'Error: no variable %s in config file %s' %(config_key, str(conf_tuple))
-        return 1
-      else:
-        print val
-        return 0
+        try:
+            val = conf[config_key]
+        except KeyError:
+            print 'Error: no variable %s in config file %s' %(config_key, str(conf_tuple))
+            return 1
+        else:
+            print val
+            return 0
 
 # ----- end main -----
 

@@ -69,12 +69,17 @@ from taskManager import TaskManager
 from resourceManager import ResourceManager
 from dataManager import DataManager
 from componentRegistry import ComponentRegistry
+import socket
+import getopt
 from componentRegistry import ComponentID
 from ipsExceptions import BlockedMessageException
 from eventService import EventService
 from cca_es_spec import initialize_event_service
+import logging
 from ips_es_spec import eventManager
+import os
 import ipsTiming
+import time
 import checklist
 from configobj import ConfigObj
 #from ipsTiming import *
@@ -85,7 +90,7 @@ def make_timers():
     """
     mypid = str(os.getpid())
     timer_funcs = ['__init__', '_dispatch_service_request', '_invoke_framework_comps',
-                   'run', '_send_monitor_event','terminate_sim']
+                   'run', '_send_monitor_event','terminate_all_sims']
     timer_dict = {}
     for i in range(len(timer_funcs)):
         timer_dict[timer_funcs[i]] = ipsTiming.create_timer("fwk", timer_funcs[i], mypid)
@@ -261,6 +266,9 @@ class Framework(object):
         logger.addHandler(ch)
         self.logger = logger
         self.verbose_debug = verbose_debug
+        self.outstanding_calls_list=[]
+        self.call_queue_map = {}
+        
         # add the handler to the root logger
         try:
             # each manager should create their own event manager if they
@@ -281,7 +289,7 @@ class Framework(object):
                                              cmd_ppn)
         except Exception, e:
             self.exception("Problem initializing managers")
-            self.terminate_sim(status=Message.FAILURE)
+            self.terminate_all_sims(status=Message.FAILURE)
             #stop(self.timers['__init__'])
             raise 
         self.blocked_messages = []
@@ -343,7 +351,7 @@ class Framework(object):
                 #stop(self.timers['_dispatch_service_request'])
                 return
             except Exception, e:
-                self.exception('Exception handling service message: %s - %s', str(msg.__dict__), str(e))
+                #self.exception('Exception handling service message: %s - %s', str(msg.__dict__), str(e))
                 response_msg = ServiceResponseMessage(self.component_id,
                                                      comp_id,
                                                      msg.message_id,
@@ -480,7 +488,7 @@ class Framework(object):
                         self.task_manager.return_call(msg)
                     else:
                         if (msg.status == Message.FAILURE):
-                            self.terminate_sim(status=Message.FAILURE)
+                            self.terminate_all_sims(status=Message.FAILURE)
                             #stop(self.timers['_invoke_framework_comps'])
                             raise msg.args[0]
                         outstanding_fwk_calls.remove(msg.call_id)
@@ -529,7 +537,7 @@ class Framework(object):
             outstanding_sim_calls = {}
         except Exception, e:
             self.exception('encountered exception during fwk.run() initialization')
-            self.terminate_sim(status=Message.FAILURE)
+            self.terminate_all_sims(status=Message.FAILURE)
             #stop(self.timers['run'])
             return False
 
@@ -590,6 +598,7 @@ class Framework(object):
             for sim_name, comp_list in sim_comps.items():
                 msg_list = []
                 self._send_monitor_event(sim_name, 'IPS_START', 'Starting IPS Simulation')
+                self._send_dynamic_sim_event(sim_name = sim_name, event_type = 'IPS_START')
                 comment = 'Nodes = %d   PPN = %d' % \
                           (self.resource_manager.num_nodes, self.resource_manager.ppn)
                 self._send_monitor_event(sim_name, 'IPS_RESOURCE_ALLOC', comment)
@@ -644,7 +653,7 @@ class Framework(object):
 
         except Exception, e:
             self.exception('encountered exception during fwk.run() genration of call messages')
-            self.terminate_sim(status=Message.FAILURE)
+            self.terminate_all_sims(status=Message.FAILURE)
             #stop(self.timers['run'])
             return False
 
@@ -656,15 +665,14 @@ class Framework(object):
                 msg = msg_list.pop(0)
                 self.debug('Framework sending message %s ', msg.__dict__)
                 call_id = self.task_manager.init_call(msg, manage_return=False)
-                call_queue_map[call_id] = msg_list
-                call_id_list.append(call_id)
-        except Exception, e:
+                self.call_queue_map[call_id] = msg_list
+                self.outstanding_calls_list.append(call_id)
+        except Exception:
             self.exception('encountered exception during fwk.run() sending first round of invocations (init of inits and fwk comps)')
-            self.terminate_sim(status=Message.FAILURE)
-            #stop(self.timers['run'])
-            return False
+            self.terminate_all_sims(status=Message.FAILURE)
+            raise
 
-        while (len(call_id_list) > 0):
+        while (len(self.outstanding_calls_list) > 0):
             if (self.verbose_debug):
                 self.debug("Framework waiting for message")
             # get new messages
@@ -682,23 +690,25 @@ class Framework(object):
             for msg in msg_list:
                 if (self.verbose_debug):
                     self.debug('Framework processing message %s ', msg.message_id)
+                    
+                sim_name = msg.sender_id.get_sim_name()
                 if (msg.__class__.__name__ == 'ServiceRequestMessage'):
                     try:
                         self._dispatch_service_request(msg)
                     except Exception:
                         self.exception('Error dispatching service request message.')
-                        self.terminate_sim(status=Message.FAILURE)
+                        self.terminate_all_sims(status=Message.FAILURE)
                         #stop(self.timers['run'])
                         return False
                     continue
                 elif (msg.__class__.__name__ == 'MethodResultMessage'):
-                    if msg.call_id not in call_id_list:
+                    if msg.call_id not in self.outstanding_calls_list:
                         self.task_manager.return_call(msg)
                         continue
                     # Message is a result from a framework invocation
-                    call_id_list.remove(msg.call_id)
-                    sim_msg_list = call_queue_map[msg.call_id]
-                    del call_queue_map[msg.call_id]
+                    self.outstanding_calls_list.remove(msg.call_id)
+                    sim_msg_list = self.call_queue_map[msg.call_id]
+                    del self.call_queue_map[msg.call_id]
                     if (msg.status == Message.FAILURE):
                         self.error('received a failure message from component %s : %s',
                                    msg.sender_id, str(msg.args))
@@ -708,6 +718,7 @@ class Framework(object):
                         ok = False
                         # self.terminate_sim(status=Message.FAILURE)
                         # return False
+                        self.send_terminate_msg(sim_name, Message.FAILURE)
                     else:
                         comment = 'Simulation Ended'
                         ok = True
@@ -715,26 +726,58 @@ class Framework(object):
                         next_call_msg =  sim_msg_list.pop(0)
                         call_id = self.task_manager.init_call(next_call_msg,
                                                               manage_return=False)
-                        call_id_list.append(call_id)
-                        call_queue_map[call_id] = sim_msg_list
+                        self.outstanding_calls_list.append(call_id)
+                        self.call_queue_map[call_id] = sim_msg_list
                     except IndexError:
-                        sim_name = msg.sender_id.get_sim_name()
+                        sim_comps = self.config_manager.get_component_map() #Get any new dynamic simulations
                         if sim_name in sim_comps.keys():
-                            self._send_monitor_event(sim_name, 'IPS_END', comment, ok)
+                            self._send_monitor_event(sim_name, 'IPS_END',
+                                                    comment, ok)
+                            self._send_dynamic_sim_event(sim_name, 'IPS_END', ok)
+                            self.send_terminate_msg(sim_name, Message.SUCCESS)
+                            self.config_manager.terminate_sim(sim_name)
                             if self.ftb:
                                 self._send_ftb_event('IPS_END')
+
         # SIMYAN: update the status of the simulation after all calls have
         # been executed
-
-        self.event_service._print_stats()
         main_fwk_comp = self.comp_registry.getEntry(fwk_comps[0])
         container_ext = main_fwk_comp.services.get_config_param('CONTAINER_FILE_EXT')
         self.container_file = os.path.basename(self.sim_root) + os.path.extsep + container_ext
         ipsutil.writeToContainer(self.container_file, self.sim_root, 'checklist.conf') 
+
+        self.terminate_all_sims(Message.SUCCESS)
+        self.event_service._print_stats()
         #stop(self.timers['run'])
         #dumpAll()
-        self.terminate_sim(Message.SUCCESS)
         return True
+
+    def initiate_new_simulation(self, sim_name):
+        '''
+        This is to be called by the configuration manager as part of dynamically creating
+        a new simulation. The purpose here is to initiate the method invocations for the 
+        framework-visible components in the new simulation
+        '''
+        comp_list = self.config_manager.get_simulation_components(sim_name)
+        msg_list = []
+        self._send_monitor_event(sim_name, 'IPS_START', 'Starting IPS Simulation', ok= True)
+        self._send_dynamic_sim_event(sim_name = sim_name, event_type = 'IPS_START')
+        if self.ftb:
+            self._send_ftb_event('IPS_START')
+        for comp_id in comp_list:
+            for method in ['init', 'step', 'finalize']:
+                req_msg = ServiceRequestMessage(self.component_id,
+                                                self.component_id, comp_id,
+                                                'init_call', method, 0)
+                msg_list.append(req_msg)
+
+    # send off first round of invocations...
+        msg = msg_list.pop(0)
+        self.debug('Framework sending message %s ', msg.__dict__)
+        call_id = self.task_manager.init_call(msg, manage_return=False)
+        self.call_queue_map[call_id] = msg_list
+        self.outstanding_calls_list.append(call_id)
+        return
 
     #@ipsTiming.TauWrap(TIMERS['_send_monitor_event'])
     def _send_monitor_event(self, sim_name = '', eventType='', comment = '', ok = 'True'):
@@ -751,7 +794,8 @@ class Framework(object):
             error condition.  
         """
         #start(self.timers['_send_monitor_event'])
-        self.debug('_send_monitor_event(%s - %s)',sim_name,  eventType)
+        if (self.verbose_debug):
+            self.debug('_send_monitor_event(%s - %s)',sim_name,  eventType)
         portal_data = {}
         portal_data['code'] = 'Framework'
         # eventData['portal_runid'] = self.portalRunId
@@ -811,7 +855,8 @@ class Framework(object):
         event_body['sim_root'] = get_config(sim_name, 'SIM_ROOT')
         event_body['portal_data'] = portal_data
 
-        self.debug('Publishing %s', str(event_body))
+        if (self.verbose_debug):
+            self.debug('Publishing %s', str(event_body))
         self.event_manager.publish(topic_name, 'IPS_SIM', event_body)
         #stop(self.timers['_send_monitor_event'])
         return
@@ -827,28 +872,49 @@ class Framework(object):
         self.event_manager.publish(topic_name, 'IPS_SIM', ftb_data)
         return
 
-    #@ipsTiming.TauWrap(TIMERS['terminate_sim'])
-    def terminate_sim(self, status= Message.SUCCESS):
+    def _send_dynamic_sim_event(self, sim_name = '', event_type = '', ok = True):
+        self.debug('_send_dynamic_sim_event(%s:%s)',  event_type, sim_name)
+        event_data = {}
+        event_data['eventtype'] = event_type
+        event_data['SIM_NAME'] = sim_name
+        event_data['ok'] = ok
+        topic_name = '_IPS_DYNAMIC_SIMULATION'
+        self.debug('Publishing %s', str(event_data))
+        self.event_manager.publish(topic_name, 'IPS_DYNAMIC_SIM', event_data)
+        return
+        
+    def send_terminate_msg(self, sim_name, status= Message.SUCCESS):
         """
-        Terminate all active component instances by invoking the ``terminate`` 
-        method on each one.
+        Invoke terminate(status) on components in a simulation
+        
+        This method remotely invokes the method C{terminate()} on all componnets in the
+        IPS simulation sim_name.
         """
-        #start(self.timers['terminate_sim'])
+        comp_ids = self.comp_registry.get_component_ids(sim_name)
+        for id in comp_ids:
+            try:
+                invocation_q = self.comp_registry.getComponentArtifact(id,
+                                                                       'invocation_q')
+                call_id = self.task_manager.get_call_id()
+                msg = MethodInvokeMessage(self.component_id, id, call_id,
+                                          'terminate', status)
+                self.debug('Sending terminate message to %s', str(id))
+                invocation_q.put(msg)
+            except Exception, e:
+                self.exception('exception encountered while terminating comp %s', id)
+                print e
+        
+    def terminate_all_sims(self, status= Message.SUCCESS):
+        """
+        Terminate all active component instances.
+        
+        This method remotely invokes the method C{terminate()} on all componnets in the
+        IPS simulation.
+        """
+        #start(self.timers['terminate_all_sims'])
         sim_names = self.config_manager.get_sim_names()
         for sim in sim_names:
-            comp_ids = self.comp_registry.get_component_ids(sim)
-            for id in comp_ids:
-                try:
-                    invocation_q = self.comp_registry.getComponentArtifact(id,
-                                                                           'invocation_q')
-                    call_id = self.task_manager.get_call_id()
-                    msg = MethodInvokeMessage(self.component_id, id, call_id,
-                                              'terminate', status)
-                    self.debug('Sending terminate message to %s', str(id))
-                    invocation_q.put(msg)
-                except Exception, e:
-                    self.exception('exception encountered while terminating comp %s', id)
-                    print e
+            self.send_terminate_msg(sim, status)
         time.sleep(1)
         try:
             self.config_manager.terminate(status)
