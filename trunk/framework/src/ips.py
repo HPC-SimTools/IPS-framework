@@ -600,7 +600,7 @@ class Framework(object):
 
                 if self.ips_dosteps['RUN_SETUP'] and self.ips_status['CREATE_RUNSPACE']:
                     self.ips_status['RUN_SETUP'] = True
-                    methods.append('init')
+                    methods.append('setup')
                 elif self.ips_dosteps['RUN_SETUP'] and not self.ips_status['CREATE_RUNSPACE']:
                     self.ips_status['RUN_SETUP'] = False
                     print 'RUN_SETUP was requested, but a runspace does not exist...'
@@ -615,6 +615,7 @@ class Framework(object):
                     
                 if self.ips_dosteps['RUN'] and self.ips_status['RUN_SETUP']:
                     self.ips_status['RUN'] = True
+                    methods.append('init')
                     methods.append('step')
                     methods.append('finalize')
                 elif self.ips_dosteps['RUN'] and not self.ips_status['RUN_SETUP']:
