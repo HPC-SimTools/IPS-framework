@@ -138,12 +138,12 @@ class Component(object):
         pass
 
     # SIMYAN: This is the step method that is used for run-setup
-    def step(self, timestamp=0.0):
+    def setup(self, timestamp=0.0):
         """
         Produce some default debugging information before the rest of the code
         is executed.
         """
-        self.services.debug('step() method called')
+        self.services.debug('setup() method called')
         pass
 
     # SIMYAN: this is a placeholder for future validation methods (i.e. 
