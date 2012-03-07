@@ -101,7 +101,7 @@ class ConfigurationManager(object):
         self.platform_conf = {}
         # SIMYAN: breaking up the keyswords a little bit 
         self.compset_list = compset_list
-        loc_keys=['IPS_ROOT','PORTAL_URL','RUNID_URL']
+        loc_keys=['IPS_ROOT']#,'PORTAL_URL','RUNID_URL']
         mach_keys=['MPIRUN','NODE_DETECTION','CORES_PER_NODE','SOCKETS_PER_NODE','NODE_ALLOCATION_MODE']
         prov_keys=['HOST']
         self.platform_keywords=loc_keys+mach_keys+prov_keys
