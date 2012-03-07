@@ -10,7 +10,7 @@ Notes:
 
 """
 
-from resourceHelper import get_checkjob_info, get_qstat_jobinfo, get_pbs_info, get_slurm_info, get_topo
+from resourceHelper import get_checkjob_info, get_qstat_jobinfo, get_pbs_info, get_slurm_info, get_topo, get_qstat_jobinfo2
 
 
 def test_get_checkjob_info():
@@ -33,6 +33,17 @@ def test_get_qstat_jobinfo():
             print '\t%s: %d' % (name, p)
     except:
         print 'get_qstat_jobinfo does not work on this machine'
+        raise
+
+def test_get_qstat_jobinfo2():
+    try:
+        print 'Testing get_qstat_jobinfo2:'
+        n, ppn, mixed_nodes, lon = get_qstat_jobinfo2()
+        print 'get_qstat_jobinfo2 yields %d nodes and %d ppn ' % (n, ppn)
+        for name, l in lon:
+            print '\t%s: ' % name, l
+    except:
+        print 'get_qstat_jobinfo2 does not work on this machine'
         raise
 
 def test_get_pbs_info():
@@ -72,6 +83,12 @@ if __name__ == "__main__":
     try:
         test_get_qstat_jobinfo()
         recommendations.append('qstat')
+    except:
+        pass
+    print "\n\n"
+    try:
+        test_get_qstat_jobinfo2()
+        recommendations.append('qstat2')
     except:
         pass
     print "\n\n"

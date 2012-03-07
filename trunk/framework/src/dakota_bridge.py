@@ -124,7 +124,7 @@ class Driver(Component):
                     continue
                 else:
                     break
-            instance_id =  '%s_%d' % (dakota_runid, idx)
+            instance_id =  '%s_%04d' % (dakota_runid, idx)
             file_name = os.path.join(self.sim_root, 'simulation_%s.conf' % (instance_id))
             
             self.old_master_conf.filename = file_name

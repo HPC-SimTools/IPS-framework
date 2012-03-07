@@ -27,22 +27,36 @@ class Node:
         self.allocated = []  # sockets allocated
         self.available = []  # sockets available
         self.sockets = []
-        self.avail_cores = p
+        if isinstance(p, int):
+            self.avail_cores = p
+        else:
+            self.avail_cores = len(p)
         cps = cores / socks
         
-        self.total_cores = p # cores
+        self.total_cores = self.avail_cores
         c = 0
         s = 0
-        while c < p:
-            if c + cps <= p:
-                self.sockets.append(Socket(s, cps))
+        i = 0
+        while c < self.total_cores:
+            if c + cps <= self.total_cores:
+                if isinstance(p, int):
+                    self.sockets.append(Socket(s, cps))
+                else:
+                    self.sockets.append(Socket(s, cps, p[i:cps]))
+                    i += cps
                 self.available.append(s)
                 s += 1
                 c += cps
             else:
-                self.sockets.append(Socket(s, p - c))
+                if isinstance(p, int):
+                    self.sockets.append(Socket(s, len(p) - c))
+                    c = p
+                else:
+                    self.sockets.append(Socket(s, len(p) - c, p[i:]))
+                    i = len(p)
+                    c = len(p)
                 self.available.append(s)
-                c = p
+
 
     def print_sockets(self, fname=''):
         """
@@ -111,7 +125,6 @@ class Node:
                     if sock.avail_cores == 0:
                         self.available.remove(sock.name)
 
-
                 elif sock.avail_cores > 0:  # sock.avail_cores < procs - k
                     k += sock.avail_cores
                     slots.extend(sock.allocate(whole_sockets, tid, o,
@@ -164,7 +177,7 @@ class Socket:
       * *total_cores*: total number of cores that can be allocated on this 
         socket.
     """
-    def __init__(self, name, cps):
+    def __init__(self, name, cps, coreids=[]):
         """
         s = number of sockets (per node)
         c = number of cores (per node)
@@ -178,10 +191,15 @@ class Socket:
         self.avail_cores = cps
         self.total_cores = cps
         self.my_tasks = {}  # tid: (owner, cores, num_procs)
-        for c in range(cps):
-            self.cores.append(Core(c))
-            self.available.append(c)
-
+        if coreids:
+            for c in coreids:
+                self.cores.append(Core(c))
+                self.available.append(c)
+        else:
+            for c in range(cps):
+                self.cores.append(Core(c))
+                self.available.append(c)
+                
     def print_cores(self, fname=''):
         """
         Pretty print of state of cores.
@@ -236,8 +254,6 @@ class Socket:
         self.avail_cores -= k
         self.my_tasks.update({tid:(o, k, num_procs)})
         return slots
-        # something bad happened if we get here
-        raise
 
     def release(self, tid):
         """

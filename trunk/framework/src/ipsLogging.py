@@ -13,6 +13,7 @@ import functools
 import logging.handlers
 import socket
 import os, os.path
+import Queue
 
 class IPSLogSocketHandler(logging.handlers.SocketHandler):
     def __init__(self, port):
@@ -88,14 +89,16 @@ class LogRecordSocketReceiver(SocketServer.ThreadingUnixStreamServer):
         return self.socket.fileno()
 
 class ipsLogger(object):
-    def __init__(self):
+    def __init__(self, dynamic_sim_queue = None):
         self.log_map={}
         self.stdout_handler = logging.StreamHandler(sys.stdout)
         self.formatter = logging.Formatter("%(asctime)s %(name)-15s %(levelname)-8s %(message)s")
         self.handle_map = {}
+        fileno_map = {}
+        self.log_dynamic_sim_queue = dynamic_sim_queue
 
     def add_sim_log(self, log_pipe_name, log_file=sys.stdout):
-        if (log_file == sys.stdout):
+        if (log_file == sys.stdout or log_file == None):
             log_handler = self.stdout_handler
         else:
             try:
@@ -121,7 +124,7 @@ class ipsLogger(object):
                                             handler=log_handler)
         recvr = LogRecordSocketReceiver(log_pipe_name, handler=partial_handler)
         fileno = recvr.get_file_no()
-        self.log_map[fileno] = (recvr, log_handler)
+        self.log_map[fileno] = (recvr, log_handler, log_pipe_name)
         return
 
     def __run__(self):
@@ -130,13 +133,31 @@ class ipsLogger(object):
 #           filename = self.log_file,
 #           filemode = 'w')
         import select
+        time_out = 1.0
         read_set = self.log_map.keys()
         while 1:
             #print 'read_set = ', read_set
             rd, wr, ex = select.select(read_set,
                                        [], [],
-                                       None)
+                                       time_out)
             if rd:
                 for fileno in rd:
-                    (recvr, log_handler) = self.log_map[fileno]
+                    (recvr, log_handler, log_pipe_name) = self.log_map[fileno]
                     recvr.handle_request()
+            try:
+                msg = self.log_dynamic_sim_queue.get(block=False)
+            except Queue.Empty:
+                pass
+            else:
+                tokens = msg.split()
+                if (tokens[0] == 'CREATE_SIM'): # Expecting Message: 'CREATE_SIM  log_pipe_name  log_file
+                    self.add_sim_log(tokens[1], tokens[2])
+                    read_set = self.log_map.keys()
+                elif (tokens[0] == 'END_SIM'):  # Expecting Message 'END_SIM log_pipe_name'
+                    log_pipe_name = tokens[1]
+                    for fileno , (recvr, log_handler, f_name) in self.log_map.items():
+                        if f_name == log_pipe_name:
+                            del self.log_map[fileno]
+                            read_set.remove(fileno)
+                    
+

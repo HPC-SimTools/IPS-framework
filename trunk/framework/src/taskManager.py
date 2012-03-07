@@ -12,6 +12,7 @@ from ipsExceptions import BlockedMessageException,  \
                           AllocatedNodeDownException, \
                           ResourceRequestMismatchException
 import shutil
+from math import ceil
 
 # from event_service_spec import PublisherEventService,SubscriberEventService,EventListener,Topic,EventServiceException
 
@@ -285,32 +286,37 @@ class TaskManager(object):
                                          'nproc'      : nproc,
                                          'args'       : cmd_args,
                                          'launch_cmd' : None,
+                                         'env_update' : None,
                                          'ret_data'   : None,
                                          'node_file': None}
         if partial_node:
             nodes = ','.join(nodelist)
-            # SIMYAN: added working_dir to cmd
-            cmd = self.build_launch_cmd(nproc, binary, cmd_args, working_dir,
-                                        ppn, max_ppn, 
-                                        nodes, accurateNodes, partial_node, 
-                                        task_id, core_list=corelist)
+            (cmd, env_update) = self.build_launch_cmd(nproc, binary, cmd_args,
+                                                      working_dir, ppn,
+                                                      max_ppn, nodes,
+                                                      accurateNodes,
+                                                      partial_node, task_id,
+                                                      core_list=corelist)
         else:
             if accurateNodes:
                 nodes = ','.join(nodelist)
             else:
                 nodes = ''
-            # SIMYAN: added working_dir to cmd
-            cmd = self.build_launch_cmd(nproc, binary, cmd_args, working_dir, ppn, max_ppn, 
-                                        nodes, accurateNodes, False, task_id)
-        # SIMYAN: store launch command
+            (cmd, env_update) = self.build_launch_cmd(nproc, binary, cmd_args,
+                                                      working_dir, ppn,
+                                                      max_ppn, nodes,
+                                                      accurateNodes,
+                                                      False, task_id)
         task_data = self.curr_task_table[task_id]
         task_data['launch_cmd'] =  cmd
-        return (task_id, cmd)
+        task_data['env_update'] = env_update
+        #print "done with init_task"
+        return (task_id, cmd, env_update)
 
 
-    # SIMYAN: added working_dir to method to build the launch command
-    def build_launch_cmd(self, nproc, binary, cmd_args, working_dir, ppn, max_ppn, nodes, 
-                         accurateNodes, partial_nodes, task_id, core_list=''):
+    def build_launch_cmd(self, nproc, binary, cmd_args, working_dir, ppn,
+                         max_ppn, nodes, accurateNodes, partial_nodes,
+                         task_id, core_list=''):
         """
         Construct task launch command to be executed by the component.  
 
@@ -326,40 +332,78 @@ class TaskManager(object):
           *core_list* - used for creating host file with process to core mappings
         """
         # set up launch command
+        env_update = None
         nproc_flag = ''
         smp_node = len(self.resource_mgr.nodes) == 1
 
         if self.task_launch_cmd == 'eval':
             cmd = binary
         #-------------------------------------
-        # mpirun (OpenMPI)
+        # mpirun 
         #-------------------------------------
         elif self.task_launch_cmd == 'mpirun':
-            nproc_flag = '-np'
-            ppn_flag = '-npernode'
-            proc_bind_option = '-bind-to-core'
-            host_file = '-hostfile'
-            host_select = '-H'
-            if smp_node:
-                cmd = ' '.join([self.task_launch_cmd, nproc_flag, str(nproc)])
-            else:
-                cmd = ' '.join([self.task_launch_cmd, nproc_flag, str(nproc),
-                                ppn_flag, str(ppn)])
-                if accurateNodes:
-                    if partial_nodes:
-                        # SIMYAN: removed dependence on cwd
-                        hfname = "_gen_hf_" + str(task_id)
-                        # SIMYAN: using working_dir instead of cwd
-                        hfname = os.path.join(working_dir, hfname)
-                        hfile = open(hfname, 'w')
-                        i = 0
-                        for s in core_list:
-                            print >> hfile, '%s slots=%s' % (s[0], len(s[1]))
-                        cmd = ' '.join([cmd, host_file, hfname, proc_bind_option])
-                        # SIMYAN: store hfname here
-                        self.curr_task_table[task_id]['node_file'] = hfname
-                    else:
+            version = self.config_mgr.get_platform_parameter('MPIRUN_VERSION')
+            if version == 'OpenMPI-generic':
+                nproc_flag = '-np'
+                ppn_flag = '-npernode'
+                proc_bind_option = '-bind-to-core'
+                host_file = '-hostfile'
+                host_select = '-H'
+                if smp_node:
+                    cmd = ' '.join([self.task_launch_cmd,
+                                    nproc_flag, str(nproc)])
+                else:
+                    cmd = ' '.join([self.task_launch_cmd,
+                                    nproc_flag, str(nproc),
+                                    ppn_flag, str(ppn)])
+                    if accurateNodes:
+                        # if partial_nodes:
+                        #    hfname = "_gen_hf_" + str(task_id)
+                        #    hfname = os.path.join(working_dir, hfname)
+                        #    hfile = open(hfname, 'w')
+                        #    i = 0
+                        #    for s in core_list:
+                        #        print >> hfile, '%s slots=%s' % (s[0], len(s[1]))
+                        #    cmd = ' '.join([cmd, host_file, hfname, proc_bind_option])
+                        #    self.curr_task_table[task_id]['node_file'] = hfname
+                        # else:
                         cmd = ' '.join([cmd, host_select, nodes])
+            elif version == 'SGI':
+                if accurateNodes:
+                    core_dict = {}
+                    ppn_groups = {}
+                    num_cores = self.resource_mgr.cores_per_socket
+                    for (n, cl) in core_list:
+                        core_dict.update({n:cl})
+                        if len(cl) in ppn_groups.keys():
+                            ppn_groups[len(cl)].append(n)
+                        else:
+                            ppn_groups.update({len(cl):[n]})
+                    cmdlets = []
+                    envlets = []
+                    bin_n_args = binary + ' '.join(cmd_args) 
+                    for p, ns in ppn_groups.items():
+                        cmdlets.append(' '.join([','.join(ns), str(p),
+                                                 bin_n_args]))
+                        el_node = []
+                        for n in ns:
+                            el_tmp = []
+                            for k in core_dict[n]:
+                                s, c = k.split(':')
+                                s = int(s)
+                                c = int(c)
+                                el_tmp.append(str(s*num_cores + c))
+                            el_node.append(','.join(el_tmp))
+                        envlets.append(':'.join(el_node))
+                    cmd = self.task_launch_cmd + ' ' + ' : '.join(cmdlets)
+                    env_update = {'MPI_DSM_CPULIST':':'.join(envlets)}
+                    return cmd, env_update
+                else:
+                    cmd = ' '.join([self.task_launch_cmd, ppn, binary,
+                                    ' '.join(cmd_args)])
+                
+
+                
         #--------------------------------------
         # mpiexec (MPICH variants)
         #--------------------------------------
@@ -368,19 +412,24 @@ class TaskManager(object):
             ppn_flag = '-npernode'
             if smp_node:
                 cmd = ' '.join([self.task_launch_cmd, nproc_flag, str(nproc)])
-            # SIMYAN: added more to iter-specific MPI configuration
             elif self.host == 'iter':
-                cfg_fname = "node_config_" + str(task_id)
+                cfg_fname = ".node_config_" + str(task_id)
                 cfg_fname = os.path.join(working_dir, cfg_fname)
                 cfg_file = open(cfg_fname, 'w')
                 cmd_args = ' '.join(cmd_args)
                 node_command = ' '.join([binary, cmd_args])
-                for node in nodes.split(' ,'):
-                    print >> cfg_file, '%s %s %d: %s' % (node, nproc_flag, ppn, node_command)
+                node_spec = ''
+                if partial_nodes:
+                    for (node, cores) in core_list:
+                        node_spec += ('%s ' % (node)) * len(cores)
+                else:
+                    for node in nodes.split(' ,'):
+                        node_spec += ('%s ' % (node)) * ppn
+                print >> cfg_file, '%s: %s' % (node_spec, node_command)
                 config_option = '-config='+ cfg_fname
                 cmd = ' '.join([self.task_launch_cmd, config_option])
                 self.curr_task_table[task_id]['node_file'] = cfg_fname
-                return cmd
+                return cmd, env_update
             elif accurateNodes: # Need to assign tasks to nodes explicitly
                 host_select = '--host '+ nodes
                 cmd = ' '.join([self.task_launch_cmd, host_select,
@@ -396,16 +445,77 @@ class TaskManager(object):
             nproc_flag = '-n'
             ppn_flag = '-N'
             cpu_assign_flag = '-cc'
-            if accurateNodes:
-                nlist_flag = '-L'
-                cmd = ' '.join([self.task_launch_cmd, nproc_flag, str(nproc), 
-                                ppn_flag, str(ppn), nlist_flag, nodes])
+            by_numanode_flag = '-S'
+            if self.host == 'hopper':
+                num_numanodes = self.resource_mgr.sockets_per_node
+                num_cores = self.resource_mgr.cores_per_node
+                if accurateNodes:
+                    nlist_flag = '-L'
+                    num_nodes = len(nodes)
+                    ppn = int(ceil(float(nproc) / num_nodes))
+                    per_numa = int(ceil(float(ppn) / num_numanodes))
+                    if per_numa == num_cores / num_numanodes:
+                        
+                        cmd = ' '.join([self.task_launch_cmd, 
+                                        nproc_flag, str(nproc), 
+                                        ppn_flag, str(ppn), 
+                                        nlist_flag, nodes])
+                    else:
+                        if num_nodes > 1:
+                            ppn = per_numa * num_numanodes
+                        if nproc < ppn:
+                            ppn = nproc
+                        cmd = ' '.join([self.task_launch_cmd, 
+                                        nproc_flag, str(nproc), 
+                                        ppn_flag, str(ppn), 
+                                        by_numanode_flag, str(per_numa),
+                                        nlist_flag, nodes])
+                else:
+                    num_nodes = int(ceil(float(nproc) / ppn))
+                    ppn = int(ceil(float(nproc) / num_nodes))
+                    per_numa = int(ceil(float(ppn) / num_numanodes))
+                    if per_numa == self.resource_mgr.cores_per_node / self.resource_mgr.sockets_per_node:
+                                    
+                        cmd = ' '.join([self.task_launch_cmd, 
+                                        nproc_flag, str(nproc), 
+                                        ppn_flag, str(ppn)])
+                    else:
+                        if num_nodes > 1:
+                            ppn = per_numa * num_numanodes
+                        if nproc < ppn:
+                            ppn = nproc
+                        cmd = ' '.join([self.task_launch_cmd, 
+                                        nproc_flag, str(nproc), 
+                                        ppn_flag, str(ppn),
+                                        by_numanode_flag, str(per_numa)])
+            else: # self.host == 'franklin'
+                if accurateNodes:
+                    nlist_flag = '-L'
+                    cmd = ' '.join([self.task_launch_cmd, 
+                                    nproc_flag, str(nproc), 
+                                    ppn_flag, str(ppn), 
+                                    nlist_flag, nodes])
+                else:
+                    cmd = ' '.join([self.task_launch_cmd, 
+                                    nproc_flag, str(nproc), 
+                                    cpu_assign_flag,
+                                    '%d-%d' % (max_ppn - 1, max_ppn - int(ppn)), 
+                                    ppn_flag, str(ppn)])
+        #------------------------------------
+        # numactl (single process launcher)
+        #------------------------------------
+        elif self.task_launch_cmd == 'numactl':
+            if accurateNodes and partial_nodes:
+                proc_flag = '--physcpubind='
+                procs = ''
+                for p in core_list:
+                    procs = ','.join([k.split(':')[1] for k in p[1]])
+                proc_flag += procs
             else:
-                cmd = ' '.join([self.task_launch_cmd, 
-                                nproc_flag, str(nproc), 
-                                cpu_assign_flag,
-                                '%d-%d' % (max_ppn - 1, max_ppn - int(ppn)), 
-                                ppn_flag, str(ppn)])
+                self.fwk.warning('numactl needs accurateNodes')
+                proc_flag = ''
+            cmd = ' '.join([self.task_launch_cmd,
+                            proc_flag])
         else:
             self.fwk.exception("invalid task launch command.")
             raise("invalid task launch command.")
@@ -413,7 +523,7 @@ class TaskManager(object):
         cmd_args = ' '.join(cmd_args)
         cmd = ' '.join([cmd, binary, cmd_args])
         
-        return cmd
+        return cmd, env_update
 
     def init_task_pool(self, init_task_msg):
         """
@@ -470,19 +580,25 @@ class TaskManager(object):
             
             if partial_node:
                 nodes = ','.join(nodelist)
-                # SIMYAN: added working_dir
-                cmd = self.build_launch_cmd(nproc, binary, cmd_args, working_dir, ppn,
-                                            max_ppn, nodes, accurateNodes, partial_node,
-                                            task_id, core_list=corelist)
+                (cmd, env_update) = self.build_launch_cmd(nproc, binary,
+                                                          cmd_args,
+                                                          working_dir, ppn,
+                                                          max_ppn, nodes,
+                                                          accurateNodes,
+                                                          partial_node,
+                                                          task_id,
+                                                          core_list=corelist)
             else:
                 if accurateNodes:
                     nodes = ','.join(nodelist)
                 else:
                     nodes = ''
-                # SIMYAN: added working_dir
-                cmd = self.build_launch_cmd(nproc, binary, cmd_args, working_dir,
-                                            ppn, max_ppn,
-                                            nodes, accurateNodes, False, task_id)
+                (cmd, env_update) = self.build_launch_cmd(nproc, binary,
+                                                          cmd_args,
+                                                          working_dir,
+                                                          ppn, max_ppn, nodes,
+                                                          accurateNodes, False,
+                                                          task_id)
             
             self.curr_task_table[task_id] = {'component'  : caller_id,
                                              'status'     : 'init_task',
@@ -490,8 +606,9 @@ class TaskManager(object):
                                              'nproc'      : nproc,
                                              'args'       : cmd_args,
                                              'launch_cmd' : cmd,
+                                             'env_update' : env_update,
                                              'ret_data'   : None}
-            ret_dict[task_name] = (task_id, cmd)
+            ret_dict[task_name] = (task_id, cmd, env_update)
         return ret_dict
 
     def finish_task(self, finish_task_msg):
@@ -506,11 +623,14 @@ class TaskManager(object):
 
         1. *task_data*: return code of task
         """
+        #print "in finish task"
         caller_id = finish_task_msg.sender_id
         task_id = finish_task_msg.args[0]
-        task_data = finish_task_msg.args[1]
-        # SIMYAN: added node_file not used now
-        node_file = self.curr_task_table[task_id]['node_file']
+        task_data = finish_task_msg.args[1] 
+        try: #For node selection file that could be deleted if need be 
+            node_file = self.curr_task_table[task_id]['node_file']
+        except:
+            pass
         try:
             self.resource_mgr.release_allocation(task_id, task_data)
 #            self.curr_task_table[task_id]['status'] = 'finished'

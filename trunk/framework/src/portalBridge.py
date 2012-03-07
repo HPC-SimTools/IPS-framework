@@ -171,16 +171,18 @@ class PortalBridge(Component):
         if (self.runid_url != None):
             try:
 #               raise urllib2.URLError('TEXT')
-                print 'self.runid_url =', str(self.runid_url)
                 f = urllib2.urlopen(self.runid_url)
                 sim_data.portal_runid = f.read().strip()
             except (urllib2.URLError), e :
                 self.services.error('Error obtaining runID from service at %s : %s' % \
                                     (self.runid_url, str(e)))
                 self.services.error('Using a UUID instead')
-
-        self.services.set_config_param('PORTAL_RUNID', sim_data.portal_runid,
+        try:
+            self.services.set_config_param('PORTAL_RUNID', sim_data.portal_runid,
                                        target_sim_name = sim_name)
+        except Exception:
+            self.services.error('Simulation %s is not accessible', sim_name)
+            return
 
         sim_log_dir = os.path.join(sim_data.sim_root, 'simulation_log')
         try:

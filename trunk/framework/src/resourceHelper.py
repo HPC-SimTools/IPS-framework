@@ -37,7 +37,62 @@ def get_qstat_jobinfo():
     else:
         raise
 
-    
+def get_qstat_jobinfo2():
+    """
+    A second way to use ``qstat -f $PBS_JOBID`` to get the number
+    of nodes and ppn of the 
+    allocation.  Typically works on PBS systems.
+    """
+    try:
+        job_id = os.environ['PBS_JOBID']
+    except:
+        raise
+
+    command = 'qstat -f %s' % (job_id)
+    p = subprocess.Popen(command.split(),stdout=subprocess.PIPE)
+    p.wait()
+    if (p.returncode == 0):
+        out = p.stdout.readlines()
+        found_start = False
+        found_end = False
+        lines = ''
+        for l in out:
+            if 'exec_host' in l:
+                found_start = True
+                lines += l.strip()
+            elif 'Hold_Types' in l:
+                found_end = True
+            elif found_start and not found_end:
+                lines += l.strip()
+
+        #print lines
+        lines = lines.split('=')[1].strip()
+        #print lines
+        ppn = 1
+        nodes = []
+        ndata = []
+        for k in lines.split('+'):
+            node_name, procid = k.split('/')
+            if node_name not in nodes:
+                nodes.append(node_name)
+                ndata.append((node_name, [procid]))
+            else:
+                i = nodes.index(node_name)
+                ndata[i][1].append(procid)
+        #print ndata
+        ppn = max([len(p[1]) for p in ndata])
+        #width = [l.strip() for l in out if 'Resource_List.mppwidth' in l]
+        #mpp_npp = [l.strip() for l in out if 'Resource_List.mppnppn' in l]    
+        #num_procs  = int(width[0].split('=')[1])
+        #if len(mpp_npp) > 0:
+        #    ppn = int(mpp_npp[0].split('=')[1])
+        #num_nodes = int(ceil(float(num_procs)/float(ppn)))
+        #return num_nodes, ppn, False, []
+        return len(ndata), ppn, False, ndata
+    else:
+        raise
+
+
 def get_checkjob_info():
     """
     Use ``checkjob $PBS_JOBID`` to get the node names and core counts of 
@@ -227,9 +282,12 @@ def get_pbs_info():
     """
     try:
         node_file = os.environ['PBS_NODEFILE']
+        # core_list is a misnomer, it is a list of (repeated) node names
+        # where the node names are repeated for each process they can service
         core_list = [line.strip() for line in open(node_file, 'r').readlines()]
         node_dict = {}
         for core in core_list:
+            # core is really a node name
             try:
                 node_dict[core] += 1
             except KeyError:
@@ -325,6 +383,9 @@ def getResourceList(services, host, ftb, partial_nodes=False):
     elif node_detect_str == "qstat":
         num_nodes, ppn, mixed_nodes, listOfNodes = get_qstat_jobinfo()
         accurateNodes = False
+    elif node_detect_str == "qstat2":
+        num_nodes, ppn, mixed_nodes, listOfNodes = get_qstat_jobinfo2()
+        accurateNodes = True
     elif node_detect_str == "pbs_env":
         num_nodes, ppn, mixed_nodes, listOfNodes = get_pbs_info()
         if ppn == 0:
@@ -365,7 +426,7 @@ def getResourceList(services, host, ftb, partial_nodes=False):
                         accurateNodes = True
                     except:
                         try:
-                            num_nodes, ppn, mixed_nodes, listOfNodes = manual_detection(services)
+                            num_nodes, ppn, mixed_nodes, listOfNodes = manual_detection()
                             accurateNodes = False
                         except:
                             print "*** NO DETECTION MECHANISM WORKS ***" 
@@ -374,7 +435,7 @@ def getResourceList(services, host, ftb, partial_nodes=False):
     if len(listOfNodes) == 1:
         cpn = ppn
         spn = 1
-        accurateNodes = False
+        #accurateNodes = False
     else:
         cpn = int(services.get_platform_parameter('CORES_PER_NODE'))
         #print "CPNCPNCPN", cpn, ppn
@@ -385,9 +446,10 @@ def getResourceList(services, host, ftb, partial_nodes=False):
         elif cpn < ppn:
             #print "WARNING: cpn (%d) less than ppn (%d), changing ppn to %d" % (cpn, ppn, cpn)
             ppn = cpn
-        for i in range(len(listOfNodes)):
-            name = listOfNodes[i][0]
-            listOfNodes[i] = (name, ppn)
+        if not mixed_nodes:
+            for i in range(len(listOfNodes)):
+                name = listOfNodes[i][0]
+                listOfNodes[i] = (name, ppn)
         if spn <= 0:
             spn = 1
         elif spn > cpn:

@@ -91,6 +91,14 @@ class ResourceManager(object):
         self.node_alloc_mode = self.CM.get_platform_parameter('NODE_ALLOCATION_MODE')
 
         rfile_name = os.path.join(self.CM.sim_map[self.CM.fwk_sim_name].sim_root, "resource_usage")
+        #SIMYAN: try to safely make the directory...
+        try:
+            os.makedirs(self.CM.sim_map[self.CM.fwk_sim_name].sim_root)
+        except OSError, (errno, strerror):
+            if (errno != 17):
+                self.services.exception('Error creating directory %s : %s' ,
+                                        workdir, strerror)
+
         self.reporting_file = open(rfile_name, "w")
 
         #-------------------------------
@@ -121,6 +129,9 @@ class ResourceManager(object):
                 #print "SSSSSSSSSSSSSSSSSS", self.cores_per_node, self.sockets_per_node, self.max_ppn
                 self.fwk.warning('RM: listOfNodes = %s', str(listOfNodes))
                 self.fwk.warning('RM: max_ppn = %d ', int(self.max_ppn))
+                if self.accurateNodes == True and not self.CM.get_platform_parameter('USE_ACCURATE_NODES'):
+                    self.accurateNodes = False
+                    self.fwk.warning('RM: User set accurateNodes to False')
             except Exception, e:
                 print "can't get resource info"
                 raise
@@ -133,14 +144,33 @@ class ResourceManager(object):
                 user_ppn = self.max_ppn
             else:
                 user_ppn = uppn_config
-                self.fwk.debug("user set procs per node: %d", user_ppn)
-                
+
             if user_ppn <= self.max_ppn:
                 self.ppn = user_ppn
+                for i in range(len(listOfNodes)):
+                    (node, count) = listOfNodes[i]
+                    if count > self.ppn:
+                        listOfNodes[i] = (node, self.ppn)
+                self.fwk.warning("Using user set procs per node: %d", user_ppn)
             else:
                 self.fwk.warning("Platform specified  PROCS_PER_NODE is greater than batch job specification.")
                 self.fwk.warning("Will use batch job specification to launch tasks")
                 self.ppn = self.max_ppn
+
+            try:
+                if user_ppn <= self.max_ppn:
+                    self.ppn = user_ppn
+                    for i in range(len(listOfNodes)):
+                        (node, count) = listOfNodes[i]
+                        if count > self.ppn:
+                            listOfNodes[i] = (node, self.ppn)
+                else:
+                    self.fwk.warning("Platform specified  PROCS_PER_NODE is greater than batch job specification.")
+                    self.fwk.warning("Will use batch job specification to launch tasks")
+                    self.ppn = self.max_ppn
+            except:
+                # this stipulation doesn't make sense for explicitly named cores
+                pass
 
             #-----------------------------------
             # set cores/sockets per socket/node
@@ -176,6 +206,7 @@ class ResourceManager(object):
         print >> self.reporting_file, "# host:", self.host
         print >> self.reporting_file, "# total nodes:", self.num_nodes
         print >> self.reporting_file, "# processors per node:", self.ppn
+        print >> self.reporting_file, "using accurate nodes:", self.accurateNodes
         print >> self.reporting_file, "# time (in seconds since the | available | allocated | percent allocated | processes | percent used | notes "
         print >> self.reporting_file, "#   resource manager started |           |           |                   |           |              |"
         print >> self.reporting_file, "#-----------------------------------------------------------------------------------------------------------"
@@ -231,7 +262,10 @@ class ResourceManager(object):
                                           self.cores_per_node, p)})
                 self.num_nodes += 1
                 self.avail_nodes.append(n)
-                tot_cores += p
+                if isinstance(p, int):
+                    tot_cores += p
+                else: # p is a list of core names
+                    tot_cores += len(p)
         """ 
         ### AGS: SC09 demo code, also useful for debugging FT capabilities. 
         if self.FTB and not self.accurateNodes:
@@ -300,8 +334,8 @@ class ResourceManager(object):
             whole_nodes = True
             whole_socks = True
         if len(self.nodes) == 1:
-            if whole_nodes or whole_socks:
-                self.fwk.warning("No whole node or socket allocation available on this platform, sharing nodes instead.")
+#            if whole_nodes or whole_socks:
+#                self.fwk.warning("No whole node or socket allocation available on this platform, sharing nodes instead.")
             whole_nodes = False
             whole_socks = False
 
@@ -384,7 +418,7 @@ class ResourceManager(object):
                         if node.avail_cores > 0:
                             to_alloc = min([ppn, node.avail_cores,
                                            nproc - k])
-                            #print "&&&&& allocate task_id %d node %s %d cores" % (task_id, n, to_alloc)
+                            self.fwk.debug("allocate task_id %d node %s %d cores" % (task_id, n, to_alloc))
                             procs, cores = node.allocate(whole_nodes,
                                                          whole_socks,
                                                          task_id, comp_id,
@@ -533,15 +567,16 @@ class ResourceManager(object):
                     if node.avail_cores >= nproc - k:
                         k = nproc
                         nodes.append(n)
+                        self.fwk.debug("found nodes (%s) and returning" % nodes)
                         return True, nodes
-                    else:
+                    elif node.avail_cores > 0:
                         k += node.avail_cores
                         nodes.append(n)
                 else:
                     if node.avail_cores >= ppn:
                         k += ppn
                         nodes.append(n)
-                    else:
+                    elif node.avail_cores > 0:
                         k += node.avail_cores
                         nodes.append(n)
                 if k >= nproc:

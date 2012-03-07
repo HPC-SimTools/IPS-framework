@@ -137,6 +137,16 @@ class ComponentRegistry(Singleton):
             raise e
         return
 
+    def removeEntry(self, component_id):
+        key = component_id.get_serialization()
+        try:
+            del self.registry[key]
+        except KeyError, e:
+            print 'Error removing component registry entry for ', key, \
+                  ' : ', str(e)
+            raise
+        return
+
     # SIMYAN: this was added to provide an easy way to use the component
     # registry to get a registry entry
     def getEntry(self, component_id):
