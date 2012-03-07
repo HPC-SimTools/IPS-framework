@@ -9,6 +9,13 @@ class HelloDriver(Component):
 
     def init(self, timeStamp=0.0):
         print 'HelloDriver: init'
+        try:
+            worker_comp = self.services.get_port('WORKER')
+        except Exception:
+            self.services.exception('Error accessing worker component')
+            raise
+        self.services.call(worker_comp,'init',0.0)
+        print 'HelloDriver: finished worker init call'
         return
 
     def step(self, timeStamp=0.0):
