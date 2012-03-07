@@ -730,8 +730,7 @@ class Framework(object):
         main_fwk_comp = self.comp_registry.getEntry(fwk_comps[0])
         container_ext = main_fwk_comp.services.get_config_param('CONTAINER_FILE_EXT')
         self.container_file = os.path.basename(self.sim_root) + os.path.extsep + container_ext
-        container_write=zipfile.ZipFile(os.path.abspath(self.container_file),'a')
-        ipsutil.writeToContainer(container_write, self.sim_root, 'checklist.conf') 
+        ipsutil.writeToContainer(self.container_file, self.sim_root, 'checklist.conf') 
         #stop(self.timers['run'])
         #dumpAll()
         self.terminate_sim(Message.SUCCESS)
