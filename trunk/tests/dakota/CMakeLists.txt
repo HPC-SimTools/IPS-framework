@@ -7,7 +7,7 @@
 ######################################################################
 # Variable holding shared data
 set(DATA
-      dakota_test_Rosenbrock.config
+      dakota_test_Rosenbrock.ips
       dakota_test_Rosenbrock.in
 )
 set(SHSCRIPTS

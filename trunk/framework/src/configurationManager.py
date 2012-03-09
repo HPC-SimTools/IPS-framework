@@ -287,6 +287,7 @@ class ConfigurationManager(object):
                 else:
                    conf_list=[self.platform_file,conf_file]
                 conf_tuple=tuple(conf_list)
+                #print 'conf_tuple = ', conf_tuple
                 conf = ConfigObj(conf_tuple, interpolation='template',
                                  file_error=True)
             except IOError, (ex):
