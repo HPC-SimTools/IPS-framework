@@ -432,31 +432,23 @@ def getResourceList(services, host, ftb, partial_nodes=False):
                             print "*** NO DETECTION MECHANISM WORKS ***" 
                             raise
     # detect topology
-    if len(listOfNodes) == 1:
+    cpn = int(services.get_platform_parameter('CORES_PER_NODE'))
+    spn = int(services.get_platform_parameter('SOCKETS_PER_NODE'))
+    if cpn <= 0:
         cpn = ppn
-        spn = 1
-        #accurateNodes = False
-    else:
-        cpn = int(services.get_platform_parameter('CORES_PER_NODE'))
-        #print "CPNCPNCPN", cpn, ppn
-        spn = int(services.get_platform_parameter('SOCKETS_PER_NODE'))
-        if cpn <= 0:
-            cpn = ppn
-            #print "CPNCPNCPN", cpn
-        elif cpn < ppn:
-            #print "WARNING: cpn (%d) less than ppn (%d), changing ppn to %d" % (cpn, ppn, cpn)
-            ppn = cpn
+    elif cpn < ppn:
+        ppn = cpn
         if not mixed_nodes:
             for i in range(len(listOfNodes)):
                 name = listOfNodes[i][0]
                 listOfNodes[i] = (name, ppn)
-        if spn <= 0:
-            spn = 1
-        elif spn > cpn:
-            raise InvalidResourceSettingsException("spn > cpn", spn, cpn)
-        elif cpn % spn != 0:
-            raise InvalidResourceSettingsException("spn not divisible by cpn", spn, cpn)
-
+    if spn <= 0:
+        spn = 1
+    elif spn > cpn:
+        raise InvalidResourceSettingsException("spn > cpn", spn, cpn)
+    elif cpn % spn != 0:
+        raise InvalidResourceSettingsException("spn not divisible by cpn", spn, cpn)
+    
         
     """
     ### AGS: SC09 demo code, also useful for debugging FT capabilities. 
