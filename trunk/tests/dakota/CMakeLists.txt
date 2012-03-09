@@ -5,15 +5,17 @@
 # $Id:$
 #
 ######################################################################
-
 # Variable holding shared data
 set(DATA
-      hello_world.ips
-)
-set(PYSCRIPTS
-      hello_driver.py hello_worker.py hello_worker_task_pool.py 
+      dakota_test_Rosenbrock.config
+      dakota_test_Rosenbrock.in
 )
 set(SHSCRIPTS
       test_ips.sh
 )
+set(PYSCRIPTS
+      dakota_test_Rosenbrock.py
+)
 include(${CMAKE_SOURCE_DIR}/tests/CmakeTests.cmake)
+
+
