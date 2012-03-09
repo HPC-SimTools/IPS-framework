@@ -10,8 +10,7 @@ set(DATA
       basic_serial1.ips 
 )
 set(PYSCRIPTS
-      test_ips.py 
-      test_parameterized_cases.py test_permutations.py
+      test_ips.py test_parameterized_cases.py test_permutations.py
 )
 set(SHSCRIPTS
       test_ips.sh
