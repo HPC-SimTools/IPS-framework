@@ -3,6 +3,8 @@
 import os
 import sys
 import getopt
+import platform
+import inspect
 from configobj import ConfigObj
 import subprocess
 import tempfile
@@ -11,7 +13,7 @@ import time
 from multiprocessing.connection import Client
 
 
-def which(program):
+def which(program, alt_paths=None):
     def is_exe(fpath):
         return os.path.exists(fpath) and os.access(fpath, os.X_OK)
 
@@ -24,6 +26,13 @@ def which(program):
             exe_file = os.path.join(path, program)
             if is_exe(exe_file):
                 return exe_file
+
+        # Trust locations in platform file over those in environment path
+        if alt_paths:
+            for path in alt_paths:
+                exe_file = os.path.join(path, program)
+                if is_exe(exe_file):
+                    return exe_file
 
     return None
 
@@ -42,6 +51,8 @@ class DakotaDynamic(object):
         self.master_conf = ConfigObj()
         
     def run(self):
+        alt_paths = []
+
         """
         Dakota Configuration
         Control variables expected in the format COMPONENT__VARIABLE (two _)
@@ -51,6 +62,35 @@ class DakotaDynamic(object):
         except:
             raise
         
+        """
+        Platform Configuration
+        """
+        # parse file
+        try:
+            current_dir = inspect.getfile(inspect.currentframe())
+            (self.platform_fname, self.ipsShareDir) = \
+                                  platform.get_share_and_platform(self.platform_fname,
+                                                                  current_dir)
+
+            if self.ipsShareDir:
+                if os.path.exists(os.path.join(self.ipsShareDir,'component-generic.conf')):
+                    comp_conf_file = os.path.join(self.ipsShareDir,'component-generic.conf')
+                    conf_list=[self.platform_fname,comp_conf_file]
+                else:
+                    conf_list=[self.platform_fname]
+
+            conf_tuple=tuple(conf_list)
+
+            self.platform_conf=ConfigObj(conf_tuple, interpolation='template',
+                                 file_error=True)
+
+            alt_paths.append(self.platform_conf['IPS_ROOT'])
+            alt_paths.append(os.path.join(self.platform_conf['IPS_ROOT'],'framework/src'))
+        except IOError, (ex):
+            raise
+        except SyntaxError, (ex):
+            raise
+
         new_dakota_config = self.dakota_cfg+'.resolved'
         comp_vars = {}
 #        print self.dakota_conf
@@ -73,7 +113,7 @@ class DakotaDynamic(object):
                 raw_prog = line.split('=')[1]
                 prog = raw_prog.strip(' "\'')
 #                print raw_prog, prog
-                exec_prog = which(prog)
+                exec_prog = which(prog, alt_paths)
                 if not exec_prog:
                     raise Exception('Error: analysis driver %s not found in path' % prog)
                 line.replace(prog, exec_prog)
@@ -88,17 +128,7 @@ class DakotaDynamic(object):
                 else:
                     print 'Missing evaluation_concurrency spec, using default value of %d' % (self.batch_size)
         
-        """
-        Platform Configuration
-        """
-        # parse file
-        try:
-            self.platform_conf=ConfigObj(self.platform_fname, interpolation='template',
-                                 file_error=True)
-        except IOError, (ex):
-            raise
-        except SyntaxError, (ex):
-            raise
+
         
         """
         Master Config file
@@ -122,11 +152,11 @@ class DakotaDynamic(object):
         driver_conf['SUB_CLASS'] = 'BRIDGE'
         driver_conf['NAME'] = 'Driver'
         driver_conf['NPROC'] = 1
-        driver_conf['BIN_PATH'] = os.path.join(self.template_conf['IPS_ROOT'], 'bin')
+        driver_conf['BIN_PATH'] = os.path.join(self.template_conf['IPS_ROOT'], 'framework', 'src')
         driver_conf['INPUT_DIR'] = '/dev/null'
         driver_conf['INPUT_FILES'] = ''
         driver_conf['OUTPUT_FILES'] = ''
-        driver_conf['SCRIPT'] = os.path.join(self.template_conf['IPS_ROOT'], 'bin', 'dakota_bridge.py')
+        driver_conf['SCRIPT'] = os.path.join(self.template_conf['IPS_ROOT'], 'framework', 'src', 'dakota_bridge.py')
         self.master_conf['DAKOTA_BRIDGE'] = driver_conf
         
         for (comp, val) in comp_vars.iteritems():
@@ -151,6 +181,7 @@ class DakotaDynamic(object):
                     dummy = v.keys()
                 except:
                     self.master_conf[k] = v
+
         self.master_conf.filename = os.path.join(sim_root, 'dakota_bridge_%d.conf' % (os.getpid()))
         self.master_conf.write()
                 
@@ -166,11 +197,11 @@ class DakotaDynamic(object):
         [fd.write('%s\n'%(l)) for l in self.dakota_conf]
         fd.close()
         
-        ips = which('ips')
+        ips = which('ips.py', alt_paths)
         if (not ips):
             raise Exception('Error: ips not found in path.')
         
-        cmd = '%s --config=%s --platform=%s --verbose' % (ips, self.master_conf.filename, 
+        cmd = '%s --all --simulation=%s --platform=%s --verbose' % (ips, self.master_conf.filename, 
                                                  os.environ['IPS_DAKOTA_platform'])
         if (self.log_file):
             cmd += ' --log=' + self.log_file
@@ -237,7 +268,7 @@ class DakotaDynamic(object):
         return 
         
 def printUsageMessage():
-    print 'Usage: ips_dakota_dynamic --dakotaconfig= DAKOTA_CONFIG_FILE --config=CONFIG_FILE_NAME --platform=PLATFORM_FILE_NAME --log=LOG_FILE_NAME [--debug]'
+    print 'Usage: ips_dakota_dynamic --dakotaconfig=DAKOTA_CONFIG_FILE --simulation=CONFIG_FILE_NAME --platform=PLATFORM_FILE_NAME --log=LOG_FILE_NAME [--debug]'
 
 def main(argv=None):
 #    print "hello from main"
@@ -254,7 +285,7 @@ def main(argv=None):
 
     try:
         opts, args = getopt.gnu_getopt(argv[first_arg:], '',
-                                       ["dakotaconfig=", "config=", "platform=", "log=", "debug"])
+                                       ["dakotaconfig=", "simulation=", "platform=", "log=", "debug"])
     except getopt.error, msg:
         print 'Invalid command line arguments', msg
         printUsageMessage()
@@ -264,7 +295,7 @@ def main(argv=None):
     dakota_cfg = None
     platform_filename = None
     for arg, value in opts:
-        if (arg == '--config'):
+        if (arg == '--simulation'):
             ips_config_file =value
         elif (arg == '--log'):
             log_file_name = value
@@ -276,7 +307,7 @@ def main(argv=None):
             debug = True
 
 
-    if (not ips_config_file or not platform_filename or not dakota_cfg):
+    if (not ips_config_file or not dakota_cfg):
         printUsageMessage()
         return 1
     try:

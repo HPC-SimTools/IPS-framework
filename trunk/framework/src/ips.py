@@ -56,12 +56,13 @@ import socket
 import getopt
 import time
 import logging
-import inspect
 import optparse
 import multiprocessing
+import platform
 import shutil
 import ipsutil
 import zipfile
+import inspect
 from messages import Message, ServiceRequestMessage, \
                     ServiceResponseMessage, MethodInvokeMessage
 from configurationManager import ConfigurationManager
@@ -184,45 +185,32 @@ class Framework(object):
         # SIMYAN: Complicated here to allow for a generalization of previous 
         # functionality and to enable the automatic finding of the files
         self.compset_list=None
-        if (platform_file_name):
-            self.platform_file_name = platform_file_name
-        else:
-            ipsPathName=inspect.getfile(inspect.currentframe())
-            ipsDir=os.path.dirname(ipsPathName)
-            ipsPDir0=os.path.dirname(ipsPathName)
-            ipsPDir1=os.path.dirname(ipsPDir0)
-            ipsPDir2=os.path.dirname(ipsPDir1)
-            # This is if we've installed it
-            pconf=os.path.join('share','platform.conf')
-            if os.path.exists(os.path.join(ipsPDir1,pconf)):
-                ipsShareDir=os.path.join(ipsPDir1,'share')
-            # This is looking in the build directory.
-            elif os.path.exists(os.path.join(ipsPDir2,pconf)):
-                ipsShareDir=os.path.join(ipsPDir2,'share')
-            else:
-               print "Need to specify a platform file"
-               sys.exit(Message.FAILURE)
-            self.platform_file_name=os.path.join(ipsShareDir,'platform.conf')
-            self.platform_file_name=os.path.abspath(self.platform_file_name)
-            checked_compset_list=[]
-            if compset_list:
-              for cname in compset_list:
+
+        current_dir = inspect.getfile(inspect.currentframe())
+        (self.platform_file_name, self.ipsShareDir) = \
+                        platform.get_share_and_platform(platform_file_name, 
+                                                        current_dir)
+
+        checked_compset_list=[]
+        #if not self.ipsShareDir == '':
+        if compset_list:
+            for cname in compset_list:
                 cfile='component-'+cname+'.conf'
-                fullcfile=os.path.join(ipsShareDir,cfile)
+                fullcfile=os.path.join(self.ipsShareDir,cfile)
                 if os.path.exists(fullcfile):
                     checked_compset_list.append(fullcfile)
-              if len(checked_compset_list):
+            if len(checked_compset_list):
                 print "Cannot find specified component configuration files."
                 print "  Assuming that variables are defined anyway"
-              else:
+            else:
                 self.compset_list=checked_compset_list
-            else: 
-                if os.path.exists(os.path.join(ipsShareDir,'component-generic.conf')):
-                  checked_compset_list.append(os.path.join(ipsShareDir,'component-generic.conf'))
-                  self.compset_list=checked_compset_list
-                else:
-                  print "Cannot find any component configuration files."
-                  print "  Assuming that variables are defined anyway"
+        else: 
+            if os.path.exists(os.path.join(self.ipsShareDir,'component-generic.conf')):
+                checked_compset_list.append(os.path.join(self.ipsShareDir,'component-generic.conf'))
+                self.compset_list=checked_compset_list
+            else:
+                print "Cannot find any component configuration files."
+                print "  Assuming that variables are defined anyway"
 
         # config file list
         self.config_file_list = config_file_list
@@ -1017,6 +1005,8 @@ def main(argv=None):
                       help='Run the setup (init of the driver)')
     parser.add_option('-r','--run',dest='do_run', action='store_true',
                       help='Run')
+    parser.add_option('-a','--all',dest='do_all', action='store_true',
+                      help='Do all steps of the workflow')
 
     # SIMYAN: parse the options from command line
     options, args = parser.parse_args()
@@ -1171,6 +1161,11 @@ def main(argv=None):
     compset_list = []
     if options.component:
         compset_list=options.component
+
+    if options.do_all:
+        options.do_create_runspace = True
+        options.do_run_setup = True
+        options.do_run = True
 
     try:
         # SIMYAN: added logic to handle multiple runs in sequence

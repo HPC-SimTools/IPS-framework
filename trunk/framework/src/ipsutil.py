@@ -20,15 +20,18 @@ def copyFiles(src_dir, src_file_list, target_dir, prefix='', keep_old = False):
     
     globbed_file_list=[]
     for src_file in file_list:
-        src_file_full = os.path.join(src_dir, src_file)
-        if os.path.isfile(src_file_full):
-            globbed_file_list += [src_file_full]
-        else:
-            globbed_files = glob.glob(src_file_full)
-            if (len(globbed_files) > 0):
-                globbed_file_list += globbed_files
+
+        if not target_dir == src_dir:
+            src_file_full = os.path.join(src_dir, src_file)
+
+            if os.path.isfile(src_file_full):
+                globbed_file_list += [src_file_full]
             else:
-                raise Exception('No such file : %s' %(src_file_full))
+                globbed_files = glob.glob(src_file_full)
+                if (len(globbed_files) > 0):
+                    globbed_file_list += globbed_files
+                else:
+                    raise Exception('No such file : %s' %(src_file_full))
         
     #------------------------------------------------------------------#
     #  for each file in globbed_file_list, copy it from src_dir to target_dir #

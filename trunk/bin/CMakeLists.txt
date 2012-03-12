@@ -1,5 +1,5 @@
 # Variable holding executable scripts
-set(SCRIPTS
+set(PYSCRIPTS
       fcContainerize.py
 )
 
