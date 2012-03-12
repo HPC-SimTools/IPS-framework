@@ -348,7 +348,9 @@ class ConfigurationManager(object):
             # SIMYAN allow for a container file with default .zip extension
             self.container_ext = 'zip'
             if conf.has_key('CONTAINER_FILE_EXT'):
-              self.container_ext = conf['CONTAINER_FILE_EXT']
+                self.container_ext = conf['CONTAINER_FILE_EXT']
+            else:
+                conf['CONTAINER_FILE_EXT'] = self.container_ext
 
             if (sim_name in sim_name_list):
                 self.fwk.exception('Error: Duplicate SIM_NAME in configuration files')
