@@ -79,10 +79,12 @@ class DakotaDynamic(object):
                 else:
                     conf_list=[self.platform_fname]
 
-            conf_tuple=tuple(conf_list)
-
-            self.platform_conf=ConfigObj(conf_tuple, interpolation='template',
-                                 file_error=True)
+                conf_tuple=tuple(conf_list)
+                self.platform_conf=ConfigObj(conf_tuple, interpolation='template',
+                                     file_error=True)
+            else:
+                self.platform_conf=ConfigObj(self.platform_fname, interpolation='template',
+                                     file_error=True)
 
             alt_paths.append(self.platform_conf['IPS_ROOT'])
             alt_paths.append(os.path.join(self.platform_conf['IPS_ROOT'],'framework/src'))
