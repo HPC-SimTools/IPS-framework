@@ -1,5 +1,5 @@
 
 source ../frameworkpath.py
 
-${fsrc}/ips.py --create-runspace --run-setup --run --simulation=dakota_test_Rosenbrock.ips
+${fsrc}/ips_dakota_dynamic.py --dakotaconfig=dakota_test_Rosenbrock.in --simulation=dakota_test_Rosenbrock.ips
 

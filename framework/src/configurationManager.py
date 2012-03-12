@@ -255,25 +255,26 @@ class ConfigurationManager(object):
         """
         # parse file
         self.compset_conf=[]
-        for csfile in self.compset_list:
-          try:
-              #DBG print csfile
-              csconf = ConfigObj(csfile, interpolation='template', file_error=True)
-          except IOError, (ex):
-              self.fwk.exception('Error opening config file: %s', csfile)
-              raise
-          except SyntaxError, (ex):
-              self.fwk.exception('Error parsing config file: %s', csfile)
-              raise
-          # get mandatory values
-          for kw in self.compset_keywords:
-              try:
-                  val = csconf[kw]
-              except KeyError, ex:
-                  self.fwk.exception('Missing required parameter %s in %s config file',
-                                     kw, csfile)
-                  raise
-          self.compset_conf.append(csconf)
+        if self.compset_list:
+            for csfile in self.compset_list:
+                try:
+                    #DBG print csfile
+                    csconf = ConfigObj(csfile, interpolation='template', file_error=True)
+                except IOError, (ex):
+                    self.fwk.exception('Error opening config file: %s', csfile)
+                    raise
+                except SyntaxError, (ex):
+                    self.fwk.exception('Error parsing config file: %s', csfile)
+                    raise
+                # get mandatory values
+                for kw in self.compset_keywords:
+                    try:
+                        val = csconf[kw]
+                    except KeyError, ex:
+                        self.fwk.exception('Missing required parameter %s in %s config file',
+                                           kw, csfile)
+                        raise
+                self.compset_conf.append(csconf)
  
         """
         Simulation Configuration
@@ -282,23 +283,39 @@ class ConfigurationManager(object):
             try:
                 # SIMYAN: logic to handle merging component & simulation conf 
                 # files while maintaining backwards compatibility
+                """
                 if self.compset_list:
-                   conf_list=[self.platform_file]+self.compset_list+[conf_file]
+                    conf_list=[self.platform_file]+self.compset_list+[conf_file]
                 else:
-                   conf_list=[self.platform_file,conf_file]
+                    conf_list=[self.platform_file,conf_file]
+                print conf_list
                 conf_tuple=tuple(conf_list)
                 #print 'conf_tuple = ', conf_tuple
                 conf = ConfigObj(conf_tuple, interpolation='template',
                                  file_error=True)
+                """
+                if self.compset_list:
+                    conf_list=self.compset_list+[conf_file]
+                else:
+                    conf_list=[conf_file]
+                conf = ConfigObj(self.platform_file, interpolation='template',
+                                 file_error=True)
+                for file in conf_list:
+                    add = ConfigObj(file, interpolation='template',
+                                    file_error=True)
+                    conf.merge(add)
             except IOError, (ex):
                 self.fwk.exception('Error opening config file %s: ', conf_file)
                 #pytau.stop(self.timers['initialize'])
                 #stop(self.timers['initialize'])
                 raise
             except SyntaxError, (ex):
-                self.fwk.exception(' Error parsing config file %s: ', conf_file)
+                self.fwk.exception('Error parsing config file %s: ', conf_file)
                 #pytau.stop(self.timers['initialize'])
                 #stop(self.timers['initialize'])
+                raise
+            except Exception, (ex):
+                self.fwk.exception('Error(s) during parsing of supplied config file %s: ', conf_file)
                 raise
             # Allow propagation of entries from platform config file to simulation
             # config file
