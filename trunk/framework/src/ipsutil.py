@@ -80,11 +80,17 @@ def writeToContainer(ziphandle, src_dir, src_file_list):
     #print 'src_file_list = ', src_file_list
     #print 'ziphandle = ', ziphandle
     #print 'os.path.exists(ziphandle) = ', os.path.exists(ziphandle)
-    if os.path.exists(ziphandle):
-        zin = zipfile.ZipFile(ziphandle,'r')
-        zout = zipfile.ZipFile('temp.ctz','a')
-    else:
-        #print 'so it is None'
+    try:
+        if os.path.exists(ziphandle):
+            zin = zipfile.ZipFile(ziphandle,'r')
+            zout = zipfile.ZipFile('temp.ctz','a')
+        else:
+            #print 'so it is None'
+            zin = None
+            zout = zipfile.ZipFile(ziphandle,'a')
+    except zipfile.BadZipfile, (ex):
+        print 'Found a bad container file, removing...'
+        os.remove(ziphandle)
         zin = None
         zout = zipfile.ZipFile(ziphandle,'a')
 
@@ -93,9 +99,15 @@ def writeToContainer(ziphandle, src_dir, src_file_list):
         for file in file_list:
             sfile=os.path.join(src_dir,file)
             if os.path.exists(sfile):
-                shutil.copy(sfile, file)
-                zout.write(file)
-                os.remove(file)
+                #print 'srcdir has'
+                #print 'sfile =', sfile
+                #print 'file =', file
+                if not os.path.exists(file):
+                    shutil.copy(sfile, file)
+                    zout.write(file)
+                    os.remove(file)
+                else:
+                    zout.write(file)
             else:
                 raise Exception('No such file : %s in directory %s', file, src_dir)
     else:
@@ -105,9 +117,15 @@ def writeToContainer(ziphandle, src_dir, src_file_list):
                 if os.path.dirname(file):
                     absfile=os.path.abspath(file)
                     (sdir, sfile) = os.path.split(absfile)
-                    shutil.copy(absfile, sfile)
-                    zout.write(sfile)
-                    os.remove(sfile)
+                    #print 'srcdir has not'
+                    #print 'absfile =', absfile
+                    #print 'sfile =', sfile
+                    if not os.path.exists(sfile):
+                        shutil.copy(absfile, sfile)
+                        zout.write(sfile)
+                        os.remove(sfile)
+                    else:
+                        zout.write(sfile)
                 else:
                     zout.write(file)
             else:
