@@ -142,9 +142,9 @@ class DakotaDynamic(object):
             raise
         except SyntaxError, (ex):
             raise
-#        for k in self.platform_conf.keys():
-#            if k not in self.template_conf.keys():
-#                self.template_conf[k] = self.platform_conf[k]
+        for k in self.platform_conf.keys():
+            if k not in self.template_conf.keys():
+                self.template_conf[k] = self.platform_conf[k]
                 
         self.master_conf['PORTS'] = {'NAMES' : 'DRIVER'}
         self.master_conf['PORTS']['DRIVER'] = {'IMPLEMENTATION': 'DAKOTA_BRIDGE'}
@@ -154,11 +154,11 @@ class DakotaDynamic(object):
         driver_conf['SUB_CLASS'] = 'BRIDGE'
         driver_conf['NAME'] = 'Driver'
         driver_conf['NPROC'] = 1
-        driver_conf['BIN_PATH'] = os.path.join(self.platform_conf['IPS_ROOT'], 'framework', 'src')
+        driver_conf['BIN_PATH'] = os.path.join(self.template_conf['IPS_ROOT'], 'framework', 'src')
         driver_conf['INPUT_DIR'] = '/dev/null'
         driver_conf['INPUT_FILES'] = ''
         driver_conf['OUTPUT_FILES'] = ''
-        driver_conf['SCRIPT'] = os.path.join(self.platform_conf['IPS_ROOT'], 'framework', 'src', 'dakota_bridge.py')
+        driver_conf['SCRIPT'] = os.path.join(self.template_conf['IPS_ROOT'], 'framework', 'src', 'dakota_bridge.py')
         self.master_conf['DAKOTA_BRIDGE'] = driver_conf
         
         for (comp, val) in comp_vars.iteritems():
@@ -184,7 +184,8 @@ class DakotaDynamic(object):
                 except:
                     self.master_conf[k] = v
 
-        self.master_conf.filename = os.path.join(sim_root, 'dakota_bridge_%d.conf' % (os.getpid()))
+        #self.master_conf.filename = os.path.join(sim_root, 'dakota_bridge_%d.conf' % (os.getpid()))
+        self.master_conf.filename = os.path.join(sim_root, 'dakota_bridge_opt.conf')
         self.master_conf.write()
                 
         

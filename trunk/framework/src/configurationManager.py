@@ -285,10 +285,10 @@ class ConfigurationManager(object):
                 # files while maintaining backwards compatibility
 #               """
                 if self.compset_list:
-                    conf_list=[self.platform_file]+self.compset_list+[conf_file]
+                    conf_list=self.compset_list+[conf_file]
                 else:
-                    conf_list=[self.platform_file,conf_file]
-                print conf_list
+                    conf_list=[conf_file]
+                #print conf_list
                 conf_tuple=tuple(conf_list)
                 #print 'conf_tuple = ', conf_tuple
                 conf = ConfigObj(conf_tuple, interpolation='template',
