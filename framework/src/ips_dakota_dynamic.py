@@ -184,8 +184,7 @@ class DakotaDynamic(object):
                 except:
                     self.master_conf[k] = v
 
-        #self.master_conf.filename = os.path.join(sim_root, 'dakota_bridge_%d.conf' % (os.getpid()))
-        self.master_conf.filename = os.path.join(sim_root, 'dakota_bridge_opt.conf')
+        self.master_conf.filename = os.path.join(sim_root, 'dakota_bridge_%d.conf' % (os.getpid()))
         self.master_conf.write()
                 
         
