@@ -69,6 +69,7 @@ class Driver(Component):
         last_simend_time = time.time()
         first_sim = True
 
+        summary_file = None
         failed_connections = 0
         while True:
             (ready_r, ready_w, ready_x) = select.select([sock_fileno], [], [], time_out)
@@ -123,6 +124,7 @@ class Driver(Component):
                 if status == 'START':
                     continue
                 else:
+                    print 'Received status =', status, 'returning from dakota_bridge.'
                     break
             instance_id =  '%s_%04d' % (dakota_runid, idx)
             file_name = os.path.join(self.sim_root, 'simulation_%s.conf' % (instance_id))
@@ -163,7 +165,8 @@ class Driver(Component):
             idx += 1
 
         listener.close()
-        summary_file.close()
+        if not summary_file == None:
+            summary_file.close()
         return
 
     def finalize(self, timestamp = 0):
