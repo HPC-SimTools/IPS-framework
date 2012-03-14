@@ -171,7 +171,7 @@ class PortalBridge(Component):
         if (self.runid_url != None):
             try:
 #               raise urllib2.URLError('TEXT')
-                f = urllib2.urlopen(self.runid_url)
+                f = urllib2.urlopen(self.runid_url, None, 10)
                 sim_data.portal_runid = f.read().strip()
             except (urllib2.URLError), e :
                 self.services.error('Error obtaining runID from service at %s : %s' % \

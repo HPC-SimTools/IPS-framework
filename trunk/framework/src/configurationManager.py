@@ -283,7 +283,7 @@ class ConfigurationManager(object):
             try:
                 # SIMYAN: logic to handle merging component & simulation conf 
                 # files while maintaining backwards compatibility
-                """
+#               """
                 if self.compset_list:
                     conf_list=[self.platform_file]+self.compset_list+[conf_file]
                 else:
@@ -304,6 +304,7 @@ class ConfigurationManager(object):
                     add = ConfigObj(file, interpolation='template',
                                     file_error=True)
                     conf.merge(add)
+                """
             except IOError, (ex):
                 self.fwk.exception('Error opening config file %s: ', conf_file)
                 #pytau.stop(self.timers['initialize'])
