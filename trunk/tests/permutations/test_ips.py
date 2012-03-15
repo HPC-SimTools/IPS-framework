@@ -56,11 +56,11 @@ class testIPS(unittest.TestCase):
 
         log_file = 'log_test_basic_serial1.log'
         param = self.Parameterization()
-        param.do_create_runspace = True
+        param.do_create_runspace = False
         param.do_run_setup = False
-        param.do_run = True
-        param.create_runspace_done = False
-        param.run_setup_done = False
+        param.do_run = False
+        param.create_runspace_done = True
+        param.run_setup_done = True
         param.run_done = True
         param.cfgFile_list = cfgFile_list
         param.log_file = log_file

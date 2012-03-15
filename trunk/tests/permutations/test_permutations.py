@@ -102,6 +102,7 @@ class test_permutations(ParameterizedTestCase):
 #       self.assertTrue(self.fwk.run(), 'error in running fwk')
         self.assertEquals(subprocess.call(call_args), 0, 'error in running IPS')
 
+        """
         # set correct result of CREATE_RUNSPACE parameterization
         if self.param.do_create_runspace or self.param.create_runspace_done:
             self.create_runspace_result = 'DONE'
@@ -113,6 +114,8 @@ class test_permutations(ParameterizedTestCase):
             self.run_setup_result = 'DONE'
         elif self.param.run_setup_done and self.param.create_runspace_done:
             self.run_setup_result = 'DONE'
+        elif self.param.run_setup_done and not self.param.do_create_runspace:
+            self.run_setup_result = 'DONE'
         else:
             self.run_setup_result = 'NOT_DONE'
             
@@ -120,6 +123,36 @@ class test_permutations(ParameterizedTestCase):
         if self.param.do_run and self.run_setup_result == 'DONE':
             self.run_result = 'DONE'
         elif not self.param.do_run and self.param.run_done:
+            self.run_result = 'NOT_DONE'
+        else:
+            self.run_result = 'NOT_DONE'
+        """
+        # If you create a runspace, it doesn't matter what was in the 
+        # directory before it's now invalidated...
+        if self.param.do_create_runspace:
+            self.param.run_setup_done = False
+            self.param.run_done = False
+
+        # If you do run setup over a previous run, it invalidates the
+        # run results because the inputs and outputs don't match now...
+        if self.param.do_run_setup:
+            self.param.run_done = False
+
+        if self.param.do_create_runspace or self.param.create_runspace_done:
+            self.create_runspace_result = 'DONE'
+        else:
+            self.create_runspace_result = 'NOT_DONE'
+
+        if (self.param.do_run_setup or self.param.run_setup_done) and \
+                    self.create_runspace_result == 'DONE':
+            self.run_setup_result = 'DONE'
+        else:
+            self.run_setup_result = 'NOT_DONE'
+
+        #  ((       T          or           F        ) and          F           ) and           T
+        if ((self.param.do_run or self.param.run_done) and \
+                    self.run_setup_result == 'DONE') and \
+                    self.create_runspace_result == 'DONE':
             self.run_result = 'DONE'
         else:
             self.run_result = 'NOT_DONE'
