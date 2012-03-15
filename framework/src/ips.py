@@ -621,6 +621,8 @@ class Framework(object):
                 elif self.ips_status['RUN'] and self.ips_dosteps['RUN_SETUP']:
                     self.ips_status['RUN'] = False
                     print 'RUN was not requested, but had been performed.'
+                elif not self.ips_dosteps['RUN'] and self.ips_status['RUN'] and self.ips_status['RUN_SETUP']:
+                    print 'RUN was not requested, but had been performed.'
                 else:
                     self.ips_status['RUN'] = False
 
