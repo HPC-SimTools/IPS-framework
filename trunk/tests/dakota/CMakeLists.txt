@@ -9,9 +9,11 @@
 set(DATA
       dakota_test_Rosenbrock.ips
       dakota_test_Rosenbrock.in
+      workstation.conf
 )
 set(SHSCRIPTS
-      test_ips.sh
+      test_ips_without_platform.sh
+      test_ips_with_platform.sh
 )
 set(PYSCRIPTS
       dakota_test_Rosenbrock.py

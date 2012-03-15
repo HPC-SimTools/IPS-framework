@@ -49,10 +49,20 @@ class test_permutations(ParameterizedTestCase):
             return
         # create the checklist.conf that Framework will use
 #       checklist_file_name = os.path.join(self.fwk.sim_root, 'checklist.conf')
+
+
         sim_conf = ConfigObj(self.param.cfgFile_list[0], interpolation='template',
                          file_error=True)
+
+        # try making the simulation root directory
+        try: 
+            os.makedirs(sim_conf['SIM_ROOT'])
+        except OSError, (errno, strerror):
+            if (errno != 17):
+                self.services.exception('Error creating directory %s : %s' ,
+                                        workdir, strerror)
+
         checklist_file_name = os.path.join(sim_conf['SIM_ROOT'], 'checklist.conf')
-#       checklist_file_name = os.path.join('/Users/dx4/all_runs/test_basic_serial1_0/', 'checklist.conf')
         checklist_file = open(checklist_file_name, 'w')
         if self.param.create_runspace_done:
             checklist_file.write('CREATE_RUNSPACE = DONE\n')

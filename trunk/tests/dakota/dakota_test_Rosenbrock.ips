@@ -9,7 +9,7 @@ TOKAMAK_ID = TEST
 SHOT_NUMBER = 1                  # Numerical identifier for specific case
 
 SIM_NAME = ${RUN_ID}_${TOKAMAK_ID}_${SHOT_NUMBER}  # Name of current simulation
-SIM_ROOT = ${SIM_NAME}                   # Where to put results from this simulation
+SIM_ROOT = $IPS_ROOT/${SIM_NAME}                   # Where to put results from this simulation
 
 LOG_FILE = $SIM_ROOT/${RUN_ID}.log
 LOG_LEVEL = DEBUG
