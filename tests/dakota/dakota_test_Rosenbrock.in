@@ -23,7 +23,7 @@ variables,
 
 interface,
 	fork asynchronous evaluation_concurrency = 10, file_tag, file_save	
-	  analysis_driver = 'ips_dakota_client.py'
+	  analysis_driver = '../../framework/src/ips_dakota_client.py'
 	  parameters_file = 'params.in'		
 	  results_file    = 'results.out'	
 

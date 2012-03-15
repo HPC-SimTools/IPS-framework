@@ -56,7 +56,7 @@ class Driver(Component):
         
         sim_config_files = []
         idx = 0
-        print '%s  About to Creat Listener %s' % (time.strftime("%b %d %Y %H:%M:%S", time.localtime()), str(self.socket_address))
+        print '%s  About to Create Listener %s' % (time.strftime("%b %d %Y %H:%M:%S", time.localtime()), str(self.socket_address))
         sys.stdout.flush()
         listener = Listener(str(self.socket_address), 'AF_UNIX')
         self.services.warning('Created listener %s', str(self.socket_address))
@@ -124,7 +124,8 @@ class Driver(Component):
                 if status == 'START':
                     continue
                 else:
-                    print 'Received status =', status, 'returning from dakota_bridge.'
+                    print '%s ' % (time.strftime("%b %d %Y %H:%M:%S", time.localtime())),
+                    print 'Received status = '+status+', returning from dakota_bridge.'
                     break
             instance_id =  '%s_%04d' % (dakota_runid, idx)
             file_name = os.path.join(self.sim_root, 'simulation_%s.conf' % (instance_id))

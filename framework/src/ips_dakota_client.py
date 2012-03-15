@@ -39,6 +39,7 @@ class IPSDakotaClient(object):
         """
         # parse file
         try:
+            #print 'self.config_file = ', self.config_file
             self.old_master_conf=ConfigObj(self.config_file, interpolation='template', file_error=True)
         except IOError, (ex):
             raise

@@ -9,11 +9,14 @@
 set(DATA
       basic_serial1.ips 
 )
-set(PYSCRIPTS
-      test_ips.py test_parameterized_cases.py test_permutations.py
-)
 set(SHSCRIPTS
-      test_ips.sh
+      setup_test.sh
+)
+set(TESTPYSCRIPTS
+      test_ips.py 
+)
+set(PYSCRIPTS
+      test_parameterized_cases.py test_permutations.py
 )
 include(${CMAKE_SOURCE_DIR}/tests/CmakeTests.cmake)
 

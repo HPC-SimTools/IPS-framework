@@ -85,6 +85,7 @@ class testIPS(unittest.TestCase):
         #log_file = 'sys.stdout'
 
         # create framework with config file
+        failure_count = 0
         true_or_false = [True, False]
         for do_create_runspace in true_or_false: 
             for create_runspace_done in true_or_false:
@@ -108,6 +109,9 @@ class testIPS(unittest.TestCase):
                                 suite = unittest.TestSuite()
                                 suite.addTest(ParameterizedTestCase.parametrize(test_permutations, param=param))
                                 res = unittest.TextTestRunner(verbosity=2).run(suite)
+                                if res.failures:
+                                    failure_count += 1
+        self.assertEquals(failure_count, 0)
 #   """
 
 
