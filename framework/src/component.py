@@ -80,20 +80,20 @@ class Component(object):
         # directory in init(),step(),finalize(). This was removed because it 
         # would attempt to make the directory when the component ran, which did
         # not fit the model of --create-runspace, --run-setup, --run workflows.
-        #workdir = self.services.get_working_dir()
+        workdir = self.services.get_working_dir()
 
-        #try:
-        #    os.chdir(workdir)
-        #except OSError, (errno, strerror):
-        #    self.services.debug('Working directory %s does not exist - will attempt creation',
-        #                        workdir)
-        #    try:
-        #        os.makedirs(workdir)
-        #    except OSError, (errno, strerror):
-        #        self.services.exception('Error creating directory %s : %s' ,
-        #                                workdir, strerror)
-        #        #pytau.stop(timer)
-        #        raise
+        try:
+            os.chdir(workdir)
+        except OSError, (errno, strerror):
+            self.services.debug('Working directory %s does not exist - will attempt creation',
+                                workdir)
+            try:
+                os.makedirs(workdir)
+            except OSError, (errno, strerror):
+                self.services.exception('Error creating directory %s : %s' ,
+                                        workdir, strerror)
+                #pytau.stop(timer)
+                raise
         #os.chdir(workdir)
         self.services.debug('Running - CompID =  %s',
                             self.component_id.get_serialization())
