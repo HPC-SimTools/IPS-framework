@@ -13,6 +13,11 @@ touch file1  ofile1  ofile2  sfile1  sfile2
 cp basic_serial1.ips b1.ips
 cp basic_serial2.ips b2.ips
 
+#echo;echo;echo
+
+#${fsrc}/ips.py --clone=b1.ctz --sim_name=sim1,sim2,sim3,sim4
+#exit
+
 #-------------------------------------------------------------
 echo; echo; echo
 echo "-------------------------------------------------------"

@@ -1052,6 +1052,7 @@ def main(argv=None):
     # new sim_names are given for each
     clone_list = []
     usedClone=False
+    multiCloneSingleSource=False
     if options.clone:
         if not usedSim_name:
             print "Must specify SIM_NAME using --sim_name when cloning"
@@ -1062,9 +1063,11 @@ def main(argv=None):
         clone_list=options.clone
         nClone=len(clone_list)
         usedClone=True
-        if nSimName != nClone:
-            print "When using both --clone and --sim_name the list length must be the same"
-            return
+        if nSimName > nClone and nClone == 1:
+            #print "When using both --clone and --sim_name the list length must be the same"
+            print 'Cloning from single clone file', clone_list[0], 'into multiple simulations', simName_list
+            multiCloneSingleSource = True
+            #return
 
     # SIMYAN: initialize list for each sim_name
     sim_file_map = {}
@@ -1088,6 +1091,8 @@ def main(argv=None):
             if file.find(':') != -1:
                 # split the mapping.  new_sim_name gets replaced below
                 (new_sim_name, file_name) = file.split(':')
+                if file_name.find('.ips') == -1:
+                    file_name = file_name + '.ips'
                 if usedSim_name:
                     file=modifyConfigObjFile(file_name,'SIM_NAME',new_sim_name)
                     ipsFilesToRemove.append(file)
@@ -1096,6 +1101,9 @@ def main(argv=None):
                     iFile=modifyConfigObjFile(file,'SIM_NAME',new_sim_name,)
                     #ipsFilesToRemove.append(file)
   
+            if file.find('.ips') == -1:
+                file = file + '/' + file + '.ips'
+
             if usedSim_name:
                 i=i+1
                 new_sim_name=simName_list[i]
@@ -1119,14 +1127,21 @@ def main(argv=None):
         # iterate over the list of files 
         i=-1
         for clone_file in clone_list:
-            i=i+1
-            new_sim_name=simName_list[i]
-            iFile=extractIpsFile(clone_file,new_sim_name)
-            file=modifyConfigObjFile(iFile,'SIM_NAME',new_sim_name,writeNew=False)
-            sim_file_map[new_sim_name].append(iFile)
+            if multiCloneSingleSource:
+                for new_sim_name in simName_list:
+                    iFile=extractIpsFile(clone_file,new_sim_name)
+                    file=modifyConfigObjFile(iFile,'SIM_NAME',new_sim_name,writeNew=False)
+                    sim_file_map[new_sim_name].append(iFile)
+                    cleaned_file_list.append(iFile)
+            else:
+                i=i+1
+                new_sim_name=simName_list[i]
+                iFile=extractIpsFile(clone_file,new_sim_name)
+                file=modifyConfigObjFile(iFile,'SIM_NAME',new_sim_name,writeNew=False)
+                sim_file_map[new_sim_name].append(iFile)
+                # append file to the list of cleaned names that don't contain ':'
+                cleaned_file_list.append(iFile)
 
-            # append file to the list of cleaned names that don't contain ':'
-            cleaned_file_list.append(iFile)
 
         # replace cfgFile_list with a list that won't have any ':' or sim_names
         cfgFile_list = cleaned_file_list
