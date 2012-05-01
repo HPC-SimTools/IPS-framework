@@ -10,7 +10,7 @@ set(DATA
       basic_serial1.ips 
 )
 set(SHSCRIPTS
-      setup_test.sh
+      setup_test.sh test_ips.sh
 )
 set(TESTPYSCRIPTS
       test_ips.py 
