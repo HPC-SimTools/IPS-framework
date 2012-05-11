@@ -26,7 +26,7 @@ echo "-------------------------------------------------------"
 echo "Testing runspace creation"
 echo "-------------------------------------------------------"
 #-------------------------------------------------------------
-${fsrc}/ips.py --create-runspace --simulation=basic_serial1.ips 
+${fsrc}/ips.py --create-runspace --simulation=basic_serial1.ips
 
 #-------------------------------------------------------------
 echo; echo; echo

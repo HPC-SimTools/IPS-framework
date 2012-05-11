@@ -1091,8 +1091,6 @@ def main(argv=None):
             if file.find(':') != -1:
                 # split the mapping.  new_sim_name gets replaced below
                 (new_sim_name, file_name) = file.split(':')
-                if file_name.find('.ips') == -1:
-                    file_name = file_name + '.ips'
                 if usedSim_name:
                     file=modifyConfigObjFile(file_name,'SIM_NAME',new_sim_name)
                     ipsFilesToRemove.append(file)
@@ -1101,9 +1099,6 @@ def main(argv=None):
                     iFile=modifyConfigObjFile(file,'SIM_NAME',new_sim_name,)
                     #ipsFilesToRemove.append(file)
   
-            if file.find('.ips') == -1:
-                file = file + '/' + file + '.ips'
-
             if usedSim_name:
                 i=i+1
                 new_sim_name=simName_list[i]
@@ -1136,6 +1131,7 @@ def main(argv=None):
             else:
                 i=i+1
                 new_sim_name=simName_list[i]
+                print 'else'
                 iFile=extractIpsFile(clone_file,new_sim_name)
                 file=modifyConfigObjFile(iFile,'SIM_NAME',new_sim_name,writeNew=False)
                 sim_file_map[new_sim_name].append(iFile)
@@ -1180,6 +1176,7 @@ def main(argv=None):
         compset_list=options.component
 
     if options.do_all:
+        print 'doing all steps'
         options.do_create_runspace = True
         options.do_run_setup = True
         options.do_run = True

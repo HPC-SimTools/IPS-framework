@@ -460,6 +460,7 @@ class ConfigurationManager(object):
         runspace_conf['OUTPUT_FILES'] = ''
         runspace_conf['NPROC'] = 1
         runspace_conf['LOG_LEVEL'] = 'WARNING'
+        runspace_conf['OS_CWD'] = os.getcwd()
         if (self.fwk.log_level == logging.DEBUG):
             runspace_conf['LOG_LEVEL'] = 'DEBUG'
 
