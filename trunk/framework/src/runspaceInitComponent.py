@@ -34,9 +34,19 @@ class runspaceInitComponent(Component):
 
         # get the simRootDir
         self.simRootDir = services.get_config_param('SIM_ROOT')
+        self.cwd = self.config['OS_CWD']
+        #print 'cwd =', self.cwd
+
+        try:
+            os.chdir(self.cwd)
+        except OSError, (errno, strerror):
+            self.services.debug('Working directory %s does not exist - this is impossibile',
+                              self.cwd)
+            raise
+
         container_ext = services.get_config_param('CONTAINER_FILE_EXT')
         if not self.simRootDir.startswith("/"):
-            self.simRootDir=os.path.abspath(self.simRootDir)
+            self.simRootDir=os.path.join(self.cwd, self.simRootDir)
 
         # try making the simulation root directory
         try: 
@@ -54,11 +64,24 @@ class runspaceInitComponent(Component):
         # uncomment when implemented
         # self.fc_files = services.fwk.facets_composer_files
 
-        # copy these to the SIM_ROOT
-        (head,tail) = os.path.split(os.path.abspath(self.config_files[0]))
-        ipsutil.copyFiles(head, self.config_files, self.simRootDir)
-        (head, tail) = os.path.split(os.path.abspath(self.platform_file))
-        ipsutil.copyFiles(head, self.platform_file, self.simRootDir) 
+        # Determine where the file is...if there's not an absolute path specified,
+        # assume that it was in the directory that the IPS was launched from.
+        # NOTE: This is not necessarily where the IPS is installed.
+        if not self.config_files[0].startswith("/"):
+            self.conf_file_loc = self.cwd
+        else:
+            (head,tail) = os.path.split(os.path.abspath(self.config_files[0]))
+            self.conf_file_loc = head
+        if not self.platform_file.startswith("/"):
+            self.plat_file_loc = self.cwd
+        else:
+            (head, tail) = os.path.split(os.path.abspath(self.platform_file))
+            self.plat_file_loc = head
+
+        #print 'conf_file_loc =', self.conf_file_loc
+        #print 'plat_file_loc =', self.plat_file_loc
+        ipsutil.copyFiles(self.conf_file_loc, self.config_files, self.simRootDir)
+        ipsutil.copyFiles(self.plat_file_loc, self.platform_file, self.simRootDir) 
 
         sim_comps = services.fwk.config_manager.get_component_map()
         registry = services.fwk.comp_registry
@@ -66,8 +89,10 @@ class runspaceInitComponent(Component):
         # can't figure out where to put it such that I can get it where I need
         self.container_file = os.path.basename(services.get_config_param('SIM_ROOT')) + os.path.extsep + container_ext
         # The w here means that it is overwritten -- we are creating a new container file here
-        ipsutil.writeToContainer(self.container_file, '', self.platform_file)
-        ipsutil.writeToContainer(self.container_file, '', self.config_files)
+        
+
+        ipsutil.writeToContainer(self.container_file, self.conf_file_loc, self.config_files)
+        ipsutil.writeToContainer(self.container_file, self.plat_file_loc, self.platform_file)
 
         # for each component_id in the list of components
         for sim_name, comp_list in sim_comps.items():
@@ -80,21 +105,26 @@ class runspaceInitComponent(Component):
                                              os.path.relpath(comp_conf['INPUT_DIR']), 
                                              os.path.basename(file))
 
-        curdir=os.path.abspath(os.path.curdir)
-        try:
-            os.chdir(self.simRootDir)
-        except OSError, (errno, strerror):
-            self.services.debug('Working directory %s does not exist - will attempt creation',
-                              self.simRootDir)
-            try:
-                os.makedirs(self.simRootDir)
-            except OSError, (errno, strerror):
-                self.services.exception('Error creating directory %s : %s' ,
-                                        workdir, strerror)
-                #pytau.stop(timer)
-                raise
+#       curdir=os.path.abspath(os.path.curdir)
+#       try:
+#           print '4', self.simRootDir
+#           os.chdir(self.simRootDir)
+#       except OSError, (errno, strerror):
+#           self.services.debug('Working directory %s does not exist - will attempt creation',
+#                             self.simRootDir)
+#           try:
+#               print '5', self.simRootDir
+#               os.makedirs(self.simRootDir)
+#           except OSError, (errno, strerror):
+#               self.services.exception('Error creating directory %s : %s' ,
+#                                       workdir, strerror)
+#               #pytau.stop(timer)
+#               raise
 
-        os.chdir(curdir) # Get back to where you once belonged
+#       print 'curdir=', curdir
+#       print 'cwd=', os.getcwd()
+#       print 'cwd=', self.cwd
+        #os.chdir(curdir) # Get back to where you once belonged
 
         # uncomment when implemented
         #(head, tail) = os.path.split(os.path.abspath(self.fc_files))
@@ -227,7 +257,9 @@ class runspaceInitComponent(Component):
         """
         print 'runspaceInitComponent.finalize() called'
 
-        ipsutil.writeToContainer(self.container_file, '', self.main_log_file)
+#       print self.main_log_file
+#       print self.simRootDir
+        ipsutil.writeToContainer(self.container_file, self.cwd, self.main_log_file)
         ipsutil.writeToContainer(self.container_file, self.simRootDir, 'resource_usage')
 
         return

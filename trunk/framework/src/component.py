@@ -76,10 +76,9 @@ class Component(object):
         tmp = sys.exit
         sys.exit = self.__my_exit__
         self.sys_exit = tmp
-        # SIMYAN: now it is the component's responsibility to enter the working 
-        # directory in init(),step(),finalize(). This was removed because it 
-        # would attempt to make the directory when the component ran, which did
-        # not fit the model of --create-runspace, --run-setup, --run workflows.
+        # SIMYAN: reversed changes that took directory creation in work out of 
+        # a component's hands. Now this class creates the directory and changes
+        # into it as before.
         workdir = self.services.get_working_dir()
 
         try:
@@ -94,7 +93,7 @@ class Component(object):
                                         workdir, strerror)
                 #pytau.stop(timer)
                 raise
-        #os.chdir(workdir)
+            os.chdir(workdir)
         self.services.debug('Running - CompID =  %s',
                             self.component_id.get_serialization())
         
