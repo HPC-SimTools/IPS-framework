@@ -1235,6 +1235,11 @@ class ServicesProxy(object):
         targetdir = os.path.join(simroot , 'simulation_setup',
                                  self.full_comp_id)
         try:
+            #print 'inputDir =', inputDir
+            #print 'input_file_list =', input_file_list
+            #print 'targetdir =', targetdir
+            #print 'outprefix =', outprefix
+
             ipsutil.copyFiles(inputDir, input_file_list, targetdir, outprefix)
         except Exception, e:
             self._send_monitor_event('IPS_STAGE_INPUTS',
