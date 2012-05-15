@@ -584,7 +584,7 @@ class ServicesProxy(object):
 
         cmd_lst = command.split(' ')
         if not cmd_lst[-1]:
-            # Kill the last argument in the command list is the empty string
+            # Kill the last argument in the command list if it is the empty string
             cmd_lst.pop()
 
         try:
