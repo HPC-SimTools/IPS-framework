@@ -12,7 +12,6 @@ def copyFiles(src_dir, src_file_list, target_dir, prefix='', keep_old = False):
        (default).
        Wild-cards in file name specification are allowed. 
     """
-    # SIMYAN: copyFiles no longer attempts to make the directory, 
     try:
         file_list = src_file_list.split()
     except AttributeError : # srcFileList is not a string
@@ -50,7 +49,17 @@ def copyFiles(src_dir, src_file_list, target_dir, prefix='', keep_old = False):
                 target_file = new_name
                 break
 
+        (head, tail) = os.path.split(os.path.abspath(target_file))
         try:
+            os.makedirs(head)
+        except OSError, (errno, strerror):
+            if (errno != 17):
+                self.services.exception('Error creating directory %s : %s' ,
+                                        head, strerror)
+        try:
+            #print 'trying to copy...'
+            #print 'src_file =', src_file
+            #print 'target_file =', target_file
             shutil.copy(src_file, target_file)
         except:
             raise
@@ -102,6 +111,8 @@ def writeToContainer(ziphandle, src_dir, src_file_list):
                 #print 'srcdir has'
                 #print 'sfile =', sfile
                 #print 'file =', file
+                (head, tail) = os.path.split(os.path.abspath(file))
+                file = tail
                 if not os.path.exists(file):
                     shutil.copy(sfile, file)
                     zout.write(file)
@@ -120,6 +131,8 @@ def writeToContainer(ziphandle, src_dir, src_file_list):
                     #print 'srcdir has not'
                     #print 'absfile =', absfile
                     #print 'sfile =', sfile
+                    (head, tail) = os.path.split(os.path.abspath(sfile))
+                    sfile = tail
                     if not os.path.exists(sfile):
                         shutil.copy(absfile, sfile)
                         zout.write(sfile)
