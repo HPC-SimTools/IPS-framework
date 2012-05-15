@@ -583,6 +583,9 @@ class ServicesProxy(object):
                 self.exception('Error opening log file %s : using stdout', log_filename)
 
         cmd_lst = command.split(' ')
+        if not cmd_lst[-1]:
+            # Kill the last argument in the command list is the empty string
+            cmd_lst.pop()
 
         try:
             self.debug('Launching command : %s', command)
