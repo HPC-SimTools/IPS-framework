@@ -16,6 +16,7 @@ SIM_ROOT = ${SIM_NAME}
 # Stuff for connecting to the SWIM portal
 RUN_COMMENT = Hello world demo
 TAG = Hello world demo					# A tag that enables related runs to be retrieved together
+USE_PORTAL=False
 
 # SIMULATION_MODE = NORMAL or RESTART.  For RESTART must specify a restart time and restart
 # directory.  The restart time must coincide with a checkpoint save time.  The restart 

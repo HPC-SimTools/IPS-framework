@@ -69,7 +69,10 @@ class ConfigurationManager(object):
         self.task_mgr = None
         self.comp_registry = ComponentRegistry()
         # SIMYAN: here is where we removed the requirement for BIN_PATH, etc.
-        # from the required fields.
+        # from the required fields. This was done so that we could specify it 
+        # in the component-generic.conf file, which allows you to point to a 
+        # directory that contains physics and other binaries on a global level
+        # i.e. removing the requirement that it be specified for each component
         self.required_fields = set(['CLASS', 'SUB_CLASS', 'NAME', 'SCRIPT',
                                     'INPUT_FILES', 'OUTPUT_FILES', 'NPROC'])
         self.config_file_list = []
@@ -88,7 +91,7 @@ class ConfigurationManager(object):
         sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 0)
         self.platform_file = os.path.abspath(platform_file_name)
         self.platform_conf = {}
-        # SIMYAN: breaking up the keyswords a little bit 
+        # SIMYAN: breaking up the keywords a little bit 
         self.compset_list = compset_list
         loc_keys=['IPS_ROOT']#,'PORTAL_URL','RUNID_URL']
         mach_keys=['MPIRUN','NODE_DETECTION','CORES_PER_NODE','SOCKETS_PER_NODE','NODE_ALLOCATION_MODE']
@@ -253,7 +256,6 @@ class ConfigurationManager(object):
         """
         Engine (compset) configuration Configuration
         """
-        # parse file
         self.compset_conf=[]
         if self.compset_list:
             for csfile in self.compset_list:
@@ -275,7 +277,7 @@ class ConfigurationManager(object):
                                            kw, csfile)
                         raise
                 self.compset_conf.append(csconf)
- 
+
         """
         Simulation Configuration
         """
@@ -283,28 +285,17 @@ class ConfigurationManager(object):
             try:
                 # SIMYAN: logic to handle merging component & simulation conf 
                 # files while maintaining backwards compatibility
-#               """
-                if self.compset_list:
-                    conf_list=self.compset_list+[conf_file]
-                else:
-                    conf_list=[conf_file]
-                #print conf_list
-                conf_tuple=tuple(conf_list)
-                #print 'conf_tuple = ', conf_tuple
-                conf = ConfigObj(conf_tuple, interpolation='template',
+
+                conf = ConfigObj(conf_file, 
+                                 interpolation='template',
                                  file_error=True)
-                """
-                if self.compset_list:
-                    conf_list=self.compset_list+[conf_file]
-                else:
-                    conf_list=[conf_file]
-                conf = ConfigObj(self.platform_file, interpolation='template',
-                                 file_error=True)
-                for file in conf_list:
-                    add = ConfigObj(file, interpolation='template',
-                                    file_error=True)
-                    conf.merge(add)
-                """
+                for csconf in self.compset_conf:
+                    conf.merge(csconf)
+
+                # merge, overwriting the values in the component
+                # configuration files with the simulation.ips file
+                conf.merge(self.platform_conf)
+                
             except IOError, (ex):
                 self.fwk.exception('Error opening config file %s: ', conf_file)
                 #pytau.stop(self.timers['initialize'])
@@ -318,11 +309,7 @@ class ConfigurationManager(object):
             except Exception, (ex):
                 self.fwk.exception('Error(s) during parsing of supplied config file %s: ', conf_file)
                 raise
-            # Allow propagation of entries from platform config file to simulation
-            # config file
-            for keyword in self.platform_conf.keys():
-                if keyword not in conf.keys():
-                    conf[keyword] = self.platform_conf[keyword]
+
             try:
                 sim_name = conf['SIM_NAME']
                 sim_root = conf['SIM_ROOT']
@@ -333,18 +320,7 @@ class ConfigurationManager(object):
                 #pytau.stop(self.timers['initialize'])
                 #stop(self.timers['initialize'])
                 raise
-            # SIMYAN: Allow propagation of entries from compset config file(s) 
-            # to simulation config file.  For the required keywords, we are 
-            # only going to propogate the first csconf file
-            firstPass=False
-            for csconf in self.compset_conf:
-              for keyword in self.platform_conf.keys():
-                  if keyword not in conf.keys():
-                      if keyword in self.compset_keywords and not firstPass:
-                        conf[keyword] = self.platform_conf[keyword]
-                        firstPass=True
-                      else:
-                        conf[keyword] = self.platform_conf[keyword]
+
 
             # SIMYAN allow for a container file with default .zip extension
             self.container_ext = 'zip'
