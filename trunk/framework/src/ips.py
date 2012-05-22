@@ -199,7 +199,7 @@ class Framework(object):
                 fullcfile=os.path.join(self.ipsShareDir,cfile)
                 if os.path.exists(fullcfile):
                     checked_compset_list.append(fullcfile)
-            if len(checked_compset_list):
+            if not len(checked_compset_list):
                 print "Cannot find specified component configuration files."
                 print "  Assuming that variables are defined anyway"
             else:

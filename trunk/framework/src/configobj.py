@@ -1190,17 +1190,8 @@ class ConfigObj(Section):
                     h.write('')
                     h.close()
                 infile = []
-        # SIMYAN: this was a small change to ConfigObj that would make it 
-        # easier to handle the tuple case of multiple input simulation 
-        # and component configuration files
-        elif isinstance(infile, list):
+        elif isinstance(infile, (list,tuple)):
             infile = list(infile)
-        elif isinstance(infile, tuple):
-            all_lines=''
-            for file in list(infile):
-               filelines = open(file).read() or []
-               all_lines=all_lines+filelines
-            infile=all_lines
         elif isinstance(infile, dict):
             # initialise self
             # the Section class handles creating subsections
@@ -1258,6 +1249,7 @@ class ConfigObj(Section):
             error.errors = self._errors
             # set the config attribute
             error.config = self
+            print self._errors
             raise error
         # delete private attributes
         del self._errors
@@ -1561,9 +1553,6 @@ class ConfigObj(Section):
                 #
                 key = self._unquote(key)
                 if this_section.has_key(key):
-                    # SIMYAN: just an extra sanity check bit that was used to
-                    # debug duplicate key issues.
-                    #print "Duplicate key: ", key
                     self._handle_error(
                         'Duplicate keyword name at line %s.',
                         DuplicateError, infile, cur_index)

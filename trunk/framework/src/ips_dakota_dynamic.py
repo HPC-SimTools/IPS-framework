@@ -73,15 +73,17 @@ class DakotaDynamic(object):
                                                                   current_dir)
 
             if self.ipsShareDir:
+                haveComp=False
                 if os.path.exists(os.path.join(self.ipsShareDir,'component-generic.conf')):
                     comp_conf_file = os.path.join(self.ipsShareDir,'component-generic.conf')
-                    conf_list=[self.platform_fname,comp_conf_file]
-                else:
-                    conf_list=[self.platform_fname]
+                    comp_confgobj = ConfigObj(comp_conf_file, interpolation='template',
+                                        file_error=True)
+                    haveComp=True
 
-                conf_tuple=tuple(conf_list)
-                self.platform_conf=ConfigObj(conf_tuple, interpolation='template',
+                self.platform_conf=ConfigObj(self.platform_fname, interpolation='template',
                                      file_error=True)
+                if haveComp:
+                    self.platform_conf.merge(comp_confgobj)
             else:
                 self.platform_conf=ConfigObj(self.platform_fname, interpolation='template',
                                      file_error=True)
@@ -212,6 +214,7 @@ class DakotaDynamic(object):
         if self.debug:
             cmd += '  --debug'
         
+        print 'cmd =', cmd 
         ips_server_proc = subprocess.Popen(cmd, shell = True)
         print '%s  Launched IPS' % (time.strftime("%b %d %Y %H:%M:%S", time.localtime()))
         sys.stdout.flush()
