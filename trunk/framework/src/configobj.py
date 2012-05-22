@@ -1190,7 +1190,7 @@ class ConfigObj(Section):
                     h.write('')
                     h.close()
                 infile = []
-        elif isinstance(infile, (list,tuple)):
+        elif isinstance(infile, (list, tuple)):
             infile = list(infile)
         elif isinstance(infile, dict):
             # initialise self
@@ -1249,7 +1249,6 @@ class ConfigObj(Section):
             error.errors = self._errors
             # set the config attribute
             error.config = self
-            print self._errors
             raise error
         # delete private attributes
         del self._errors
