@@ -17,6 +17,7 @@ SIM_ROOT = ${SIM_NAME}
 RUN_COMMENT = Hello world demo
 TAG = Hello world demo					# A tag that enables related runs to be retrieved together
 USE_PORTAL=False
+#IPS_ROOT = /fake/path/name
 
 # SIMULATION_MODE = NORMAL or RESTART.  For RESTART must specify a restart time and restart
 # directory.  The restart time must coincide with a checkpoint save time.  The restart 
@@ -25,10 +26,10 @@ USE_PORTAL=False
 
 SIMULATION_MODE = NORMAL
 RESTART_TIME =
-RESTART_DIRECTORY = $SIM_ROOT
+RESTART_DIRECTORY = ${SIM_ROOT}
 
 # Where to put plasma state files as the simulation evolves
-PLASMA_STATE_WORK_DIR = $SIM_ROOT/work/plasma_state
+PLASMA_STATE_WORK_DIR = ${SIM_ROOT}/work/plasma_state
 
 # Config variables defining simulation specific names for plasma state files
 CURRENT_STATE = ${SIM_NAME}_ps.cdf
@@ -40,7 +41,7 @@ CURRENT_DQL = ${SIM_NAME}_ps_DQL.nc
 CURRENT_JSDSK = ${SIM_NAME}_ps.jso
 
 # List of files that constitute the plasma state
-PLASMA_STATE_FILES = $CURRENT_STATE
+PLASMA_STATE_FILES = ${CURRENT_STATE}
 
 # Names of ports to be used in this simulation.  
 # An implementation and configuration must be specified for each port.
@@ -74,21 +75,21 @@ PLASMA_STATE_FILES = $CURRENT_STATE
     CLASS = DRIVERS
     SUB_CLASS = HELLO
     NAME = HelloDriver
-    BIN_PATH = $IPS_ROOT/tests/helloworld
+    BIN_PATH = ${IPS_ROOT}/tests/helloworld
     NPROC = 1
     INPUT_FILES = 
     OUTPUT_FILES =  
-    SCRIPT = $BIN_PATH/hello_driver.py
+    SCRIPT = ${BIN_PATH}/hello_driver.py
 
 [HELLO_WORKER]
     CLASS = WORKERS
     SUB_CLASS = HELLO
-    BIN_PATH = $IPS_ROOT/tests/helloworld
+    BIN_PATH = ${IPS_ROOT}/tests/helloworld
     NAME = HelloWorker
     NPROC = 1
     INPUT_FILES = 
     OUTPUT_FILES =  
-    SCRIPT = $BIN_PATH/hello_worker.py
+    SCRIPT = ${BIN_PATH}/hello_worker.py
 
 
 # Time loop sepecification (two modes for now) EXPLICIT | REGULAR

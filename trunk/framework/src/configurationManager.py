@@ -12,6 +12,7 @@ import ipsLogging
 import logging
 import socket
 import string
+import copy
 my_version = float(sys.version[:3])
 from multiprocessing import Queue, Process
 from ipsTiming import create_timer, start, stop, TauWrap
@@ -285,16 +286,48 @@ class ConfigurationManager(object):
             try:
                 # SIMYAN: logic to handle merging component & simulation conf 
                 # files while maintaining backwards compatibility
-
+                #conf = ConfigObj()
+                orig_conf = ConfigObj(conf_file,
+                                 interpolation='template',
+                                 file_error=True)
                 conf = ConfigObj(conf_file, 
                                  interpolation='template',
                                  file_error=True)
+                #conf.merge(sim_conf)
+                conf.merge(self.platform_conf)
+                for orig_key in orig_conf.keys():
+                    if orig_key in self.platform_conf:
+                        #print '=========CONFLICT FOUND========'
+                        #print 'orig key:', orig_key, ' value:', orig_conf[orig_key]
+                        #print 'curr key:', orig_key, ' value:', conf[orig_key]
+                        conf[orig_key] = orig_conf[orig_key]
+                        #print
+                #conf = copy.deepcopy(self.platform_conf)
+
                 for csconf in self.compset_conf:
                     conf.merge(csconf)
+                    for orig_key in orig_conf.keys():
+                        if orig_key in csconf:
+                            #print '=========CONFLICT FOUND========'
+                            #print 'orig key:', orig_key, ' value:', orig_conf[orig_key]
+                            #print 'curr key:', orig_key, ' value:', conf[orig_key]
+                            conf[orig_key] = orig_conf[orig_key]
+                            #print
+
+
 
                 # merge, overwriting the values in the component
                 # configuration files with the simulation.ips file
-                conf.merge(self.platform_conf)
+                #conf.merge(self.platform_conf)
+
+                #conf.merge(origconf)
+                #conf.restore_defaults()
+                #print 'FINAL      SOME_PARAM =', conf['SOME_PARAM']
+                #print 'PLATFORM   SOME_PARAM =', self.platform_conf['SOME_PARAM']
+                #conf.merge(sim_conf)
+                #print 'conf = ', conf
+                #for keyword in self.platform_conf.keys():
+                #    if keyword not in conf.keys
                 
             except IOError, (ex):
                 self.fwk.exception('Error opening config file %s: ', conf_file)
