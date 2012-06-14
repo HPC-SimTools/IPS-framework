@@ -31,17 +31,17 @@ install(PROGRAMS
     ${PYSCRIPTS} ${TESTPYSCRIPTS} ${SHSCRIPTS}
     DESTINATION bin/tests/bin
     PERMISSIONS OWNER_READ OWNER_EXECUTE OWNER_WRITE
-                GROUP_READ GROUP_EXECUTE ${TX_GROUP_WRITE} ${TX_WORLD_PERMS}
+                GROUP_READ GROUP_EXECUTE ${SCI_GROUP_WRITE} ${SCI_WORLD_PERMS}
 )
 
 if (NOT WIN32)
 get_filename_component(dirname ${CMAKE_CURRENT_BINARY_DIR} NAME_WE)
 add_custom_target(tests-${dirname}-scripts-stamp ALL
-    COMMAND ${CMAKE_SOURCE_DIR}/CMake/mklinks.sh txutils-scripts-stamp
+    COMMAND ${CMAKE_SOURCE_DIR}/scimake/mklinks.sh txutils-scripts-stamp
       ${CMAKE_CURRENT_SOURCE_DIR} ${DATA} ${PYSCRIPTS}
-    COMMAND ${CMAKE_SOURCE_DIR}/CMake/mklinks.sh txutils-scripts-stamp
+    COMMAND ${CMAKE_SOURCE_DIR}/scimake/mklinks.sh txutils-scripts-stamp
       ${CMAKE_CURRENT_SOURCE_DIR} ${DATA} ${TESTPYSCRIPTS}
-    COMMAND ${CMAKE_SOURCE_DIR}/CMake/mklinks.sh txutils-scripts-stamp
+    COMMAND ${CMAKE_SOURCE_DIR}/scimake/mklinks.sh txutils-scripts-stamp
       ${CMAKE_CURRENT_SOURCE_DIR} ${DATA} ${SHSCRIPTS}
       #COMMAND chmod -f a+x *.py  *.sh
     #    COMMAND chmod a+x *.py *.sh
