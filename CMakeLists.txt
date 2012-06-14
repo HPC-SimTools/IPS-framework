@@ -23,7 +23,7 @@ enable_testing()
 #
 ######################################################################
 
-include(${CMAKE_SOURCE_DIR}/CMake/TxInit.cmake)
+include(${CMAKE_SOURCE_DIR}/scimake/SciInit.cmake)
 set(SIMYAN_VERSION "${PROJECT_VERSION}")
 set(SIMYAN_REV "${PROJECT_REV}")
 
@@ -32,7 +32,7 @@ set(SIMYAN_REV "${PROJECT_REV}")
 # Packages.
 #
 ######################################################################
-include(CMake/TxDocLogic.cmake)
+include(scimake/SciDocLogic.cmake)
 # Documentation sudirectories
 if (SPHINX_FOUND)
   add_subdirectory(doc)
@@ -57,13 +57,13 @@ set(SOCKETS_PER_NODE  "1"
 set(NODE_ALLOCATION_MODE "shared"
     CACHE STRING "node allocation")
 
-TxPrintString("PORTAL_URL      = ${PORTAL_URL}")
-TxPrintString("RUNID_URL       = ${RUNID_URL}")
-TxPrintString("MPIRUN          = ${MPIRUN}")
-TxPrintString("NODE_DETECTION  = ${NODE_DETECTION}")
-TxPrintString("CORES_PER_NODE  = ${CORES_PER_NODE}")
-TxPrintString("SOCKETS_PER_NODE  = ${SOCKETS_PER_NODE}")
-TxPrintString("NODE_ALLOCATION_MODE  = ${NODE_ALLOCATION_MODE}")
+SciPrintString("PORTAL_URL      = ${PORTAL_URL}")
+SciPrintString("RUNID_URL       = ${RUNID_URL}")
+SciPrintString("MPIRUN          = ${MPIRUN}")
+SciPrintString("NODE_DETECTION  = ${NODE_DETECTION}")
+SciPrintString("CORES_PER_NODE  = ${CORES_PER_NODE}")
+SciPrintString("SOCKETS_PER_NODE  = ${SOCKETS_PER_NODE}")
+SciPrintString("NODE_ALLOCATION_MODE  = ${NODE_ALLOCATION_MODE}")
 
 #Other variables in platform.conf.in 
 set(IPS_ROOT "${CMAKE_BINARY_DIR}")  # Install needs to fix this
@@ -84,11 +84,11 @@ set(DATA_TREE_ROOT  "${CMAKE_INSTALL_DIR}/share"
     CACHE PATH "Location of physics data files")
 set(CONTAINER_FILE_EXT          "ctz"
     CACHE STRING "File extension for container file")
-TxPrintString("BIN_ROOT  = ${BIN_ROOT}")
-TxPrintString("PHYS_BIN_ROOT  = ${PHYS_BIN_ROOT}")
-TxPrintString("INPUT_DIR  = ${INPUT_DIR}")
-TxPrintString("DATA_TREE_ROOT  = ${DATA_TREE_ROOT}")
-TxPrintString("CONTAINTER_FILE_EXT  = ${CONTAINTER_FILE_EXT}")
+SciPrintString("BIN_ROOT  = ${BIN_ROOT}")
+SciPrintString("PHYS_BIN_ROOT  = ${PHYS_BIN_ROOT}")
+SciPrintString("INPUT_DIR  = ${INPUT_DIR}")
+SciPrintString("DATA_TREE_ROOT  = ${DATA_TREE_ROOT}")
+SciPrintString("CONTAINTER_FILE_EXT  = ${CONTAINTER_FILE_EXT}")
 
 
 ######################################################################
@@ -111,4 +111,4 @@ add_subdirectory(tests)
 set(COMMON_INSTALL TRUE)
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "IPS Framework")
 set(CONFIG_FILES)  # Clear out
-include(${CMAKE_SOURCE_DIR}/CMake/TxFinalize.cmake)
+include(${CMAKE_SOURCE_DIR}/scimake/SciFinalize.cmake)
