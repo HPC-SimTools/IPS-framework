@@ -1,0 +1,107 @@
+#!/bin/bash
+# Usage: update-docs [-l]
+#    -l  log command status codes to syslog
+#
+# Update a subversion repo, build documentation, and sync it onto
+# SourceForge for IPS Framework project.
+#
+# Recommended usage is to run regularly from crontab, capturing output
+# in a file for possible future reference (consider using logrotate to
+# retain a finite history).  Output will contain a great deal of spew
+# and it will be hard to automatically distinguish real errors from
+# expected errors.
+#
+# Use of -l to log key results to syslog allows the use of logwatch to
+# monitor these results are part of regular system monitoring.
+
+# Internal script parameters
+script=update-docs-ipsframework
+log=
+
+# A convenience function to log and then execute its argument
+eval_and_log () {
+    # if [ -n "$log" ]; then
+    # 	/usr/bin/logger -t $script "Executing \"$*\""
+    # fi
+    echo "###############################################################################"
+    echo "# Executing command $*"
+    echo "###############################################################################"
+    eval $1
+    status=$?
+    if [ -n "$log" ]; then
+	/usr/bin/logger -t $script "Status $status from command \"$*\""
+    fi
+    echo "###############################################################################"
+    echo "# Completed with status $status"
+    echo "###############################################################################"
+
+}
+
+# Location of local git repository 
+SVN_DIR=$HOME/ipsframework/ipsframework-autobuild
+
+# Base directory (rsync syntax) for SF web site
+WEB_DIR=sfweb:/home/project-web/ipsframework/htdocs
+
+# Generated Sphinx documentation subdirectory
+SPHINX_DIR=$WEB_DIR/doc
+
+while [ $# -gt 0 ]; do
+    case $1 in
+	-l)
+	    log=1
+	    shift 1
+	    ;;
+	-*)
+            echo "Usage: $0 [-l]"
+	    exit 1
+	    ;;
+	*)
+            echo "Usage: $0 [-l]"
+	    exit 1
+	    ;;
+    esac
+done
+
+if [ $# -ne 0 ]; then
+    echo "Usage: $0 [-l]"
+    exit 1
+fi
+
+# Log start of operation
+if [ -n "$log" ]; then
+    /usr/bin/logger -t $script "Starting"
+fi
+echo "###############################################################################"
+echo "# BEGINNING UPDATE OF IPS FRAMEWORK DOCUMENTATION ON SOURCEFORGE"
+echo "###############################################################################"
+
+###############################################################################
+# Update repo.  Assumes repo has already been checked out, manually.
+###############################################################################
+cd $SVN_DIR || exit
+eval_and_log "svn up"
+
+if [ ! -d build ]; then mkdir build || exit; fi
+cd build || exit
+
+eval_and_log "cmake .."
+
+eval_and_log "make"
+
+eval_and_log "make docs"
+
+eval_and_log "rsync -a --delete -e ssh doc/ $SPHINX_DIR"
+
+echo "###############################################################################"
+echo "# COMPLETED UPDATE OF IPS FRAMEWORK DOCUMENTATION ON SOURCEFORGE"
+echo "###############################################################################"
+
+# Log end of operation
+if [ -n "$log" ]; then
+  /usr/bin/logger -t $script "Completed"
+fi
+
+# If we get this far, declare success
+exit 0
+

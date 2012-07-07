@@ -1,0 +1,5 @@
+###############################################################################
+# Update documentation on IPS Framework's SourceForge site
+# At a time when both east and west coast developers are likely to be quiet
+###############################################################################
+24 5  * * *	/home/bernhold/bin/update-docs-ipsframework -l > /home/bernhold/var/log/update-docs-ipsframework 2>&1
