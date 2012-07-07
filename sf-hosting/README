@@ -1,0 +1,13 @@
+Sourceforge Hosting Utilities
+
+This directory tree provides a place to capture odds and ends that are
+useful in conjunction with using SourceForge.net as a hosting site.
+
+The stuff here is likely to be of interest only to administrators of
+the project.
+
+Directory	Description
+htdocs		Static files living in SF project web htdocs tree
+
+doc-sync 	Scripts for autobuild of document tree and synchronization to
+		the SF project web tree
