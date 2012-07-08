@@ -7,7 +7,9 @@ The stuff here is likely to be of interest only to administrators of
 the project.
 
 Directory	Description
-htdocs		Static files living in SF project web htdocs tree
+backups		Scripts to backup SF projects
 
 doc-sync 	Scripts for autobuild of document tree and synchronization to
 		the SF project web tree
+
+htdocs		Static files living in SF project web htdocs tree
