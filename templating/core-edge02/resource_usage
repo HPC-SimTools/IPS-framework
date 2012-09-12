@@ -1,9 +1,0 @@
-# host: franklin
-# total nodes: 1
-# processors per node: 4
-# time (in seconds since the | available | allocated | percent used | notes 
-#   resource manager started |           |           |              |
-#------------------------------------------
-5.66985011101 	1 	0 	0.0 % 	#  initial state of resources
-11.8516221046 	0 	1 	100.0 % 	#  allocated 1 nodes to component DIII-D_118897.01555_core-edge0002@facets@1 for task 1
-14.8495659828 	1 	0 	0.0 % 	#  released nodes for task 1
