@@ -111,7 +111,6 @@ class ConfigurationManager(object):
                                   getattr(self,'process_service_request'))
         self.sim_map = {}
         self.finished_sim_map = {}
-        #self.fwk_sim_name = 'FooBar'  #"Fake" simconf for framework components
         self.fwk_sim_name = None  #"Fake" simconf for framework components
         self.fwk_components = [] #List of framework specific components
         # create publisher event service object
@@ -402,7 +401,6 @@ class ConfigurationManager(object):
                 fwk_sim = self.SimulationData(fwk_sim_conf['SIM_NAME'])
                 fwk_sim.sim_conf = fwk_sim_conf
                 fwk_sim.sim_root = new_sim.sim_root
-                fwk_sim.sim_name = new_sim.sim_name
                 fwk_sim.log_file = self.fwk.log_file #sys.stdout
                 fwk_sim.log_pipe_name = tempfile.mktemp('.logpipe', 'ips_')
                 fwk_sim_conf['LOG_LEVEL'] = 'DEBUG'
