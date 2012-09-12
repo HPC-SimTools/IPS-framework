@@ -13,7 +13,7 @@ set(DATA
 )
 set(SHSCRIPTS
       test_ips_without_platform.sh
-      test_ips_with_platform.sh
+#      test_ips_with_platform.sh
 )
 set(PYSCRIPTS
       dakota_test_Rosenbrock.py
