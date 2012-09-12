@@ -988,7 +988,10 @@ def main(argv=None):
                       type="string", help='IPS component configuration file(s)')
     parser.add_option('-i', '--simulation', 
                       action='callback', callback=filelist_callback,
-                      type="string", help='IPS simulation file')
+                      type="string", help='IPS simulation/config file')
+    parser.add_option('-j', '--config', 
+                      action='callback', callback=filelist_callback,
+                      type="string", help='IPS simulation/config file')
     parser.add_option('-y', '--clone', 
                       action='callback', callback=filelist_callback,
                       type="string", help='Clone container file')
@@ -1016,7 +1019,7 @@ def main(argv=None):
     ##-SIMYAN:----------------------------------------------------------------------------------
     ##
     ##  Three ways of specifying where to find the config_file
-    ##   1. --simulation: Specify directly
+    ##   1. --simulation or --config: Specify directly
     ##   2. --sim_name: Either rename simulation files, or use sim_name/sim_name.ips
     ##   3. --clone: Look for IPS file in container file.  --sim_name must be specified to rename
     ##
@@ -1035,6 +1038,9 @@ def main(argv=None):
         cfgFile_list=options.simulation
         nCfgFile=len(cfgFile_list)
         usedSimulation=True
+    if options.config:
+        cfgFile_list=options.config
+        nCfgFile=len(cfgFile_list)
 
     # SIMYAN: grab the list of sim_names for multirun situations
     simName_list = []

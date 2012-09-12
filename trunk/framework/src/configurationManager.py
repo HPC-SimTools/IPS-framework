@@ -111,6 +111,7 @@ class ConfigurationManager(object):
                                   getattr(self,'process_service_request'))
         self.sim_map = {}
         self.finished_sim_map = {}
+        #self.fwk_sim_name = 'FooBar'  #"Fake" simconf for framework components
         self.fwk_sim_name = None  #"Fake" simconf for framework components
         self.fwk_components = [] #List of framework specific components
         # create publisher event service object
@@ -133,6 +134,7 @@ class ConfigurationManager(object):
         """
         #pytau.start(self.timers['initialize'])
         #start(self.timers['initialize'])
+        local_debug = False
         self.event_mgr = None # eventManager(self)
         self.data_mgr = data_mgr
         self.resource_mgr = resource_mgr
@@ -142,6 +144,11 @@ class ConfigurationManager(object):
         sim_root_list = self.sim_root_list = []
         sim_name_list = self.sim_name_list = []
         log_file_list = self.log_file_list = [] 
+
+        # Idiot checks
+        if len(self.config_file_list)==0:
+            self.fwk.exception('Missing config file? Something is very wrong')
+            raise 
 
         """
         Platform Configuration
@@ -252,16 +259,16 @@ class ConfigurationManager(object):
         self.platform_conf['SOCKETS_PER_NODE'] = user_def_spn
         self.platform_conf['USE_ACCURATE_NODES'] = use_accurate_nodes
         self.platform_conf['MPIRUN_VERSION'] = mpirun_version
-                
-        # SIMYAN: section to parse component conf files
+
+        # section to parse component conf files
         """
-        Engine (compset) configuration Configuration
+        Physics (compset) configuration files (PHYS_BIN_ROOT, BIN_PATH, ...)
         """
         self.compset_conf=[]
         if self.compset_list:
             for csfile in self.compset_list:
+                if local_debug: print csfile
                 try:
-                    #DBG print csfile
                     csconf = ConfigObj(csfile, interpolation='template', file_error=True)
                 except IOError, (ex):
                     self.fwk.exception('Error opening config file: %s', csfile)
@@ -277,6 +284,12 @@ class ConfigurationManager(object):
                         self.fwk.exception('Missing required parameter %s in %s config file',
                                            kw, csfile)
                         raise
+
+                # allow any csconf parameters override the platform file
+                for key in self.platform_conf.keys():
+                    if key in csconf.keys(): 
+                        self.platform_conf[key] = csconf[key]
+
                 self.compset_conf.append(csconf)
 
         """
@@ -284,51 +297,22 @@ class ConfigurationManager(object):
         """
         for conf_file in self.config_file_list:
             try:
-                # SIMYAN: logic to handle merging component & simulation conf 
-                # files while maintaining backwards compatibility
-                #conf = ConfigObj()
-                orig_conf = ConfigObj(conf_file,
-                                 interpolation='template',
-                                 file_error=True)
-                conf = ConfigObj(conf_file, 
-                                 interpolation='template',
-                                 file_error=True)
-                #conf.merge(sim_conf)
-                conf.merge(self.platform_conf)
-                for orig_key in orig_conf.keys():
-                    if orig_key in self.platform_conf:
-                        #print '=========CONFLICT FOUND========'
-                        #print 'orig key:', orig_key, ' value:', orig_conf[orig_key]
-                        #print 'curr key:', orig_key, ' value:', conf[orig_key]
-                        conf[orig_key] = orig_conf[orig_key]
-                        #print
-                #conf = copy.deepcopy(self.platform_conf)
+                conf = ConfigObj(conf_file, interpolation='template', file_error=True)
 
+                # Allow simulation file to override compset values
+                # and then put all compset values into simulation map
+                # The fact that csconf is a list is confusing
                 for csconf in self.compset_conf:
+                    for key in csconf.keys():
+                      if key in conf.keys(): csconf[key] = conf[key]
                     conf.merge(csconf)
-                    for orig_key in orig_conf.keys():
-                        if orig_key in csconf:
-                            #print '=========CONFLICT FOUND========'
-                            #print 'orig key:', orig_key, ' value:', orig_conf[orig_key]
-                            #print 'curr key:', orig_key, ' value:', conf[orig_key]
-                            conf[orig_key] = orig_conf[orig_key]
-                            #print
 
+                # Allow simulation file to override platform values
+                # and then put all platform values into simulation map
+                for key in self.platform_conf.keys():
+                  if key in conf.keys(): self.platform_conf[key] = conf[key]
+                conf.merge(self.platform_conf)
 
-
-                # merge, overwriting the values in the component
-                # configuration files with the simulation.ips file
-                #conf.merge(self.platform_conf)
-
-                #conf.merge(origconf)
-                #conf.restore_defaults()
-                #print 'FINAL      SOME_PARAM =', conf['SOME_PARAM']
-                #print 'PLATFORM   SOME_PARAM =', self.platform_conf['SOME_PARAM']
-                #conf.merge(sim_conf)
-                #print 'conf = ', conf
-                #for keyword in self.platform_conf.keys():
-                #    if keyword not in conf.keys
-                
             except IOError, (ex):
                 self.fwk.exception('Error opening config file %s: ', conf_file)
                 #pytau.stop(self.timers['initialize'])
@@ -418,6 +402,7 @@ class ConfigurationManager(object):
                 fwk_sim = self.SimulationData(fwk_sim_conf['SIM_NAME'])
                 fwk_sim.sim_conf = fwk_sim_conf
                 fwk_sim.sim_root = new_sim.sim_root
+                fwk_sim.sim_name = new_sim.sim_name
                 fwk_sim.log_file = self.fwk.log_file #sys.stdout
                 fwk_sim.log_pipe_name = tempfile.mktemp('.logpipe', 'ips_')
                 fwk_sim_conf['LOG_LEVEL'] = 'DEBUG'
@@ -592,15 +577,24 @@ class ConfigurationManager(object):
                 #stop(self.timers['_initialize_sim'])
                 sys.exit(1)
             conf_fields = set(comp_conf.keys())
-            # SIMYAN: If INPUT_DIR, DATA_TREE_ROOT, and BIN_DIR are not set in 
-            # conf file, then make it the same level as the conf file
+
+            # Move the paths to the component levels so that they can use it
+            # If they already have it, then they are effectively overriding the global values
             if not comp_conf.has_key('INPUT_DIR'):
-              comp_conf['INPUT_DIR']=sim_data.conf_file_dir
-            #SEK: WORKING HERE
+                if sim_conf.has_key('INPUT_DIR'):
+                    comp_conf['INPUT_DIR']=sim_conf['INPUT_DIR']
+            if not comp_conf.has_key('IPS_ROOT'):
+                if sim_conf.has_key('IPS_ROOT'):
+                    comp_conf['IPS_ROOT']=sim_conf['IPS_ROOT']
             if not comp_conf.has_key('DATA_TREE_ROOT'):
-              comp_conf['DATA_TREE_ROOT']=sim_data.conf_file_dir
+                if sim_conf.has_key('DATA_TREE_ROOT'):
+                    comp_conf['DATA_TREE_ROOT']=sim_conf['DATA_TREE_ROOT']
             if not comp_conf.has_key('BIN_DIR'):
-              comp_conf['BIN_DIR']=sim_data.conf_file_dir
+                if sim_conf.has_key('BIN_DIR'):
+                    comp_conf['BIN_DIR']=sim_conf['BIN_DIR']
+            if not comp_conf.has_key('BIN_PATH'):
+                if sim_conf.has_key('BIN_PATH'):
+                    comp_conf['BIN_PATH']=sim_conf['BIN_PATH']
             if (not self.required_fields.issubset(conf_fields)):
                 self.fwk.exception('Error: missing required entries %s \
                     in simulation %s component %s configuration section' ,
