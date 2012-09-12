@@ -581,15 +581,21 @@ class ConfigurationManager(object):
             if not comp_conf.has_key('INPUT_DIR'):
                 if sim_conf.has_key('INPUT_DIR'):
                     comp_conf['INPUT_DIR']=sim_conf['INPUT_DIR']
+                else:
+                    comp_conf['INPUT_DIR']=sim_data.conf_file_dir
             if not comp_conf.has_key('IPS_ROOT'):
                 if sim_conf.has_key('IPS_ROOT'):
                     comp_conf['IPS_ROOT']=sim_conf['IPS_ROOT']
             if not comp_conf.has_key('DATA_TREE_ROOT'):
                 if sim_conf.has_key('DATA_TREE_ROOT'):
                     comp_conf['DATA_TREE_ROOT']=sim_conf['DATA_TREE_ROOT']
+                else:
+                    comp_conf['DATA_TREE_ROOT']=sim_data.conf_file_dir
             if not comp_conf.has_key('BIN_DIR'):
                 if sim_conf.has_key('BIN_DIR'):
                     comp_conf['BIN_DIR']=sim_conf['BIN_DIR']
+                else:
+                    comp_conf['BIN_DIR']=sim_data.conf_file_dir
             if not comp_conf.has_key('BIN_PATH'):
                 if sim_conf.has_key('BIN_PATH'):
                     comp_conf['BIN_PATH']=sim_conf['BIN_PATH']
