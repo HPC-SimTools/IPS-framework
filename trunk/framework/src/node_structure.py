@@ -49,7 +49,7 @@ class Node:
                 c += cps
             else:
                 if isinstance(p, int):
-                    self.sockets.append(Socket(s, len(p) - c))
+                    self.sockets.append(Socket(s, p - c))
                     c = p
                 else:
                     self.sockets.append(Socket(s, len(p) - c, p[i:]))
