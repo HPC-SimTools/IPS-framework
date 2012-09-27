@@ -88,13 +88,28 @@ class DakotaDynamic(object):
                 self.platform_conf=ConfigObj(self.platform_fname, interpolation='template',
                                      file_error=True)
 
-            alt_paths.append(self.platform_conf['IPS_ROOT'])
-            alt_paths.append(os.path.join(self.platform_conf['IPS_ROOT'],'framework/src'))
         except IOError, (ex):
             raise
         except SyntaxError, (ex):
             raise
 
+        """
+        Master Config file
+        """
+        # parse file
+        try:
+            self.template_conf=ConfigObj(self.config_template, interpolation='template', file_error=True)
+        except IOError, (ex):
+            raise
+        except SyntaxError, (ex):
+            raise
+        for k in self.platform_conf.keys():
+            if k not in self.template_conf.keys():
+                self.template_conf[k] = self.platform_conf[k]
+                
+        alt_paths.append(self.template_conf['IPS_ROOT'])
+        alt_paths.append(os.path.join(self.template_conf['IPS_ROOT'],'framework/src'))
+        
         new_dakota_config = self.dakota_cfg+'.resolved'
         comp_vars = {}
 #        print self.dakota_conf
@@ -134,19 +149,6 @@ class DakotaDynamic(object):
         
 
         
-        """
-        Master Config file
-        """
-        # parse file
-        try:
-            self.template_conf=ConfigObj(self.config_template, interpolation='template', file_error=True)
-        except IOError, (ex):
-            raise
-        except SyntaxError, (ex):
-            raise
-        for k in self.platform_conf.keys():
-            if k not in self.template_conf.keys():
-                self.template_conf[k] = self.platform_conf[k]
                 
         self.master_conf['PORTS'] = {'NAMES' : 'DRIVER'}
         self.master_conf['PORTS']['DRIVER'] = {'IMPLEMENTATION': 'DAKOTA_BRIDGE'}
