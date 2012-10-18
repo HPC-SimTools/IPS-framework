@@ -1,3 +1,6 @@
+#-------------------------------------------------------------------------------
+# Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
+#-------------------------------------------------------------------------------
 from component import Component
 from ctypes import *
 from time import sleep
@@ -128,7 +131,7 @@ class FTBBridge(Component):
                     self.services.debug("FTB_Poll_event returned %s %s", receive_event.event_name,eventBody)
 
                 if count == 10:
-                    count = 1 
+                    count = 1
                     self.services.process_events()
                 else:
                     count += 1
@@ -161,6 +164,6 @@ class FTBBridge(Component):
             self.live_count += 1
         elif  (event_type == 'IPS_END'):
             self.live_count -= 1
-        
+
         if (self.live_count == 0):
             self.done = True

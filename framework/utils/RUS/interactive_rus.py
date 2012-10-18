@@ -1,3 +1,6 @@
+#-------------------------------------------------------------------------------
+# Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
+#-------------------------------------------------------------------------------
 '''
 Resource Usage Simulator (RUS)
 ------------------------------
@@ -5,9 +8,9 @@ Resource Usage Simulator (RUS)
 by Samantha Foley, Indiana University
 3/4/2010
 
-This RUS simulates the resource usage of a MCMD application as described 
-by the input files.  It is a tool that helps to determine what resource 
-allocation algorithms and component configurations work best for classes 
+This RUS simulates the resource usage of a MCMD application as described
+by the input files.  It is a tool that helps to determine what resource
+allocation algorithms and component configurations work best for classes
 of applications.
 '''
 
@@ -62,7 +65,7 @@ class framework():
         print log
         return
 
-        """ 
+        """
         try:
             opts, args = getopt.getopt(sys.argv[1:], 'r:m:c:l:s:', ['resource=','config=','mapfile=','log=','seed='])
         except getopt.GetoptError, err:
@@ -96,14 +99,14 @@ class framework():
         except:
             print 'problems getting the command line args'
             raise
-        
+
         try:
             print self.myseed,
         except:
             self.myseed = int(time())
             print self.myseed,
         self.my_rand = random.Random()
-        self.my_rand.seed(self.myseed)        
+        self.my_rand.seed(self.myseed)
 
 
         #-----------------------------------------
@@ -125,7 +128,7 @@ class framework():
             raise
 
         #-----------------------------------------
-        #    parse configuration 
+        #    parse configuration
         #-----------------------------------------
         try:
             self.parse_config(self.config_files)
@@ -141,19 +144,19 @@ class framework():
         except:
             print "problems setting up sim, comp and log type maps"
             raise
-            
+
         #----------------------------------------
         #   check data
         #----------------------------------------
         #for s in self.simulations:
         #    for c in s.my_comps.values():
         #        c.print_me()
-                
+
     def create_logfiles(self):
         """
         this function will create the logging files
         """
-        
+
         try:
             os.mkdir(self.today)
         except:
@@ -163,13 +166,13 @@ class framework():
         #self.lfname = self.today + '/' + self.lfname + '.' + t
         self.rlfname = self.today + '/' + self.rlfname + '.' + t
         self.rufname = self.today + '/' + 'rwfile' + '.' + t + '-' + rtail
-                        
+
         #self.logFile = open(self.lfname, 'w')
         self.rlogFile = open(self.rlfname, 'w')
         self.raw_usage = open(self.rufname, 'w')
-        
+
         #pass
-        
+
     def setup_logfiles(self):
         """
         set up the front matter for the logging files, and construct and record maps
@@ -200,7 +203,7 @@ class framework():
                 self.comp_map.update({s.name + '_' + c.name:ccount})
                 ccount = ccount + 1
             scount = scount + 1
-        
+
         #----------------------------------------
         # write out simulation and component maps
         #----------------------------------------
@@ -219,7 +222,7 @@ class framework():
         #----------------------------------------
         # write some header info
         #----------------------------------------
-        
+
         allocated, total = self.RM.get_curr_usage()
         #print >> self.logFile, comment_symbol, 'The following data is associated with the run executed at', self.beginning_of_time
         print >> self.rlogFile, comment_symbol, 'The following data is associated with the run executed at', self.beginning_of_time
@@ -233,15 +236,15 @@ class framework():
         #print >> self.logFile, comment_symbol, '================================================================='
         print >> self.rlogFile, comment_symbol, '================================================================='
         self.logEvent(None, None, 'start_sim', "starting simulation")
-        
+
     #-----------------------------------------------------------------------------------------------------
     #   logging functions:
     #     <global time> <sim> <component> <event type> <allocated nodes> <total nodes> <comment symbol> <comment>
     #         fwk         (------ caller -------)          (--------- RM --------)           fwk            caller
     #-----------------------------------------------------------------------------------------------------
-            
+
     def logEvent(self, sim, comp, ltype, msg):
-        
+
         allocated, total = self.RM.get_curr_usage()
         percent = 100 * (allocated / (float(total)))
         if not sim:
@@ -252,18 +255,18 @@ class framework():
             c = 'None'
         else:
             c = comp
-            
+
         if s == 'None' and c == 'None':
             #print >> self.logFile, self.fwk_global_time, 0, 0, self.log_types[ltype], allocated, total, self.comment_symbol, msg
             print >> self.rlogFile, self.fwk_global_time, 'fwk', '---' , ltype, percent, '%  ', allocated, total, self.comment_symbol, msg
         elif c == 'None':
             #print >> self.logFile, self.fwk_global_time, self.sim_map[s], self.comp_map[s + '_' + c], self.log_types[ltype], percent, '%  ',allocated, total, self.comment_symbol, msg
             print >> self.rlogFile, self.fwk_global_time, sim, '---', ltype, percent, '%  ',allocated, total, self.comment_symbol, msg
-        else:    
+        else:
             #print >> self.logFile, self.fwk_global_time, self.sim_map[s], self.comp_map[s + '_' + c], self.log_types[ltype], percent, '%  ', allocated, total, self.comment_symbol, msg
             print >> self.rlogFile, self.fwk_global_time, sim, comp, ltype, percent, '%  ', allocated, total, self.comment_symbol, msg
         #print >> self.raw_usage, self.fwk_global_time, ' ', percent
-        
+
         #pass
 
     def rw_log(self):
@@ -278,7 +281,7 @@ class framework():
 
     def parse_config(self, conf_files):
         #----------------------------------------
-        # read and parse config file 
+        # read and parse config file
         # of simulations and components
         #----------------------------------------
         for conf_file in conf_files:
@@ -292,7 +295,7 @@ class framework():
                 print 'Syntax problem in config file %s' % conf_file
                 print 'ConfigObj error message: ', ex
                 raise
-        
+
             try:
                 sims = config['simulation']
                 if not isinstance(sims, list):
@@ -331,7 +334,7 @@ class framework():
             #get running comps
             for s in sims:
                 running.extend(s.get_running_comps())
-            
+
             #run ready comps
             #self.my_rand.shuffle(ready)
             for c in to_run:
@@ -349,10 +352,10 @@ class framework():
             #let sims incorporate newly running comps
             for s in sims:
                 s.update_resource_info()
-            
+
             #log resource usage for current global time
             print 'to_run:', [k.name for k in to_run]
-            print 'running:', [k.name for k in running]        
+            print 'running:', [k.name for k in running]
             #find update time
             #print 'about to update time'
             try:
@@ -366,7 +369,7 @@ class framework():
                 self.rlogFile.close()
                 #self.raw_usage.close()
                 #subprocess.call(['rm', self.lfname, self.rlfname, self.rufname])
-                raise 
+                raise
 
             self.rw_log()
             #update all with update time
@@ -387,7 +390,7 @@ class framework():
         self.logEvent(None, None, 'end_sim', "end of simulation")
         #for s in self.simulations:
         #    self.total_usage += s.report_usage()
-        
+
         confs = "config files: " + self.config_files[0]
         for c in self.config_files[1:]:
             confs = confs + ", " + c

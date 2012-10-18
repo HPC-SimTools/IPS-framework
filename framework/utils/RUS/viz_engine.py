@@ -1,3 +1,6 @@
+#-------------------------------------------------------------------------------
+# Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
+#-------------------------------------------------------------------------------
 """
 Viz Engine
 ----------------
@@ -179,32 +182,32 @@ class trial:
 
 # globals!!!
 all_data = {'all':[], 'savg':None, 'smin':None, 'smax':None, 'sstddev':None, 'favg':None, 'fmin':None, 'fmax':None, 'fstddev':None}
-modes = {'none':{'all':[], 'savg':None, 'smin':None, 'smax':None, 'sstddev':None, 'favg':None, 'fmin':None, 'fmax':None, 'fstddev':None}, 
-         'restart':{'all':[], 'savg':None, 'smin':None, 'smax':None, 'sstddev':None, 'favg':None, 'fmin':None, 'fmax':None, 'fstddev':None}, 
-         'trncr':{'all':[], 'savg':None, 'smin':None, 'smax':None, 'sstddev':None, 'favg':None, 'fmin':None, 'fmax':None, 'fstddev':None}, 
-         'trwcr_2':{'all':[], 'savg':None, 'smin':None, 'smax':None, 'sstddev':None, 'favg':None, 'fmin':None, 'fmax':None, 'fstddev':None}, 
-         'trwcr_5':{'all':[], 'savg':None, 'smin':None, 'smax':None, 'sstddev':None, 'favg':None, 'fmin':None, 'fmax':None, 'fstddev':None}, 
-         'trwcr_10':{'all':[], 'savg':None, 'smin':None, 'smax':None, 'sstddev':None, 'favg':None, 'fmin':None, 'fmax':None, 'fstddev':None}, 
-         'trwcr_19':{'all':[], 'savg':None, 'smin':None, 'smax':None, 'sstddev':None, 'favg':None, 'fmin':None, 'fmax':None, 'fstddev':None}, 
-         'trwcr_29':{'all':[], 'savg':None, 'smin':None, 'smax':None, 'sstddev':None, 'favg':None, 'fmin':None, 'fmax':None, 'fstddev':None}, 
-         'trwcr_39':{'all':[], 'savg':None, 'smin':None, 'smax':None, 'sstddev':None, 'favg':None, 'fmin':None, 'fmax':None, 'fstddev':None}, 
-         'simcr_2':{'all':[], 'savg':None, 'smin':None, 'smax':None, 'sstddev':None, 'favg':None, 'fmin':None, 'fmax':None, 'fstddev':None}, 
-         'simcr_5':{'all':[], 'savg':None, 'smin':None, 'smax':None, 'sstddev':None, 'favg':None, 'fmin':None, 'fmax':None, 'fstddev':None}, 
-         'simcr_10':{'all':[], 'savg':None, 'smin':None, 'smax':None, 'sstddev':None, 'favg':None, 'fmin':None, 'fmax':None, 'fstddev':None}, 
-         'simcr_19':{'all':[], 'savg':None, 'smin':None, 'smax':None, 'sstddev':None, 'favg':None, 'fmin':None, 'fmax':None, 'fstddev':None}, 
-         'simcr_29':{'all':[], 'savg':None, 'smin':None, 'smax':None, 'sstddev':None, 'favg':None, 'fmin':None, 'fmax':None, 'fstddev':None}, 
+modes = {'none':{'all':[], 'savg':None, 'smin':None, 'smax':None, 'sstddev':None, 'favg':None, 'fmin':None, 'fmax':None, 'fstddev':None},
+         'restart':{'all':[], 'savg':None, 'smin':None, 'smax':None, 'sstddev':None, 'favg':None, 'fmin':None, 'fmax':None, 'fstddev':None},
+         'trncr':{'all':[], 'savg':None, 'smin':None, 'smax':None, 'sstddev':None, 'favg':None, 'fmin':None, 'fmax':None, 'fstddev':None},
+         'trwcr_2':{'all':[], 'savg':None, 'smin':None, 'smax':None, 'sstddev':None, 'favg':None, 'fmin':None, 'fmax':None, 'fstddev':None},
+         'trwcr_5':{'all':[], 'savg':None, 'smin':None, 'smax':None, 'sstddev':None, 'favg':None, 'fmin':None, 'fmax':None, 'fstddev':None},
+         'trwcr_10':{'all':[], 'savg':None, 'smin':None, 'smax':None, 'sstddev':None, 'favg':None, 'fmin':None, 'fmax':None, 'fstddev':None},
+         'trwcr_19':{'all':[], 'savg':None, 'smin':None, 'smax':None, 'sstddev':None, 'favg':None, 'fmin':None, 'fmax':None, 'fstddev':None},
+         'trwcr_29':{'all':[], 'savg':None, 'smin':None, 'smax':None, 'sstddev':None, 'favg':None, 'fmin':None, 'fmax':None, 'fstddev':None},
+         'trwcr_39':{'all':[], 'savg':None, 'smin':None, 'smax':None, 'sstddev':None, 'favg':None, 'fmin':None, 'fmax':None, 'fstddev':None},
+         'simcr_2':{'all':[], 'savg':None, 'smin':None, 'smax':None, 'sstddev':None, 'favg':None, 'fmin':None, 'fmax':None, 'fstddev':None},
+         'simcr_5':{'all':[], 'savg':None, 'smin':None, 'smax':None, 'sstddev':None, 'favg':None, 'fmin':None, 'fmax':None, 'fstddev':None},
+         'simcr_10':{'all':[], 'savg':None, 'smin':None, 'smax':None, 'sstddev':None, 'favg':None, 'fmin':None, 'fmax':None, 'fstddev':None},
+         'simcr_19':{'all':[], 'savg':None, 'smin':None, 'smax':None, 'sstddev':None, 'favg':None, 'fmin':None, 'fmax':None, 'fstddev':None},
+         'simcr_29':{'all':[], 'savg':None, 'smin':None, 'smax':None, 'sstddev':None, 'favg':None, 'fmin':None, 'fmax':None, 'fstddev':None},
          'simcr_39':{'all':[], 'savg':None, 'smin':None, 'smax':None, 'sstddev':None, 'favg':None, 'fmin':None, 'fmax':None, 'fstddev':None}}
 
 nodes = {258:[], 261:[], 268:[], 281:[]}
 #nodes = {1032:[], 1044:[], 1072:[], 1124:[]}
 succeeded = {}
 failed = {}
-policy = {'none':'none', 'restart':'restart from the beginning', 'trncr':'task relaunch, no C/R', 
-          'trwcr_2':'task relaunch, with C/R interval=2',  'simcr_2':'no task relaunch, C/R interval=2', 
-          'trwcr_5':'task relaunch, with C/R interval=5',  'simcr_5':'no task relaunch, C/R interval=5', 
-          'trwcr_10':'task relaunch, with C/R interval=10', 'simcr_10':'no task relaunch, C/R interval=10', 
-          'trwcr_19':'task relaunch, with C/R interval=19', 'simcr_19':'no task relaunch, C/R interval=19', 
-          'trwcr_29':'task relaunch, with C/R interval=29', 'simcr_29':'no task relaunch, C/R interval=29', 
+policy = {'none':'none', 'restart':'restart from the beginning', 'trncr':'task relaunch, no C/R',
+          'trwcr_2':'task relaunch, with C/R interval=2',  'simcr_2':'no task relaunch, C/R interval=2',
+          'trwcr_5':'task relaunch, with C/R interval=5',  'simcr_5':'no task relaunch, C/R interval=5',
+          'trwcr_10':'task relaunch, with C/R interval=10', 'simcr_10':'no task relaunch, C/R interval=10',
+          'trwcr_19':'task relaunch, with C/R interval=19', 'simcr_19':'no task relaunch, C/R interval=19',
+          'trwcr_29':'task relaunch, with C/R interval=29', 'simcr_29':'no task relaunch, C/R interval=29',
           'trwcr_39':'task relaunch, with C/R interval=39', 'simcr_39':'no task relaunch, C/R interval=39'}
 
 def produce_stats():
@@ -282,7 +285,7 @@ def produce_stats():
 
         if failed[k] > 0:
             v['favg'].div(float(failed[k]))
-        
+
         calc_stddev(modes[k])
 
     avg_tt = {}
@@ -346,7 +349,7 @@ def produce_stats():
     #---------------------------------------------------
     # output section
     #---------------------------------------------------
-    key_order = ['none', 'restart', 'trncr', 'simcr_39', 'simcr_19', 'simcr_10', 'simcr_5', 'simcr_2', 'trwcr_39', 'trwcr_19', 'trwcr_10', 'trwcr_5', 'trwcr_2'] 
+    key_order = ['none', 'restart', 'trncr', 'simcr_39', 'simcr_19', 'simcr_10', 'simcr_5', 'simcr_2', 'trwcr_39', 'trwcr_19', 'trwcr_10', 'trwcr_5', 'trwcr_2']
     #------------------------------------------
     # - chart prep
     #------------------------------------------
@@ -382,7 +385,7 @@ def produce_stats():
         for k2,v in d.items():
             for k in key_order:
                 v.update({k:0})
-    
+
     for k in key_order:
         for i in modes[k]['all']:
             if i.success:
@@ -408,7 +411,7 @@ def produce_stats():
                     rlt0[i.nodes][k] += i.launch_delay_t
                     rbt0[i.nodes][k] += i.resubmit_t
                     ot0[i.nodes][k] += i.overhead_t
-        
+
         for k2 in [258, 261, 268, 281]:
             if ns[k2][k] > 0:
                 cos[k2][k] = (cos[k2][k] / ns[k2][k])
@@ -422,7 +425,7 @@ def produce_stats():
                 ot[k2][k] = (ot[k2][k] / ns[k2][k]) / 3600
                 nsb[k2][k] = nsb[k2][k] / float(ns[k2][k])
             if ns0[k2][k] > 0:
-                cos0[k2][k] = (cos0[k2][k] / ns0[k2][k]) 
+                cos0[k2][k] = (cos0[k2][k] / ns0[k2][k])
                 tt0[k2][k] = (tt0[k2][k] / ns0[k2][k]) / 3600
                 wt0[k2][k] = (wt0[k2][k] / ns0[k2][k]) / 3600
                 rwt0[k2][k] = (rwt0[k2][k] / ns0[k2][k]) / 3600
@@ -432,46 +435,46 @@ def produce_stats():
                 rbt0[k2][k] = (rbt0[k2][k] / ns0[k2][k]) / 3600
                 ot0[k2][k] = (ot0[k2][k] / ns0[k2][k]) / 3600
 
-            print >> outfile, k, '(%d)' % k2, '\t|%13.2f' % ((ns[k2][k] / 100.0) * 100), 
-            print >> outfile, '|%18.2f' % cos[k2][k], 
-            print >> outfile, '|%11.2f' % tt[k2][k], 
-            print >> outfile, '|%10.2f' % wt[k2][k], 
+            print >> outfile, k, '(%d)' % k2, '\t|%13.2f' % ((ns[k2][k] / 100.0) * 100),
+            print >> outfile, '|%18.2f' % cos[k2][k],
+            print >> outfile, '|%11.2f' % tt[k2][k],
+            print >> outfile, '|%10.2f' % wt[k2][k],
             print >> outfile, '|%12.2f' % rwt[k2][k],
-            print >> outfile, '|%10.2f' % ct[k2][k], 
-            print >> outfile, '|%13.2f' % rst[k2][k], 
-            print >> outfile, '|%13.2f' % rlt[k2][k], 
-            print >> outfile, '|%14.2f' % rbt[k2][k], 
+            print >> outfile, '|%10.2f' % ct[k2][k],
+            print >> outfile, '|%13.2f' % rst[k2][k],
+            print >> outfile, '|%13.2f' % rlt[k2][k],
+            print >> outfile, '|%14.2f' % rbt[k2][k],
             print >> outfile, '|%11.2f' % ot[k2][k],
             print >> outfile, '|%11.4f' % nsb[k2][k]
             #print >> outfile, ' '
-            print >> outfile, k, '(%d)' % k2, '\t|%13.2f' % ((ns0[k2][k] / 100.0) * 100), 
-            print >> outfile, '|%18.2f' % cos0[k2][k], 
-            print >> outfile, '|%11.2f' % tt0[k2][k], 
-            print >> outfile, '|%10.2f' % wt0[k2][k], 
+            print >> outfile, k, '(%d)' % k2, '\t|%13.2f' % ((ns0[k2][k] / 100.0) * 100),
+            print >> outfile, '|%18.2f' % cos0[k2][k],
+            print >> outfile, '|%11.2f' % tt0[k2][k],
+            print >> outfile, '|%10.2f' % wt0[k2][k],
             print >> outfile, '|%12.2f' % rwt0[k2][k],
-            print >> outfile, '|%10.2f' % ct0[k2][k], 
-            print >> outfile, '|%13.2f' % rst0[k2][k], 
-            print >> outfile, '|%13.2f' % rlt0[k2][k], 
-            print >> outfile, '|%14.2f' % rbt0[k2][k], 
+            print >> outfile, '|%10.2f' % ct0[k2][k],
+            print >> outfile, '|%13.2f' % rst0[k2][k],
+            print >> outfile, '|%13.2f' % rlt0[k2][k],
+            print >> outfile, '|%14.2f' % rbt0[k2][k],
             print >> outfile, '|%11.2f' % ot0[k2][k],
             print >> outfile, '|%11.4f' % 0
 
         print >> outfile, "-------------------------------------------------------------------------------------------------------------------------------------------------------------"
-    
+
     #------------------------------------------
     # - summarize by allocation size
     #------------------------------------------
     print >> outfile, '\nAllocation size summary'
     print >> outfile, 'Nodes | Success / Failures | Avg Time | Avg Cost | Avg Failures | Avg Faults | % Work | Avg relaunch | Avg Restart | Avg Resubmit'
     for k,v in sorted(avg_tt.items(), key = lambda m: m[0]):
-        print >> outfile, k, ':  ', succeeded[k], '/', failed[k], 
-        print >> outfile, '  |  %.2f -- %.2f' % (avg_tt[k][0] / 3600, avg_tt[k][1] / 3600), 
-        print >> outfile, '  |  %.2f -- %.2f' % (avg_cost[k][0] / 3600, avg_cost[k][1] / 3600), 
-        print >> outfile, '  |  %.2f -- %.2f' % avg_nf[k], 
-        print >> outfile, '  |  %.2f -- %.2f' % avg_fn[k], 
-        print >> outfile, '  |  %.2f -- %.2f' % avg_wp[k], 
-        print >> outfile, '  |  %.2f -- %.2f' % avg_rln[k], 
-        print >> outfile, '  |  %.2f -- %.2f' % avg_rsn[k], 
+        print >> outfile, k, ':  ', succeeded[k], '/', failed[k],
+        print >> outfile, '  |  %.2f -- %.2f' % (avg_tt[k][0] / 3600, avg_tt[k][1] / 3600),
+        print >> outfile, '  |  %.2f -- %.2f' % (avg_cost[k][0] / 3600, avg_cost[k][1] / 3600),
+        print >> outfile, '  |  %.2f -- %.2f' % avg_nf[k],
+        print >> outfile, '  |  %.2f -- %.2f' % avg_fn[k],
+        print >> outfile, '  |  %.2f -- %.2f' % avg_wp[k],
+        print >> outfile, '  |  %.2f -- %.2f' % avg_rln[k],
+        print >> outfile, '  |  %.2f -- %.2f' % avg_rsn[k],
         print >> outfile, '  |  %.2f -- %.2f' % avg_rbn[k]
 
 
@@ -481,15 +484,15 @@ def produce_stats():
     #------------------------------------------
     print >> outfile, '\nFT Policy summary'
     for k,v in sorted (modes.items()):
-        print >> outfile, k, ':  ', succeeded[k], '/', failed[k], 
-        print >> outfile, '  |  %.2f -- %.2f' % (v['savg'].total_time / 3600, v['favg'].total_time / 3600), 
-        print >> outfile, '  |  %.2f -- %.2f' % (v['savg'].cost / 3600, v['favg'].cost / 3600), 
-        print >> outfile, '  |  %.2f -- %.2f' % (v['savg'].node_failures, v['favg'].node_failures), 
-        print >> outfile, '  |  %.2f -- %.2f' % (v['savg'].fault_n, v['favg'].fault_n), 
-        print >> outfile, '  |  %.2f -- %.2f' % (v['savg'].work_p, v['favg'].work_p), 
-        print >> outfile, '  |  %.2f -- %.2f' % (v['savg'].relaunch_n, v['favg'].relaunch_n), 
-        print >> outfile, '  |  %.2f -- %.2f' % (v['savg'].restart_n, v['favg'].restart_n), 
-        print >> outfile, '  |  %.2f -- %.2f' % (v['savg'].resubmit_n, v['favg'].resubmit_n) 
+        print >> outfile, k, ':  ', succeeded[k], '/', failed[k],
+        print >> outfile, '  |  %.2f -- %.2f' % (v['savg'].total_time / 3600, v['favg'].total_time / 3600),
+        print >> outfile, '  |  %.2f -- %.2f' % (v['savg'].cost / 3600, v['favg'].cost / 3600),
+        print >> outfile, '  |  %.2f -- %.2f' % (v['savg'].node_failures, v['favg'].node_failures),
+        print >> outfile, '  |  %.2f -- %.2f' % (v['savg'].fault_n, v['favg'].fault_n),
+        print >> outfile, '  |  %.2f -- %.2f' % (v['savg'].work_p, v['favg'].work_p),
+        print >> outfile, '  |  %.2f -- %.2f' % (v['savg'].relaunch_n, v['favg'].relaunch_n),
+        print >> outfile, '  |  %.2f -- %.2f' % (v['savg'].restart_n, v['favg'].restart_n),
+        print >> outfile, '  |  %.2f -- %.2f' % (v['savg'].resubmit_n, v['favg'].resubmit_n)
 
     #------------------------------------------
     # - policy details
@@ -565,15 +568,15 @@ def produce_stats():
     width = 4.0       # the width of the bars: can also be len(x) sequence
     p1 = plt.bar(ind, all_wt,   width, color='r')
     p2 = plt.bar(ind, all_rwt, width, color='y', bottom=all_wt)
-    my_bottom = [sum(pair) for pair in zip(all_wt, all_rwt)] 
+    my_bottom = [sum(pair) for pair in zip(all_wt, all_rwt)]
     p3 = plt.bar(ind, all_ct, width, color='b', bottom=my_bottom)
-    my_bottom = [sum(pair) for pair in zip(my_bottom, all_ct)] 
+    my_bottom = [sum(pair) for pair in zip(my_bottom, all_ct)]
     p4 = plt.bar(ind, all_rlt, width, color='g', bottom=my_bottom)
-    my_bottom = [sum(pair) for pair in zip(my_bottom, all_rlt)] 
+    my_bottom = [sum(pair) for pair in zip(my_bottom, all_rlt)]
     p5 = plt.bar(ind, all_rst, width, color='m', bottom=my_bottom)
-    my_bottom = [sum(pair) for pair in zip(my_bottom, all_rst)] 
+    my_bottom = [sum(pair) for pair in zip(my_bottom, all_rst)]
     p6 = plt.bar(ind, all_rbt, width, color='c', bottom=my_bottom)
-    my_bottom = [sum(pair) for pair in zip(my_bottom, all_rbt)] 
+    my_bottom = [sum(pair) for pair in zip(my_bottom, all_rbt)]
     p7 = plt.bar(ind, all_ot, width, color='k', bottom=my_bottom)
 
     plt.ylabel('Time in Hours')
@@ -582,7 +585,7 @@ def produce_stats():
     plt.xticks([i+width/2. for i in ind], xtl, rotation='vertical')
     #plt.yticks(np.arange(0,81,10))
     plt.legend( (p1[0], p2[0], p3[0], p4[0], p5[0], p6[0], p7[0]), ('Work', 'Rework', 'Ckpt', 'Launch Delay', 'Restart', 'Resubmit', 'Overhead') )
-    
+
     #plt.savefig('bar_graph1.pdf')
     plt.show()
 
@@ -602,7 +605,7 @@ def produce_stats():
     plt.xticks([i+width/2. for i in new_ind], key_order, rotation='vertical')
     #plt.legend(p8, 'Total Time to Solution')
     plt.hlines(602.78, 0, new_ind[-1] + 4, 'r', linewidth=2)
-    
+
     #plt.savefig('bar_graph2.pdf')
     plt.show()
 
@@ -610,10 +613,10 @@ def produce_stats():
     plt.figure()
     plt.subplot(1, 2, 1)
     xvals = [39, 19, 10, 5, 2]
-    plt.plot(xvals, all_ns0[3:8], 'r^-', linewidth=2, label='C/R') 
-    #plt.plot(xvals, all_ns[3:8], 'r^--', label='C/R, with resubmissions') 
-    plt.plot(xvals, all_ns0[8:], 'bv-', linewidth=2, label='C/R + T/R') 
-    #plt.plot(xvals, all_ns[8:], 'bv--', label='T/R, with resubmissions') 
+    plt.plot(xvals, all_ns0[3:8], 'r^-', linewidth=2, label='C/R')
+    #plt.plot(xvals, all_ns[3:8], 'r^--', label='C/R, with resubmissions')
+    plt.plot(xvals, all_ns0[8:], 'bv-', linewidth=2, label='C/R + T/R')
+    #plt.plot(xvals, all_ns[8:], 'bv--', label='T/R, with resubmissions')
     plt.axis([0, 40, 0, 40])
     plt.ylabel('% Successful')
     plt.xlabel('Checkpoint Interval (Phys. Time)')
@@ -635,7 +638,7 @@ def produce_stats():
     plt.savefig('success_cost' + suff + '.pdf')
     plt.show()
 
-    
+
 # end produce_stats
 
 def calc_stddev(k):
@@ -778,8 +781,8 @@ def calc_stddev(k):
     k['fstddev'].fault_n = scipy.std(ffn)
     k['fstddev'].node_failures = scipy.std(fnf)
 
-    
-    
+
+
 def make_graphs():
     """
     this is where we will produce some pretty graphs of things

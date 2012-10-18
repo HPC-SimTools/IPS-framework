@@ -1,3 +1,6 @@
+#-------------------------------------------------------------------------------
+# Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
+#-------------------------------------------------------------------------------
 """
 This file hosts the TopicManager class that manages the set of events and
 listeners for a given topic. For reasons of efficient storage and O(1)-time

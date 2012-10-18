@@ -1,3 +1,6 @@
+#-------------------------------------------------------------------------------
+# Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
+#-------------------------------------------------------------------------------
 # local version
 import sys
 import os
@@ -23,8 +26,8 @@ from node_structure import Node
 
 class ResourceManager(object):
     """
-    The resource manager is responsible for detecting the resources allocated 
-    to the framework, allocating resources to task requests, and maintaining 
+    The resource manager is responsible for detecting the resources allocated
+    to the framework, allocating resources to task requests, and maintaining
     the associated bookkeeping.
     """
     # RM init
@@ -52,7 +55,7 @@ class ResourceManager(object):
         self.avail_cores = 0
         self.processes = 0
         self.active_tasks = {} # tid:(owner, cores, procs)
-        
+
         # hardware node topology
         self.cores_per_node = 1
         self.sockets_per_node = 1
@@ -63,15 +66,15 @@ class ResourceManager(object):
         self.ppn = 1  # platform config ppn for the whole IPS
         self.myTopic = None
         self.service_methods = ['get_allocation', 'release_allocation']
-        
+
         self.fwk.register_service_handler(self.service_methods,
                                   getattr(self,'process_service_request'))
     # RM initialize
-    def initialize(self, dataMngr, taskMngr, configMngr, ftb, 
+    def initialize(self, dataMngr, taskMngr, configMngr, ftb,
                    cmd_nodes=0, cmd_ppn=0):
         """
-        Initialize resource management structures, references to other 
-        managers (*dataMngr*, *taskMngr*, *configMngr*), and feature settings 
+        Initialize resource management structures, references to other
+        managers (*dataMngr*, *taskMngr*, *configMngr*), and feature settings
         (*ftb*).
 
         Resource information comes from the following in order of priority:
@@ -80,7 +83,7 @@ class ResourceManager(object):
           * detection using parameters from platform config file
           * manual settings from platform config file
 
-        The second two sources are obtained through 
+        The second two sources are obtained through
         :py:meth:`resourceHelper.getResourceList`.
         """
         self.EM = eventManager(self)
@@ -106,7 +109,7 @@ class ResourceManager(object):
         #-------------------------------
         if cmd_nodes != 0 and cmd_ppn != 0:
             # use cmd resource specification
-            self.host = "override_%s" % os.environ['HOST'] 
+            self.host = "override_%s" % os.environ['HOST']
             self.max_ppn = cmd_ppn
             self.cores_per_node = cmd_ppn
             self.ppn = cmd_ppn
@@ -135,7 +138,7 @@ class ResourceManager(object):
             except Exception, e:
                 print "can't get resource info"
                 raise
-        
+
             #-------------------------------
             # set ppn
             #-------------------------------
@@ -176,13 +179,13 @@ class ResourceManager(object):
             # set cores/sockets per socket/node
             #-----------------------------------
             #print ">>>> CPN %d --- SPN %d" % (self.cores_per_node, self.sockets_per_node)
-            if (self.cores_per_node % self.sockets_per_node) == 0: 
+            if (self.cores_per_node % self.sockets_per_node) == 0:
                 self.cores_per_socket = self.cores_per_node / self.sockets_per_node
             else:
                 self.fwk.warning("cpn (%d) not divisible by spn(%d) - setting spn to 1" % (self.cores_per_node, self.sockets_per_node))
                 self.sockets_per_node = 1
                 self.cores_per_socket = self.cores_per_node
-        
+
         #-------------------------------
         # populate nodes
         #-------------------------------
@@ -245,12 +248,12 @@ class ResourceManager(object):
 
     def add_nodes(self, listOfNodes):
         """
-        Add node entries to ``self.nodes``.  Typically used by 
+        Add node entries to ``self.nodes``.  Typically used by
         :py:meth:`.initialize` to initialize ``self.nodes``.
         May be used to add nodes to a dynamic allocation in the future.
 
-        *listOfNodes* is a list of tuples (*node name*, *cores*).  
-        ``self.nodes`` is a dictionary where the keys are the *node names* and 
+        *listOfNodes* is a list of tuples (*node name*, *cores*).
+        ``self.nodes`` is a dictionary where the keys are the *node names* and
         the values are :py:class:`node_structure.Node` structures.
 
         Return total number of cores.
@@ -258,7 +261,7 @@ class ResourceManager(object):
         tot_cores = 0
         for n, p in listOfNodes:
             if n not in self.nodes:
-                self.nodes.update({n:Node(n, self.sockets_per_node, 
+                self.nodes.update({n:Node(n, self.sockets_per_node,
                                           self.cores_per_node, p)})
                 self.num_nodes += 1
                 self.avail_nodes.append(n)
@@ -266,8 +269,8 @@ class ResourceManager(object):
                     tot_cores += p
                 else: # p is a list of core names
                     tot_cores += len(p)
-        """ 
-        ### AGS: SC09 demo code, also useful for debugging FT capabilities. 
+        """
+        ### AGS: SC09 demo code, also useful for debugging FT capabilities.
         if self.FTB and not self.accurateNodes:
             self.resource_visualizer()
             print ">>> Nodes allocated."
@@ -288,7 +291,7 @@ class ResourceManager(object):
           * *ppn*: processes per node for launching the task
           * *max_ppn*: processes that can be launched
           * *accurateNodes*: ``True`` if *nodes* uses the actual names of the nodes, ``False`` otherwise.
-        
+
         If *whole_nodes* is ``False``:
 
           * *shared_nodes*: ``True``
@@ -360,7 +363,7 @@ class ResourceManager(object):
                                                        self.max_ppn)
             if nodes == "insufficient":
                 c = ceil(float(nproc)/ppn)
-                raise InsufficientResourcesException(comp_id, task_id, 
+                raise InsufficientResourcesException(comp_id, task_id,
                                                  c, c - len(self.avail_nodes))
         else:
             try:
@@ -471,11 +474,11 @@ class ResourceManager(object):
 
     def check_whole_node_cap(self, nproc, ppn):
         """
-        Determine if it is currently possible to allocate *nproc* processes 
-        with a ppn of *ppn* and whole nodes.  Return ``True`` and list of 
-        nodes to use if successful.  Return ``False`` and empty list if there 
-        are not enough available resources at this time, but it is possible to 
-        eventually satisfy the request.  Exception raised if the request can 
+        Determine if it is currently possible to allocate *nproc* processes
+        with a ppn of *ppn* and whole nodes.  Return ``True`` and list of
+        nodes to use if successful.  Return ``False`` and empty list if there
+        are not enough available resources at this time, but it is possible to
+        eventually satisfy the request.  Exception raised if the request can
         never be fulfilled.
         """
         whole_cap = 0
@@ -497,7 +500,7 @@ class ResourceManager(object):
             tot_cap += min([ppn, n.total_cores])
             if tot_cap >= nproc:
                 return False, "insufficient"
-        
+
         if self.total_cores < nproc:
             return False, "bad"
         else:
@@ -505,11 +508,11 @@ class ResourceManager(object):
 
     def check_whole_sock_cap(self, nproc, ppn):
         """
-        Determine if it is currently possible to allocate *nproc* processes 
-        with a ppn of *ppn* and whole sockets.  Return ``True`` and list of 
-        nodes to use if successful.  Return ``False`` and empty list if there 
-        are not enough available resources at this time, but it is possible to 
-        eventually satisfy the request.  Exception raised if the request can 
+        Determine if it is currently possible to allocate *nproc* processes
+        with a ppn of *ppn* and whole sockets.  Return ``True`` and list of
+        nodes to use if successful.  Return ``False`` and empty list if there
+        are not enough available resources at this time, but it is possible to
+        eventually satisfy the request.  Exception raised if the request can
         never be fulfilled.
         """
         nodes = []
@@ -541,7 +544,7 @@ class ResourceManager(object):
             tot_cap += min([ppn, n.total_cores])
             if tot_cap >= nproc:
                 return False, "insufficient"
-        
+
         if self.total_cores < nproc:
             return False, "bad"
         else:
@@ -550,11 +553,11 @@ class ResourceManager(object):
 
     def check_core_cap(self, nproc, ppn):
         """
-        Determine if it is currently possible to allocate *nproc* processes 
-        with a ppn of *ppn* without further restrictions..  Return ``True`` 
-        and list of nodes to use if successful.  Return ``False`` and empty 
-        list if there are not enough available resources at this time, but it 
-        is possible to eventually satisfy the request.  Exception raised if 
+        Determine if it is currently possible to allocate *nproc* processes
+        with a ppn of *ppn* without further restrictions..  Return ``True``
+        and list of nodes to use if successful.  Return ``False`` and empty
+        list if there are not enough available resources at this time, but it
+        is possible to eventually satisfy the request.  Exception raised if
         the request can never be fulfilled.
         """
         #print "++++++++++++++++"
@@ -590,7 +593,7 @@ class ResourceManager(object):
             tot_cap += min([ppn, n.total_cores])
             if tot_cap >= nproc:
                 return False, "insufficient"
-        
+
         if self.total_cores < nproc:
             return False, "bad"
         else:
@@ -599,8 +602,8 @@ class ResourceManager(object):
     # RM releaseAllocation
     def release_allocation(self, task_id, status):
         """
-        Set resources allocated to task *task_id* to available.  *status* is 
-        not used, but may be used to correlate resource failures to task 
+        Set resources allocated to task *task_id* to available.  *status* is
+        not used, but may be used to correlate resource failures to task
         failures and implement task relaunch strategies.
         """
         if self.FTB:
@@ -620,7 +623,7 @@ class ResourceManager(object):
         self.avail_cores += num_cores
         self.alloc_cores -= num_cores
         self.processes -= nproc
-        
+
         self.report_RM_status('released nodes for task %d' % task_id)
 
         """
@@ -654,7 +657,7 @@ class ResourceManager(object):
             for node in b['NODE_LIST']:
 
                 """
-                ### AGS: SC09 demo code, also useful for debugging FT capabilities. 
+                ### AGS: SC09 demo code, also useful for debugging FT capabilities.
                 if self.FTB and not self.accurateNodes:
                     node = int(node)
                 """
@@ -690,7 +693,7 @@ class ResourceManager(object):
         for n in sorted(self.nodes.keys()):
             i = self.nodes[n]
             if i['status'] == 'NODE_DOWN':
-                #TODO: this is an old way of formatting print output, that will eventually be 
+                #TODO: this is an old way of formatting print output, that will eventually be
                 #      removed from the language, hence switch to str.format().
                 print "%4s" %'X',
             elif i['status'] == 'NODE_UP':

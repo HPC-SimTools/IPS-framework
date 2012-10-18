@@ -1,3 +1,6 @@
+#-------------------------------------------------------------------------------
+# Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
+#-------------------------------------------------------------------------------
 #! /usr/bin/env python
 
 from  component import Component
@@ -16,7 +19,6 @@ class HelloWorker(Component):
     def step(self, timeStamp=0.0):
         print 'Hello from HelloWorker'
         return
-    
+
     def finalize(self, timeStamp=0.0):
         return
-    

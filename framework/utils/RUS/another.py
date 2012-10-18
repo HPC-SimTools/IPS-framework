@@ -1,3 +1,6 @@
+#-------------------------------------------------------------------------------
+# Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
+#-------------------------------------------------------------------------------
 import matplotlib
 matplotlib.use('AGG')
 import matplotlib.pyplot as plt
@@ -7,7 +10,7 @@ f_list = list()
 for k in range(6):
     f_list.append(list())
 
-    
+
 def read_data(file_to_read, bin):
     times = list()
     cores = list()
@@ -16,7 +19,7 @@ def read_data(file_to_read, bin):
         cores.append(list())
         effcy.append(list())
         times.append(list())
-    
+
     infile = open(file_to_read, 'r')
     lines = infile.readlines()
     for line in lines[1:]:
@@ -90,7 +93,7 @@ def do_plotting(feature):
     maxrt = max([max(l) for l in ts_list])
     plt.xlabel('% simulation time used by nubeam')
     plt.ylabel('time per simulation (seconds)')
-    plt.axis([16, 1024, minrt - .1*(maxrt-minrt), maxrt + .1*(maxrt-minrt)])  
+    plt.axis([16, 1024, minrt - .1*(maxrt-minrt), maxrt + .1*(maxrt-minrt)])
     plt.legend(loc='upper left')
     #plt.show()
     plt.savefig('agg_' + (sys.argv[1][:-4]) + '.pdf')
@@ -99,6 +102,6 @@ def do_plotting(feature):
 if __name__ == "__main__":
     feature = sys.argv[1]
     for k in range(2, len(sys.argv), 2):
-        read_data(sys.argv[k], int(sys.argv[k+1]))  
+        read_data(sys.argv[k], int(sys.argv[k+1]))
     do_plotting(feature)
     sys.exit(0)

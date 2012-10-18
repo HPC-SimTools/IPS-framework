@@ -1,8 +1,11 @@
+#-------------------------------------------------------------------------------
+# Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
+#-------------------------------------------------------------------------------
 # -*- coding: utf-8 -*-
 #! /usr/bin/python
 
 import sys
-import subprocess                 
+import subprocess
 import os
 import BeautifulSoup
 import urllib2
@@ -24,7 +27,7 @@ except:
     raise
 
 def animate_convergence(converge, max_slice, max_iteration, max_wall_time):
-    
+
 #    print converge, max_slice, max_iteration, max_wall_time
     f = plt.figure(4)
     plt.ylabel('Slice')
@@ -48,7 +51,7 @@ def animate_convergence(converge, max_slice, max_iteration, max_wall_time):
         X1[i] = i
     for i in range(len(Y1)):
         Y1[i] = i
-    
+
     for ((iteration, slice), value) in sorted(converge.iteritems()):
 #        print iteration, slice, '%.3e' % (value)
         convergence[iteration, slice] = value
@@ -57,7 +60,7 @@ def animate_convergence(converge, max_slice, max_iteration, max_wall_time):
         Y[iteration, slice] = Y[iteration + 1 , slice] = slice - 0.5
         Y[iteration, slice + 1] = Y[iteration + 1, slice + 1] = slice + 0.5
         X[iteration + 1, slice] = X[iteration + 1, slice + 1] = iteration + 0.5
-    
+
     # print iterations
     # print slices
     # find minimum value not equal to zero
@@ -66,7 +69,7 @@ def animate_convergence(converge, max_slice, max_iteration, max_wall_time):
         if value > 0.0 and value < value_min:
             value_min = value
             #print 'min = ', value_min
-            
+
     # set zeros to value min
     for ((iteration, slice), value) in sorted(converge.iteritems()):
         if value < value_min:
@@ -77,21 +80,21 @@ def animate_convergence(converge, max_slice, max_iteration, max_wall_time):
         p = plt.pcolor(X.transpose(), Y.transpose(), convergence.transpose(),
                        norm = LogNorm())
     except ValueError:
-         p = plt.plot((0), (0))
+        p = plt.plot((0), (0))
     else:
         tol_level = [1.5e-6]
         #CS = plt.contour(X1, Y1, Z1, levels = tol_level)
-    
+
         cb = plt.colorbar(spacing='proportional', format='%.1e')
         #cb.add_line(CS)
         cb.ax.set_ylabel('Error')
-    
+
     filename = 'plot_%09.3f.png' % (max_wall_time)
     plt.savefig(filename, dpi=100)
     print 'Wrote file', filename
     plt.clf()
 
-    
+
 def get_task_times(url_list):
     task_time_map = {}
     all_phys_stamps = set()
@@ -122,7 +125,7 @@ def get_task_times(url_list):
                 comment_lst = comment.split()
                 task_id = comment_lst[comment_lst.index('task_id')+ 2]
                 try:
-                   tag = comment_lst[comment_lst.index('Tag')+ 2]
+                    tag = comment_lst[comment_lst.index('Tag')+ 2]
                 except ValueError :
                     if field_values[2] == u'IPS_LAUNCH_TASK':
                         try:
@@ -136,11 +139,11 @@ def get_task_times(url_list):
                             (phys_stamp, slice) = comment.split()[-6].split('.')
                 else:
                     (phys_stamp, slice) = tag.split('.')
-     
+
                 #(phys_stamp, slice) = identifier.split('.')
                 #print phys_stamp, identifier, comment.split()[-2]
                 if float(phys_stamp_portal) > 0.0:
-                    phys_stamp = phys_stamp_portal                   
+                    phys_stamp = phys_stamp_portal
                 phys_stamp_map[task_id] = (phys_stamp, slice)
             elif (field_values[2] == u'IPS_TASK_END'):
                 task_id = comment.split()[2]
@@ -169,16 +172,16 @@ def get_task_times(url_list):
                 all_phys_stamps.add(phys_stamp)
             elif (field_values[2] == u'converge_out'):
                 (iteration, slice, value) = comment.split()
-                array_idx = int(iteration), int(slice) 
+                array_idx = int(iteration), int(slice)
                 converge[array_idx] = float(value)
                 anim_converge[int(event_num)] = (array_idx, wall_time)
-                
-    print 'Phys_stamp', 
+
+    print 'Phys_stamp',
     for comp in task_time_map.keys():
         for suffix in ['_count', '_low', '_high', '_mean']:
-            print ',   ', comp+suffix, 
+            print ',   ', comp+suffix,
     print
-    
+
     for phys_stamp in sorted(all_phys_stamps, key = float):
         print phys_stamp,
         for comp_map in task_time_map.values():
@@ -189,7 +192,7 @@ def get_task_times(url_list):
             except KeyError:
                 print ',   ,    ,    ,     ,    ,'
         print
-        
+
     if (len(converge) > 0):
         max_slice = -1
         max_iteration = -1
@@ -200,7 +203,7 @@ def get_task_times(url_list):
                 max_slice = slice
         max_slice += 1
         max_iteration += 1
-    
+
     converge_event_sorted = sorted(anim_converge.keys())
     interval = len(events) / NUM_FRAMES
     last_event_lst = range(0, len(events), interval)
@@ -208,14 +211,14 @@ def get_task_times(url_list):
         last_event_lst[-1] = len(events)
     event_idx = converge_event_sorted[0]
     plot_idx = 1
-                    
+
     partial_converge = {}
     max_wall_time = -1.0
     last_event = events[-1]
     fields = last_event('td')
     field_values = [field.contents[0].strip() for field in fields]
     total_wall_time = float(field_values[-3])
-    time_lst = range(0, int(total_wall_time+1), SIMSEC_PER_FRAME) 
+    time_lst = range(0, int(total_wall_time+1), SIMSEC_PER_FRAME)
     last_frame_time = -1.0
     for event in events:
         fields = event('td')
@@ -228,7 +231,7 @@ def get_task_times(url_list):
             pass
         else:
             partial_converge[array_idx] = converge[array_idx]
-            
+
         if wall_time > max_wall_time:
             max_wall_time = wall_time
 
@@ -264,7 +267,7 @@ def get_task_times(url_list):
            'copy',
            '-o',
            'output.avi')
-        
+
 #os.spawnvp(os.P_WAIT, 'mencoder', command)
 
     print "\n\nabout to execute:\n%s\n\n" % ' '.join(command)

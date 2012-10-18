@@ -1,3 +1,6 @@
+#-------------------------------------------------------------------------------
+# Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
+#-------------------------------------------------------------------------------
 """
 utility to help test resource parsing functions from resourceHelper
 
@@ -135,7 +138,7 @@ def test_mpirun(nodes, ppn, mixed_nodes, lon):
                     k += 1
                     l_str.append(['mpirun', '-bind-to-core', '-bycore',
                                   '-np', '1', 'topo_check_long'])
-                    
+
                     try:
                         print l_str[-1]
                         f = open('blah' + str(k), 'w')
@@ -147,7 +150,7 @@ def test_mpirun(nodes, ppn, mixed_nodes, lon):
                         raise
             for p in procs:
                 p.wait()
-                                
+
 
 def test_mpiexec_mpt(nodes, ppn, mixed_nodes, lon):
     """
@@ -178,7 +181,7 @@ def test_mpiexec_mpt(nodes, ppn, mixed_nodes, lon):
         if v == 'sgi':
             nodes = ','.join([k[0] for k in lon])
             new_env = os.environ
-            new_env.update({'MPI_DSM_CPULIST':'3-7:1-3'})            
+            new_env.update({'MPI_DSM_CPULIST':'3-7:1-3'})
             l_str = ['mpiexec_mpt', '-np', '8', './topo_check']
             print l_str
             process = subprocess.Popen(l_str, stdout=subprocess.PIPE,

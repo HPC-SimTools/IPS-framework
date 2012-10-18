@@ -1,3 +1,6 @@
+#-------------------------------------------------------------------------------
+# Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
+#-------------------------------------------------------------------------------
 """
 Experimentinator
 ----------------
@@ -55,10 +58,10 @@ class experiment_suite():
         self.node_interval = 16
 
         try:
-            opts, args = getopt.getopt(sys.argv[1:], 'c:s:v:i:p:t:n:k:f:m:j:z:', 
+            opts, args = getopt.getopt(sys.argv[1:], 'c:s:v:i:p:t:n:k:f:m:j:z:',
                                        ['ncomps=','simtime=','var=','interleave=','ppn=', 'trials=', 'name=', 'steps=', 'cfile=', 'minnodes=', 'nodeinterval='])
         except getopt.GetoptError, err:
-            # print help information and exit:                                                                  
+            # print help information and exit:
             print str(err) # will print something like "option -a not recognized"
             usage()
             sys.exit(2)
@@ -112,18 +115,18 @@ class experiment_suite():
                 k.fname = s
                 self.my_sims.update({f:k})
             self.maxnodes = self.concurrent_min * self.interleaving
-            
+
         except:
             print "problem setting up sim objects"
             raise
-        
+
         #=======================================================================
         # # node values ranging from min # nodes to max # nodes in intervals of 16
         #=======================================================================
         node_vals = list()
         for j in range(1, self.interleaving + 1):
             node_vals.append(range(self.minnodes, self.concurrent_min * j + 1, self.node_interval))
-        
+
         for r in node_vals[-1]:
             fname = 'resource_files/res_' + 'n' + str(r) + '_p' + str(self.ppn)
             if not os.path.exists(fname):
@@ -137,14 +140,14 @@ class experiment_suite():
                 print >> f, 'mem_pernode = 0'
                 print >> f, 'disk_pernode = 0'
                 f.close()
-        
+
         #=======================================================================
         # # generate experiment list
         #=======================================================================
         ltm = 'logTypeMap'
         log = 'gen' + self.id
         self.my_exps = list()
-        
+
         for k,v in self.my_sims.items():
             for i in range(0, self.interleaving):
                 for r in node_vals[i]:
@@ -164,7 +167,7 @@ class experiment_suite():
                     #status: *Succeeded* if the simulation was able to
                     #complete, otherwise, *Failed*.
                     #seed: random number seed used for this run.
-                    #total time: total time charged by the system (in other words, 
+                    #total time: total time charged by the system (in other words,
                     #spent in an allocation).
                     #allocation size: number of nodes requested.
                     #CPU hrs charged: the number of *hours* charged for this run.
@@ -174,34 +177,34 @@ class experiment_suite():
                     #ckpt time: amount of time spent taking check points.
                     #restart time: amount of time spent loading data from a checkpoint.
                     #launch delay time: amount of time spent delaying task relaunches.
-                    #resubmit time: amount of time spent setting up the framework and 
+                    #resubmit time: amount of time spent setting up the framework and
                     #simulation in a new batch allocation.
-                    #overhead time: amount of time spent doing other overhead activities 
+                    #overhead time: amount of time spent doing other overhead activities
                     #(for instance, simulation startup and shutdown).
                     ## ckpts: number of checkpoints taken
-                    ## node failures: number of node failures that occurred over the 
+                    ## node failures: number of node failures that occurred over the
                     #course of the simulation.
                     ## faults: number of interrupts experienced by the application.
                     ## relaunch: number of times any task was relaunched.
-                    ## restart: number of times the simulation was rolled back and 
+                    ## restart: number of times the simulation was rolled back and
                     #restarted from a checkpoint
-                    ## resubmit: number of times the framework ran out of nodes and 
+                    ## resubmit: number of times the framework ran out of nodes and
                     #started again in a new batch allocation from the beginning or a checkpoint.
-                    
+
                     s, ms, t, c, chc, chu, w, r, p, rs, ld, rb, o, nc, n, nf, nrl, ns, nb = o.split()
                     e.trials.ts[i].ts_set(t,chc,chu,float(chu)/float(chc),ms)
                 except:
                     print 'problems with run %s on %d nodes, trial %d' % (e.sim.name, e.nodes, i)
                     raise
-                    
+
     def post_analysis(self):
         """
         Analyze and graph resource usage and efficiency data.
         """
-        plt.gca().set_autoscale_on(False) 
+        plt.gca().set_autoscale_on(False)
         tm = strftime("%H.%M.%S", gmtime())
         dump = open('dump_plot_data' + tm, 'w')
-        
+
         #=======================================================================
         # # initialize lists for gathering data
         #=======================================================================
@@ -210,14 +213,14 @@ class experiment_suite():
         y_c = list()
         y_u = list()
         y_e = list()
-        
+
         for j in range(self.interleaving):
             xn.append(list())
             y_t.append(list())
             y_u.append(list())
             y_c.append(list())
             y_e.append(list())
- 
+
         #=======================================================================
         # # initialize vars to gather max and min
         #=======================================================================
@@ -229,9 +232,9 @@ class experiment_suite():
         max_effcy.val = [0]*self.interleaving
         min_effcy.nodes = [0]*self.interleaving
         max_effcy.nodes = [0]*self.interleaving
-        print >> dump, 'interleave nodes time charged used effcy'               
+        print >> dump, 'interleave nodes time charged used effcy'
         for e in self.my_exps:
-            i = e.interleave - 1 
+            i = e.interleave - 1
             e.trials.minmaxavg()
             n = e.nodes
             t = e.trials.avg.time / e.interleave
@@ -264,7 +267,7 @@ class experiment_suite():
 
         #=======================================================================
         # # make pretty graphs
-        #=======================================================================        
+        #=======================================================================
 
         efficiency_axes = [self.minnodes*4, self.maxnodes*4, 0, 110]
         time_axes = [self.minnodes*4, self.maxnodes*4, 0, (y_t[0][-1] + 0.10 * y_t[0][-1])/1000.0]
@@ -281,7 +284,7 @@ class experiment_suite():
             plt.xlabel('nodes')
             plt.ylabel('Efficiency')
             plt.title(curr_l)
-            
+
             plt.twinx()
             plt.axis(time_axes)
             plt.plot(xn[j], y_t[0]*len(xn[j]), 'g--', label='Serial Time')
@@ -307,7 +310,7 @@ class experiment_suite():
             plt.ylabel('% Efficiency')
             #plt.title(curr_l)
             plt.axis(efficiency_axes)
-            
+
             plt.subplot(1, 2, 2, autoscale_on=False)
             curr_l = 'Time: Interleaving ' + str(j + 1)
             if j == 0:
@@ -318,7 +321,7 @@ class experiment_suite():
             plt.ylabel('Time (1000 seconds)')
             #plt.title(curr_l)
             plt.axis(time_axes)
-        plt.suptitle('Efficiency and Time versus Nodes\nfor Interleaved Simulations')    
+        plt.suptitle('Efficiency and Time versus Nodes\nfor Interleaved Simulations')
         plt.legend()
         plt.savefig("prettypic" + tm + ".pdf")
 
@@ -338,7 +341,7 @@ class experiment_suite():
             plt.ylabel('% Improvement: Efficiency')
             #plt.title(curr_l)
             plt.axis(efficiency_axes)
-            
+
             plt.subplot(1, 2, 2, autoscale_on=False)
             curr_l = 'Time: Interleaving ' + str(j + 1)
             if j == 0:
@@ -349,7 +352,7 @@ class experiment_suite():
             plt.ylabel('% Improvement: Time')
             #plt.title(curr_l)
             plt.axis(time_axes)
-        plt.suptitle('Efficiency and Time versus Nodes\nfor Interleaved Simulations')    
+        plt.suptitle('Efficiency and Time versus Nodes\nfor Interleaved Simulations')
         plt.legend()
         plt.savefig("normalpic" + tm + ".pdf")
         """
@@ -367,12 +370,12 @@ class experiment_suite():
         print >> summ_file, "Minimum and Maximum Efficiency values for each interleaving level:"
         for i in range(self.interleaving):
             print >> summ_file, "\t%d |\tmin: %d percent \t%d cores |\tmax: %d percent \t%d cores |" % (i+1, min_effcy.val[i], min_effcy.nodes[i]*self.ppn, max_effcy.val[i], max_effcy.nodes[i]*self.ppn)
-        
+
         print >> summ_file, "============================================"
         print >> summ_file, "Local Minima:"
         for m in self.my_mins:
             print >> summ_file, "# sims: %d\t efficiency: %d\t cores: %d\t time: %d\t cost: %f CPU Hours" % (m.interleave, m.effcy, m.nodes*self.ppn, m.time, m.cost)
-            
+
         print >> summ_file, "============================================"
         print >> summ_file, "Local Maxima:"
         for m in self.my_maxs:
@@ -387,7 +390,7 @@ class experiment_suite():
         for e in self.my_exps:
             if (e.interleave == interleave) and (e.nodes >= (nodes - (neighborhood * self.node_interval))) and (e.nodes <= (nodes + (neighborhood * self.node_interval))) and not (e.nodes == nodes):
                 mates.append(e)
-        #print 'grrr', effcy, 
+        #print 'grrr', effcy,
         #=======================================================================
         # # is val less than all neighbors?
         #=======================================================================
@@ -396,7 +399,7 @@ class experiment_suite():
             c = e.trials.avg.cpuhrs_charged
             u = e.trials.avg.cpuhrs_used
             f = int((u/c) * 100) #e.trials.avg.effcy
-            #print 'grrr', 'is', effcy, ' less than', f, '?', 
+            #print 'grrr', 'is', effcy, ' less than', f, '?',
             if f < effcy:
                 #print 'no'
                 is_min = False
@@ -410,20 +413,20 @@ class experiment_suite():
             c = e.trials.avg.cpuhrs_charged
             u = e.trials.avg.cpuhrs_used
             f = int((u/c) * 100) #e.trials.avg.effcy
-            #print 'grrr', 'is', effcy, ' greater than', f, '?', 
+            #print 'grrr', 'is', effcy, ' greater than', f, '?',
             if f > effcy:
                 #print 'no'
                 is_max = False
                 break
 
-        
+
         if is_min:
             self.my_mins.append(minmax_dt(effcy, nodes, interleave, time, cost))
-            
+
         if is_max:
             self.my_maxs.append(minmax_dt(effcy, nodes, interleave, time, cost))
-            
-        
+
+
 class minmax_dt():
     """
     (deprecated?) Container for calculating min and max.
@@ -445,14 +448,14 @@ class trial_stats():
         self.cpuhrs_used = 0
         self.effcy = 0
         self.seed = 0
-                
+
     def ts_set(self, t, c, u, e, s):
         self.time = int(float(t))
         self.cpuhrs_charged = float(c)
         self.cpuhrs_used = float(u)
         self.effcy = float(e) #(self.cpuhrs_used / self.cpuhrs_charged) * 100
         self.seed = int(s)
-        
+
     def ts_copy(self, ts):
         self.time = ts.time
         self.cpuhrs_charged = ts.cpuhrs_charged
@@ -482,7 +485,7 @@ class trial_tracker():
         self.ts = list()
         for x in range(t):
             self.ts.append(trial_stats())
-            
+
     def minmaxavg(self):  # based on time.... need to think about which metric to avg/min/max?
         """
         Minimum, maximum and average are calculated and stored in the object.  Comparison metric is total time.
@@ -492,7 +495,7 @@ class trial_tracker():
         max = trial_stats()
         min.ts_copy(self.ts[0])
         max.ts_copy(self.ts[0])
-        
+
         for x in self.ts:
             if x.time < min.time:
                 min.ts_copy(x)
@@ -500,7 +503,7 @@ class trial_tracker():
                 max.ts_copy(x)
             a.ts_accum(x)
         a.ts_div(float(len(self.ts)))
-        
+
         #=======================================================================
         # # set min, max and avg
         #=======================================================================
@@ -520,14 +523,14 @@ class experiment():
         self.tag = tag
         self.interleave = i
         self.gen_launch_str()
-        
-        
+
+
     def gen_launch_str(self):
         """
         Generates the launch string for the experiment.
         """
         m = '-m'  #' -m logTypeMap'
-        mval = 'logTypeMap' 
+        mval = 'logTypeMap'
         c = '-c'  #' -c ' + self.sim.fname
         cval = self.sim.fname
         r = '-r' #' -r res_n' + str(self.nodes) + '_p' + str(self.ppn)
@@ -542,9 +545,9 @@ class experiment():
         for i in range(self.interleave):
             self.launch_str.append(c)
             self.launch_str.append(cval)
-        
-        
-        
+
+
+
 if __name__ == "__main__":
     my_experiments = experiment_suite()
     my_experiments.set_up()

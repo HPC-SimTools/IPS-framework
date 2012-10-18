@@ -1,3 +1,6 @@
+#-------------------------------------------------------------------------------
+# Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
+#-------------------------------------------------------------------------------
 '''
 Resource Usage Simulator (RUS)
 ------------------------------
@@ -5,9 +8,9 @@ Resource Usage Simulator (RUS)
 by Samantha Foley, Indiana University
 3/4/2010
 
-This RUS simulates the resource usage of a MCMD application as described 
-by the input files.  It is a tool that helps to determine what resource 
-allocation algorithms and component configurations work best for classes 
+This RUS simulates the resource usage of a MCMD application as described
+by the input files.  It is a tool that helps to determine what resource
+allocation algorithms and component configurations work best for classes
 of applications.
 '''
 
@@ -53,7 +56,7 @@ class resource_mgr():
             raise
         except SyntaxError, (ex):
             print 'Syntax problem in resource file %s' % res_file
-            print 'ConfigObj error message: ', ex        
+            print 'ConfigObj error message: ', ex
             raise
         #print resources
 
@@ -114,7 +117,7 @@ class resource_mgr():
         If there are enough available nodes, the number of nodes allocated is returned.  Otherwise, there are not enough nodes, and -1 is returned.
         '''
         nodes = int(ceil(num_proc / float(self.ppn)))
-        
+
         if self.available['nodes'] >= nodes:
             self.available['nodes'] = self.available['nodes'] - nodes
             self.allocated['nodes'] = self.allocated['nodes'] + nodes
@@ -152,7 +155,7 @@ class resource_mgr():
         """
         if self.fwk.failure_mode == 'sandia':
             return self.active[0][0]
-        
+
         #print self.active
         try:
             # make list of tuples (comp, fraction of nodes owned)
@@ -167,7 +170,7 @@ class resource_mgr():
                     break
                 n = n - weight
             return item
-            
+
         except:
             print 'problem getting failed task'
             print self.nodes
@@ -188,6 +191,6 @@ class resource_mgr():
         if self.available['nodes'] < 0:
             print 'impossible situation!!! negative available nodes'
             raise
-        
+
 
 # end resource manager

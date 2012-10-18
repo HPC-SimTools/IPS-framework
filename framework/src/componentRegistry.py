@@ -1,3 +1,6 @@
+#-------------------------------------------------------------------------------
+# Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
+#-------------------------------------------------------------------------------
 import sys
 class Singleton(object):
     def __new__(cls, *param, **keywords):
@@ -7,7 +10,7 @@ class Singleton(object):
 
 class ComponentID(object):
     """
-    Object to facilitate the creation, serialization and deserialization of 
+    Object to facilitate the creation, serialization and deserialization of
     component ids.
     """
     delimiter = '@'
@@ -121,8 +124,8 @@ class ComponentRegistry(Singleton):
     def addEntry(self, component_id, svc_response_q, invocation_q,
                  component_ref, services, config):
         """
-        Create a component registry entry for *component_id* and its 
-        associated queues, component ref, services and configuration 
+        Create a component registry entry for *component_id* and its
+        associated queues, component ref, services and configuration
         information.
         """
         key = component_id.get_serialization()
@@ -181,7 +184,7 @@ class ComponentRegistry(Singleton):
 
     def setComponentArtifact(self, component_id, artifact, value):
         """
-        Set the value of *artifact* in *component_id*'s registry entry to 
+        Set the value of *artifact* in *component_id*'s registry entry to
         *value*.
         """
         key = component_id.get_serialization()

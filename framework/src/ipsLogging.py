@@ -1,3 +1,6 @@
+#-------------------------------------------------------------------------------
+# Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
+#-------------------------------------------------------------------------------
 """
 This file implements several objects that customize logging in the IPS.
 """
@@ -159,5 +162,3 @@ class ipsLogger(object):
                         if f_name == log_pipe_name:
                             del self.log_map[fileno]
                             read_set.remove(fileno)
-                    
-

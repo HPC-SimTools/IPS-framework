@@ -1,3 +1,6 @@
+#-------------------------------------------------------------------------------
+# Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
+#-------------------------------------------------------------------------------
 '''
 Resource Usage Simulator (RUS)
 ------------------------------
@@ -5,8 +8,8 @@ Resource Usage Simulator (RUS)
 by Samantha Foley, Indiana University
 3/4/2010
 
-This RUS simulates the resource usage of a MCMD application as described 
-by the input files.  It is a tool to help users and researchers determine 
+This RUS simulates the resource usage of a MCMD application as described
+by the input files.  It is a tool to help users and researchers determine
 how IPS runs behave in different situations.
 '''
 
@@ -29,10 +32,10 @@ random_values = open("random_values", "w")
 
 class framework():
     """
-    The framework mimics the IPS framework in that it sets up and manages 
-    the constituent simulations, but it also manages the passage of time, 
-    the injection of faults, and produces output about the state of the 
-    simulation over time, and the cumulative usage information at the end 
+    The framework mimics the IPS framework in that it sets up and manages
+    the constituent simulations, but it also manages the passage of time,
+    the injection of faults, and produces output about the state of the
+    simulation over time, and the cumulative usage information at the end
     of the simulation.
     """
     def __init__(self):
@@ -96,12 +99,12 @@ class framework():
         except:
             print 'problems getting the command line args'
             raise
-        self.my_rand = random.Random()        
+        self.my_rand = random.Random()
         try:
             self.my_rand.seed(self.myseed)
         except:
             self.myseed = int(time())
-            self.my_rand.seed(self.myseed)        
+            self.my_rand.seed(self.myseed)
 
 
         #-----------------------------------------
@@ -124,7 +127,7 @@ class framework():
             raise
 
         #-----------------------------------------
-        #    parse configuration 
+        #    parse configuration
         #-----------------------------------------
         try:
             self.parse_config(self.config_files)
@@ -140,7 +143,7 @@ class framework():
         except:
             print "problems setting up sim, comp and log type maps"
             raise
-            
+
         #----------------------------------------
         #   check data
         #----------------------------------------
@@ -148,7 +151,7 @@ class framework():
             for s in self.simulations:
                 for c in s.my_comps.values():
                     print c.name
-        
+
         #----------------------------------------
         #   set up failures
         #----------------------------------------
@@ -166,18 +169,18 @@ class framework():
                 print self.failure_times
                 print '------'
             self.next_fe = self.find_next_fe()
-                
+
 
 
     def generate_event(self):
-        """                                                                            
-        generates a list of times when failures will occur based on mtbf               
-        (in seconds) specified in the resource config file, one for each               
-        node since each node is treated independently of the others.                   
-        the list is then sorted.                                                       
-                                                                                   
-        Note: does not account for the fact that the job was not started at the              
-        beginning of the hardware's lifespan.                                          
+        """
+        generates a list of times when failures will occur based on mtbf
+        (in seconds) specified in the resource config file, one for each
+        node since each node is treated independently of the others.
+        the list is then sorted.
+
+        Note: does not account for the fact that the job was not started at the
+        beginning of the hardware's lifespan.
         """
         if self.distribution == 'weibull':
             v = round(random.weibullvariate(self.mtbf, self.shape))
@@ -191,8 +194,8 @@ class framework():
 
     def trigger(self):
         """
-        this function is called when a node failure happens.  It then calls 
-        on the resource manager to pick a node to fail, and determines if a 
+        this function is called when a node failure happens.  It then calls
+        on the resource manager to pick a node to fail, and determines if a
         task is killed.  If a task is killed, that task's state changes to failed.
         """
         self.node_failures += 1
@@ -203,7 +206,7 @@ class framework():
             if self.debug:
                 print 'failure killed an unoccupied node'
         self.logEvent(None, None, 'node_failure', 'fault killed a node')
-    
+
 
 
 
@@ -211,7 +214,7 @@ class framework():
         """
         this function will create the logging file, ``rlogFile``.
         """
-        
+
         try:
             os.mkdir(self.today)
         except:
@@ -220,11 +223,11 @@ class framework():
         head, rtail = os.path.split(self.resource_file)
         #self.lfname = self.today + '/' + self.lfname + '.' + t
         self.rlfname = self.today + '/' + self.rlfname + '.' + t
-                        
+
         #self.logFile = open(self.lfname, 'w')
         self.rlogFile = open(self.rlfname, 'w')
 
-        
+
     def setup_logfiles(self):
         """
         set up the front matter for the logging files, and construct and record maps
@@ -255,7 +258,7 @@ class framework():
                 self.comp_map.update({s.name + '_' + c.name:ccount})
                 ccount = ccount + 1
             scount = scount + 1
-        
+
         #----------------------------------------
         # write out simulation and component maps
         #----------------------------------------
@@ -274,7 +277,7 @@ class framework():
         #----------------------------------------
         # write some header info
         #----------------------------------------
-        
+
         allocated, total = self.RM.get_curr_usage()
         #print >> self.logFile, comment_symbol, 'The following data is associated with the run executed at', self.beginning_of_time
         print >> self.rlogFile, comment_symbol, 'The following data is associated with the run executed at', self.beginning_of_time
@@ -288,13 +291,13 @@ class framework():
         #print >> self.logFile, comment_symbol, '================================================================='
         print >> self.rlogFile, comment_symbol, '================================================================='
         self.logEvent(None, None, 'start_sim', "starting simulation")
-        
+
     #-----------------------------------------------------------------------------------------------------
     #   logging functions:
     #     <global time> <sim> <component> <event type> <allocated nodes> <total nodes> <comment symbol> <comment>
     #         fwk         (------ caller -------)          (--------- RM --------)           fwk            caller
     #-----------------------------------------------------------------------------------------------------
-            
+
     def logEvent(self, sim, comp, ltype, msg):
         """
         This function is used by various entities to record that an event has happened to the log file(s).  The output is in the form::
@@ -306,7 +309,7 @@ class framework():
         #-----------------------------------------------------------------------------------------------------
 
         """
-        
+
         allocated, total = self.RM.get_curr_usage()
         if total > 0:
             percent = 100 * (allocated / (float(total)))
@@ -320,7 +323,7 @@ class framework():
             c = 'None'
         else:
             c = comp
-            
+
         self.usage.add_stat(self.fwk_global_time, allocated, total, ltype)
         if s == 'None' and c == 'None':
             #print >> self.logFile, self.fwk_global_time, 0, 0, self.log_types[ltype], allocated, total, self.comment_symbol, msg
@@ -328,11 +331,11 @@ class framework():
         elif c == 'None':
             #print >> self.logFile, self.fwk_global_time, self.sim_map[s], self.comp_map[s + '_' + c], self.log_types[ltype], percent, '%  ',allocated, total, self.comment_symbol, msg
             print >> self.rlogFile, self.fwk_global_time, sim, '---', ltype, percent, '%  ',allocated, total, self.comment_symbol, msg
-        else:    
+        else:
             #print >> self.logFile, self.fwk_global_time, self.sim_map[s], self.comp_map[s + '_' + c], self.log_types[ltype], percent, '%  ', allocated, total, self.comment_symbol, msg
             print >> self.rlogFile, self.fwk_global_time, sim, comp, ltype, percent, '%  ', allocated, total, self.comment_symbol, msg
 
-        
+
     def parse_config(self, conf_files):
         """
         for each configuration file in conf_files, the simulation definition sections are detected, and simulation objects created.  Further parsing happens in the simulation object, and its sub-objects.
@@ -348,7 +351,7 @@ class framework():
                 print 'Syntax problem in config file %s' % conf_file
                 print 'ConfigObj error message: ', ex
                 raise
-        
+
             try:
                 sims = config['simulation']
                 if not isinstance(sims, list):
@@ -384,10 +387,10 @@ class framework():
             #--------------------------------------------
             # get running comps
             #--------------------------------------------
-            
+
             for s in sims:
                 running.extend(s.get_running_comps())
-            
+
             #--------------------------------------------
             # run ready comps
             #--------------------------------------------
@@ -485,7 +488,7 @@ class framework():
                 if s.is_done:
                     done_sims.append(s)
                     sims.remove(s)
-            
+
         # end main loop
         work_t = 0
         rework_t = 0
@@ -609,7 +612,7 @@ class framework():
         #  output for experiment manager
         #----------------------------------
         print self.status, self.myseed, self.fwk_global_time, self.allocation_size, cpuhrs_charged, cpuhrs_used,
-        print work_t, rework_t, ckpt_t, restart_t, launch_delay_t, resubmit_t, overhead_t, 
+        print work_t, rework_t, ckpt_t, restart_t, launch_delay_t, resubmit_t, overhead_t,
         print nckpts, self.node_failures, nfault, nrelaunch, nrestart, nresubmit
 
         if self.generate_viz:
@@ -632,10 +635,10 @@ class framework():
 
 
     def crunch(self):
-        """                                                                          
+        """
         uses maptplotlib to graph the usage over time                                                                                  """
         #import matplotlib
-        #matplotlib.use('AGG')                                                                                             
+        #matplotlib.use('AGG')
         import matplotlib.pyplot as plt
         fe_t = list()
         fe_nt = list()
@@ -665,7 +668,7 @@ class framework():
                     j += 1
                     if j >= len(fe_t):
                         break
-                
+
 
         print 'fe_t', fe_t
         print 'fe_nu', fe_nu
@@ -680,8 +683,8 @@ class framework():
 
         plt.figure()
         plt.plot(self.usage.times[1:], self.usage.percent_used[:(len(self.usage.percent_used) - 1)], 'r')
-        plt.plot(fe_t1, [100]*len(fe_t1), 'co') 
-        plt.plot(fe_t, fe_p, 'kx') 
+        plt.plot(fe_t1, [100]*len(fe_t1), 'co')
+        plt.plot(fe_t, fe_p, 'kx')
         plt.ylim([0, 110])
         plt.ylabel('Percent resources in use')
         plt.xlabel('Wall clock time (seconds)')
@@ -690,8 +693,8 @@ class framework():
         plt.figure()
         plt.plot(self.usage.times[1:], self.usage.n_total[:(len(self.usage.n_total) - 1)], 'g')
         plt.plot(self.usage.times[1:], self.usage.n_used[:(len(self.usage.n_used) - 1)], 'r')
-        plt.plot(fe_t1, fe_nt1, 'co') 
-        plt.plot(fe_t, fe_nu, 'kx') 
+        plt.plot(fe_t1, fe_nt1, 'co')
+        plt.plot(fe_t, fe_nu, 'kx')
         plt.xlabel('Wall clock time (seconds)')
         plt.ylabel('Resources in use')
         plt.ylim([0, 1.1*max(self.usage.n_total)])

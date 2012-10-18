@@ -1,3 +1,6 @@
+#-------------------------------------------------------------------------------
+# Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
+#-------------------------------------------------------------------------------
 '''
 Resource Usage Simulator (RUS)
 ------------------------------
@@ -5,9 +8,9 @@ Resource Usage Simulator (RUS)
 by Samantha Foley, Indiana University
 3/4/2010
 
-This RUS simulates the resource usage of a MCMD application as described 
-by the input files.  It is a tool that helps to determine what resource 
-allocation algorithms and component configurations work best for classes 
+This RUS simulates the resource usage of a MCMD application as described
+by the input files.  It is a tool that helps to determine what resource
+allocation algorithms and component configurations work best for classes
 of applications.
 '''
 
@@ -40,4 +43,3 @@ class phase():
         except:
             print "bad components in phase %s" % self.name
             raise
-        

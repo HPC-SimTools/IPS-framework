@@ -1,3 +1,6 @@
+#-------------------------------------------------------------------------------
+# Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
+#-------------------------------------------------------------------------------
 import os
 from configobj import ConfigObj
 import ipsutil
@@ -27,7 +30,7 @@ def get_status(checklist_file):
             ips_status['RUN'] = True
         elif conf['RUN'] == 'NOT_DONE':
             ips_status['RUN'] = False
-      
+
     except IOError, ioe:
         print 'Checklist config file "%s" could not be found, continuing without.' % checklist_file
     except SyntaxError, (ex):
@@ -69,6 +72,5 @@ def update(checklist_file,ips_status):
             conf[step] = 'NOT_DONE'
         print step + ' = ' + conf[step]
     conf.write()
-  
-    return
 
+    return

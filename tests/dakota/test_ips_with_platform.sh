@@ -1,5 +1,6 @@
 
 source ../frameworkpath.py
+PATH=$fsrc:$PATH
 
 #-------------------------------------------------------------
 echo; echo; echo

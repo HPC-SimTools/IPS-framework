@@ -1,3 +1,6 @@
+#-------------------------------------------------------------------------------
+# Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
+#-------------------------------------------------------------------------------
 def read_dict (conf_dict = {}, filename = "SWIM_config"):
     """
 
@@ -18,7 +21,7 @@ def read_dict (conf_dict = {}, filename = "SWIM_config"):
         publish_event(message, topic = FSP_log, action = "halt_run")
         print message
         raise IOError, "Unable to open config file in read_dict"
-            
+
     try:
         while line:
             name, val = line.split("=")
@@ -34,5 +37,3 @@ def read_dict (conf_dict = {}, filename = "SWIM_config"):
     except Exception, ex:
         print "Unable to augment conf_dict in read_dict: %s" % ex
         raise IOError, "Unable to augment conf_dict in read_dict"
-            
-

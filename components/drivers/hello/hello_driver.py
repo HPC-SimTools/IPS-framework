@@ -1,3 +1,6 @@
+#-------------------------------------------------------------------------------
+# Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
+#-------------------------------------------------------------------------------
 #! /usr/bin/env python
 
 from  component import Component
@@ -21,7 +24,6 @@ class HelloDriver(Component):
             raise
         self.services.call(worker_comp, 'step', 0.0)
         return
-        print 'made it out of the worker call' 
+        print 'made it out of the worker call'
     def finalize(self, timeStamp=0.0):
         return
-    

@@ -1,3 +1,6 @@
+#-------------------------------------------------------------------------------
+# Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
+#-------------------------------------------------------------------------------
 '''
 Resource Usage Simulator (RUS)
 ------------------------------
@@ -5,9 +8,9 @@ Resource Usage Simulator (RUS)
 by Samantha Foley, Indiana University
 3/4/2010
 
-This RUS simulates the resource usage of a MCMD application as described 
-by the input files.  It is a tool that helps to determine what resource 
-allocation algorithms and component configurations work best for classes 
+This RUS simulates the resource usage of a MCMD application as described
+by the input files.  It is a tool that helps to determine what resource
+allocation algorithms and component configurations work best for classes
 of applications.
 
 '''
@@ -57,8 +60,8 @@ class component():
         self.total_restart_usage = 0   # total CPU seconds spent doing restart (including useless restart)
         self.total_waiting_time = 0   # total time spent waiting on resources
         self.start_waiting_time = -1   # start of current waiting period
-        self.num_retries = 0  # total number of retries for this component    
-        self.curr_retries = 0  # total number of retries for this step of the component    
+        self.num_retries = 0  # total number of retries for this component
+        self.curr_retries = 0  # total number of retries for this step of the component
         self.num_faults = 0   # total number of faults encountered by this component
         self.num_waiting = 0  # total number of times this component had to wait for more resources
 
@@ -138,7 +141,7 @@ class component():
                 if self.fwk.debug:
                     print "not varying the execution time"
                 self.curr_exec_time = self.runtime
-                raise        
+                raise
             self.start_exec_time = self.fwk.fwk_global_time
             self.state = "running"
         elif self.type == 'sandia_work':
@@ -160,16 +163,16 @@ class component():
         else:
             print 'error error error!!!  problem with component type in get_curr_exec_time'
             raise
- 
+
     def run(self):
         """
         The framework calls this method on ready components.  If the component is able to obtain enough resources to run, the state is set to *running*, an execution time is set, and bookkeeping is done.
         """
-        
+
         if self.nproc > 0:
             # get resources
             nodes = self.RM.get_allocation(self, self.nproc, self.mem_pproc, self.disk_pproc)
-        
+
             # did we actually get nodes?????
             if nodes >= 0:
                 #--------------------------------
@@ -199,7 +202,7 @@ class component():
                         if self.fwk.debug:
                             print 'exceeded retry limit, killing sim from component.'
                         self.sim.kill()
-                else:                
+                else:
                     self.fwk.logEvent(self.sim.name, self.name, "start_task", "started running on %d processes on %d nodes" % (self.using.procs, self.using.nodes))
             else:
                 #-------------------------------------------
@@ -218,9 +221,9 @@ class component():
             self.get_curr_exec_time()
             if self.retry == True:
                 self.fwk.logEvent(self.sim.name, self.name, "relaunch_task", "relaunched, attempt %d" %(self.num_retries))
-            else:                
+            else:
                 self.fwk.logEvent(self.sim.name, self.name, "start_task", "started")
-            
+
 
     def report_total_usage(self):
         """
@@ -272,7 +275,7 @@ class component():
             if self.state == "failed":
                 # gotta try again
                 self.state = "ready"
-                self.num_faults += 1 
+                self.num_faults += 1
         else:
             print "problems updating state in report_total_usage"
             raise
@@ -343,7 +346,7 @@ class component():
         self.curr_exec_time = 0
         self.fwk.logEvent(self.sim.name, self.name, "failed_task", "task failed due to node failure")
 
-# end component object 
+# end component object
 
 class usage_info():
     def __init__(self):
@@ -354,7 +357,7 @@ class usage_info():
         self.procs = 0
         self.disk = 0
         self.memory = 0
-        
+
     def clear(self):
         self.nodes = 0
         self.procs = 0
@@ -362,5 +365,3 @@ class usage_info():
         self.memory = 0
 
 # end usage info object
-
-

@@ -1,3 +1,6 @@
+#-------------------------------------------------------------------------------
+# Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
+#-------------------------------------------------------------------------------
 import sys
 import os
 import subprocess
@@ -16,7 +19,7 @@ class runspaceInitComponent(Component):
 
     def __init__(self, services, config):
         """
-        Declaration of private variables and initialization of 
+        Declaration of private variables and initialization of
         :py:class:`component.Component` object.
         """
         Component.__init__(self, services, config)
@@ -49,7 +52,7 @@ class runspaceInitComponent(Component):
             self.simRootDir=os.path.join(self.cwd, self.simRootDir)
 
         # try making the simulation root directory
-        try: 
+        try:
             os.makedirs(self.simRootDir)
         except OSError, (errno, strerror):
             if (errno != 17):
@@ -81,7 +84,7 @@ class runspaceInitComponent(Component):
         #print 'conf_file_loc =', self.conf_file_loc
         #print 'plat_file_loc =', self.plat_file_loc
         ipsutil.copyFiles(self.conf_file_loc, self.config_files, self.simRootDir)
-        ipsutil.copyFiles(self.plat_file_loc, self.platform_file, self.simRootDir) 
+        ipsutil.copyFiles(self.plat_file_loc, self.platform_file, self.simRootDir)
 
         sim_comps = services.fwk.config_manager.get_component_map()
         registry = services.fwk.comp_registry
@@ -89,7 +92,7 @@ class runspaceInitComponent(Component):
         # can't figure out where to put it such that I can get it where I need
         self.container_file = os.path.basename(services.get_config_param('SIM_ROOT')) + os.path.extsep + container_ext
         # The w here means that it is overwritten -- we are creating a new container file here
-        
+
 
         ipsutil.writeToContainer(self.container_file, self.conf_file_loc, self.config_files)
         ipsutil.writeToContainer(self.container_file, self.plat_file_loc, self.platform_file)
@@ -101,8 +104,8 @@ class runspaceInitComponent(Component):
                 comp_conf = registry.getEntry(comp_id).component_ref.config
                 file_list = comp_conf['INPUT_FILES'].split()
                 for file in file_list:
-                    ipsutil.writeToContainer(self.container_file, 
-                                             os.path.relpath(comp_conf['INPUT_DIR']), 
+                    ipsutil.writeToContainer(self.container_file,
+                                             os.path.relpath(comp_conf['INPUT_DIR']),
                                              os.path.basename(file))
 
 #       curdir=os.path.abspath(os.path.curdir)
@@ -129,7 +132,7 @@ class runspaceInitComponent(Component):
         # uncomment when implemented
         #(head, tail) = os.path.split(os.path.abspath(self.fc_files))
         #ipsutil.copyFiles(os.path.dirname(self.fc_files),
-        #                  os.path.basename(self.fc_files), simRootDir) 
+        #                  os.path.basename(self.fc_files), simRootDir)
 
         return
 
@@ -157,7 +160,7 @@ class runspaceInitComponent(Component):
         simulation_setup = os.path.join(self.simRootDir, 'simulation_setup')
 
         # make the simulation_setup directory for scripts
-        try: 
+        try:
             os.makedirs(simulation_setup)
         except OSError, (errno, strerror):
             if (errno != 17):
@@ -189,14 +192,14 @@ class runspaceInitComponent(Component):
                                                 workdir, strerror)
                         #pytau.stop(timer)
                         raise
-                
+
                 # copy the input files into the working directory
                 ipsutil.copyFiles(os.path.abspath(comp_conf['INPUT_DIR']),
                                   os.path.basename(comp_conf['INPUT_FILES']),
                                   workdir)
 
 
-                # This is a bit tricky because we want to look either in the same 
+                # This is a bit tricky because we want to look either in the same
                 # place as the input files or the data_tree root
                 if comp_conf.has_key('DATA_FILES'):
                     filesCopied=False
@@ -207,9 +210,9 @@ class runspaceInitComponent(Component):
                                               workdir)
                             filesCopied=True
                     if not filesCopied:
-                         ipsutil.copyFiles(os.path.abspath(comp_conf['INPUT_DIR']),
-                                           os.path.basename(comp_conf['DATA_FILES']),
-                                           workdir)
+                        ipsutil.copyFiles(os.path.abspath(comp_conf['INPUT_DIR']),
+                                          os.path.basename(comp_conf['DATA_FILES']),
+                                          workdir)
 
 
                 # copy the component's script to the simulation_setup directory

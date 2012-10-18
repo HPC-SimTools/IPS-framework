@@ -1,3 +1,6 @@
+#-------------------------------------------------------------------------------
+# Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
+#-------------------------------------------------------------------------------
 class BlockedMessageException(Exception):
     """ Exception Raised by the any manager when a blocking service
         invocation is made, and the invocation result is not readily
@@ -78,7 +81,7 @@ class ResourceRequestMismatchException(Exception):
         s = "component %s requested %d processes with %d processes per node, while the number of processes requested is less than the max (%d), the processes per node value is too low." % (self.caller_id, self.nproc, self.ppn, self.max_procs)
         return s
 
-    
+
 class InvalidResourceSettingsException(Exception):
     """
     Exception raised by the resource helper to indicate inconsistent resource settings.

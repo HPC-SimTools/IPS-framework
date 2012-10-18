@@ -1,3 +1,6 @@
+#-------------------------------------------------------------------------------
+# Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
+#-------------------------------------------------------------------------------
 """
 This test driver tests the basic functionality of a serial simulation.
 It is designed to run a single simulation that has the same properties

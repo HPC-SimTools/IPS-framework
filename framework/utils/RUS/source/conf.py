@@ -1,3 +1,6 @@
+#-------------------------------------------------------------------------------
+# Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
+#-------------------------------------------------------------------------------
 # -*- coding: utf-8 -*-
 #
 # Resource Utilization Simulator (RUS) documentation build configuration file, created by

@@ -1,3 +1,6 @@
+#-------------------------------------------------------------------------------
+# Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
+#-------------------------------------------------------------------------------
 from messages import Message, MethodResultMessage
 import sys
 import os
@@ -16,7 +19,7 @@ except KeyError:
 
 class Component(object):
     """
-    Base class for all IPS components.  Common set up, connection and 
+    Base class for all IPS components.  Common set up, connection and
     invocation actions are implemented here.
     """
     def __init__(self, services, config):
@@ -52,7 +55,7 @@ class Component(object):
         self.invocation_q = invocation_q
         self.start_time = start_time
 #        setattr(sys, 'exit', sys.exit)
-        
+
         #pytau.stop(timer)
         return
 
@@ -62,13 +65,13 @@ class Component(object):
         """
         self.services.error('Called sys.exit() from component code')
         raise Exception('Called sys.exit() from component code')
-        
+
     def __run__(self):
-        """ 
+        """
         Set (and possibly create) the working directory for the component
-        and change the working directory to the (possibly newly created) 
+        and change the working directory to the (possibly newly created)
         directory.
-        Wait for incoming commands delivered via the *invocation_q*, and 
+        Wait for incoming commands delivered via the *invocation_q*, and
         dispatch the incoming methods accordingly.
         """
         #timer = pytau.profileTimer(self.component_id.__str__() + ".__run__", "", str(os.getpid()))
@@ -76,7 +79,7 @@ class Component(object):
         tmp = sys.exit
         sys.exit = self.__my_exit__
         self.sys_exit = tmp
-        # SIMYAN: reversed changes that took directory creation in work out of 
+        # SIMYAN: reversed changes that took directory creation in work out of
         # a component's hands. Now this class creates the directory and changes
         # into it as before.
         workdir = self.services.get_working_dir()
@@ -96,7 +99,7 @@ class Component(object):
             os.chdir(workdir)
         self.services.debug('Running - CompID =  %s',
                             self.component_id.get_serialization())
-        
+
         if (self.services.profile):
             self.services.debug('Instrumenting - CompID =  %s',
                             self.component_id.get_serialization())
@@ -132,7 +135,7 @@ class Component(object):
 
     def init(self, timestamp=0.0):
         """
-        Produce some default debugging information before the rest of the code 
+        Produce some default debugging information before the rest of the code
         is executed.
         """
         self.services.debug('init() method called')
@@ -147,7 +150,7 @@ class Component(object):
         self.services.debug('setup() method called')
         pass
 
-    # SIMYAN: this is a placeholder for future validation methods (i.e. 
+    # SIMYAN: this is a placeholder for future validation methods (i.e.
     # checking data)
     def validate(self, timestamp=0.0):
         """
@@ -159,7 +162,7 @@ class Component(object):
 
     def restart(self, timestamp=0.0):
         """
-        Produce some default debugging information before the rest of the code 
+        Produce some default debugging information before the rest of the code
         is executed.
         """
         self.services.debug('restart() method called')
@@ -167,7 +170,7 @@ class Component(object):
 
     def step(self, timestamp=0.0):
         """
-        Produce some default debugging information before the rest of the code 
+        Produce some default debugging information before the rest of the code
         is executed.
         """
         self.services.debug('step() method called')
@@ -175,7 +178,7 @@ class Component(object):
 
     def finalize(self, timestamp=0.0):
         """
-        Produce some default debugging information before the rest of the code 
+        Produce some default debugging information before the rest of the code
         is executed.
         """
         self.services.debug('finalize() method called')
@@ -183,7 +186,7 @@ class Component(object):
 
     def checkpoint(self, timestamp=0.0):
         """
-        Produce some default debugging information before the rest of the code 
+        Produce some default debugging information before the rest of the code
         is executed.
         """
         self.services.debug('checkpoint() method called')
@@ -195,7 +198,7 @@ class Component(object):
         """
         self.services._cleanup()
 #        self.services.debug('###(1) %s %s', str(self), str(self.__dict__))
-        
+
         if (status == Message.SUCCESS):
             self.services.debug('Calling self.sys_exit(0)')
             self.sys_exit(0)

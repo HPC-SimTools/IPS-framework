@@ -1,3 +1,6 @@
+#-------------------------------------------------------------------------------
+# Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
+#-------------------------------------------------------------------------------
 """
 The CCA event service, but without CCA-specific extensions:
 https://www.cca-forum.org/wiki/tiki-index.php?page=Event+Specification+Proposal
@@ -23,7 +26,7 @@ class PublisherEventService(object):
     """
     def getTopic(self,topicName):
         """
-        
+
         """
         return _proxy.getTopic(topicName)
 

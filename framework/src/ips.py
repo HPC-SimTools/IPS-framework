@@ -1,51 +1,54 @@
+#-------------------------------------------------------------------------------
+# Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
+#-------------------------------------------------------------------------------
 #! /usr/bin/env python
 """
    # local version
-   The Integrated Plasma Simulator (IPS) Framework. This framework enables 
-   loose, file-based coupling of certain class of nuclear fusion simulation 
-   codes. 
-   
-   For further design information see
-   
-    - Wael Elwasif, David E. Bernholdt, Aniruddha G. Shet, Samantha S. Foley,
-      Randall Bramley, Donald B. Batchelor, and Lee A. Berry, *The Design and 
-      Implementation of the SWIM Integrated Plasma Simulator*, in The 18th 
-      Euromirco International Conference on Parallel, Distributed and 
-      Network - Based Computing (PDP 2010), 2010.
-    - Samantha S. Foley, Wael R. Elwasif, David E. Bernholdt, Aniruddha G. 
-      Shet, and Randall Bramley, *Extending the Concept of Component 
-      Interfaces: Experience with the Integrated Plasma Simulator*, in 
-      Component - Based High - Performance Computing (CBHPC) 2009, 2009, 
-      (extended abstract).
-    - D Batchelor, G Alba, E D'Azevedo, G Bateman, DE Bernholdt, L Berry, 
-      P Bonoli, R Bramley, J Breslau, M Chance, J Chen, M Choi, W Elwasif, 
-      S Foley, G Fu, R Harvey, E Jaeger, S Jardin, T Jenkins, D Keyes, S 
-      Klasky, S Kruger, L Ku, V Lynch, D McCune, J Ramos, D Schissel, D 
-      Schnack, and J Wright, *Advances in Simulation of Wave Interactions with 
-      Extended MHD Phenomena*, in Horst Simon, editor, SciDAC 2009, 14-18 June 
-      2009, San Diego, California, USA, volume 180 of Journal of Physics: 
-      Conference Series, page 012054, Institute of Physics, 2009, 6pp. 
-    - Samantha S. Foley, Wael R. Elwasif, Aniruddha G. Shet, David E. 
-      Bernholdt, and Randall Bramley, *Incorporating Concurrent Component 
-      Execution in Loosely Coupled Integrated Fusion Plasma Simulation*, in 
-      Component-Based High-Performance Computing (CBHPC) 2008, 2008, 
-      (extended abstract).
-    - D. Batchelor, C. Alba, G. Bateman, D. Bernholdt, L. Berry, P. Bonoli, 
-      R. Bramley, J. Breslau, M. Chance, J. Chen, M. Choi, W. Elwasif, 
-      G. Fu, R. Harvey, E. Jaeger, S. Jardin, T. Jenkins, D. Keyes, 
-      S. Klasky, S. Kruger, L. Ku, V. Lynch, D. McCune, J. Ramos, D. Schissel, 
-      D. Schnack, and J. Wright, *Simulation of Wave Interations with MHD*, 
-      in Rick Stevens, editor, SciDAC 2008, 14-17 July 2008, Washington, USA, 
-      volume 125 of Journal of Physics: Conference Series, page 012039, 
-      Institute of Physics, 2008.
-    - Wael R. Elwasif, David E. Bernholdt, Lee A. Berry, and Don B. 
-      Batchelor, *Component Framework for Coupled Integrated Fusion 
-      Plasma Simulation*, in HPC-GECO/CompFrame 2007, 21-22 October, 
-      Montreal, Quebec, Canada, 2007. 
+   The Integrated Plasma Simulator (IPS) Framework. This framework enables
+   loose, file-based coupling of certain class of nuclear fusion simulation
+   codes.
 
-      
+   For further design information see
+
+    - Wael Elwasif, David E. Bernholdt, Aniruddha G. Shet, Samantha S. Foley,
+      Randall Bramley, Donald B. Batchelor, and Lee A. Berry, *The Design and
+      Implementation of the SWIM Integrated Plasma Simulator*, in The 18th
+      Euromirco International Conference on Parallel, Distributed and
+      Network - Based Computing (PDP 2010), 2010.
+    - Samantha S. Foley, Wael R. Elwasif, David E. Bernholdt, Aniruddha G.
+      Shet, and Randall Bramley, *Extending the Concept of Component
+      Interfaces: Experience with the Integrated Plasma Simulator*, in
+      Component - Based High - Performance Computing (CBHPC) 2009, 2009,
+      (extended abstract).
+    - D Batchelor, G Alba, E D'Azevedo, G Bateman, DE Bernholdt, L Berry,
+      P Bonoli, R Bramley, J Breslau, M Chance, J Chen, M Choi, W Elwasif,
+      S Foley, G Fu, R Harvey, E Jaeger, S Jardin, T Jenkins, D Keyes, S
+      Klasky, S Kruger, L Ku, V Lynch, D McCune, J Ramos, D Schissel, D
+      Schnack, and J Wright, *Advances in Simulation of Wave Interactions with
+      Extended MHD Phenomena*, in Horst Simon, editor, SciDAC 2009, 14-18 June
+      2009, San Diego, California, USA, volume 180 of Journal of Physics:
+      Conference Series, page 012054, Institute of Physics, 2009, 6pp.
+    - Samantha S. Foley, Wael R. Elwasif, Aniruddha G. Shet, David E.
+      Bernholdt, and Randall Bramley, *Incorporating Concurrent Component
+      Execution in Loosely Coupled Integrated Fusion Plasma Simulation*, in
+      Component-Based High-Performance Computing (CBHPC) 2008, 2008,
+      (extended abstract).
+    - D. Batchelor, C. Alba, G. Bateman, D. Bernholdt, L. Berry, P. Bonoli,
+      R. Bramley, J. Breslau, M. Chance, J. Chen, M. Choi, W. Elwasif,
+      G. Fu, R. Harvey, E. Jaeger, S. Jardin, T. Jenkins, D. Keyes,
+      S. Klasky, S. Kruger, L. Ku, V. Lynch, D. McCune, J. Ramos, D. Schissel,
+      D. Schnack, and J. Wright, *Simulation of Wave Interations with MHD*,
+      in Rick Stevens, editor, SciDAC 2008, 14-17 July 2008, Washington, USA,
+      volume 125 of Journal of Physics: Conference Series, page 012039,
+      Institute of Physics, 2008.
+    - Wael R. Elwasif, David E. Bernholdt, Lee A. Berry, and Don B.
+      Batchelor, *Component Framework for Coupled Integrated Fusion
+      Plasma Simulation*, in HPC-GECO/CompFrame 2007, 21-22 October,
+      Montreal, Quebec, Canada, 2007.
+
+
    :Authors: Wael R. Elwasif, Samantha Foley, Aniruddha G. Shet
-   :Organization: Center for Simulation of RF Wave Interactions 
+   :Organization: Center for Simulation of RF Wave Interactions
                   with Magnetohydrodynamics (`CSWIM <http://www.cswim.org>`_)
 
 """
@@ -106,33 +109,33 @@ class Framework(object):
     #@ipsTiming.TauWrap(TIMERS['__init__'])
     # SIMYAN: added options for creating runspace, run-setup, and running,
     # added compset_list for list of components to load config files for
-    def __init__(self, do_create_runspace, do_run_setup, do_run, 
+    def __init__(self, do_create_runspace, do_run_setup, do_run,
             config_file_list, log_file_name, platform_file_name=None,
-            compset_list=None, debug=False, 
+            compset_list=None, debug=False,
             ftb=False, verbose_debug = False, cmd_nodes = 0, cmd_ppn = 0):
         """
         Create an IPS Framework Instance to coordinate the execution of IPS simulations
-        
+
         The Framework performs the following main tasks:
-        
+
           * Initialize the different IPS managers that perform the bulk of the framework functionality
-          * Manage communication queues, and route service requests from simulation 
+          * Manage communication queues, and route service requests from simulation
             components to appropriate managers.
           * Provide logging services to IPS managers.
-          * Perfrom shutdown procedure on exit     
+          * Perfrom shutdown procedure on exit
 
         Args:
             config_file_list: [list] A list of simulation configuration files to be used
                 in the simulaion. Each simulation configuration file must have the following
                 parameters
-           
+
                 * *SIM_ROOT*    The root directory for the simulation
                 * *SIM_NAME*    A name that identifies the simulation
                 * *LOG_FILE*    The name of a log file that is used to capture logging and error information
                                  for this simulation.
-                        
+
                 *SIM_ROOT*, *SIM_NAME*, and *LOG_FILE* must be unique across simulations.
-            log_file_name: [file] A file name where Framework logging messages are placed. 
+            log_file_name: [file] A file name where Framework logging messages are placed.
             platform_file_name: [string] The name of the platform
                configuration file used in the simulation.  If not specified it will try to find the
                one installed in the share directory.
@@ -150,7 +153,7 @@ class Framework(object):
                 If component list is not specified, then it is assumed that these variables are
                 defined in the platform.conf file (backward compatibility).
             debug: [boolean] A flag indicating whether framework debugging messages are enabled (default = False)
-            ftb: [boolean]  A flag indicating whether integration with the Fault tolerance Backplane 
+            ftb: [boolean]  A flag indicating whether integration with the Fault tolerance Backplane
                 Protocol (FTB) is enabled (default = False)
             verbose_debug: [boolean] A flag adding more verbose framework debugging (default = False)
 
@@ -161,18 +164,18 @@ class Framework(object):
         # SIMYAN: collect the steps to do in this invocation of the Framework
         self.ips_dosteps={}
         self.ips_dosteps['CREATE_RUNSPACE'] = do_create_runspace # create runspace: init.init()
-        self.ips_dosteps['RUN_SETUP']       = do_run_setup    # validate inputs: sim_comps.init() 
+        self.ips_dosteps['RUN_SETUP']       = do_run_setup    # validate inputs: sim_comps.init()
         self.ips_dosteps['RUN']             = do_run          # Main part of simulation
 
         # fault tolerance flag
         self.ftb = ftb
-        # SIMYAN: set the logging to either file or sys.stdout based on 
+        # SIMYAN: set the logging to either file or sys.stdout based on
         # command line option
         self.log_file_name = log_file_name
         if log_file_name == 'sys.stdout':
-          self.log_file=sys.stdout
+            self.log_file=sys.stdout
         else:
-          self.log_file = open(os.path.abspath(log_file_name), 'w')
+            self.log_file = open(os.path.abspath(log_file_name), 'w')
         # the multiprocessing queue
         self.in_queue = multiprocessing.Queue(0)
         # registry of components for calling
@@ -182,13 +185,13 @@ class Framework(object):
         # map of ports
         self.port_map = {}
 
-        # SIMYAN: Complicated here to allow for a generalization of previous 
+        # SIMYAN: Complicated here to allow for a generalization of previous
         # functionality and to enable the automatic finding of the files
         self.compset_list=None
 
         current_dir = inspect.getfile(inspect.currentframe())
         (self.platform_file_name, self.ipsShareDir) = \
-                        platform.get_share_and_platform(platform_file_name, 
+                        platform.get_share_and_platform(platform_file_name,
                                                         current_dir)
 
         checked_compset_list=[]
@@ -204,7 +207,7 @@ class Framework(object):
                 print "  Assuming that variables are defined anyway"
             else:
                 self.compset_list=checked_compset_list
-        else: 
+        else:
             if os.path.exists(os.path.join(self.ipsShareDir,'component-generic.conf')):
                 checked_compset_list.append(os.path.join(self.ipsShareDir,'component-generic.conf'))
                 self.compset_list=checked_compset_list
@@ -224,7 +227,7 @@ class Framework(object):
         self.event_service = EventService(self)
         initialize_event_service(self.event_service)
         self.event_manager = eventManager(self)
-        # SIMYAN: added a few parameters to Configuration Manager for 
+        # SIMYAN: added a few parameters to Configuration Manager for
         # component files
         self.config_manager = \
              ConfigurationManager(self, self.config_file_list,self.platform_file_name, self.compset_list)
@@ -256,7 +259,7 @@ class Framework(object):
         self.verbose_debug = verbose_debug
         self.outstanding_calls_list=[]
         self.call_queue_map = {}
-        
+
         # add the handler to the root logger
         try:
             # each manager should create their own event manager if they
@@ -279,7 +282,7 @@ class Framework(object):
             self.exception("Problem initializing managers")
             self.terminate_all_sims(status=Message.FAILURE)
             #stop(self.timers['__init__'])
-            raise 
+            raise
         self.blocked_messages = []
         #stop(self.timers['__init__'])
         # SIMYAN: determine the sim_root for the Framework to use later
@@ -289,32 +292,32 @@ class Framework(object):
 
     def get_inq(self):
         """
-        Return handle to the Framework's input queue object 
+        Return handle to the Framework's input queue object
          (`multiprocessing.Queue <http://docs.python.org/library/multiprocessing.html>`_)
         """
         return self.in_queue
 
     def register_service_handler(self, service_list, handler):
         """
-        Register a call back method to handle a list of framework service 
+        Register a call back method to handle a list of framework service
         invocations.
-        
+
           * *handler*: a Python callable object that takes a :py:obj:`messages.ServiceRequestMessage`.
-          * *service_list*: a list of service names to call *handler* when invoked by components.  The service name must match the *target_method* parameter in ``messages.ServiceRequestMessage``. 
-           
+          * *service_list*: a list of service names to call *handler* when invoked by components.  The service name must match the *target_method* parameter in ``messages.ServiceRequestMessage``.
+
         """
         for svc in service_list:
             self.service_handler[svc] = handler
 
     def _dispatch_service_request(self, msg):
         """
-        Find and execute handler that corresponds to the *target_method* of 
-        *msg*, a :py:obj:`messages.ServiceRequestMessage` object.  If handler 
-        not found an exception is raised.  The return value from the handler 
-        method is conveyed to the caller along the appropriate queue in a 
-        :py:obj:`messages.ServiceResponseMessage`.  All exceptions are passed 
-        on to the caller, except for the 
-        :py:obj:`ipsException.BlockedMessageException`, which causes the 
+        Find and execute handler that corresponds to the *target_method* of
+        *msg*, a :py:obj:`messages.ServiceRequestMessage` object.  If handler
+        not found an exception is raised.  The return value from the handler
+        method is conveyed to the caller along the appropriate queue in a
+        :py:obj:`messages.ServiceResponseMessage`.  All exceptions are passed
+        on to the caller, except for the
+        :py:obj:`ipsException.BlockedMessageException`, which causes the
         message to be blocked until the request can be satisfied.
         """
         method_name = msg.target_method
@@ -327,7 +330,7 @@ class Framework(object):
             response_msg = ServiceResponseMessage(self.component_id,
                                  comp_id,
                                  msg.message_id,
-                                 Message.FAILURE, 
+                                 Message.FAILURE,
                                  Exception("Unsupported method : %s" % (method_name)))
         else:
             try:
@@ -363,9 +366,9 @@ class Framework(object):
 
     def debug(self, *args):
         """
-        Produce **debugging** message in simulation log file.  Raise exception for bad formatting.  
+        Produce **debugging** message in simulation log file.  Raise exception for bad formatting.
         """
-        
+
         try:
             if (len(args) > 1):
                 msg = args[0] % args[1:]
@@ -377,7 +380,7 @@ class Framework(object):
 
     def info(self, *args):
         """
-        Produce **informational** message in simulation log file.  Raise exception for bad formatting.  
+        Produce **informational** message in simulation log file.  Raise exception for bad formatting.
         """
         try:
             if (len(args) > 1):
@@ -387,10 +390,10 @@ class Framework(object):
             self.logger.info(msg)
         except:
             self.error('Bad format in call to fwk.info() ' + str(args))
-            
+
     def warning(self, *args):
         """
-        Produce **warning** message in simulation log file.  Raise exception for bad formatting.  
+        Produce **warning** message in simulation log file.  Raise exception for bad formatting.
         """
         try:
             if (len(args) > 1):
@@ -403,7 +406,7 @@ class Framework(object):
 
     def error(self, *args):
         """
-        Produce **error** message in simulation log file.  Raise exception for bad formatting.  
+        Produce **error** message in simulation log file.  Raise exception for bad formatting.
         """
         try:
             if (len(args) > 1):
@@ -416,7 +419,7 @@ class Framework(object):
 
     def exception(self, *args):
         """
-        Produce **exception** message in simulation log file.  Raise exception for bad formatting.  
+        Produce **exception** message in simulation log file.  Raise exception for bad formatting.
         """
         try:
             if (len(args) > 1):
@@ -429,7 +432,7 @@ class Framework(object):
 
     def critical(self, *args):
         """
-        Produce **critical** message in simulation log file.  Raise exception for bad formatting.  
+        Produce **critical** message in simulation log file.  Raise exception for bad formatting.
         """
         try:
             self.logger.critical(*args)
@@ -440,10 +443,10 @@ class Framework(object):
     #@ipsTiming.TauWrap(TIMERS['_invoke_framework_comps'])
     def _invoke_framework_comps(self, fwk_comps, method_name):
         """
-        Invoke *method_name* on components in *fwk_comps* (list of component 
-        ids).  Typically, this is 
-        all framework-attached components (portal bridge and FTB bridge).  The 
-        calling method blocks until all invocations terminate. No arguments 
+        Invoke *method_name* on components in *fwk_comps* (list of component
+        ids).  Typically, this is
+        all framework-attached components (portal bridge and FTB bridge).  The
+        calling method blocks until all invocations terminate. No arguments
         are passed to the invoked methods.
         """
 
@@ -487,35 +490,35 @@ class Framework(object):
 
     #@ipsTiming.TauWrap(TIMERS['run'])
     def run(self):
-        """ 
+        """
         Run the communication outer loop of the framework.
-        
-        This method implements the core communication and message dispatch 
-        functionality of the framework. The main phases of execution for the 
-        framework are: 
-        
+
+        This method implements the core communication and message dispatch
+        functionality of the framework. The main phases of execution for the
+        framework are:
+
             1. Invoke the ``init`` method on all framework-attached components,
                blocking pending method call termination.
-            2. Generate method invocation messages for the remaining public 
-               method in the framework-centric components (i.e. ``step`` and 
+            2. Generate method invocation messages for the remaining public
+               method in the framework-centric components (i.e. ``step`` and
                ``finalize``).
             3. Generate a queue of method invocation messages for all public
-               framework accessible components in the simulations being run. 
-               framework-accessible components are made up of the **Init** 
-               component (if is exists), and the **Driver** component. The 
-               generated messages invoke the public methods ``init``, 
+               framework accessible components in the simulations being run.
+               framework-accessible components are made up of the **Init**
+               component (if is exists), and the **Driver** component. The
+               generated messages invoke the public methods ``init``,
                ``step``, and ``finalize``.
-            4. Dispatch method invocations  for each framework-centric 
-               component and physics simulation in order. 
-               
-        Exceptions that propagate to this method from the managed simulations 
-        causes the framework to abort any pending method invocation for the 
-        source simulation. 
-        Exceptions from framework-centeric component aborts further 
-        invocations to that component.  
-        
-        When all method invocations have been dispatched (or aborted), 
-        :py:meth:`Framework.terminate_sim` is called to trigger normal 
+            4. Dispatch method invocations  for each framework-centric
+               component and physics simulation in order.
+
+        Exceptions that propagate to this method from the managed simulations
+        causes the framework to abort any pending method invocation for the
+        source simulation.
+        Exceptions from framework-centeric component aborts further
+        invocations to that component.
+
+        When all method invocations have been dispatched (or aborted),
+        :py:meth:`Framework.terminate_sim` is called to trigger normal
         termination of all component processes.
         """
         #start(self.timers['run'])
@@ -533,14 +536,14 @@ class Framework(object):
         self.required_fields = set(['CREATE_RUNSPACE', 'RUN_SETUP', 'RUN'])
 
         # SIMYAN: get the runspaceInit_component and invoke its init() method
-        # this creates the base directory and container file for the simulation 
+        # this creates the base directory and container file for the simulation
         # and copies the conf files into both and change directory to base dir
         self.ips_status={}
         main_fwk_comp = self.comp_registry.getEntry(fwk_comps[0])
         self.sim_root = os.path.abspath(main_fwk_comp.services.get_config_param('SIM_ROOT'))
         self.checklist_file = os.path.join(self.sim_root, 'checklist.conf')
         ### SIMYAN:
-        ## Get the status of the simulation 
+        ## Get the status of the simulation
         #
         self.ips_status=checklist.get_status(self.checklist_file)
 
@@ -567,17 +570,17 @@ class Framework(object):
             for comp_id in fwk_comps:
                 msg_list = []
                 for method in ['step', 'finalize']:
-                    # SIMYAN: if --create_runspace was specified, add calls 
+                    # SIMYAN: if --create_runspace was specified, add calls
                     # to step() and finalize() for the framework components
                     if self.ips_dosteps['CREATE_RUNSPACE']:
-                        req_msg = ServiceRequestMessage(self.component_id, self.component_id, 
+                        req_msg = ServiceRequestMessage(self.component_id, self.component_id,
                                                         comp_id, 'init_call', method, 0)
                         msg_list.append(req_msg)
 
                 # SIMYAN: add those calls to the outstanding call map
                 if self.ips_dosteps['CREATE_RUNSPACE']:
                     outstanding_sim_calls[comp_id] = msg_list
-  
+
             # generate a queue of invocation messages for each simulation
             #   - list will look like: [init_comp.init(), init_comp.step(), init_comp.finalize(),
             #                           driver.init(), driver.step(), driver.finalize()]
@@ -608,8 +611,8 @@ class Framework(object):
                     print 'RUN_SETUP is marked as complete, but a runspace does not exist...'
                 else:
                     self.ips_status['RUN'] = False
-                    
-                    
+
+
                 if self.ips_dosteps['RUN'] and self.ips_status['RUN_SETUP']:
                     self.ips_status['RUN'] = True
                     methods.append('init')
@@ -631,8 +634,8 @@ class Framework(object):
                 # SIMYAN: add each method call to the msg_list
                 for comp_id in comp_list:
                     for method in methods:
-                        req_msg = ServiceRequestMessage(self.component_id, 
-                                                        self.component_id, 
+                        req_msg = ServiceRequestMessage(self.component_id,
+                                                        self.component_id,
                                                         comp_id,
                                                         'init_call', method, 0)
                         msg_list.append(req_msg)
@@ -672,7 +675,7 @@ class Framework(object):
                 continue
             if (self.verbose_debug):
                 self.debug("Framework received Message : %s", str(msg.__dict__))
-          
+
             # add blocked messages to message list for reprocessing
             msg_list = [msg] + self.blocked_messages
             self.blocked_messages = []
@@ -680,7 +683,7 @@ class Framework(object):
             for msg in msg_list:
                 if (self.verbose_debug):
                     self.debug('Framework processing message %s ', msg.message_id)
-                    
+
                 sim_name = msg.sender_id.get_sim_name()
                 if (msg.__class__.__name__ == 'ServiceRequestMessage'):
                     try:
@@ -734,7 +737,7 @@ class Framework(object):
         main_fwk_comp = self.comp_registry.getEntry(fwk_comps[0])
         container_ext = main_fwk_comp.services.get_config_param('CONTAINER_FILE_EXT')
         self.container_file = os.path.basename(self.sim_root) + os.path.extsep + container_ext
-        ipsutil.writeToContainer(self.container_file, self.sim_root, 'checklist.conf') 
+        ipsutil.writeToContainer(self.container_file, self.sim_root, 'checklist.conf')
 
         self.terminate_all_sims(Message.SUCCESS)
         self.event_service._print_stats()
@@ -745,7 +748,7 @@ class Framework(object):
     def initiate_new_simulation(self, sim_name):
         '''
         This is to be called by the configuration manager as part of dynamically creating
-        a new simulation. The purpose here is to initiate the method invocations for the 
+        a new simulation. The purpose here is to initiate the method invocations for the
         framework-visible components in the new simulation
         '''
         comp_list = self.config_manager.get_simulation_components(sim_name)
@@ -773,15 +776,15 @@ class Framework(object):
     def _send_monitor_event(self, sim_name = '', eventType='', comment = '', ok = 'True'):
         """
         Publish a portal monitor event to the *_IPS_MONITOR* event topic.
-        Event topics that start with an underscore are reserved for use by the 
+        Event topics that start with an underscore are reserved for use by the
         IPS Framework and services.
-        
+
           * *sim_name*: The name of the simulation to which this even belongs.
           * *eventType*: The type of the event.
           * *comment*: A string containing comment that describes the event.
-          * *ok*: A string containing the values 'True' or 'False', based on 
-            whether the event indicates normal simulation execution, or an 
-            error condition.  
+          * *ok*: A string containing the values 'True' or 'False', based on
+            whether the event indicates normal simulation execution, or an
+            error condition.
         """
         #start(self.timers['_send_monitor_event'])
         if (self.verbose_debug):
@@ -872,11 +875,11 @@ class Framework(object):
         self.debug('Publishing %s', str(event_data))
         self.event_manager.publish(topic_name, 'IPS_DYNAMIC_SIM', event_data)
         return
-        
+
     def send_terminate_msg(self, sim_name, status= Message.SUCCESS):
         """
         Invoke terminate(status) on components in a simulation
-        
+
         This method remotely invokes the method C{terminate()} on all componnets in the
         IPS simulation sim_name.
         """
@@ -893,11 +896,11 @@ class Framework(object):
             except Exception, e:
                 self.exception('exception encountered while terminating comp %s', id)
                 print e
-        
+
     def terminate_all_sims(self, status= Message.SUCCESS):
         """
         Terminate all active component instances.
-        
+
         This method remotely invokes the method C{terminate()} on all componnets in the
         IPS simulation.
         """
@@ -922,7 +925,7 @@ def modifyConfigObjFile(configFile,parameter,newValue,writeNew=True):
     # modify the SIM_NAME value to the new value
     if cfg_file.has_key(parameter):
         cfg_file[parameter] = newValue
-    else: 
+    else:
         print configFile + " has no parameter: "+parameter
         return ""
 
@@ -935,7 +938,7 @@ def modifyConfigObjFile(configFile,parameter,newValue,writeNew=True):
 
     return newFileName
 
-# SIMYAN: method for extracting the needed files to the current directory 
+# SIMYAN: method for extracting the needed files to the current directory
 # for cloning runs from a container file
 def extractIpsFile(containerFile,newSimName):
     """
@@ -943,9 +946,9 @@ def extractIpsFile(containerFile,newSimName):
     directory so that it can be used
     """
     oldIpsFile=os.path.splitext(containerFile)[0]+os.extsep+"ips"
-  
+
     zf=zipfile.ZipFile(containerFile,"r")
-  
+
     foundFile=""
     # Assume that container file contains 1 ips file.
     oldIpsFile=fnmatch.filter(zf.namelist(),"*.ips")[0]
@@ -983,16 +986,16 @@ def main(argv=None):
                       help='Turn on FTB capability')
     parser.add_option('-p', '--platform', dest='platform_filename', default='',
                       type="string", help='IPS platform configuration file')
-    parser.add_option('-c', '--component', 
+    parser.add_option('-c', '--component',
                       action='callback', callback=filelist_callback,
                       type="string", help='IPS component configuration file(s)')
-    parser.add_option('-i', '--simulation', 
+    parser.add_option('-i', '--simulation',
                       action='callback', callback=filelist_callback,
                       type="string", help='IPS simulation/config file')
-    parser.add_option('-j', '--config', 
+    parser.add_option('-j', '--config',
                       action='callback', callback=filelist_callback,
                       type="string", help='IPS simulation/config file')
-    parser.add_option('-y', '--clone', 
+    parser.add_option('-y', '--clone',
                       action='callback', callback=filelist_callback,
                       type="string", help='Clone container file')
     parser.add_option('-e', '--sim_name',
@@ -1054,7 +1057,7 @@ def main(argv=None):
                 print "When using both --simulation and --sim_name the list length must be the same"
                 return
 
-    # SIMYAN: grab the list of clone container files, and make sure the 
+    # SIMYAN: grab the list of clone container files, and make sure the
     # new sim_names are given for each
     clone_list = []
     usedClone=False
@@ -1081,18 +1084,18 @@ def main(argv=None):
         sim_file_map[sim_name] = []
 
     ### SIMYAN:
-    ##  Now process the simulation files 
+    ##  Now process the simulation files
     ##  Two methods for replacing the SIM_NAME:
     ##   1. colon syntax:   NEW_SIM_NAME:ips_file
     ##   2. sim_name parameter list
     #
     if usedSimulation:
         cleaned_file_list = []; ipsFilesToRemove= []
-        # iterate over the list of files 
+        # iterate over the list of files
         i=-1
         for file in cfgFile_list:
-            # if the file name contains ':', we must replace SIM_NAME in the 
-            # file with the new value and remove the new SIM_NAME and ':' 
+            # if the file name contains ':', we must replace SIM_NAME in the
+            # file with the new value and remove the new SIM_NAME and ':'
             # from the string for IPS to read the modified .ips file.
             if file.find(':') != -1:
                 # split the mapping.  new_sim_name gets replaced below
@@ -1104,7 +1107,7 @@ def main(argv=None):
                 else:
                     iFile=modifyConfigObjFile(file,'SIM_NAME',new_sim_name,)
                     #ipsFilesToRemove.append(file)
-  
+
             if usedSim_name:
                 i=i+1
                 new_sim_name=simName_list[i]
@@ -1125,7 +1128,7 @@ def main(argv=None):
     if usedClone:
         options.do_create_runspace=True
         cleaned_file_list = []
-        # iterate over the list of files 
+        # iterate over the list of files
         i=-1
         for clone_file in clone_list:
             if multiCloneSingleSource:
@@ -1151,7 +1154,7 @@ def main(argv=None):
 
 
     ### SIMYAN:
-    ##  sim_name specified without simulation or clone means 
+    ##  sim_name specified without simulation or clone means
     ##  look for the IPS file in sim_name subdirectory
     #
     if usedSim_name and not (usedSimulation or usedClone):
@@ -1166,7 +1169,7 @@ def main(argv=None):
                     if testSimName == simname:
                         foundFile=testFile
                         sim_file_map[sim_name].append(foundFile)
-  
+
             print "FOUND FILE", foundFile
             if foundFile:
                 cleaned_file_list.append(foundFile)
@@ -1192,21 +1195,21 @@ def main(argv=None):
         if simName_list:
             for sim_name in simName_list:
                 cfgFile_list = sim_file_map[sim_name]
-                fwk = Framework(options.do_create_runspace, options.do_run_setup, options.do_run, 
-                      cfgFile_list, options.log_file, options.platform_filename, 
-                      compset_list, options.debug, options.ftb, options.verbose_debug, 
+                fwk = Framework(options.do_create_runspace, options.do_run_setup, options.do_run,
+                      cfgFile_list, options.log_file, options.platform_filename,
+                      compset_list, options.debug, options.ftb, options.verbose_debug,
                       options.cmd_nodes, options.cmd_ppn)
                 fwk.run()
             ipsTiming.dumpAll('framework')
         else:
-            fwk = Framework(options.do_create_runspace, options.do_run_setup, options.do_run, 
-                  cfgFile_list, options.log_file, options.platform_filename, 
-                  compset_list, options.debug, options.ftb, options.verbose_debug, 
+            fwk = Framework(options.do_create_runspace, options.do_run_setup, options.do_run,
+                  cfgFile_list, options.log_file, options.platform_filename,
+                  compset_list, options.debug, options.ftb, options.verbose_debug,
                   options.cmd_nodes, options.cmd_ppn)
             fwk.run()
             ipsTiming.dumpAll('framework')
     except :
-        raise 
+        raise
 
     # SIMYAN: post running cleanup of working files, so there aren't
     # leftover files from doing clones or renaming simulations
