@@ -1,8 +1,8 @@
+#! /usr/bin/env python
 #-------------------------------------------------------------------------------
 # Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
 #-------------------------------------------------------------------------------
 # -*- coding: utf-8 -*-
-#! /usr/bin/python
 
 import sys
 import subprocess

@@ -1,7 +1,6 @@
 #-------------------------------------------------------------------------------
 # Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
 #-------------------------------------------------------------------------------
-#! /usr/bin/env python
 
 """
 This is a skeleton of a component.  It is intended to be used as a basis for 

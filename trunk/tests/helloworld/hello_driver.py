@@ -1,7 +1,6 @@
 #-------------------------------------------------------------------------------
 # Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
 #-------------------------------------------------------------------------------
-#! /usr/bin/env python
 
 from  component import Component
 

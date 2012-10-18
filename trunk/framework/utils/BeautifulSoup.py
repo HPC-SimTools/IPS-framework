@@ -1,6 +1,3 @@
-#-------------------------------------------------------------------------------
-# Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
-#-------------------------------------------------------------------------------
 """Beautiful Soup
 Elixir and Tonic
 "The Screen-Scraper's Friend"

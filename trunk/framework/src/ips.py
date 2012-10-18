@@ -1,7 +1,7 @@
+#! /usr/bin/env python
 #-------------------------------------------------------------------------------
 # Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
 #-------------------------------------------------------------------------------
-#! /usr/bin/env python
 """
    # local version
    The Integrated Plasma Simulator (IPS) Framework. This framework enables
