@@ -1,3 +1,6 @@
+#-------------------------------------------------------------------------------
+# Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
+#-------------------------------------------------------------------------------
 """
 Experimental timing of the IPS using TAU
 """
@@ -6,10 +9,10 @@ import os, sys
 import time
 import inspect
 if (sys.version_info > (2, 6)):
-    from types import MethodType 
+    from types import MethodType
 else:
     from new import instancemethod as MethodType
-    
+
 
 IPS_TIMING = False
 try:
@@ -114,7 +117,7 @@ def instrument_object_with_tau(obj_name, obj, exclude = None):
         my_exclude = []
     else:
         my_exclude = exclude
-    
+
     timers_dict_name = '_tau_timers_' + str(id(obj))
     try:
         timers_dict = getattr(obj, timers_dict_name)
@@ -135,7 +138,7 @@ def instrument_object_with_tau(obj_name, obj, exclude = None):
         if (name not in my_exclude):
             if (callable(value)):
                 timers_dict[name] = create_timer(obj_name, name, pid)
-            
+
 #    print raw_method_dict
     for name, method in raw_method_dict.iteritems():
 #        print obj, name, method
@@ -144,12 +147,12 @@ def instrument_object_with_tau(obj_name, obj, exclude = None):
             wrapped_method = weave_tau_timer(obj, method)
             method_obj = MethodType(wrapped_method, obj, obj.__class__)
             setattr(obj, name, method_obj)
-            
+
     setattr(obj, timers_dict_name, timers_dict)
     setattr(obj, raw_method_dict_name, raw_method_dict)
 #    print 'instrument_object_with_tau - 3', obj
     return
-    
+
 
 """
 t1 = create_timer('test', 'a', str(os.getpid()))

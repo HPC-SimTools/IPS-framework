@@ -1,13 +1,16 @@
+#-------------------------------------------------------------------------------
+# Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
+#-------------------------------------------------------------------------------
 # -*- coding: utf-8 -*-
 #! /usr/bin/python
 """
-This script will scrape the SWIM portal to extract the task timings of a run and give you the 
-mean and standard deviation of each task invocation in the given range.  You should use 
-exec_timer.py to inspect the runtime data visually to come up with the slices.  Slices are 
-based on physics time steps, and are numbered from 0 to last time step - 1.  You will need to 
+This script will scrape the SWIM portal to extract the task timings of a run and give you the
+mean and standard deviation of each task invocation in the given range.  You should use
+exec_timer.py to inspect the runtime data visually to come up with the slices.  Slices are
+based on physics time steps, and are numbered from 0 to last time step - 1.  You will need to
 know what the granularity of the timesteps are and how they map to the graph from exec_timer.py.
 
-This data can then be used to construct accurate models of the run using different phases in RUS. 
+This data can then be used to construct accurate models of the run using different phases in RUS.
 
 To run:
 python gen_stddev.py -r <portal runid> -b <beginning of slice> -e <end of slice>
@@ -68,7 +71,7 @@ def get_task_times():
             comment = field_values[-1]
             exec_time = comment.split()[-2]
             phys_stamp = field_values[-2]
-            #print phys_stamp, comp_task, exec_time            
+            #print phys_stamp, comp_task, exec_time
             try:
                 comp_task_map = task_time_map[comp_task]
             except KeyError:
@@ -78,11 +81,11 @@ def get_task_times():
             all_phys_stamps.add(phys_stamp)
 
 
-    print 'Phys_stamp', 
+    print 'Phys_stamp',
     for comp in task_time_map.keys():
-        print ',   ', comp, 
+        print ',   ', comp,
     print
-    
+
     for phys_stamp in sorted(all_phys_stamps, key = float):
         print phys_stamp,
         for comp_map in task_time_map.values():

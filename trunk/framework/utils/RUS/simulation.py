@@ -1,3 +1,6 @@
+#-------------------------------------------------------------------------------
+# Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
+#-------------------------------------------------------------------------------
 '''
 Resource Usage Simulator (RUS)
 ------------------------------
@@ -5,9 +8,9 @@ Resource Usage Simulator (RUS)
 by Samantha Foley, Indiana University
 3/4/2010
 
-This RUS simulates the resource usage of a MCMD application as described 
-by the input files.  It is a tool that helps to determine what resource 
-allocation algorithms and component configurations work best for classes 
+This RUS simulates the resource usage of a MCMD application as described
+by the input files.  It is a tool that helps to determine what resource
+allocation algorithms and component configurations work best for classes
 of applications.
 '''
 
@@ -22,13 +25,13 @@ class simulation():
         """
         construct and manage the workflow of a simulation and its constituent components
         """
-        
+
         # stuff from the framework
         self.RM = fwk.RM
         self.fwk = fwk
 
         # bookkeeping
-        self.total_usage = 0 
+        self.total_usage = 0
         self.total_work_time = 0
         self.total_lost_time = 0
         self.total_overhead = 0
@@ -79,7 +82,7 @@ class simulation():
                 self.phase_list = info_dict['phases']
             except:
                 self.phase_list = []
-        
+
             if self.nsteps > 0 and self.comp_list:
                 self.old_style = True
             elif self.phase_list:
@@ -215,10 +218,10 @@ class simulation():
                     for s in self.phases[p].comp_list:
                         self.all_comps.update({p + '_' + s:component(info_dict[p][s], self.fwk, self, p)})
         except:
-            raise                
+            raise
 
         if self.fwk.debug:
-            for k, v in self.phases.items():                
+            for k, v in self.phases.items():
                 print "phase:", k, "nsteps:", v.nsteps, "comps:", v.comp_list
                 for c in self.all_comps.values():
                     print c.name, c.nproc, c.runtime, c.stddev
@@ -240,11 +243,11 @@ class simulation():
         #self.get_ready_comps()
         if self.fwk.debug:
             print self.my_comps.keys()
-                
+
 
     def get_ready_comps(self):
         """
-        Cycles through the comps in ``self.my_comps``, checks for dependencies, 
+        Cycles through the comps in ``self.my_comps``, checks for dependencies,
         and returns those that are ready.
         """
         # ***** need to change to incorporate component overheads!!!!
@@ -272,7 +275,7 @@ class simulation():
                             self.fwk.logEvent(self.name, c.name, "waiting_on_parents", "waiting on (at least one) parents")
 
                 if c.state == "ready":
-                    ready_comps.append(c)                
+                    ready_comps.append(c)
             else:
                 #print "comp in my_comps:", c.name, c.state
                 #if c.state == "ready":
@@ -295,11 +298,11 @@ class simulation():
 
     def update_step(self):
         """
-        This function determines if we are ready for a new step and in 
+        This function determines if we are ready for a new step and in
         the process checks for other conditions too..
 
         The return value is True if we need to do a checkpoint now, and False otherwise.
-        
+
         * if the state of the simulation is *failed*, then we set ``self.is_done`` to True, and return False
         * see if we are ready for the next step, if not, return False; otherwise, continue.
         * if checkpointing is turned on, we see if it is time to checkpoint, if so, return True
@@ -337,7 +340,7 @@ class simulation():
         for c in self.my_comps.values():
             if isinstance(c, component) and c.ready_for_step < next_step:
                 if c.ready_for_step < next_step - 1:
-                    print 'ready for step not equal to curr step!!! (%s-%s: ready for step: %d -- curr step: %d)' % (c.phase, c.name, c.ready_for_step, self.curr_step) 
+                    print 'ready for step not equal to curr step!!! (%s-%s: ready for step: %d -- curr step: %d)' % (c.phase, c.name, c.ready_for_step, self.curr_step)
                     raise
                 return False
 
@@ -387,7 +390,7 @@ class simulation():
         self.fwk.logEvent(self.name, None, "end_step", "ending step %d" % (self.curr_step - 1))
         if self.fwk.debug:
             print "curr step", self.curr_step, "next phase at", self.phases[self.curr_phase].nsteps, "steps"
-        
+
         #------------------------------
         # done with rework?
         #------------------------------
@@ -424,14 +427,14 @@ class simulation():
                 c.state = 'not_done'
                 c.ready_for_step = self.curr_step
         return False
-        
+
     def get_next_phase(self):
         """
-        This gets called when there is a transition from one phase to another.  
-        
+        This gets called when there is a transition from one phase to another.
+
         ``self.mycomps`` is populated with the components from the new phase and initialized.
         """
-        
+
         #print 'in get next phase'
         #print self.state
         if self.state == 'startup':
@@ -507,9 +510,9 @@ class simulation():
 
     def sync(self, global_time_update):
         """
-        The framework calls this function to update the finished or failed components, 
+        The framework calls this function to update the finished or failed components,
         and a list of the finished tasks and a list of tasks to run are returned to the framework.
-        
+
         * ``finish_task()`` and ``failed_task()`` are invoked on components as appropriate
         * ``update_step()`` is called if there are any finished tasks
         * a checkpoint is taken if it is time to take one
@@ -651,7 +654,7 @@ class simulation():
         """
         something went terribly wrong and we must die (gracefully)
         """
-        
+
         if self.fwk.debug:
             print " ##### failed", self.fwk.fwk_global_time, self.curr_phase, self.curr_step, self.my_comps.keys()
             print "bad things happened and now we are shutting down"
@@ -668,9 +671,9 @@ class simulation():
 
     def resubmit_setup(self):
         """
-        There are not enough nodes to complete the simulation.  The simulation will be 
-        resubmitted in a new batch allocation and restarted from the last available checkpoint.  
-        If we have exceeded the maximum allowed resubmissions, the simulation will be killed.  
+        There are not enough nodes to complete the simulation.  The simulation will be
+        resubmitted in a new batch allocation and restarted from the last available checkpoint.
+        If we have exceeded the maximum allowed resubmissions, the simulation will be killed.
         Current maximum resubmissions is 5.
         """
         if self.fwk.debug:
@@ -715,7 +718,7 @@ class simulation():
 
     def resubmit_restart(self):
         """
-        After the resubmission has successfully completed, the restart is commenced and other 
+        After the resubmission has successfully completed, the restart is commenced and other
         counters reset for this new allocation.
         """
         if self.fwk.debug:
@@ -743,7 +746,7 @@ class simulation():
             self.all_comps[c].state = "not_done"
             self.my_comps[c].ready_for_step = self.curr_step
             self.my_comps[c].state = "not_done"
-        self.state = 'rework'           
+        self.state = 'rework'
 
     def checkpoint(self):
         """
@@ -780,7 +783,7 @@ class simulation():
 
     def restart_setup(self):
         """
-        This is called when a restart is needed.  Current state is saved to determine when rework will be done. 
+        This is called when a restart is needed.  Current state is saved to determine when rework will be done.
         """
         if self.fwk.debug:
             print " ##### restarting", self.fwk.fwk_global_time, self.curr_phase, self.curr_step
@@ -807,7 +810,7 @@ class simulation():
                 c.kill_task()
         del self.my_comps
         self.my_comps = {}
-        #print "killed tasks" 
+        #print "killed tasks"
 
     def restart_restore_state(self):
         """
@@ -867,6 +870,6 @@ class simulation():
             self.completed_work = self.total_steps
 
 
-        
+
 
 # end simulation object

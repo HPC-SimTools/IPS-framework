@@ -1,3 +1,6 @@
+#-------------------------------------------------------------------------------
+# Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
+#-------------------------------------------------------------------------------
 """
 Link to a description of the fault modeling piece of the rmpi project:
 http://www.cs.sandia.gov/~rolf/app_model.html
@@ -10,12 +13,12 @@ import random
 
 def generate_event(fwk):
     """
-    generates a list of times when failures will occur based on mtbf 
-    (in seconds) specified in the resource config file, one for each 
-    node since each node is treated independently of the others.  
+    generates a list of times when failures will occur based on mtbf
+    (in seconds) specified in the resource config file, one for each
+    node since each node is treated independently of the others.
     the list is then sorted.
-    
-    does not account for the fact that the job was not started at the 
+
+    does not account for the fact that the job was not started at the
     beginning of the hardware's lifespan.
     """
     nodes = self.RM.nodes
@@ -29,4 +32,3 @@ def trigger(fwk):
     else:
         print 'failure killed an unoccupied node'
     fwk.logEvent(None, None, 'node_failure', 'fault killed a node')
-        

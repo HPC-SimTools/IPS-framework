@@ -1,6 +1,9 @@
+#-------------------------------------------------------------------------------
+# Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
+#-------------------------------------------------------------------------------
 class Message(object):
     """
-    Base class for all IPS messages. **Should not be used in actual 
+    Base class for all IPS messages. **Should not be used in actual
     communication.**
     """
     SUCCESS = 0
@@ -26,7 +29,7 @@ class Message(object):
 
 class ServiceRequestMessage(Message):
     """
-    Message used by components to request the result of a service action by 
+    Message used by components to request the result of a service action by
     one of the IPS managers.
 
       * *sender_id*: component id of the sender
@@ -49,7 +52,7 @@ class ServiceRequestMessage(Message):
 
 class ServiceResponseMessage(Message):
     """
-    Message used by managers to respond with the result of the service action 
+    Message used by managers to respond with the result of the service action
     to the calling component.
 
       * *sender_id*: component id of the sender (framework)

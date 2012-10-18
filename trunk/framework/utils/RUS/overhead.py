@@ -1,3 +1,6 @@
+#-------------------------------------------------------------------------------
+# Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
+#-------------------------------------------------------------------------------
 '''
 Resource Usage Simulator (RUS)
 ------------------------------
@@ -5,9 +8,9 @@ Resource Usage Simulator (RUS)
 by Samantha Foley, Indiana University
 3/4/2010
 
-This RUS simulates the resource usage of a MCMD application as described 
-by the input files.  It is a tool that helps to determine what resource 
-allocation algorithms and component configurations work best for classes 
+This RUS simulates the resource usage of a MCMD application as described
+by the input files.  It is a tool that helps to determine what resource
+allocation algorithms and component configurations work best for classes
 of applications.
 '''
 
@@ -24,9 +27,9 @@ class overhead():
     #def __init__(self, fwk, sim, phase, name, nproc, runtime, stddev, deps, start_up, clean_up)
     def __init__(self, comp, fwk, sim, phase, type, info_dict):
         """
-        this object models various overheads associated with the framework, 
-        simulation, and components.  It resembles a component in some of its 
-        methods and fields in that it consumes time, but not resources.  Also, these 
+        this object models various overheads associated with the framework,
+        simulation, and components.  It resembles a component in some of its
+        methods and fields in that it consumes time, but not resources.  Also, these
         do not fail due to node failures.
 
         """
@@ -100,7 +103,7 @@ class overhead():
         except:
             self.curr_exec_time = self.runtime
 
- 
+
     def run(self):
         """
         An exeuction time is obtained and the state is set to *running*.
@@ -130,6 +133,4 @@ class overhead():
         # log message
         self.fwk.logEvent(self.sim_name, self.comp_name, "finish_task", "finished overhead %s" % self.name)
 
-# end overhead object 
-
-
+# end overhead object

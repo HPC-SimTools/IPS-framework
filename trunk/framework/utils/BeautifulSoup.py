@@ -1,3 +1,6 @@
+#-------------------------------------------------------------------------------
+# Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
+#-------------------------------------------------------------------------------
 """Beautiful Soup
 Elixir and Tonic
 "The Screen-Scraper's Friend"
@@ -882,9 +885,9 @@ class SoupStrainer:
                 markupAttrMap = None
                 for attr, matchAgainst in self.attrs.items():
                     if not markupAttrMap:
-                         if hasattr(markupAttrs, 'get'):
+                        if hasattr(markupAttrs, 'get'):
                             markupAttrMap = markupAttrs
-                         else:
+                        else:
                             markupAttrMap = {}
                             for k,v in markupAttrs:
                                 markupAttrMap[k] = v
@@ -1061,27 +1064,27 @@ class HTMLParserBuilder(HTMLParser):
                 pass
 
         if not data and self.soup.convertXMLEntities:
-                data = self.soup.XML_ENTITIES_TO_SPECIAL_CHARS.get(ref)
+            data = self.soup.XML_ENTITIES_TO_SPECIAL_CHARS.get(ref)
 
         if not data and self.soup.convertHTMLEntities and \
             not self.soup.XML_ENTITIES_TO_SPECIAL_CHARS.get(ref):
-                # TODO: We've got a problem here. We're told this is
-                # an entity reference, but it's not an XML entity
-                # reference or an HTML entity reference. Nonetheless,
-                # the logical thing to do is to pass it through as an
-                # unrecognized entity reference.
-                #
-                # Except: when the input is "&carol;" this function
-                # will be called with input "carol". When the input is
-                # "AT&T", this function will be called with input
-                # "T". We have no way of knowing whether a semicolon
-                # was present originally, so we don't know whether
-                # this is an unknown entity or just a misplaced
-                # ampersand.
-                #
-                # The more common case is a misplaced ampersand, so I
-                # escape the ampersand and omit the trailing semicolon.
-                data = "&amp;%s" % ref
+            # TODO: We've got a problem here. We're told this is
+            # an entity reference, but it's not an XML entity
+            # reference or an HTML entity reference. Nonetheless,
+            # the logical thing to do is to pass it through as an
+            # unrecognized entity reference.
+            #
+            # Except: when the input is "&carol;" this function
+            # will be called with input "carol". When the input is
+            # "AT&T", this function will be called with input
+            # "T". We have no way of knowing whether a semicolon
+            # was present originally, so we don't know whether
+            # this is an unknown entity or just a misplaced
+            # ampersand.
+            #
+            # The more common case is a misplaced ampersand, so I
+            # escape the ampersand and omit the trailing semicolon.
+            data = "&amp;%s" % ref
         if not data:
             # This case is different from the one above, because we
             # haven't already gone through a supposedly comprehensive
@@ -1101,12 +1104,12 @@ class HTMLParserBuilder(HTMLParser):
         declaration as a CData object."""
         j = None
         if self.rawdata[i:i+9] == '<![CDATA[':
-             k = self.rawdata.find(']]>', i)
-             if k == -1:
-                 k = len(self.rawdata)
-             data = self.rawdata[i+9:k]
-             j = k+3
-             self._toStringSubclass(data, CData)
+            k = self.rawdata.find(']]>', i)
+            if k == -1:
+                k = len(self.rawdata)
+            data = self.rawdata[i+9:k]
+            j = k+3
+            self._toStringSubclass(data, CData)
         else:
             try:
                 j = HTMLParser.parse_declaration(self, i)

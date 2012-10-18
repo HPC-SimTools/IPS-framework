@@ -1,3 +1,6 @@
+#-------------------------------------------------------------------------------
+# Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
+#-------------------------------------------------------------------------------
 # -*- coding: utf-8 -*-
 #! /usr/bin/python
 
@@ -22,9 +25,9 @@ def plot_exec_time(task_time_map):
     ylabel('Task execution Time')
     title('Execution time for IPS tasks')
     grid(True)
-    show()    
-    
-    
+    show()
+
+
 def get_task_times(url_list):
     task_time_map = {}
     all_phys_stamps = set()
@@ -46,7 +49,7 @@ def get_task_times(url_list):
                 comment = field_values[-1]
                 exec_time = comment.split()[-2]
                 phys_stamp = field_values[-2]
-                #print phys_stamp, comp_task, exec_time            
+                #print phys_stamp, comp_task, exec_time
                 try:
                     comp_task_map = task_time_map[comp_task]
                 except KeyError:
@@ -54,12 +57,12 @@ def get_task_times(url_list):
                     task_time_map[comp_task] = comp_task_map
                 comp_task_map [phys_stamp] = exec_time
                 all_phys_stamps.add(phys_stamp)
-            
-    print 'Phys_stamp', 
+
+    print 'Phys_stamp',
     for comp in task_time_map.keys():
-        print ',   ', comp, 
+        print ',   ', comp,
     print
-    
+
     for phys_stamp in sorted(all_phys_stamps, key = float):
         print phys_stamp,
         for comp_map in task_time_map.values():
@@ -70,7 +73,7 @@ def get_task_times(url_list):
                 print ',           ',
                 comp_map[phys_stamp] = 'Nan'
         print
-        
+
     if (PLOT):
         plot_exec_time(task_time_map)
 

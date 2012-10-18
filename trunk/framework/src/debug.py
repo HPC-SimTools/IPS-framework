@@ -1,3 +1,6 @@
+#-------------------------------------------------------------------------------
+# Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
+#-------------------------------------------------------------------------------
 """
 This file writes debug messages to 'debug.out' file if the environment
 variable 'IPSES_DEBUG' is defined.

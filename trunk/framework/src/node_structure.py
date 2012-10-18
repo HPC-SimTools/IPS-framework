@@ -1,3 +1,6 @@
+#-------------------------------------------------------------------------------
+# Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
+#-------------------------------------------------------------------------------
 """
 Node structures for RM are implemented here for convenience.
 """
@@ -32,7 +35,7 @@ class Node:
         else:
             self.avail_cores = len(p)
         cps = cores / socks
-        
+
         self.total_cores = self.avail_cores
         c = 0
         s = 0
@@ -82,8 +85,8 @@ class Node:
 
     def allocate(self, whole_nodes, whole_sockets, tid, o, procs):
         """
-        Mark *procs* number of cores as allocated subject to the values of 
-        *whole_nodes* and *whole_sockets*.  Return the number of cores 
+        Mark *procs* number of cores as allocated subject to the values of
+        *whole_nodes* and *whole_sockets*.  Return the number of cores
         allocated and their corresponding slots, a list of strings of the form:
 
           <socket name>:<core name>
@@ -135,14 +138,14 @@ class Node:
                         self.available.remove(sock.name)
                 if k >= procs:
                     break
-        
+
         self.avail_cores -= k
         return k, slots
 
 
     def release(self, tid, o):
         """
-        Mark cores used by task *tid* and component *o* as available.  Return 
+        Mark cores used by task *tid* and component *o* as available.  Return
         the number of cores released.
         """
         # remove tid and o from lists
@@ -168,13 +171,13 @@ class Socket:
     Models a socket in a node.
 
       * *name*: identifier for the socket
-      * *task_ids*, *owners*: identifiers for the tasks and components that 
+      * *task_ids*, *owners*: identifiers for the tasks and components that
         are currently using the socket.
-      * *allocated*, *available*: lists of cores that are allocated 
+      * *allocated*, *available*: lists of cores that are allocated
         and available.
       * *cores*: list of :py:class:`.Core` objects belonging to this socket
       * *avail_cores*: number of cores that are currently available.
-      * *total_cores*: total number of cores that can be allocated on this 
+      * *total_cores*: total number of cores that can be allocated on this
         socket.
     """
     def __init__(self, name, cps, coreids=[]):
@@ -199,7 +202,7 @@ class Socket:
             for c in range(cps):
                 self.cores.append(Core(c))
                 self.available.append(c)
-                
+
     def print_cores(self, fname=''):
         """
         Pretty print of state of cores.
@@ -223,7 +226,7 @@ class Socket:
 
     def allocate(self, whole, tid, o, num_procs):
         """
-        Mark *num_procs* cores as allocated subject to the value of *whole*.  
+        Mark *num_procs* cores as allocated subject to the value of *whole*.
         Return a list of strings of the form:
 
           <socket name>:<core name>
@@ -237,7 +240,7 @@ class Socket:
             # fill the whole socket!
             for c1 in self.cores:
                 self.available.remove(c1.name)
-                slots.append(str(self.name) + ":" + 
+                slots.append(str(self.name) + ":" +
                              str(c1.allocate(tid, o)))
                 self.allocated.append(c1.name)
                 k += 1
@@ -245,7 +248,7 @@ class Socket:
             for c1 in self.cores:
                 if c1.is_available:
                     self.available.remove(c1.name)
-                    slots.append(str(self.name) + ":" + 
+                    slots.append(str(self.name) + ":" +
                                  str(c1.allocate(tid, o)))
                     self.allocated.append(c1.name)
                     k += 1
@@ -257,7 +260,7 @@ class Socket:
 
     def release(self, tid):
         """
-        Mark cores that are allocated to task *tid* as available.  Return 
+        Mark cores that are allocated to task *tid* as available.  Return
         number of cores set to available.
         """
         o, k, num_procs = self.my_tasks[tid]
@@ -315,7 +318,3 @@ class Core:
             self.is_available = True
             self.task_id = -1
             self.owner = ''
-
-
-
-

@@ -1,3 +1,6 @@
+#-------------------------------------------------------------------------------
+# Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
+#-------------------------------------------------------------------------------
 from component import Component
 import sys, urllib, os
 from subprocess import Popen, PIPE
@@ -27,7 +30,7 @@ class PortalBridge(Component):
 
     def __init__(self, services, config):
         """
-        Declaration of private variables and initialization of 
+        Declaration of private variables and initialization of
         :py:class:`component.Component` object.
         """
         Component.__init__(self, services, config)
@@ -44,7 +47,7 @@ class PortalBridge(Component):
 
     def init(self, timestamp=0.0):
         """
-        Try to connect to the portal, subscribe to *_IPS_MONITOR* events and 
+        Try to connect to the portal, subscribe to *_IPS_MONITOR* events and
         register callback :py:meth:`.process_event`.
         """
         try:
@@ -141,13 +144,13 @@ class PortalBridge(Component):
                 if (self.first_event):  #First time, launch sendPost.py daemon
                     cmd = os.path.join(sys.path[0],'sendPost.py')
                     self.childProcess = Popen(cmd, shell=True, bufsize=128,
-                                              stdin=PIPE, stdout=PIPE, 
+                                              stdin=PIPE, stdout=PIPE,
                                               stderr=PIPE, close_fds=True)
                     #self.childProcess = popen2.Popen3(cmd, bufsize=128)
                     self.first_event = False
                 self.childProcess.stdin.write('%s %s\n' % \
                                                 (self.portal_url, webmsg))
-#                self.services.debug('Wrote event to sendPost.py buffer : %s', 
+#                self.services.debug('Wrote event to sendPost.py buffer : %s',
 #                                    str(event_data))
                 self.childProcess.stdin.flush()
             except Exception , e:
@@ -157,8 +160,8 @@ class PortalBridge(Component):
 
     def init_simulation(self, sim_name, sim_root):
         """
-        Create and send information about simulation *sim_name* living in 
-        *sim_root* so the portal can set up corresponding structures to manage 
+        Create and send information about simulation *sim_name* living in
+        *sim_root* so the portal can set up corresponding structures to manage
         data from the sim.
         """
         self.services.debug('Initializing simulation : %s -- %s ', sim_name, sim_root)

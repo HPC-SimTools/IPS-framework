@@ -1,3 +1,6 @@
+#-------------------------------------------------------------------------------
+# Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
+#-------------------------------------------------------------------------------
 #! /usr/bin/python
 
 import sys
@@ -21,9 +24,9 @@ def plot_exec_time(task_time_map):
     ylabel('Task execution Time')
     title('Execution time for IPS tasks')
     grid(True)
-    show()    
-    
-    
+    show()
+
+
 def get_task_times(url_list):
     phys_time_map = {}
     for url in url_list:
@@ -45,7 +48,7 @@ def get_task_times(url_list):
             #print field_values[2]
             if (field_values[2] == u'IPS_UPDATE_TIME_STAMP'):
                 sim_time_map[phys_time] = float(wall_time)
-        sorted_keys = sorted(sim_time_map.keys(), key = float) 
+        sorted_keys = sorted(sim_time_map.keys(), key = float)
         for k in range(1, len(sorted_keys)):
             cur_step = sorted_keys[k]
             prior_step = sorted_keys[k-1]
@@ -57,7 +60,7 @@ def get_task_times(url_list):
             except KeyError:
                 phys_time_map[cur_step] = [phys_exec_time[cur_step]]
             #print cur_step, phys_exec_time[cur_step], phys_time_map[cur_step]
-    
+
     print 'Physics Time         Time/Physics Sec.'
     x = []
     y = []
@@ -66,7 +69,7 @@ def get_task_times(url_list):
         print k, val
         x.append(float(k))
         y.append(val)
-        
+
     if (PLOT):
         figure()
 #        x = [float(k) for k in sorted(plot_data.keys(), key = float)]
@@ -76,8 +79,8 @@ def get_task_times(url_list):
         ylabel('Wall Time')
         title('Simulation wall clock consumption rate')
         grid(True)
-        show()    
-        
+        show()
+
 
 if __name__ == '__main__':
     get_task_times(sys.argv[1:])

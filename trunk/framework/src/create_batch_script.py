@@ -1,3 +1,6 @@
+#-------------------------------------------------------------------------------
+# Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
+#-------------------------------------------------------------------------------
 #! /usr/bin/env python
 import sys
 from configobj import ConfigObj
@@ -34,8 +37,8 @@ def printUsageMessage():
 [--walltime=ALLOCATION_TIME] [--nproc=NPROCESSES] [--debug] [--ftb] \
 [--output=BATCH_SCRIPT]'
 
-def create_script(ips_path,  cfgFile_list,  platform_file, 
-                  debug, ftb, account='AAAA', queue='QQQQ', 
+def create_script(ips_path,  cfgFile_list,  platform_file,
+                  debug, ftb, account='AAAA', queue='QQQQ',
                   nproc='NNNN', walltime='HH:MM:SS', out_file=sys.stdout):
     conf = []
     config_cmd_string = ''
@@ -54,7 +57,7 @@ def create_script(ips_path,  cfgFile_list,  platform_file,
     platform_path = os.path.abspath(platform_file)
     sim_name = conf[0]['SIM_NAME']
     sim_root = conf[0]['SIM_ROOT']
-    
+
     plat = ConfigObj(platform_path, interpolation='template',
                                  file_error=True)
     HOST = plat['HOST']
@@ -67,7 +70,7 @@ def create_script(ips_path,  cfgFile_list,  platform_file,
     except:
         print 'Error creating directory ', sim_root
         raise
-    
+
     if (HOST.upper() == 'FRANKLIN'):
         host = 'franklin'
     elif (HOST.upper() == 'JAGUAR'):
@@ -76,10 +79,10 @@ def create_script(ips_path,  cfgFile_list,  platform_file,
         host = 'viz'
     else:
         host = 'unknown'
-        
+
     bin_path = os.path.dirname(ips_path)
     ips_root = os.path.split(bin_path)[0]
-    
+
     script =  script_template.replace('@SIM_ROOT@',sim_root).\
                               replace('@HOST@', HOST).\
                               replace('@SIM_NAME@', sim_name).\
@@ -96,7 +99,7 @@ def create_script(ips_path,  cfgFile_list,  platform_file,
     if (debug):
         debug_string = '--debug'
     script = script.replace('@DEBUG@', debug_string)
-    
+
     ftb_string = ''
     if (ftb):
         ftb_string = '--ftb'
@@ -116,10 +119,10 @@ def main(argv=None):
 
     try:
         opts, args = getopt.gnu_getopt(argv[first_arg:], '',
-                                       ["ips=", 
-                                        "config=", 
-                                        "platform=", 
-                                        "debug", 
+                                       ["ips=",
+                                        "config=",
+                                        "platform=",
+                                        "debug",
                                         "ftb",
                                         "account=",
                                         "queue=",
@@ -161,19 +164,19 @@ def main(argv=None):
             out_file_name =value
             out_file = open(out_file_name,'w')
 
-    if (len(cfgFile_list) == 0 or 
-        platform_filename =='' or 
+    if (len(cfgFile_list) == 0 or
+        platform_filename =='' or
         ips_path == ''):
         printUsageMessage()
         return 1
-    
-    
+
+
     absCfgFile_list = [os.path.abspath(cfgFile) for cfgFile in cfgFile_list]
     platform_file = os.path.abspath(platform_filename)
-    create_script(ips_path, 
-                  absCfgFile_list, 
-                  platform_file, 
-                  debug, 
+    create_script(ips_path,
+                  absCfgFile_list,
+                  platform_file,
+                  debug,
                   ftb,
                   account,
                   queue,

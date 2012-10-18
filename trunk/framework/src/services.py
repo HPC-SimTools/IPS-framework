@@ -1,9 +1,12 @@
+#-------------------------------------------------------------------------------
+# Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
+#-------------------------------------------------------------------------------
 import messages
 import sys
 import Queue
 import os
 import subprocess
- 
+
 import time
 import ipsutil
 import shutil
@@ -77,24 +80,24 @@ class ServicesProxy(object):
 
     def __init__(self, fwk, fwk_in_q, svc_response_q, sim_conf, log_pipe_name):
         """
-        The *ServicesProxy* object is responsible for marshalling invocations 
-        of framework services to the framework process using a shared queue. 
-        The queue is shared among all components in a simulation. The results 
-        from framework services invocations are received via another, 
+        The *ServicesProxy* object is responsible for marshalling invocations
+        of framework services to the framework process using a shared queue.
+        The queue is shared among all components in a simulation. The results
+        from framework services invocations are received via another,
         component-specific "framework response" queue.
 
         Create a new ServicesProxy object
-        
-        *fwk*: Enclosing IPS simulation framework, of type 
+
+        *fwk*: Enclosing IPS simulation framework, of type
                :py:meth:`ips.Framework`
-        *fwk_in_q*: Framework input message queue - shared among all service 
+        *fwk_in_q*: Framework input message queue - shared among all service
                     objects
-        *svc_response_q*: Service response message queue - one per service 
+        *svc_response_q*: Service response message queue - one per service
                           object.
-        *sim_conf*: Simulation configuration dictionary, contains data from 
-                    the simulation configuration file merged with the platform 
+        *sim_conf*: Simulation configuration dictionary, contains data from
+                    the simulation configuration file merged with the platform
                     configuration file.
-        *log_pipe_name*: Name of logging pipe for use by the IPS logging 
+        *log_pipe_name*: Name of logging pipe for use by the IPS logging
                          daemon.
         """
         self.pid = 0
@@ -132,19 +135,19 @@ class ServicesProxy(object):
         except:
             pass
         ipsTiming.instrument_object_with_tau('services', self, exclude = ['__init__'])
-               
+
     def _make_timers(self):
         ipsTiming.instrument_object_with_tau('services', self, exclude = ['__init__'])
 
 
     def __initialize__(self, component_ref):
         """
-        Initialize the service proxy object, connecting it to its associated 
+        Initialize the service proxy object, connecting it to its associated
         component.
-        
+
         This method is for use only by the IPS framework.
         """
-        
+
         self.component_ref = weakref.proxy(component_ref)
         conf = self.component_ref.config
         self.full_comp_id =  '_'.join([conf['CLASS'], conf['SUB_CLASS'],
@@ -225,11 +228,11 @@ class ServicesProxy(object):
     def _get_incoming_responses(self, block=False):
         """
         Get all pending responses on the service response queue.
-        
-        *block*: Boolean flag. If ``True``, block waiting for one or more 
-        responses to arrive. When *block* is false, return immediately with 
+
+        *block*: Boolean flag. If ``True``, block waiting for one or more
+        responses to arrive. When *block* is false, return immediately with
         a (possibly empty) list of available responses.
-        
+
         Return a (possibly empty) list of service response messages objects
         (:py:meth:`messages.ServiceResponseMessage`)
         """
@@ -251,11 +254,11 @@ class ServicesProxy(object):
 
     def _wait_msg_response(self, msg_id, block=True):
         """
-        Wait for a service response message that corresponds to service 
-        request message *msg_id*.  If *block* is ``True``, then the method 
-        will block until a response for *msg_id* is received.  Otherwise, 
-        return immediately if no response is readily available.  Return 
-        :py:meth:`messages.ServiceResponseMessage` when available, otherwise 
+        Wait for a service response message that corresponds to service
+        request message *msg_id*.  If *block* is ``True``, then the method
+        will block until a response for *msg_id* is received.  Otherwise,
+        return immediately if no response is readily available.  Return
+        :py:meth:`messages.ServiceResponseMessage` when available, otherwise
         ``None``.
         """
         #print 'in _wait_msg_response'
@@ -298,7 +301,7 @@ class ServicesProxy(object):
                     self.error('Unexpected service response of type %s',
                                r.__class__.__name__)
 #                    dumpAll()
-                    raise Exception('Unexpected service response of type ' + 
+                    raise Exception('Unexpected service response of type ' +
                                r.__class__.__name__)
 
             if (not block):
@@ -315,9 +318,9 @@ class ServicesProxy(object):
 
     def _invoke_service(self, component_id, method_name, *args):
         """
-        Create and place in the ``self.fwk_in_q`` a new 
-        :py:meth:`messages.ServiceRequestMessage` for service 
-        *method_name* with *\*args* arguments on behalf of component 
+        Create and place in the ``self.fwk_in_q`` a new
+        :py:meth:`messages.ServiceRequestMessage` for service
+        *method_name* with *\*args* arguments on behalf of component
         *component_id*.  Return message id.
         """
         self.debug('_invoke_service(): %s  %s', method_name, str(args[0:]))
@@ -332,10 +335,10 @@ class ServicesProxy(object):
 
     def _get_service_response(self, msg_id, block=True):
         """
-        Return response from message *msg_id*.  Calls 
-        :py:meth:`ServicesProxy._wait_msg_response` with *msg_id* and *block*.  If response 
-        is not present, ``None`` is returned, otherwise the response is passed 
-        on to the component.  If the status of the response is failure 
+        Return response from message *msg_id*.  Calls
+        :py:meth:`ServicesProxy._wait_msg_response` with *msg_id* and *block*.  If response
+        is not present, ``None`` is returned, otherwise the response is passed
+        on to the component.  If the status of the response is failure
         (``Message.FAILURE``), then the exception body is raised.
         """
         #print "in _get_service_response"
@@ -358,9 +361,9 @@ class ServicesProxy(object):
                             ok='True',
                             state='Running'):
         """
-        Construct and send an event populated with the component's 
-        information, *eventType*, *comment*, *ok*, *state*, and a wall time 
-        stamp, to the portal bridge to pass on to the web portal.  
+        Construct and send an event populated with the component's
+        information, *eventType*, *comment*, *ok*, *state*, and a wall time
+        stamp, to the portal bridge to pass on to the web portal.
         """
         portal_data = {}
         portal_data['code'] = '_'.join([self.component_ref.CLASS,
@@ -382,7 +385,7 @@ class ServicesProxy(object):
 
     def _cleanup(self):
         """
-        Clean up any state from the services.  Called by the terminate method 
+        Clean up any state from the services.  Called by the terminate method
         in the base class for components.
         """
         # add anything else to clean up in the services
@@ -407,7 +410,7 @@ class ServicesProxy(object):
 
     def call_nonblocking(self, component_id, method_name, *args):
         """
-        Invoke method *method_name* on component *component_id* with optional 
+        Invoke method *method_name* on component *component_id* with optional
         arguments *\*args*.  Return *call_id*.
         """
         target_class = component_id.get_class_name()
@@ -417,7 +420,7 @@ class ServicesProxy(object):
                                        'init_call',
                                        method_name, *args)
         call_id = self._get_service_response(msg_id, True)
-        formatted_args = ['%.3f' % (x) if isinstance(x, float) 
+        formatted_args = ['%.3f' % (x) if isinstance(x, float)
                                         else str(x) for x in args]
         self._send_monitor_event('IPS_CALL_BEGIN', 'Target = ' +
                                           target + ':' + method_name +'('+
@@ -427,7 +430,7 @@ class ServicesProxy(object):
 
     def call(self, component_id, method_name, *args):
         """
-        Invoke method *method_name* on component *component_id* with optional 
+        Invoke method *method_name* on component *component_id* with optional
         arguments *\*args*.  Return result from invoking the method.
         """
         call_id = self.call_nonblocking(component_id, method_name, *args)
@@ -436,10 +439,10 @@ class ServicesProxy(object):
 
     def wait_call(self, call_id, block=True):
         """
-        If *block* is ``True``, return when the call has completed with the 
+        If *block* is ``True``, return when the call has completed with the
         return code from the call.
-        If *block* is ``False``, raise 
-        :py:exc:`ipsExceptions.IncompleteCallException` if the call has not 
+        If *block* is ``False``, raise
+        :py:exc:`ipsExceptions.IncompleteCallException` if the call has not
         completed, and the return value is it has.
         """
         try:
@@ -447,10 +450,10 @@ class ServicesProxy(object):
         except KeyError:
             self.exception('Invalid call_id in wait-call() : %s', call_id)
             raise
-        msg_id = self._invoke_service(self.fwk.component_id, 'wait_call', 
+        msg_id = self._invoke_service(self.fwk.component_id, 'wait_call',
                                       call_id, block)
         response = self._get_service_response(msg_id, block=True)
-        formatted_args = ['%.3f' % (x) if isinstance(x, float) 
+        formatted_args = ['%.3f' % (x) if isinstance(x, float)
                                         else str(x) for x in args]
         self._send_monitor_event('IPS_CALL_END', 'Target = ' +
                                           target + ':' + method_name +'('+
@@ -460,10 +463,10 @@ class ServicesProxy(object):
 
     def wait_call_list(self, call_id_list, block=True):
         """
-        Check the status of each of the call in *call_id_list*.  If *block* is 
-        ``True``, return when *all* calls are finished.  If *block* is 
-        ``False``, raise :py:exc:`ipsExceptions.IncompleteCallException` if 
-        *any* of the calls have not completed, otherwise return.  The return 
+        Check the status of each of the call in *call_id_list*.  If *block* is
+        ``True``, return when *all* calls are finished.  If *block* is
+        ``False``, raise :py:exc:`ipsExceptions.IncompleteCallException` if
+        *any* of the calls have not completed, otherwise return.  The return
         value is a dictionary of *call_ids* and return values.
         """
         ret_map = {}
@@ -484,38 +487,38 @@ class ServicesProxy(object):
 
     def launch_task(self, nproc, working_dir, binary, *args, **keywords):
         """
-        Launch *binary* in *working_dir* on *nproc* processes.  *\*args* are 
-        any arguments to be passed to the binary on the command line.  
-        *\*\*keywords* are any keyword arguments used by the framework to 
+        Launch *binary* in *working_dir* on *nproc* processes.  *\*args* are
+        any arguments to be passed to the binary on the command line.
+        *\*\*keywords* are any keyword arguments used by the framework to
         manage how the binary is launched.  Keywords may be the following:
 
             * *task_ppn* : the processes per node value for this task
-            * *block* : specifies that this task will block (or raise an 
-              exception) if not enough resources are available to run 
-              immediately.  If ``True``, the task will be retried until it 
-              runs.  If ``False``, an exception is raised indicating that 
-              there are not enough resources, but it is possible to eventually 
+            * *block* : specifies that this task will block (or raise an
+              exception) if not enough resources are available to run
+              immediately.  If ``True``, the task will be retried until it
+              runs.  If ``False``, an exception is raised indicating that
+              there are not enough resources, but it is possible to eventually
               run.  (default = ``True``)
-            * *tag* : identifier for the portal.  May be used to group related 
+            * *tag* : identifier for the portal.  May be used to group related
               tasks.
-            * *logfile* : file name for ``stdout`` (and ``stderr``) to be 
-              redirected to for this task.  By default ``stderr`` is 
-              redirected to ``stdout``, and ``stdout`` is not redirected. 
-            * *whole_nodes* : if ``True``, the task will be given exclusive 
-              access to any nodes it is assigned.  If ``False``, the task may 
+            * *logfile* : file name for ``stdout`` (and ``stderr``) to be
+              redirected to for this task.  By default ``stderr`` is
+              redirected to ``stdout``, and ``stdout`` is not redirected.
+            * *whole_nodes* : if ``True``, the task will be given exclusive
+              access to any nodes it is assigned.  If ``False``, the task may
               be assigned nodes that other tasks are using or may use.
-            * *whole_sockets* : if ``True``, the task will be given exclusive 
-              access to any sockets of nodes it is assigned.  If ``False``, 
-              the task may be assigned sockets that other tasks are using or 
+            * *whole_sockets* : if ``True``, the task will be given exclusive
+              access to any sockets of nodes it is assigned.  If ``False``,
+              the task may be assigned sockets that other tasks are using or
               may use.
-              
-        Return *task_id* if successful.  May raise exceptions related to 
-        opening the logfile, being unable to obtain enough resources to launch 
-        the task (:exc:`ipsExceptions.InsufficientResourcesException`), bad 
-        task launch request 
-        (:exc:`ipsExceptions.ResourceRequestMismatchException`, 
-        :exc:`ipsExceptions.BadResourceRequestException`) or problems 
-        executing the command. These exceptions may be used to retry launching 
+
+        Return *task_id* if successful.  May raise exceptions related to
+        opening the logfile, being unable to obtain enough resources to launch
+        the task (:exc:`ipsExceptions.InsufficientResourcesException`), bad
+        task launch request
+        (:exc:`ipsExceptions.ResourceRequestMismatchException`,
+        :exc:`ipsExceptions.BadResourceRequestException`) or problems
+        executing the command. These exceptions may be used to retry launching
         the task as appropriate.
 
         .. note :: This is a nonblocking function, users must use a version of :py:meth:`ServicesProxy.wait_task` to get result.
@@ -526,13 +529,13 @@ class ServicesProxy(object):
             task_ppn = keywords['task_ppn']
         except:
             pass
-        
+
         block = True
         try:
             block = keywords['block']
         except:
             pass
-        
+
         tag = 'None'
         try:
             tag = keywords['tag']
@@ -561,8 +564,8 @@ class ServicesProxy(object):
         try:
             # SIMYAN: added working_dir to component method invocation
             msg_id = self._invoke_service(self.fwk.component_id,
-                                          'init_task', nproc, binary, 
-                                          working_dir, task_ppn, block, 
+                                          'init_task', nproc, binary,
+                                          working_dir, task_ppn, block,
                                           whole_nodes, whole_socks, *args)
             (task_id, command, env_update) = self._get_service_response(msg_id, block=True)
         except Exception, e:
@@ -653,7 +656,7 @@ class ServicesProxy(object):
                 task_stdout = open(log_filename, 'w')
             except:
                 self.exception('Error opening log file %s : using stdout', log_filename)
-                
+
         cmd_lst = command.split(' ')
         try:
             self.debug('Launching command : %s', command)
@@ -668,15 +671,15 @@ class ServicesProxy(object):
                 process = subprocess.Popen(cmd_lst, stdout = task_stdout,
                                            stderr = subprocess.STDOUT,
                                            cwd = working_dir)
-        except Exception, e:                    
+        except Exception, e:
             self.exception('Error executing command : %s', command)
             raise
         self._send_monitor_event('IPS_LAUNCH_TASK', 'Target = ' + command + \
-                                 ', task_id = ' + str(task_id)) 
-                                 
+                                 ', task_id = ' + str(task_id))
+
         # FIXME: process Monitoring Command : ps --no-headers -o pid,state pid1
         # pid2 pid3 ...
-        
+
         self.task_map[task_id] = (process,time.time(),nproc,working_dir,binary,
                                   args,keywords)
         return task_id #process.pid
@@ -686,7 +689,7 @@ class ServicesProxy(object):
         Construct messages to task manager to launch each task.
         Used by :py:class:`TaskPool` to launch tasks in a task_pool.
         """
-        
+
         task_pool = self.task_pools[task_pool_name]
         queued_tasks = task_pool.queued_tasks
         submit_dict = {}
@@ -714,7 +717,7 @@ class ServicesProxy(object):
             submit_dict[task_name] = (task.nproc, task.working_dir,
                                       task.binary, task.args,
                                       task_ppn, wnodes, wsocks)
-        
+
         try:
             msg_id = self._invoke_service(self.fwk.component_id,
                             'init_task_pool', submit_dict)
@@ -722,7 +725,7 @@ class ServicesProxy(object):
         except Exception, e:
             self.exception('Error initiating task pool %s ', task_pool_name)
             raise
-        
+
         active_tasks = {}
         for task_name in allocated_tasks.keys():
             #(nproc, working_dir, binary, args, keywords) = queued_tasks[task_name]
@@ -733,20 +736,20 @@ class ServicesProxy(object):
                 tag = task.keywords['tag']
             except KeyError:
                 pass
-            
+
             log_filename = None
             try:
                 log_filename = task.keywords['logfile']
             except KeyError:
                 pass
-    
+
             task_stdout = sys.stdout
             if (log_filename):
                 try:
                     task_stdout = open(log_filename, 'w')
                 except:
                     self.exception('Error opening log file %s : using stdout', log_filename)
-    
+
             cmd_lst = command.split(' ')
             try:
                 self.debug('Launching command : %s', command)
@@ -766,11 +769,11 @@ class ServicesProxy(object):
                 raise
             self._send_monitor_event('IPS_LAUNCH_TASK_POOL', 'task_id = %s , Tag = %s , nproc = %d , Target = %s , task_name = %s'  % \
                                       (str(task_id), str(tag), int(task.nproc), command, task_name))
-    
+
             self.task_map[task_id] = (process, time.time())
             active_tasks[task_name] = task_id
         return active_tasks
-    
+
     def kill_task(self, task_id):
         """
         Kill launched task *task_id*.  Return if successful.  Raises exceptions if the task or process cannot be found or killed successfully.
@@ -778,7 +781,7 @@ class ServicesProxy(object):
         try:
             process, start_time = self.task_map[task_id]
             #TODO: process and start_time will have to be accessed as shown
-            #      below if this task can be relaunched to support FT... 
+            #      below if this task can be relaunched to support FT...
             #process, start_time = self.task_map[task_id][0], self.task_map[task_id][1]
         except KeyError, e:
             self.exception('Error: unrecognizable task_id = %s ', task_id)
@@ -822,7 +825,7 @@ class ServicesProxy(object):
         try:
             process, start_time = self.task_map[task_id]
             #TODO: process and start_time will have to be accessed as shown
-            #      below if this task can be relaunched to support FT... 
+            #      below if this task can be relaunched to support FT...
             #process, start_time = self.task_map[task_id][0], self.task_map[task_id][1]
         except KeyError, e:
             self.exception('Error: unrecognizable task_id = %s ', task_id)
@@ -847,7 +850,7 @@ class ServicesProxy(object):
         task_retval = process.wait()
         self._send_monitor_event('IPS_TASK_END', 'task_id = %s  elapsed time = %.2f S' %
                                  (str(task_id), time.time() - start_time))
-                                 
+
         del self.task_map[task_id]
         try:
             msg_id = self._invoke_service(self.fwk.component_id,
@@ -880,11 +883,11 @@ class ServicesProxy(object):
             self.exception('Error finalizing task  %s' , task_id)
             raise
 
-        if task_retval == 0:                                         
+        if task_retval == 0:
             if retval == 0:
                 self.debug('Successful execution and no FTB trace.')
             elif retval == 1:
-                self.debug('Successful execution and FTB trace.')   
+                self.debug('Successful execution and FTB trace.')
         else:
             if retval == 0:
                 self.error('Unsuccessful execution and no FTB trace.')
@@ -897,15 +900,15 @@ class ServicesProxy(object):
                     return self.wait_task_resilient(relaunch_task_id)
                 else:
                     self.debug('Task failed but was not relaunched.')
-            
+
         return task_retval
 
     def wait_tasklist(self, task_id_list, block = True):
         """
-        Check the status of a list of tasks.  If *block* is ``True``, return a 
-        dictionary of return values when *all* tasks have completed.  If 
-        *block* is ``False``, return a dictionary containing entries for each 
-        *completed* task.  Note that the dictionary may be empty.  Raise 
+        Check the status of a list of tasks.  If *block* is ``True``, return a
+        dictionary of return values when *all* tasks have completed.  If
+        *block* is ``False``, return a dictionary containing entries for each
+        *completed* task.  Note that the dictionary may be empty.  Raise
         *KeyError* exception if *task_id* not found.
 
         """
@@ -934,7 +937,7 @@ class ServicesProxy(object):
 
     def get_config_param(self, param):
         """
-        Return the value of the configuration parameter *param*.  Raise 
+        Return the value of the configuration parameter *param*.  Raise
         exception if not found.
         """
         try:
@@ -951,8 +954,8 @@ class ServicesProxy(object):
 
     def set_config_param(self, param, value, target_sim_name=None):
         """
-        Set configuration parameter *param* to *value*.  Raise exceptions if 
-        the parameter cannot be changed or if there are problems setting the 
+        Set configuration parameter *param* to *value*.  Raise exceptions if
+        the parameter cannot be changed or if there are problems setting the
         value.
         """
         if (target_sim_name == None):
@@ -1004,71 +1007,71 @@ class ServicesProxy(object):
             tlist = [float(v) for v in time_conf['VALUES'].split()]
         self.time_loop = tlist
         return tlist
-    
+
     def checkpoint_components(self, comp_id_list, time_stamp, Force = False, Protect = False):
         """
-        Selectively checkpoint components in *comp_id_list* based on the 
-        configuration section *CHECKPOINT*.  If *Force* is ``True``, the 
-        checkpoint will be taken even if the conditions for taking the 
-        checkpoint are not met.  If *Protect* is ``True``, then the data from 
-        the checkpoint is protected from clean up.  *Force* and *Protect* are 
+        Selectively checkpoint components in *comp_id_list* based on the
+        configuration section *CHECKPOINT*.  If *Force* is ``True``, the
+        checkpoint will be taken even if the conditions for taking the
+        checkpoint are not met.  If *Protect* is ``True``, then the data from
+        the checkpoint is protected from clean up.  *Force* and *Protect* are
         optional and default to ``False``.
-        
-        The *CHECKPOINT_MODE* option controls determines if the components 
+
+        The *CHECKPOINT_MODE* option controls determines if the components
         checkpoint methods are invoked.
-        
+
         Possible *MODE* options are:
-        
-        WALLTIME_REGULAR: 
-            checkpoints are saved upon invocation of the service call 
+
+        WALLTIME_REGULAR:
+            checkpoints are saved upon invocation of the service call
             ``checkpoint_components()``, when a time interval greater than, or
-            equal to, the value of the configuration parameter 
-            WALLTIME_INTERVAL had passed since the last checkpoint. A 
-            checkpoint is assumed to have happened (but not actually stored) 
-            when the simulation starts. Calls to ``checkpoint_components()`` 
-            before WALLTIME_INTERVAL seconds have passed since the last 
-            successful checkpoint result in a NOOP.        
-        WALLTIME_EXPLICIT: 
-            checkpoints are saved when the simulation wall clock time exceeds 
-            one of the (ordered) list of time values (in seconds) specified in 
-            the variable WALLTIME_VALUES. Let [t_0, t_1, ..., t_n] be the list 
-            of wall clock time values specified in the configuration parameter 
-            WALLTIME_VALUES. Then checkpoint(T) = True if T >= t_j, for some j 
-            in [0,n] and there is no other time T_1, with T > T_1 >= T_j such 
-            that checkpoint(T_1) = True.  If the test fails, the call results 
-            in a NOOP.    
-        PHYSTIME_REGULAR: 
-            checkpoints are saved at regularly spaced 
-            "physics time" intervals, specified in the configuration parameter 
-            PHYSTIME_INTERVAL. Let PHYSTIME_INTERVAL = PTI, and the physics 
-            time stamp argument in the call to checkpoint_components() be 
-            pts_i, with i = 0, 1, 2, ... Then checkpoint(pts_i) = True if 
-            pts_i >= n PTI , for some n in 1, 2, 3, ... and 
+            equal to, the value of the configuration parameter
+            WALLTIME_INTERVAL had passed since the last checkpoint. A
+            checkpoint is assumed to have happened (but not actually stored)
+            when the simulation starts. Calls to ``checkpoint_components()``
+            before WALLTIME_INTERVAL seconds have passed since the last
+            successful checkpoint result in a NOOP.
+        WALLTIME_EXPLICIT:
+            checkpoints are saved when the simulation wall clock time exceeds
+            one of the (ordered) list of time values (in seconds) specified in
+            the variable WALLTIME_VALUES. Let [t_0, t_1, ..., t_n] be the list
+            of wall clock time values specified in the configuration parameter
+            WALLTIME_VALUES. Then checkpoint(T) = True if T >= t_j, for some j
+            in [0,n] and there is no other time T_1, with T > T_1 >= T_j such
+            that checkpoint(T_1) = True.  If the test fails, the call results
+            in a NOOP.
+        PHYSTIME_REGULAR:
+            checkpoints are saved at regularly spaced
+            "physics time" intervals, specified in the configuration parameter
+            PHYSTIME_INTERVAL. Let PHYSTIME_INTERVAL = PTI, and the physics
+            time stamp argument in the call to checkpoint_components() be
+            pts_i, with i = 0, 1, 2, ... Then checkpoint(pts_i) = True if
+            pts_i >= n PTI , for some n in 1, 2, 3, ... and
             pts_i - pts_prev >= PTI, where checkpoint(pts_prev) = True and
-            pts_prev = max (pts_0, pts_1, ..pts_i-1). If the test fails, the 
+            pts_prev = max (pts_0, pts_1, ..pts_i-1). If the test fails, the
             call results in a  NOOP.
-        PHYSTIME_EXPLICIT: 
-            checkpoints are saved when the physics time 
-            equals or exceeds one of the (ordered) list of physics time values 
-            (in seconds) specified in the variable PHYSTIME_VALUES. Let [pt_0, 
-            pt_1, ..., pt_n] be the list of physics time values specified in 
+        PHYSTIME_EXPLICIT:
+            checkpoints are saved when the physics time
+            equals or exceeds one of the (ordered) list of physics time values
+            (in seconds) specified in the variable PHYSTIME_VALUES. Let [pt_0,
+            pt_1, ..., pt_n] be the list of physics time values specified in
             the configuration parameter PHYSTIME_VALUES. Then
-            checkpoint(pt) = True if pt >= pt_j, for some j in [0,n] and there 
-            is no other physics time pt_k, with pt > pt_k >= pt_j such that 
-            checkpoint(pt_k) = True. If the test fails, the call results in a 
+            checkpoint(pt) = True if pt >= pt_j, for some j in [0,n] and there
+            is no other physics time pt_k, with pt > pt_k >= pt_j such that
+            checkpoint(pt_k) = True. If the test fails, the call results in a
             NOOP.
-        
-        The configuration parameter NUM_CHECKPOINT controls how many 
-        checkpoints to keep on disk. Checkpoints are deleted in a FIFO manner, 
+
+        The configuration parameter NUM_CHECKPOINT controls how many
+        checkpoints to keep on disk. Checkpoints are deleted in a FIFO manner,
         based on their creation time. Possible values of NUM_CHECKPOINT are:
-        
+
         * NUM_CHECKPOINT = n, with n > 0  --> Keep the most recent n checkpoints
         * NUM_CHECKPOINT = 0  --> No checkpoints are made/kept (except when *Force* = ``True``)
         * NUM_CHECKPOINT < 0 --> Keep ALL checkpoints
-        
+
         Checkpoints are saved in the directory ``${SIM_ROOT}/restart``
         """
-        
+
         elapsed_time = self._get_elapsed_time()
         if (Force):
             return self._dispatch_checkpoint(time_stamp, comp_id_list, Protect)
@@ -1080,15 +1083,15 @@ class ServicesProxy(object):
             self.error('Missing CHECKPOINT config section, or one of the required parameters: MODE, NUM_CHECKPOINT')
             self.exception('Error accessing CHECKPOINT section in config file')
             raise
-        
+
         if (num_chkpt == 0):
             return
-        
+
         if (mode not in ['WALLTIME_REGULAR',  'WALLTIME_EXPLICIT',
                          'PHYSTIME_REGULAR', 'PHYSTIME_EXPLICIT']):
             self.error('Invalid MODE = %s in checkpoint configuration', mode)
             raise Exception('Invalid MODE = %s in checkpoint configuration'% (mode))
-        
+
         if (mode == 'WALLTIME_REGULAR'):
             interval = float(chkpt_conf['WALLTIME_INTERVAL'])
             if (self.cur_time - self.last_ckpt_walltime >= interval):
@@ -1100,10 +1103,10 @@ class ServicesProxy(object):
                 wt_values = chkpt_conf['WALLTIME_VALUES'].split()
             except AttributeError:
                 wt_values = chkpt_conf['WALLTIME_VALUES']
-                
+
             wt_values = [float(t) for t in wt_values]
             for t in wt_values:
-                if ((elapsed_time >= t) and 
+                if ((elapsed_time >= t) and
                     (self.last_ckpt_walltime - self.start_time < t)):
                     return self._dispatch_checkpoint(time_stamp, comp_id_list, Protect)
             return None
@@ -1124,10 +1127,10 @@ class ServicesProxy(object):
             except AttributeError:
                 pt_values = chkpt_conf['PHYSTIME_VALUES']
             pt_values = [float(t) for t in pt_values]
-            #print ">>>>>>> pt_values = ", pt_values    
+            #print ">>>>>>> pt_values = ", pt_values
             pt_current = float(time_stamp)
             for pt in pt_values:
-                if (pt_current >= pt and 
+                if (pt_current >= pt and
                     self.last_ckpt_phystime < pt):
                     return self._dispatch_checkpoint(time_stamp, comp_id_list, Protect)
             return None
@@ -1135,15 +1138,15 @@ class ServicesProxy(object):
 
     def _dispatch_checkpoint(self, time_stamp, comp_id_list, Protect):
         """
-        Invoke *checkpoint* method on each component in *comp_id_list* labeled 
-        with time *time_stamp*.  If *Protect* is ``True``, or this checkpoint 
-        is designated as a protected checkpoint by the simulation 
-        configuration parameters, steps are taken to ensure it remains in the 
-        restart directory.  Unprotected checkpoints are purged as necessary.  
+        Invoke *checkpoint* method on each component in *comp_id_list* labeled
+        with time *time_stamp*.  If *Protect* is ``True``, or this checkpoint
+        is designated as a protected checkpoint by the simulation
+        configuration parameters, steps are taken to ensure it remains in the
+        restart directory.  Unprotected checkpoints are purged as necessary.
         """
         self.last_ckpt_walltime = self.cur_time
         self.last_ckpt_phystime = float(time_stamp)
-        self.debug('Checkpointing components after %.3f sec with physics time = %.3f', 
+        self.debug('Checkpointing components after %.3f sec with physics time = %.3f',
                    self.last_ckpt_walltime-self.start_time, self.last_ckpt_phystime)
         self._send_monitor_event('IPS_CHECKPOINT_START',
                                 'Components = ' + str(comp_id_list))
@@ -1152,17 +1155,17 @@ class ServicesProxy(object):
             call_id = self.call_nonblocking(comp_id, 'checkpoint', time_stamp)
             call_id_list.append(call_id)
         ret_dict = self.wait_call_list(call_id_list, block=True)
-        
+
         self.chkpt_counter += 1
         sim_root = self.sim_conf['SIM_ROOT']
         chkpt_conf = self.sim_conf['CHECKPOINT']
-        
+
         num_chkpt = int(chkpt_conf['NUM_CHECKPOINT'])
         # num_chkpt < 0 mens keep all checkpoints
         # num_chkpt = 0 means no checkpoints
         if (num_chkpt <= 0):
             return ret_dict
-        
+
         base_dir = os.path.join(sim_root, 'restart')
         timeStamp_str =  '%0.3f' % (float(time_stamp))
         self.new_chkpts.append(timeStamp_str)
@@ -1173,18 +1176,18 @@ class ServicesProxy(object):
         else:
             if (Protect or (self.chkpt_counter % int(protect_freq) == 0)):
                 self.protected_chkpts.append(timeStamp_str)
-                    
+
         if (os.path.isdir(base_dir)):
-            all_chkpts = [os.path.basename(f)  for f in glob.glob(os.path.join(base_dir,'*')) 
+            all_chkpts = [os.path.basename(f)  for f in glob.glob(os.path.join(base_dir,'*'))
                                if os.path.isdir(f)]
             prior_runs_chkpts_dirs = [chkpt for chkpt in all_chkpts if chkpt not in self.new_chkpts]
             purge_candidates = sorted(prior_runs_chkpts_dirs, key=float)
-            purge_candidates += [chkpt for chkpt in self.new_chkpts if (chkpt in all_chkpts and 
+            purge_candidates += [chkpt for chkpt in self.new_chkpts if (chkpt in all_chkpts and
                            chkpt not in self.protected_chkpts)]
 #            self.debug('CHECKPOINT: all_chkpts = %s', str(all_chkpts))
 #            self.debug('CHECKPOINT: purge_candidates = %s', str(purge_candidates))
 #            self.debug('CHECKPOINT: protected_chkpts = %s', str(self.protected_chkpts))
-#            self.debug('CHECKPOINT: ***********************') 
+#            self.debug('CHECKPOINT: ***********************')
             while (len(purge_candidates) > num_chkpt):
                 obsolete_chkpt = purge_candidates.pop(0)
                 chkpt_dir = os.path.join(base_dir, obsolete_chkpt)
@@ -1199,11 +1202,11 @@ class ServicesProxy(object):
 
     # DM getWorkDir
     def get_working_dir(self):
-        """ 
+        """
         Return the working directory of the calling component.
 
-        The structure of the working directory is defined using the 
-        configuration parameters *CLASS*, *SUB_CLASS*, and *NAME* of the 
+        The structure of the working directory is defined using the
+        configuration parameters *CLASS*, *SUB_CLASS*, and *NAME* of the
         component configuration section. The structure
         of the working directory is::
 
@@ -1263,7 +1266,7 @@ class ServicesProxy(object):
         self.warning('stageInputFiles() deprecated - use stage_input_files() instead')
         return self.stage_input_files(input_file_list)
 
-    # SIMYAN: added method to specifically enable components to stage 
+    # SIMYAN: added method to specifically enable components to stage
     # data files to the component working directory
     def stage_data_files(self, data_file_list):
         """
@@ -1302,7 +1305,7 @@ class ServicesProxy(object):
 
     def stage_nonPS_output_files(self, timeStamp, file_list, keep_old_files = True):
         """
-        Same as stage_output_files, but does not do anything with the Plasma State. 
+        Same as stage_output_files, but does not do anything with the Plasma State.
         """
         workdir = self.get_working_dir()
         conf = self.component_ref.config
@@ -1317,7 +1320,7 @@ class ServicesProxy(object):
                                  str(timeStamp), 'components' ,
                                  self.full_comp_id)
         try:
-            ipsutil.copyFiles(workdir, file_list, output_dir, outprefix, 
+            ipsutil.copyFiles(workdir, file_list, output_dir, outprefix,
                               keep_old=keep_old_files)
         except Exception, e:
             self._send_monitor_event('IPS_STAGE_OUTPUTS',
@@ -1337,9 +1340,9 @@ class ServicesProxy(object):
                 self.exception('Error creating directory %s : %s' ,
                                symlink_dir, strerror)
                 raise
-            
+
         all_files = sum([glob.glob(f) for f in file_list.split()], [])
-        
+
         for f in all_files:
             real_file = os.path.join(output_dir, outprefix + f)
             tokens = f.rsplit('.', 1)
@@ -1410,7 +1413,7 @@ class ServicesProxy(object):
             plasma_state_files = conf['PLASMA_STATE_FILES'].split()
         except KeyError:
             plasma_state_files = self.get_config_param('PLASMA_STATE_FILES').split()
-            
+
         all_plasma_files=[]
         for plasma_file in plasma_state_files:
             globbed_files = glob.glob(plasma_file)
@@ -1479,7 +1482,7 @@ class ServicesProxy(object):
                                  str(timeStamp), 'components' ,
                                  self.full_comp_id)
         try:
-            ipsutil.copyFiles(workdir, file_list, output_dir, outprefix, 
+            ipsutil.copyFiles(workdir, file_list, output_dir, outprefix,
                               keep_old=keep_old_files)
         except Exception, e:
             self._send_monitor_event('IPS_STAGE_OUTPUTS',
@@ -1513,7 +1516,7 @@ class ServicesProxy(object):
             plasma_state_files = conf['PLASMA_STATE_FILES'].split()
         except KeyError:
             plasma_state_files = self.get_config_param('PLASMA_STATE_FILES').split()
-            
+
         all_plasma_files=[]
         for plasma_file in plasma_state_files:
             globbed_files = glob.glob(plasma_file)
@@ -1560,9 +1563,9 @@ class ServicesProxy(object):
                 self.exception('Error creating directory %s : %s' ,
                                symlink_dir, strerror)
                 raise
-            
+
         all_files = sum([glob.glob(f) for f in file_list.split()], [])
-        
+
         for f in all_files:
             real_file = os.path.join(output_dir, outprefix + f)
             tokens = f.rsplit('.', 1)
@@ -1610,7 +1613,7 @@ class ServicesProxy(object):
         workdir = self.get_working_dir()
         sim_root = self.sim_conf['SIM_ROOT']
         chkpt_conf = self.sim_conf['CHECKPOINT']
-        
+
         num_chkpt = int(chkpt_conf['NUM_CHECKPOINT'])
         # num_chkpt < 0 mens keep all checkpoints
         # num_chkpt = 0 means no checkpoints
@@ -1620,14 +1623,14 @@ class ServicesProxy(object):
         base_dir = os.path.join(sim_root, 'restart')
         timeStamp_str =  '%0.3f' % (float(timeStamp))
         self.new_chkpts.append(timeStamp_str)
-            
-        targetdir = os.path.join(base_dir, 
+
+        targetdir = os.path.join(base_dir,
                                  timeStamp_str,
                                  '_'.join([conf['CLASS'],
                                            conf['SUB_CLASS'],
                                            conf['NAME']]))
         self.debug('Checkpointing: Copying %s to dir %s', str(file_list), targetdir)
-        
+
         try:
             ipsutil.copyFiles(workdir, file_list, targetdir)
         except Exception, e:
@@ -1655,12 +1658,12 @@ class ServicesProxy(object):
         work_dir = self.get_working_dir()
 
         conf = self.component_ref.config
-        source_dir = os.path.join(restart_root, 'restart', 
+        source_dir = os.path.join(restart_root, 'restart',
                                   '%.3f' % (float(timeStamp)),
                                   '_'.join([conf['CLASS'],
                                            conf['SUB_CLASS'],
                                            conf['NAME']]))
-       
+
         try:
             ipsutil.copyFiles(source_dir, file_list, work_dir)
         except Exception, e:
@@ -1710,8 +1713,8 @@ class ServicesProxy(object):
 
     def update_plasma_state(self, plasma_state_files = None):
         """
-        Copy local (updated) plasma state to global state.  If no plasma state 
-        files are specified, component configuration specification is used.  
+        Copy local (updated) plasma state to global state.  If no plasma state
+        files are specified, component configuration specification is used.
         Raise exceptions upon copy.
         """
         conf = self.component_ref.config
@@ -1721,8 +1724,8 @@ class ServicesProxy(object):
             except KeyError:
                 files = self.get_config_param('PLASMA_STATE_FILES').split()
         else:
-            files = ' '.join(plasma_state_files).split()            
-            
+            files = ' '.join(plasma_state_files).split()
+
         state_dir = self.get_config_param('PLASMA_STATE_WORK_DIR')
         workdir = self.get_working_dir()
         try:
@@ -1742,9 +1745,9 @@ class ServicesProxy(object):
 
     def merge_current_plasma_state(self, partial_state_file, logfile=None):
         """
-        Merge partial plasma state with global state.  Partial plasma state 
-        contains only the values that the component contributes to the 
-        simulation.  Raise exceptions on bad merge.  Optional *logfile* will 
+        Merge partial plasma state with global state.  Partial plasma state
+        contains only the values that the component contributes to the
+        simulation.  Raise exceptions on bad merge.  Optional *logfile* will
         capture ``stdout`` from merge.
         """
         state_dir = self.get_config_param('PLASMA_STATE_WORK_DIR')
@@ -1810,7 +1813,7 @@ class ServicesProxy(object):
 
     def _get_replay_comp_data(self, timeStamp):
         """
-        Return data files from replay component at time *timeStamp*.  
+        Return data files from replay component at time *timeStamp*.
         """
         try:
             replay_sim_root = self.component_ref.REPLAY_SIM_ROOT
@@ -1831,7 +1834,7 @@ class ServicesProxy(object):
         try:
             comp_conf = ports[replay_port]['IMPLEMENTATION']
         except:
-            self.exception('Error accessing replay component for port %s', 
+            self.exception('Error accessing replay component for port %s',
                            replay_port)
             raise
         output_files = comp_conf['OUTPUT_FILES'].split()
@@ -1840,7 +1843,7 @@ class ServicesProxy(object):
         except KeyError:
             outprefix = ''
         out_root = 'simulation_results'
-        comp_id_prefix = '_'.join([comp_conf['CLASS'], 
+        comp_id_prefix = '_'.join([comp_conf['CLASS'],
                                     comp_conf['SUB_CLASS'],
                                     comp_conf['NAME']])
         out_path = os.path.join(replay_sim_root, out_root)
@@ -1857,16 +1860,16 @@ class ServicesProxy(object):
         except KeyError:
             plasma_files = self.replay_conf['PLASMA_STATE_FILES'].split()
 
-        return (comp_conf, 
-                outprefix, 
-                replay_sim_root, 
-                replay_comp_id, 
-                output_files, 
+        return (comp_conf,
+                outprefix,
+                replay_sim_root,
+                replay_comp_id,
+                output_files,
                 plasma_files)
-        
+
     def stage_replay_output_files(self, timeStamp):
         """
-        Copy output files from the replay component to current sim for 
+        Copy output files from the replay component to current sim for
         physics time *timeStamp*.  Return location of new local copies.
         """
         replay_comp_data = self._get_replay_comp_data(timeStamp)
@@ -1875,7 +1878,7 @@ class ServicesProxy(object):
         replay_sim_root = replay_comp_data[2]
         replay_comp_id = replay_comp_data[3]
         output_files = replay_comp_data[4]
-        
+
         symlink_dir  = os.path.join(replay_sim_root, 'simulation_results', replay_comp_id)
         prefix_out_files = [outprefix+f for f in output_files]
         local_output_files=[]
@@ -1902,17 +1905,17 @@ class ServicesProxy(object):
                 else:
                     shutil.copy(sym_link, f)
             except:
-                self.exception('Error copying replay file from %s to %s', 
+                self.exception('Error copying replay file from %s to %s',
                                sym_link, f)
                 raise
             local_output_files.append(f)
         self._send_monitor_event('IPS_STAGE_REPLAY_OUTPUT_FILES',
                                  'Files = ' + str(output_files))
-        return local_output_files            
+        return local_output_files
 
     def stage_replay_plasma_files(self, timeStamp):
         """
-        Copy plasma state files from the replay component to current sim for 
+        Copy plasma state files from the replay component to current sim for
         physics time *timeStamp*.  Return location of new local copies.
         """
         replay_comp_data = self._get_replay_comp_data(timeStamp)
@@ -1922,9 +1925,9 @@ class ServicesProxy(object):
         replay_comp_id = replay_comp_data[3]
 #        output_files = replay_comp_data[4]
         replay_plasma_files = replay_comp_data[5]
-        
-        plasma_dir = os.path.join(replay_sim_root, 
-                                  'simulation_results', 
+
+        plasma_dir = os.path.join(replay_sim_root,
+                                  'simulation_results',
                                   'plasma_state')
         local_plasma_files = []
         use_sym_link = False
@@ -1941,7 +1944,7 @@ class ServicesProxy(object):
             if not macro_name:
                 raise Exception('Unable to deduce macro name for file %s ' + f)
             target_name = self.get_config_param(macro_name)
-            
+
             # Get name of replay file with embedded outprefix and timestamp
             tokens = f.split('.')
             if (len(tokens) == 1) :
@@ -1952,11 +1955,11 @@ class ServicesProxy(object):
                 replay_fname = '_'.join([outprefix + name, replay_comp_id, str(timeStamp)]) + \
                            '.' + ext
             replay_file = os.path.join(plasma_dir, replay_fname)
-            
+
             # Find the last file generated from this timestamp
             if not os.path.isfile(replay_file):
                 raise Exception('Missing plasma state file %s' + replay_file)
-            
+
             tmp = None
             for i in range(1000):
                 if  os.path.isfile(replay_file + '.' + str(i)):
@@ -1965,19 +1968,19 @@ class ServicesProxy(object):
                 break
             if (tmp):
                 replay_file = tmp
-            
+
             try:
                 if (use_sym_link):
                     try:
                         os.symlink(replay_file, target_name)
                     except Exception:
-                        self.exception('Error creating symlink %s to %s', 
+                        self.exception('Error creating symlink %s to %s',
                                target_name, replay_file)
                         shutil.copy(replay_file, target_name)
                 else:
                     shutil.copy(replay_file, target_name)
             except:
-                self.exception('Error copying replay file from %s to %s', 
+                self.exception('Error copying replay file from %s to %s',
                                replay_file, target_name)
                 self._send_monitor_event('IPS_STAGE_REPLAY_PLASMA_STATE',
                                      'Files = ' + str(replay_plasma_files) + \
@@ -1985,14 +1988,14 @@ class ServicesProxy(object):
                                      ok='False')
                 raise
             local_plasma_files.append(replay_file)
-            
+
         self._send_monitor_event('IPS_STAGE_REPLAY_PLASMA_STATE',
                                  'Files = ' + str(replay_plasma_files))
-        return local_plasma_files    
+        return local_plasma_files
 
     def setMonitorURL(self, url=''):
         """
-        Send event to portal setting the URL where the monitor component will 
+        Send event to portal setting the URL where the monitor component will
         put data.
         """
         self.monitor_url = url
@@ -2033,10 +2036,10 @@ class ServicesProxy(object):
     def send_portal_event(self,
                           event_type="COMPONENT_EVENT",
                           event_comment=""):
-        """ 
+        """
         Send event to web portal.
         """
-        return self._send_monitor_event(eventType = event_type, 
+        return self._send_monitor_event(eventType = event_type,
                                         comment = event_comment)
 
     def log(self, *args):
@@ -2123,7 +2126,7 @@ class ServicesProxy(object):
             self.logger.critical(msg)
         except:
             self.error('Bad format in call to services.critical() ' + str(args))
-            
+
     def create_task_pool(self, task_pool_name):
         """
         Create an empty pool of tasks with the name *task_pool_name*.  Raise exception if duplicate name.
@@ -2132,14 +2135,14 @@ class ServicesProxy(object):
             raise Exception('Error: Duplicate task pool name %s' %(task_pool_name))
         self.task_pools[task_pool_name]= TaskPool(task_pool_name, self)
         return
-    
-    def add_task(self, task_pool_name, task_name, nproc, working_dir, 
+
+    def add_task(self, task_pool_name, task_name, nproc, working_dir,
                  binary, *args, **keywords):
         """
         Add task *task_name* to task pool *task_pool_name*.  Remaining arguments are the same as in :py:meth:`ServicesProxy.launch_task`.
         """
         task_pool = self.task_pools[task_pool_name]
-        return task_pool.add_task(task_name, nproc, working_dir, binary, 
+        return task_pool.add_task(task_name, nproc, working_dir, binary,
                                   *args, **keywords)
 
     def submit_tasks(self, task_pool_name, block=True):
@@ -2148,14 +2151,14 @@ class ServicesProxy(object):
         """
         task_pool = self.task_pools[task_pool_name]
         return task_pool.submit_tasks(block)
-    
+
     def get_finished_tasks(self, task_pool_name):
         """
         Return dictionary of finished tasks and return values in task pool *task_pool_name*.  Raise exception if no active or finished tasks.
         """
         task_pool = self.task_pools[task_pool_name]
         return task_pool.get_finished_tasks_status()
-    
+
     def remove_task_pool(self, task_pool_name):
         """
         Kill all running tasks, clean up all finished tasks, and delete task pool.
@@ -2164,7 +2167,7 @@ class ServicesProxy(object):
         task_pool.terminate_tasks()
         del self.task_pools[task_pool_name]
         return
-    
+
     def create_simulation(self, config_file, override):
         try:
             msg_id = self._invoke_service(self.fwk.component_id,
@@ -2188,15 +2191,15 @@ class TaskPool(object):
         self.finished_tasks = {}
         self.queued_tasks = {}
         self.blocked_tasks = {}
-    
+
     def _wait_any_task(self, block = True):
         """
-        Check the status of all tasks in *active_tasks*, finishing them as 
-        needed, and returning when at least one of them has finished.  If 
-        *block* is ``False``, returns after one traversal of *active_tasks* 
-        even if none of the tasks have finished.  If *block* is ``True`` 
-        (default), returns only after at least one task has finished.  In this 
-        case, *active_tasks* may be traversed multiple times, sleeping for 
+        Check the status of all tasks in *active_tasks*, finishing them as
+        needed, and returning when at least one of them has finished.  If
+        *block* is ``False``, returns after one traversal of *active_tasks*
+        even if none of the tasks have finished.  If *block* is ``True``
+        (default), returns only after at least one task has finished.  In this
+        case, *active_tasks* may be traversed multiple times, sleeping for
         0.05 seconds between traversals.
         """
         if len(self.active_tasks) == 0:
@@ -2211,12 +2214,12 @@ class TaskPool(object):
                     self.finished_tasks[task.name] = task
                     done = True
             if not done:
-                if block:  
+                if block:
                     time.sleep(0.05)
                 else:
                     break
         return
-    
+
     def _wait_active_tasks(self):
         """
         Call :py:meth:`TaskPool._wait_any_task` until there are no more *active_tasks*.
@@ -2224,29 +2227,29 @@ class TaskPool(object):
         while (len(self.active_tasks) > 0):
             self._wait_any_task()
         pass
-    
+
     def add_task(self, task_name, nproc, working_dir, binary, *args, **keywords):
         """
-        Create :py:obj:`Task` object and add to *queued_tasks* of the task 
+        Create :py:obj:`Task` object and add to *queued_tasks* of the task
         pool.  Raise exception if task name already exists in task pool.
         """
         if (task_name in self.queued_tasks):
             raise Exception('Duplicate task name %s in task pool' % (task_name))
         keywords['block'] = False
-            
+
         self.queued_tasks[task_name] = Task(task_name, nproc, working_dir, binary, *args, **keywords)
         return
-    
+
     def submit_tasks(self, block = True):
         """
-        Launch tasks in *queued_tasks*.  Finished tasks are handled before 
-        launching new ones.  If *block* is ``True``, the number of tasks 
-        submited is returned after all tasks have been launched and 
-        completed.  If *block* is ``False`` the number of tasks that can 
+        Launch tasks in *queued_tasks*.  Finished tasks are handled before
+        launching new ones.  If *block* is ``True``, the number of tasks
+        submited is returned after all tasks have been launched and
+        completed.  If *block* is ``False`` the number of tasks that can
         immediately be launched is returned.
         """
         submit_count = 0
-        # Make sure any finished tasks are handled before attempting to submit  
+        # Make sure any finished tasks are handled before attempting to submit
         # new ones
         self._wait_any_task(block = False)
         while True:
@@ -2264,7 +2267,7 @@ class TaskPool(object):
         if block:
             self._wait_active_tasks()
         return submit_count
-        
+
 
     def submit_tasks_old(self, block = True):
         """
@@ -2285,11 +2288,11 @@ class TaskPool(object):
                         continue
                     else:
                         return submit_count
-                       
+
             self.services.debug('Attempting to launch task %s', task_name)
             #(nproc, working_dir, binary, args, keywords) = task_data
             try:
-                task_id = self.services.launch_task(task.nproc, task.working_dir, task.binary, 
+                task_id = self.services.launch_task(task.nproc, task.working_dir, task.binary,
                                                     *task.args, **task.keywords)
             except ipsExceptions.InsufficientResourcesException:
                 self.blocked_tasks[task_name] = task
@@ -2299,22 +2302,22 @@ class TaskPool(object):
         if block:
             self._wait_active_tasks()
         return submit_count
-    
+
     def get_finished_tasks_status(self):
         """
-        Return a dictionary of exit status values for all tasks that have 
+        Return a dictionary of exit status values for all tasks that have
         finished since the last time finished tasks were polled.
         """
         if (len(self.active_tasks) + len(self.finished_tasks) == 0):
             raise Exception('No more active tasks in task pool %s' % (self.name))
-        
+
         exit_status = {}
         self._wait_any_task()
         for task_name in self.finished_tasks.keys():
             task = self.finished_tasks.pop(task_name)
             exit_status[task_name] = task.exit_status
         return exit_status
-            
+
     def terminate_tasks(self):
         """
         Kill all active tasks, clear all queued, blocked and finished tasks.
@@ -2327,7 +2330,7 @@ class TaskPool(object):
         self.active_tasks={}
         self.finished_tasks={}
         return
-        
+
 class Task(object):
     """
     Container for task information:
@@ -2346,5 +2349,4 @@ class Task(object):
         self.binary = binary
         self.args = args
         self.keywords = keywords
-        self.exit_status = None 
-
+        self.exit_status = None

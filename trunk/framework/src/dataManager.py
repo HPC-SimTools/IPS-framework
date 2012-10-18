@@ -1,3 +1,6 @@
+#-------------------------------------------------------------------------------
+# Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
+#-------------------------------------------------------------------------------
 import sys
 import os
 import shutil
@@ -10,7 +13,7 @@ import subprocess
 
 class DataManager(object):
     """
-    The data manager facilitates the movement and exchange of data files for 
+    The data manager facilitates the movement and exchange of data files for
     the simulation.
     """
     # DM init
@@ -40,8 +43,8 @@ class DataManager(object):
 
     def process_service_request(self, msg):
         """
-        Invokes the appropriate public data manager method for the component 
-        specified in *msg*.  Return method's return value. 
+        Invokes the appropriate public data manager method for the component
+        specified in *msg*.  Return method's return value.
         """
         self.fwk.debug('Data Manager received message: %s', str(msg))
         method = getattr(self, msg.target_method)
@@ -50,7 +53,7 @@ class DataManager(object):
 
     def stage_plasma_state(self, msg):
         """
-        Copy plasma state files from source dir to target dir.  Return 0.  
+        Copy plasma state files from source dir to target dir.  Return 0.
         Exception raised on copy error.
 
         *msg.args*:
@@ -72,7 +75,7 @@ class DataManager(object):
 
     def update_plasma_state(self, msg):
         """
-        Copy plasma state files from source dir to target dir.  Return 0.  
+        Copy plasma state files from source dir to target dir.  Return 0.
         Exception raised on copy error.
 
         *msg.args*:
@@ -94,7 +97,7 @@ class DataManager(object):
 
     def merge_current_plasma_state(self, msg):
         """
-        Merge partial plasma state file with global master.  Newly updated 
+        Merge partial plasma state file with global master.  Newly updated
         plasma state copied to caller's workdir.
         Exception raised on copy error.
 
@@ -107,20 +110,20 @@ class DataManager(object):
         partial_state_file = msg.args[0]
         target_state_file = msg.args[1]
         log_file = msg.args[2]
-        
+
         fwk_bin_path = sys.path[0]
         update_state = os.path.join(fwk_bin_path, 'update_state')
         plasma_work_dir = os.path.dirname(target_state_file)
         component_work_dir = os.path.dirname(partial_state_file)
         current_plasma_state = os.path.basename(target_state_file)
-        
+
         merge_stdout = sys.stdout
         if (log_file):
-            log_fullpath = os.path.join(component_work_dir, log_file) 
+            log_fullpath = os.path.join(component_work_dir, log_file)
             try:
                 merge_stdout = open(log_fullpath, 'w')
             except:
-                self.fwk.exception('Error opening log file %s : using stdout', 
+                self.fwk.exception('Error opening log file %s : using stdout',
                                log_fullpath)
 
         retval = subprocess.call([update_state, '-input', target_state_file,

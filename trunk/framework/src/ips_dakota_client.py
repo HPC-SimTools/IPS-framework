@@ -1,3 +1,6 @@
+#-------------------------------------------------------------------------------
+# Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
+#-------------------------------------------------------------------------------
 #! /usr/bin/env python
 
 import os
@@ -21,7 +24,7 @@ class IPSDakotaClient(object):
         self.sweep_spec = None
         self.in_file = in_file
         self.out_file = out_file
-        
+
     def run(self):
         """
         Platform Configuration
@@ -48,7 +51,7 @@ class IPSDakotaClient(object):
         self.sim_root = self.old_master_conf['SIM_ROOT']
         self.sim_name = self.old_master_conf['SIM_NAME']
         self.sim_logfile = self.old_master_conf['LOG_FILE']
-        
+
         dakota_in_cfg = open(self.in_file).readlines()
         num_variables = int(dakota_in_cfg[0].split()[0])
         parameter_list = []
@@ -66,13 +69,13 @@ class IPSDakotaClient(object):
                 raise
             comp_conf[var_name] = val
             parameter_list.append((comp, var_name, val))
-            
+
         for k in self.platform_conf.keys():
             if k not in self.old_master_conf.keys():
                 self.old_master_conf[k] = self.platform_conf[k]
-        
+
         server_address = os.environ['IPS_DAKOTA_SOCKET_ADDRESS']
-                
+
         #print '###########################', server_address, str(sys.argv)
         num_trials = 10
         for  trials in range(num_trials):
@@ -81,7 +84,7 @@ class IPSDakotaClient(object):
                 conn = Client(str(server_address), 'AF_UNIX')
             except Exception as inst:
                 print '%s: %d Failed to connect to %s: %s' % \
-                       (time.strftime("%b %d %Y %H:%M:%S", time.localtime()), 
+                       (time.strftime("%b %d %Y %H:%M:%S", time.localtime()),
                         trials, server_address, str(sys.argv))
                 sys.stdout.flush()
                 if trials == num_trials - 1:
@@ -89,7 +92,7 @@ class IPSDakotaClient(object):
                 else:
                     time.sleep(trials)
             else:
-                break 
+                break
         #print 'SUCCESS Connecting to dakota_bridge : ', str(sys.argv[1:])
         sys.stdout.flush()
         conn.send(parameter_list)
@@ -97,8 +100,8 @@ class IPSDakotaClient(object):
         result_file = conn.recv()
         #print '@@@@@@@@@@@@@@@@@@@@@@@@@ Received :', result_file, str(sys.argv[1:])
         shutil.copy(result_file, self.out_file)
-        return 
-    
+        return
+
 def main(argv=None):
 
     in_file = argv[1]
@@ -115,12 +118,12 @@ def main(argv=None):
         pass
     platform_filename = os.environ['IPS_DAKOTA_platform']
     config_file = os.environ['IPS_DAKOTA_config']
-    
+
     try:
         ips_executer = IPSDakotaClient(config_file, log_file_name, platform_filename, debug, in_file, out_file)
         ips_executer.run()
     except :
-        raise 
+        raise
     return 0
 
 if __name__ == "__main__":

@@ -1,3 +1,6 @@
+#-------------------------------------------------------------------------------
+# Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
+#-------------------------------------------------------------------------------
 import os
 import shutil
 import time
@@ -6,17 +9,17 @@ import zipfile
 
 def copyFiles(src_dir, src_file_list, target_dir, prefix='', keep_old = False):
     """
-       Copy files in *src_file_list* from *src_dir* to *target_dir* with an 
-       optional prefix.  If *keep_old* is ``True``, existing files in 
-       *target_dir* will not be overridden, otherwise files can be clobbered 
+       Copy files in *src_file_list* from *src_dir* to *target_dir* with an
+       optional prefix.  If *keep_old* is ``True``, existing files in
+       *target_dir* will not be overridden, otherwise files can be clobbered
        (default).
-       Wild-cards in file name specification are allowed. 
+       Wild-cards in file name specification are allowed.
     """
     try:
         file_list = src_file_list.split()
     except AttributeError : # srcFileList is not a string
         file_list = src_file_list
-    
+
     globbed_file_list=[]
     for src_file in file_list:
 
@@ -31,7 +34,7 @@ def copyFiles(src_dir, src_file_list, target_dir, prefix='', keep_old = False):
                     globbed_file_list += globbed_files
                 else:
                     raise Exception('No such file : %s' %(src_file_full))
-        
+
     #------------------------------------------------------------------#
     #  for each file in globbed_file_list, copy it from src_dir to target_dir #
     #------------------------------------------------------------------#
@@ -40,7 +43,7 @@ def copyFiles(src_dir, src_file_list, target_dir, prefix='', keep_old = False):
         target_file = os.path.join(target_dir, target)
         if (os.path.isfile(target_file) and os.path.samefile(src_file, target_file)):
             continue
-    # Do not overwrite existing target files.    
+    # Do not overwrite existing target files.
         if (keep_old and os.path.isfile(target_file)):
             for i in range(1000):
                 new_name = target_file + '.' + str(i)
@@ -69,12 +72,12 @@ def writeToContainer(ziphandle, src_dir, src_file_list):
     """
     Write files to the ziphandle.  Because when one wants to unzip the
     file, one typically doesn't want the full path, this handles getting
-    just the shorter path name.  
+    just the shorter path name.
     src_file_list can be a single string
     If src_dir is specified:
-       relative 
+       relative
     If it is not specified:
-       relative 
+       relative
     filename in the zip file.
     """
     try:

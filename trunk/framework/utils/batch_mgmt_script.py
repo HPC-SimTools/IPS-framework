@@ -1,3 +1,6 @@
+#-------------------------------------------------------------------------------
+# Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
+#-------------------------------------------------------------------------------
 """
 
     ----------------------------------
@@ -13,7 +16,7 @@
 
     Department of Computer Science
     Indiana University, Bloomington
-    [bramley,jcottam,anmcleve,ssfoley,nigupta,yuma,yyuan]@cs.indiana.edu 
+    [bramley,jcottam,anmcleve,ssfoley,nigupta,yuma,yyuan]@cs.indiana.edu
 
 
 this version uses the subprocess module
@@ -75,12 +78,12 @@ class fsp_job:   #our new job class
     def parse_config (self):
         try:
             config_file = open("SWIM_config", "r")  #assuming that config is in the current dir
-            
+
             if config_file:
                 line = config_file.readline().strip()
             else:
                 line = ""
-                
+
             while line:
                 name, val = line.split("=")
                 name = name.strip()
@@ -100,19 +103,19 @@ class fsp_job:   #our new job class
                     line = config_file.readline().strip()
                 else:
                     line = ""
-                        
+
             config_file.close()
         except Exception, ex:
             print "problems parsing config file: %s" % ex
-                               
-                
+
+
     #states = something.... see notes above
     def submit_job(self, debug_on = False):
         #submits job to batch_mgr, if there is one present
         try:
             if self.my_vals["batch_mgr"] == "SLURM":
                 if self.my_vals["mpi_job"]:
-                    # "sam_run" calls mpi_run.py if it is an mpi job 
+                    # "sam_run" calls mpi_run.py if it is an mpi job
                     cmd = "srun -N %d -b sam_run" % self.my_vals["num_nodes"]
                 else:
                     #grab nodes, run, and grab stderr to get the jobid
@@ -125,7 +128,7 @@ class fsp_job:   #our new job class
                 g = s.split()
                 self.my_vals["jobid"] = g[2]
                 self.my_vals["status"] = g[3]
-                
+
             elif self.my_vals["batch_mgr"] == "PBS":
                 scriptfile = open("scriptfile", "w")
                 scriptfile.write("#!/bin/tcsh\n")
@@ -150,7 +153,7 @@ class fsp_job:   #our new job class
             else:
                 #just run
                 # need to get pid... storing it in jobid should be fine
-                cmd = self.my_vals["executable"] 
+                cmd = self.my_vals["executable"]
 
                 #new version using subprocess
                 #print "starting the script"
@@ -161,16 +164,16 @@ class fsp_job:   #our new job class
             if debug_on:
                 print cmd
                 print "my jobid is: %s" % self.my_vals["jobid"]
-            
-            message = "job %s started" % self.my_vals["jobid"]           
+
+            message = "job %s started" % self.my_vals["jobid"]
             Events.publish_event(message, topic='FSP_job')
         except Exception, ex:
             print "submit_job failed with exception %s" % ex
-        
+
     def monitor_job(self, interval=1, debug_on = False):
         #checks the status of the job
         try:
-            
+
             if self.my_vals["batch_mgr"] == "SLURM":
                 #this command will get the status and cputime ( -o \" %.2t %.10M\")
                 #of just self.my_vals["jobid"] (-j self.my_vals["jobid"]) without the heading (-h)
@@ -192,7 +195,7 @@ class fsp_job:   #our new job class
                     time.sleep(interval)
                     p1 = sp.Popen(cmd, shell=True, stdout=sp.PIPE, stderr=sp.PIPE)
                     out = p1.stdout.read()
-                
+
             elif self.my_vals["batch_mgr"] == "PBS":
                 cmd = "qstat -r %s" % self.my_vals["jobid"]
                 #                                                            Req'd  Req'd   Elap
@@ -222,7 +225,7 @@ class fsp_job:   #our new job class
                 #this command will get the status and cputime ( -o s,cputime)
                 #of just self.my_vals["jobid"] (--pid self.my_vals["jobid"]) without the heading (--no-heading)
                 cmd = "ps -o s,cputime --pid %s --no-heading" %  self.my_vals["jobid"]
-                
+
                 #extract status from output
                 p1 = sp.Popen(cmd, shell=True, stdout=sp.PIPE, stderr=sp.PIPE)
                 out = p1.stdout.read()
@@ -246,7 +249,7 @@ class fsp_job:   #our new job class
             Events.publish_event(message,topic='FSP_job')
         except Exception, ex:
             print "monitor_job failed with exception %s" % ex
-                
+
     def remove_from_q(self, debug_on = False):
         #removes the job from the queue
         # scancel for SLURM, and qdel for PBS
@@ -259,9 +262,9 @@ class fsp_job:   #our new job class
             else:
                 #kill -9
                 cmd = "kill -9 " + self.my_vals["jobid"]
-                os.system(cmd)                
+                os.system(cmd)
                 cmd = "ps -f -p " + self.my_vals["jobid"]
-                
+
             p1 = sp.Popen(cmd, shell=True, stdout=sp.PIPE, stderr=sp.PIPE)
             out = p1.stdout.read()
             message = out
@@ -270,16 +273,16 @@ class fsp_job:   #our new job class
             Events.publish_event(message,topic='FSP_job')
         except Exception, ex:
             print "remove_from_q failed with exception %s" % ex
-            
+
     def kill_job(self, debug_on = False):
         #kills a running job -- which is exactly what remove from queue does
         self.remove_from_q(debug_on)
-            
+
     def __init__(self):
         #gets the info from the config file
         self.parse_config()
 
-        #set the path to Jpype 
+        #set the path to Jpype
         sys.path.append(self.my_vals["Jpype"])
 
         try:
@@ -295,4 +298,3 @@ if __name__ == "__main__":
     my_job.monitor_job(0.5)
     time.sleep(2)
     my_job.kill_job()
-

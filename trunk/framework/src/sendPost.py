@@ -1,3 +1,6 @@
+#-------------------------------------------------------------------------------
+# Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
+#-------------------------------------------------------------------------------
 #! /usr/bin/env python
 
 import sys
@@ -12,7 +15,7 @@ def sendEncodedMessage(url, msg):
     num_trials = 2
     trial = 0
     delay = [0.4, 0.8, 1.2]
-    
+
     while (trial < num_trials):
         try:
             f = urllib2.urlopen(url, msg)
@@ -28,7 +31,7 @@ def sendEncodedMessage(url, msg):
         f.close()
     except:
         pass
-        
+
 
 if __name__ == "__main__":
     """ Loop over input from stdin, expecting lines of the format:

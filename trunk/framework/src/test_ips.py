@@ -1,3 +1,6 @@
+#-------------------------------------------------------------------------------
+# Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
+#-------------------------------------------------------------------------------
 import sys
 import socket
 import getopt
@@ -30,8 +33,8 @@ class testIPS(unittest.TestCase):
 
         try:
             opts, args = getopt.gnu_getopt(argv[first_arg:], '',
-                                       ["create-runspace", "run-setup", "run", 
-                                        "simulation=", "platform=", "log=", 
+                                       ["create-runspace", "run-setup", "run",
+                                        "simulation=", "platform=", "log=",
                                         "nodes=", "ppn=",
                                         "debug", "verbose", "ftb"])
         except getopt.error, msg:

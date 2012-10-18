@@ -1,3 +1,6 @@
+#-------------------------------------------------------------------------------
+# Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
+#-------------------------------------------------------------------------------
 from configobj import ConfigObj
 import shutil
 import os
@@ -21,9 +24,9 @@ import ipsutil
 
 class ConfigurationManager(object):
     """
-    The configuration manager is responsible for paring the simulation and 
-    platform configuration files, creating the framework and simulation 
-    components, as well as providing an interface to accessing items from the 
+    The configuration manager is responsible for paring the simulation and
+    platform configuration files, creating the framework and simulation
+    components, as well as providing an interface to accessing items from the
     configuration files (e.g., the time loop).
     """
     # CM init
@@ -51,12 +54,12 @@ class ConfigurationManager(object):
             self.fwk_logger = None
 
    #@TauWrap(TIMERS['__init__'])
-    # SIMYAN: accept a compset_list to find specific configuration files for 
+    # SIMYAN: accept a compset_list to find specific configuration files for
     # the components
     def __init__(self, fwk, config_file_list, platform_file_name, compset_list):
         """
-        Initialize the values to be used by the configuration manager.  Also 
-        specified are the required fields of the simulation configuration 
+        Initialize the values to be used by the configuration manager.  Also
+        specified are the required fields of the simulation configuration
         file, and the configuration files are read in.
         """
         # ref to framework
@@ -70,8 +73,8 @@ class ConfigurationManager(object):
         self.task_mgr = None
         self.comp_registry = ComponentRegistry()
         # SIMYAN: here is where we removed the requirement for BIN_PATH, etc.
-        # from the required fields. This was done so that we could specify it 
-        # in the component-generic.conf file, which allows you to point to a 
+        # from the required fields. This was done so that we could specify it
+        # in the component-generic.conf file, which allows you to point to a
         # directory that contains physics and other binaries on a global level
         # i.e. removing the requirement that it be specified for each component
         self.required_fields = set(['CLASS', 'SUB_CLASS', 'NAME', 'SCRIPT',
@@ -81,7 +84,7 @@ class ConfigurationManager(object):
         self.sim_root_list = None
         self.log_file_list = None
         self.log_dynamic_sim_queue = Queue(0)
-        
+
         for conf_file in config_file_list:
             abs_path = os.path.abspath(conf_file)
             if (abs_path not in self.config_file_list):
@@ -92,10 +95,10 @@ class ConfigurationManager(object):
         sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 0)
         self.platform_file = os.path.abspath(platform_file_name)
         self.platform_conf = {}
-        # SIMYAN: breaking up the keywords a little bit 
+        # SIMYAN: breaking up the keywords a little bit
         self.compset_list = compset_list
         loc_keys=['IPS_ROOT']#,'PORTAL_URL','RUNID_URL']
-        loc_keys=[]	
+        loc_keys=[]
         mach_keys=['MPIRUN','NODE_DETECTION','CORES_PER_NODE','SOCKETS_PER_NODE','NODE_ALLOCATION_MODE']
         prov_keys=['HOST']
         self.platform_keywords=loc_keys+mach_keys+prov_keys
@@ -128,8 +131,8 @@ class ConfigurationManager(object):
    #@TauWrap(TIMERS['initialize'])
     def initialize(self, data_mgr, resource_mgr, task_mgr, ftb):
         """
-        Parse the platform and simulation configuration files using the 
-        :py:obj:`ConfigObj` module.  Create and initialize simulation(s) and 
+        Parse the platform and simulation configuration files using the
+        :py:obj:`ConfigObj` module.  Create and initialize simulation(s) and
         their components, framework components and loggers.
         """
         #pytau.start(self.timers['initialize'])
@@ -143,12 +146,12 @@ class ConfigurationManager(object):
         #Parse configuration files into configuration map
         sim_root_list = self.sim_root_list = []
         sim_name_list = self.sim_name_list = []
-        log_file_list = self.log_file_list = [] 
+        log_file_list = self.log_file_list = []
 
         # Idiot checks
         if len(self.config_file_list)==0:
             self.fwk.exception('Missing config file? Something is very wrong')
-            raise 
+            raise
 
         """
         Platform Configuration
@@ -185,7 +188,7 @@ class ConfigurationManager(object):
             host = self.platform_conf['HOST']
         except KeyError:
             self.platform_conf['HOST'] = socket.gethostname()
-        
+
         """
         optional platform values are obtained and read here
         """
@@ -217,7 +220,7 @@ class ConfigurationManager(object):
         except:
             self.fwk.exception("missing value or bad type for NODE_ALLOCATION_MODE.  expected 'EXCLUSIVE' or 'SHARED'.")
             raise
-            
+
         try:
             uan_val = self.platform_conf['USE_ACCURATE_NODES'].upper()
             if uan_val in ['OFF', 'FALSE']:
@@ -287,7 +290,7 @@ class ConfigurationManager(object):
 
                 # allow any csconf parameters override the platform file
                 for key in self.platform_conf.keys():
-                    if key in csconf.keys(): 
+                    if key in csconf.keys():
                         self.platform_conf[key] = csconf[key]
 
                 self.compset_conf.append(csconf)
@@ -304,13 +307,13 @@ class ConfigurationManager(object):
                 # The fact that csconf is a list is confusing
                 for csconf in self.compset_conf:
                     for key in csconf.keys():
-                      if key in conf.keys(): csconf[key] = conf[key]
+                        if key in conf.keys(): csconf[key] = conf[key]
                     conf.merge(csconf)
 
                 # Allow simulation file to override platform values
                 # and then put all platform values into simulation map
                 for key in self.platform_conf.keys():
-                  if key in conf.keys(): self.platform_conf[key] = conf[key]
+                    if key in conf.keys(): self.platform_conf[key] = conf[key]
                 conf.merge(self.platform_conf)
 
             except IOError, (ex):
@@ -415,10 +418,10 @@ class ConfigurationManager(object):
         for sim_name, sim_data in self.sim_map.items():
             if (sim_name != self.fwk_sim_name):
                 self._initialize_sim(sim_data)
-                
+
         # ***** commenting out portal stuff for now
         self._initialize_fwk_components()
-        
+
         #pytau.stop(self.timers['initialize'])
         #stop(self.timers['initialize'])
         # do later - subscribe to events, set up event publishing structure
@@ -434,7 +437,7 @@ class ConfigurationManager(object):
         """
         #pytau.start(self.timers['_initialize_fwk_components'])
         #start(self.timers['_initialize_fwk_components'])
-        
+
         # SIMYAN: set up the runspaceInit component
         runspace_conf = {}
         runspace_conf['CLASS'] = 'FWK'
@@ -444,7 +447,7 @@ class ConfigurationManager(object):
         ipsPathName=inspect.getfile(inspect.currentframe())
         ipsDir=os.path.dirname(ipsPathName)
         runspace_conf['BIN_PATH'] = ipsDir
-        runspace_conf['SCRIPT'] = os.path.join(runspace_conf['BIN_PATH'], 
+        runspace_conf['SCRIPT'] = os.path.join(runspace_conf['BIN_PATH'],
                 'runspaceInitComponent.py')
         runspace_conf['INPUT_DIR'] = '/dev/null'
         runspace_conf['INPUT_FILES'] = ''
@@ -547,8 +550,8 @@ class ConfigurationManager(object):
 
         simRootDir = self.get_sim_parameter(sim_name, 'SIM_ROOT')
 
-        #SIMYAN: removed code that would make the simrootDir from here and 
-        # moved it to the runspaceInit component 
+        #SIMYAN: removed code that would make the simrootDir from here and
+        # moved it to the runspaceInit component
         # set simulation level partial_nodes
         try:
             pn_simconf = sim_conf['NODE_ALLOCATION_MODE']
@@ -562,7 +565,7 @@ class ConfigurationManager(object):
         except:
             sim_data.sim_conf['NODE_ALLOCATION_MODE'] = self.platform_conf['NODE_ALLOCATION_MODE']
 
-                   
+
         for port in ports_list:
             try:
                 comp_ref = ports_config[port]['IMPLEMENTATION']
@@ -623,14 +626,14 @@ class ConfigurationManager(object):
         if (sim_data.init_comp == None):
             self.fwk.warning('Missing INIT specification in ' +
                              'config file for simulation %s' , sim_data.sim_name)
-           
+
         conf_file = sim_data.config_file
 
         # SIMYAN: No longer doing this in configurationManager.py
         # Copy the configuration and platform files to the simRootDir
-        #ipsutil.copyFiles(os.path.dirname(conf_file), 
+        #ipsutil.copyFiles(os.path.dirname(conf_file),
         #                  os.path.basename(conf_file), simRootDir)
-        #ipsutil.copyFiles(os.path.dirname(self.platform_file), 
+        #ipsutil.copyFiles(os.path.dirname(self.platform_file),
         #                  os.path.basename(self.platform_file), simRootDir)
 
         # try to find the statedir
@@ -658,7 +661,7 @@ class ConfigurationManager(object):
    #@TauWrap(TIMERS['_create_component'])
     def _create_component(self, comp_conf, sim_data):
         """
-        Create component and populate it with the information from the 
+        Create component and populate it with the information from the
         component's configuration section.
         """
         #pytau.start(self.timers['_create_component'])
@@ -670,8 +673,8 @@ class ConfigurationManager(object):
         #print 'script', script
         #print 'endpath', endpath
         if (endpath != -1):
-            path = [comp_conf['SCRIPT'][0:endpath], 
-                    comp_conf['SCRIPT'][0:endpath] + '/' + script, 
+            path = [comp_conf['SCRIPT'][0:endpath],
+                    comp_conf['SCRIPT'][0:endpath] + '/' + script,
                     comp_conf['SCRIPT'][0:endpath] + '/' + script + '.py']
         class_name = comp_conf['NAME']
         try:
@@ -679,13 +682,13 @@ class ConfigurationManager(object):
             module = imp.load_module(script, modFile, pathname, description)
             component_class = getattr(module, class_name)
         except Exception, e:
-            self.fwk.error('Error in configuration file : NAME = %s   SCRIPT = %s', 
+            self.fwk.error('Error in configuration file : NAME = %s   SCRIPT = %s',
                            comp_conf['NAME'], comp_conf['SCRIPT'] )
             self.fwk.exception('Error instantiating IPS component %s From %s', class_name, script)
             #pytau.stop(self.timers['_create_component'])
             raise
 
-        # SIMYAN: removed else conditional, copying files in runspaceInit 
+        # SIMYAN: removed else conditional, copying files in runspaceInit
         # component now
 
         svc_response_q = Queue(0)
@@ -713,7 +716,7 @@ class ConfigurationManager(object):
     #@TauWrap(TIMERS['get_component_map'])
     def get_component_map(self):
         """
-        Return a dictionary of simulation names and lists of component 
+        Return a dictionary of simulation names and lists of component
         references.  (May only be the driver, and init (if present)???)
         """
         #pytau.start(self.timers['get_component_map'])
@@ -723,7 +726,7 @@ class ConfigurationManager(object):
                 continue
             sim_comps[sim_name]= self.get_simulation_components(sim_name)
         return sim_comps
-   
+
     def get_simulation_components(self, sim_name):
         comp_list = []
         sim_data = self.sim_map[sim_name]
@@ -766,7 +769,7 @@ class ConfigurationManager(object):
 
     def get_sim_parameter(self, sim_name, param):
         """
-        Return value of *param* from simulation configuration file for 
+        Return value of *param* from simulation configuration file for
         *sim_name*.
         """
         #pytau.start(self.timers['get_sim_parameter'])
@@ -791,7 +794,7 @@ class ConfigurationManager(object):
 
     def process_service_request(self, msg):
         """
-        Invokes public configuration manager method for a component.  Return 
+        Invokes public configuration manager method for a component.  Return
         method's return value.
         """
         #pytau.start(self.timers['process_service_request'])
@@ -817,7 +820,7 @@ class ConfigurationManager(object):
         # Allow propagation of entries from platform config file to simulation
         # config file
         for keyword in self.platform_conf.keys():
-            if keyword not in conf.keys(): 
+            if keyword not in conf.keys():
                 conf[keyword] = self.platform_conf[keyword]
         if (override):
             for kw in override.keys():
@@ -864,7 +867,7 @@ in configuration file %s', config_file)
         self._initialize_sim(new_sim)
         self.fwk.initiate_new_simulation(sim_name)
         return sim_name
-    
+
     def getPort(self, sim_name, port_name):
         """
         .. deprecated:: 1.0 Use :py:meth:`.get_port`
@@ -873,7 +876,7 @@ in configuration file %s', config_file)
 
     def get_port(self, sim_name, port_name):
         """
-        Return a reference to the component from simulation *sim_name* 
+        Return a reference to the component from simulation *sim_name*
         implementing port *port_name*.
         """
         #print sim_name, port_name
@@ -885,15 +888,15 @@ in configuration file %s', config_file)
 
     def get_config_parameter(self, sim_name, param):
         """
-        Return value of *param* from simulation configuration file for 
+        Return value of *param* from simulation configuration file for
         *sim_name*.
         """
         return self.get_sim_parameter(sim_name, param)
 
     def set_config_parameter(self, sim_name, param, value, target_sim_name):
         """
-        Set the configuration parameter *param* to value *value* in 
-        *target_sim_name*.  If *target_sim_name* is the framework, all 
+        Set the configuration parameter *param* to value *value* in
+        *target_sim_name*.  If *target_sim_name* is the framework, all
         simulations will get the change.  Return *value*.
         """
         if (target_sim_name == self.fwk_sim_name): # apply to all simulations
@@ -906,7 +909,7 @@ in configuration file %s', config_file)
                 sim_data = self.sim_map[sim_name]
             except KeyError:
                 sim_data = self.finished_sim_map[sim_name]
-            self.fwk.debug('Setting %s to %s in simulation %s', param, value, sim_name) 
+            self.fwk.debug('Setting %s to %s in simulation %s', param, value, sim_name)
             sim_conf = sim_data.sim_conf
             sim_conf[param] = value
 
@@ -916,8 +919,8 @@ in configuration file %s', config_file)
 
     def get_platform_parameter(self, param, silent=False):
         """
-        Return value of platform parameter *param*.  If *silent* is ``False`` 
-        (default) ``None`` is returned when *param* not found, otherwise an 
+        Return value of platform parameter *param*.  If *silent* is ``False``
+        (default) ``None`` is returned when *param* not found, otherwise an
         exception is raised.
         """
         #pytau.start(self.timers['get_platform_parameter'])
@@ -952,7 +955,7 @@ in configuration file %s', config_file)
         self.finished_sim_map[sim_name] = sim_data
         del self.sim_map[sim_name]
         return
-        
+
     def terminate(self, status):
         """
         Terminates all processes attached to the framework.  *status* not used.
@@ -964,5 +967,5 @@ in configuration file %s', config_file)
             print 'Encountered exception when terminating simulation'
             raise
         for k in self.sim_map.keys():
-            del self.sim_map[k] 
+            del self.sim_map[k]
         self.log_process.terminate()

@@ -1,3 +1,6 @@
+#-------------------------------------------------------------------------------
+# Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
+#-------------------------------------------------------------------------------
 import numpy as np
 from matplotlib import pyplot as plt
 import sys
@@ -31,7 +34,7 @@ if __name__ == "__main__":
                 nproc = task_procs[comp]
             except KeyError:
                 nproc = task_procs[comp] = int(comment.split()[3])
-                
+
             try:
                 all_events[wall_time].append(('start', comp, nproc))
             except KeyError:
@@ -46,21 +49,21 @@ if __name__ == "__main__":
                 all_events[wall_time]= [('end', comp, nproc)]
             if comp not in comp_names:
                 comp_names.append(comp)
-            
+
 #    for comp in comp_util_map.keys():
 #       print "Utilization for Component:", comp
 #       print '================================='
 #        comp_util = comp_util_map[comp]
 #        for wall_time in sorted(comp_util.keys()):
 #           print '%-10.4f   %-10d' % (wall_time,  comp_util[wall_time])
-    
+
     all_times_raw = sorted(all_events.keys())
     cur_util = {}
     plot_data = {}
     for comp in comp_names:
         plot_data[comp] = {}
         cur_util[comp] = 0
-        
+
     all_plot_times = []
     for wall_time in all_times_raw:
         comp_names_copy = [name for name in comp_names]
@@ -93,7 +96,7 @@ if __name__ == "__main__":
                     comp_names_copy.pop(comp_names_copy.index(comp))
                 except:
                     pass
-                
+
         for comp in comp_names_copy:
             comp_data = plot_data[comp]
             if (wall_time - 0.0001 not in comp_data.keys()):
@@ -101,15 +104,15 @@ if __name__ == "__main__":
                 comp_data[wall_time - 0.0002] = cur_util[comp]
                 comp_data[wall_time - 0.0001] = cur_util[comp]
             comp_data[wall_time] = cur_util[comp]
-    
+
     all_times = sorted(all_plot_times)
     comp_names_sorted = sorted(plot_data.keys())
     active_sims = {}
-    print '%-15s' % ('Wall Time'), 
+    print '%-15s' % ('Wall Time'),
     for comp in comp_names_sorted:
         print '%-10s' % (comp),
     print'%-10s' % ('Num_sims')
-    
+
     for wall_time in all_times:
         print '%-15.4f' % wall_time,
         num_sims = 0
@@ -119,7 +122,7 @@ if __name__ == "__main__":
             num_sims += comp_data[wall_time] /task_procs[comp]
         print '%-10d' %  num_sims
         active_sims[wall_time] = num_sims
-    
+
     x = np.array(all_times)
     y_sum = np.array([0.0 for wall_time in all_times])
     y = {}
@@ -143,10 +146,10 @@ if __name__ == "__main__":
             y_inc_array = np.array(y_inc)
             y_plot = y_inc + y_sum
             if(i == 1):
-                ax1.plot(x, y_plot, label = comp, markeredgecolor='c', 
+                ax1.plot(x, y_plot, label = comp, markeredgecolor='c',
                          markerfacecolor=comp_color[comp], color = 'k', linewidth=0.5)
             else:
-                ax1.plot(x, y_plot, markeredgecolor='c', 
+                ax1.plot(x, y_plot, markeredgecolor='c',
                          markerfacecolor=comp_color[comp], color = 'k', linewidth=0.5)
             plt.fill_between(x, y_plot, y_plot_old, color = comp_color[comp], alpha = 0.5)
             y_plot_old = y_plot
@@ -170,7 +173,7 @@ if __name__ == "__main__":
     plt.xlabel('Wall Time (Sec.)')
     plt.ylabel('Cores Used')
     plt.title('Utilization by component')
-    
+
     ax2 = fig.add_subplot(212, sharex=ax1)
     x_sims = np.array(all_times_raw)
     y_sims = np.array([active_sims[wall_time] for wall_time in all_times_raw])

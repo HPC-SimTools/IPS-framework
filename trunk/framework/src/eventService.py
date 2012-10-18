@@ -1,3 +1,6 @@
+#-------------------------------------------------------------------------------
+# Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
+#-------------------------------------------------------------------------------
 """
 This file hosts the central event service and is not directly accessible to IPS.
 The cca_es_spec.py file provides a CCA-style event service interface to IPS,

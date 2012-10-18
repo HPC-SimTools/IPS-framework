@@ -1,5 +1,8 @@
+#-------------------------------------------------------------------------------
+# Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
+#-------------------------------------------------------------------------------
 '''
-This Python script processes a list of results files (rwfile.*) produced 
+This Python script processes a list of results files (rwfile.*) produced
 from a series of RUS runs, and produces a graph using gnuplot.
 
 This must be run from the same directory as plot.sh.
@@ -48,4 +51,3 @@ if __name__ == "__main__":
         except:
             print "problem processing data for %s" % arg
             raise
-        

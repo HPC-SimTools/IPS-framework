@@ -1,3 +1,6 @@
+#-------------------------------------------------------------------------------
+# Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
+#-------------------------------------------------------------------------------
 import sys
 import os
 import subprocess
@@ -18,7 +21,7 @@ from math import ceil
 
 class TaskManager(object):
     """
-    The task manager is responsible for facilitating component method 
+    The task manager is responsible for facilitating component method
     invocations, and the launching of tasks.
     """
     # TM __init__
@@ -47,8 +50,8 @@ class TaskManager(object):
         # table of currently running tasks
         self.curr_task_table = {}
         # nextCall
-        self.next_call_id = 1L  
-        self.next_task_id = 1L  
+        self.next_call_id = 1L
+        self.next_task_id = 1L
         self.outstanding_calls = {}
         self.finished_calls = {}
         # anything needed for pub/sub thru ES
@@ -64,7 +67,7 @@ class TaskManager(object):
     def process_service_request(self, msg):
         """
         Invokes the appropriate public data manager method for the component
-        specified in *msg*.  Return method's return value.  
+        specified in *msg*.  Return method's return value.
         """
         self.fwk.debug('Task Manager received message: %s', str(msg.__dict__))
         sim_name = msg.sender_id.get_sim_name()
@@ -76,7 +79,7 @@ class TaskManager(object):
    # TM initialize
     def initialize(self, data_mgr, resource_mgr, config_mgr, ftb):
         """
-        Initialize references to other managers and key values from 
+        Initialize references to other managers and key values from
         configuration manager.
         """
         self.event_mgr = None # eventManager(self)
@@ -129,9 +132,9 @@ class TaskManager(object):
     # TM call
     def init_call(self, init_call_msg, manage_return=True):
         """
-        Creates and sends a :py:obj:`messages.MethodInvokeMessage` from 
-        the calling component 
-        to the target component.  If *manage_return* is ``True``, a record is 
+        Creates and sends a :py:obj:`messages.MethodInvokeMessage` from
+        the calling component
+        to the target component.  If *manage_return* is ``True``, a record is
         added to *outstanding_calls*.  Return call id.
 
         Message args:
@@ -176,14 +179,14 @@ class TaskManager(object):
 
     def wait_call(self, wait_msg):
         """
-        Determine if the call has finished.  If finished, return any data or 
-        errors.  If not finished raise the appropriate blocking or nonblocking 
+        Determine if the call has finished.  If finished, return any data or
+        errors.  If not finished raise the appropriate blocking or nonblocking
         exception and try again later.
 
         *wait_msg* is expected to be of type :py:obj:`messages.ServiceRequestMessage`
 
         Message args:
-        
+
         0. *call_id*: call id for which to wait
 
         1. *blocking*: determines the wait is blocking or not
@@ -207,9 +210,9 @@ class TaskManager(object):
         """
         Allocate resources needed for a new task and build the task
         launch command using the binary and arguments provided by
-        the requesting component.  Return launch command to component via 
-        :py:obj:`messages.ServiceResponseMessage`.  Raise exception if task 
-        can not be launched at this time (:py:exc:`ipsExceptions.BadResourceRequestException`, :py:exc:`ipsExceptions.InsufficientResourcesException`). 
+        the requesting component.  Return launch command to component via
+        :py:obj:`messages.ServiceResponseMessage`.  Raise exception if task
+        can not be launched at this time (:py:exc:`ipsExceptions.BadResourceRequestException`, :py:exc:`ipsExceptions.InsufficientResourcesException`).
 
         *init_task_msg* is expected to be of type :py:obj:`messages.ServiceRequestMessage`
 
@@ -219,9 +222,9 @@ class TaskManager(object):
 
         1. *binary*: full path to the executable to launch
 
-        # SIMYAN: added this to deal with the component directory change 
+        # SIMYAN: added this to deal with the component directory change
         2. *working_dir*: full path to directory where the task will be launched
-        
+
         3. *tppn*: processes per node for this task.  (0 indicates that the default ppn is used.)
 
         4. *block*: whether or not to wait until the task can be launched.
@@ -235,7 +238,7 @@ class TaskManager(object):
         caller_id = init_task_msg.sender_id
         nproc = int(init_task_msg.args[0])
         binary = init_task_msg.args[1]
-        # SIMYAN: working_dir stored 
+        # SIMYAN: working_dir stored
         working_dir = init_task_msg.args[2]
         tppn = int(init_task_msg.args[3]) #task processes per node
         block = init_task_msg.args[4]  # Block waiting for available resources
@@ -249,8 +252,8 @@ class TaskManager(object):
 
 
         try:
-            retval = self.resource_mgr.get_allocation(caller_id, 
-                                                      nproc, 
+            retval = self.resource_mgr.get_allocation(caller_id,
+                                                      nproc,
                                                       task_id,
                                                       wnodes,
                                                       wsocks,
@@ -264,20 +267,20 @@ class TaskManager(object):
                 (nodelist, ppn, max_ppn, accurateNodes) = retval[1:]
         except InsufficientResourcesException, e:
             if (block):
-                raise BlockedMessageException(init_task_msg, '***%s waiting for %d resources' % 
+                raise BlockedMessageException(init_task_msg, '***%s waiting for %d resources' %
                                           (caller_id, nproc))
             else:
-                raise 
+                raise
         except BadResourceRequestException, e:
-            self.fwk.error("There has been a fatal error, %s requested %d too many processors in task %d", 
+            self.fwk.error("There has been a fatal error, %s requested %d too many processors in task %d",
                            caller_id, e.deficit, e.task_id)
             raise
         except ResourceRequestMismatchException, e:
-            self.fwk.error("There has been a fatal error, %s requested too few processors per node to launch task %d (requested: procs = %d, ppn = %d)", 
+            self.fwk.error("There has been a fatal error, %s requested too few processors per node to launch task %d (requested: procs = %d, ppn = %d)",
                            caller_id, e.task_id, e.nproc, e.ppn)
             raise
         except Exception, e:
-            raise 
+            raise
 
         # SIMYAN: moved up a few lines and ret_data, node_file added
         self.curr_task_table[task_id] = {'component'  : caller_id,
@@ -318,7 +321,7 @@ class TaskManager(object):
                          max_ppn, nodes, accurateNodes, partial_nodes,
                          task_id, core_list=''):
         """
-        Construct task launch command to be executed by the component.  
+        Construct task launch command to be executed by the component.
 
           *nproc* - number of processes to use
           *binary* - binary to launch
@@ -339,7 +342,7 @@ class TaskManager(object):
         if self.task_launch_cmd == 'eval':
             cmd = binary
         #-------------------------------------
-        # mpirun 
+        # mpirun
         #-------------------------------------
         elif self.task_launch_cmd == 'mpirun':
             version = self.config_mgr.get_platform_parameter('MPIRUN_VERSION')
@@ -381,7 +384,7 @@ class TaskManager(object):
                             ppn_groups.update({len(cl):[n]})
                     cmdlets = []
                     envlets = []
-                    bin_n_args = binary + ' '.join(cmd_args) 
+                    bin_n_args = binary + ' '.join(cmd_args)
                     for p, ns in ppn_groups.items():
                         cmdlets.append(' '.join([','.join(ns), str(p),
                                                  bin_n_args]))
@@ -401,9 +404,9 @@ class TaskManager(object):
                 else:
                     cmd = ' '.join([self.task_launch_cmd, ppn, binary,
                                     ' '.join(cmd_args)])
-                
 
-                
+
+
         #--------------------------------------
         # mpiexec (MPICH variants)
         #--------------------------------------
@@ -455,19 +458,19 @@ class TaskManager(object):
                     ppn = int(ceil(float(nproc) / num_nodes))
                     per_numa = int(ceil(float(ppn) / num_numanodes))
                     if per_numa == num_cores / num_numanodes:
-                        
-                        cmd = ' '.join([self.task_launch_cmd, 
-                                        nproc_flag, str(nproc), 
-                                        ppn_flag, str(ppn), 
+
+                        cmd = ' '.join([self.task_launch_cmd,
+                                        nproc_flag, str(nproc),
+                                        ppn_flag, str(ppn),
                                         nlist_flag, nodes])
                     else:
                         if num_nodes > 1:
                             ppn = per_numa * num_numanodes
                         if nproc < ppn:
                             ppn = nproc
-                        cmd = ' '.join([self.task_launch_cmd, 
-                                        nproc_flag, str(nproc), 
-                                        ppn_flag, str(ppn), 
+                        cmd = ' '.join([self.task_launch_cmd,
+                                        nproc_flag, str(nproc),
+                                        ppn_flag, str(ppn),
                                         by_numanode_flag, str(per_numa),
                                         nlist_flag, nodes])
                 else:
@@ -475,31 +478,31 @@ class TaskManager(object):
                     ppn = int(ceil(float(nproc) / num_nodes))
                     per_numa = int(ceil(float(ppn) / num_numanodes))
                     if per_numa == self.resource_mgr.cores_per_node / self.resource_mgr.sockets_per_node:
-                                    
-                        cmd = ' '.join([self.task_launch_cmd, 
-                                        nproc_flag, str(nproc), 
+
+                        cmd = ' '.join([self.task_launch_cmd,
+                                        nproc_flag, str(nproc),
                                         ppn_flag, str(ppn)])
                     else:
                         if num_nodes > 1:
                             ppn = per_numa * num_numanodes
                         if nproc < ppn:
                             ppn = nproc
-                        cmd = ' '.join([self.task_launch_cmd, 
-                                        nproc_flag, str(nproc), 
+                        cmd = ' '.join([self.task_launch_cmd,
+                                        nproc_flag, str(nproc),
                                         ppn_flag, str(ppn),
                                         by_numanode_flag, str(per_numa)])
             else: # self.host == 'franklin'
                 if accurateNodes:
                     nlist_flag = '-L'
-                    cmd = ' '.join([self.task_launch_cmd, 
-                                    nproc_flag, str(nproc), 
-                                    ppn_flag, str(ppn), 
+                    cmd = ' '.join([self.task_launch_cmd,
+                                    nproc_flag, str(nproc),
+                                    ppn_flag, str(ppn),
                                     nlist_flag, nodes])
                 else:
-                    cmd = ' '.join([self.task_launch_cmd, 
-                                    nproc_flag, str(nproc), 
+                    cmd = ' '.join([self.task_launch_cmd,
+                                    nproc_flag, str(nproc),
                                     cpu_assign_flag,
-                                    '%d-%d' % (max_ppn - 1, max_ppn - int(ppn)), 
+                                    '%d-%d' % (max_ppn - 1, max_ppn - int(ppn)),
                                     ppn_flag, str(ppn)])
         #------------------------------------
         # numactl (single process launcher)
@@ -522,7 +525,7 @@ class TaskManager(object):
 
         cmd_args = ' '.join(cmd_args)
         cmd = ' '.join([cmd, binary, cmd_args])
-        
+
         return cmd, env_update
 
     def init_task_pool(self, init_task_msg):
@@ -546,8 +549,8 @@ class TaskManager(object):
             (nproc, working_dir, binary, cmd_args, tppn, wnodes, wsocks) = task_dict[task_name]
 
             try:
-                retval = self.resource_mgr.get_allocation(caller_id, 
-                                                          nproc, 
+                retval = self.resource_mgr.get_allocation(caller_id,
+                                                          nproc,
                                                           task_id,
                                                           wnodes, wsocks,
                                                           task_ppn=tppn)
@@ -561,14 +564,14 @@ class TaskManager(object):
             except InsufficientResourcesException, e:
                 continue
             except BadResourceRequestException, e:
-                self.fwk.error("There has been a fatal error, %s requested %d too many processors in task %d", 
+                self.fwk.error("There has been a fatal error, %s requested %d too many processors in task %d",
                            caller_id, e.deficit, e.task_id)
                 for (task_id, cmd) in ret_dict.values():
                     self.resource_mgr.release_allocation(task_id, -1)
                     del self.curr_task_table[task_id]
                 raise
             except ResourceRequestMismatchException, e:
-                self.fwk.error("There has been a fatal error, %s requested too few processors per node to launch task %d (request: procs = %d, ppn = %d)", 
+                self.fwk.error("There has been a fatal error, %s requested too few processors per node to launch task %d (request: procs = %d, ppn = %d)",
                            caller_id, e.task_id, e.nproc, e.ppn)
                 for (task_id, cmd) in ret_dict.values():
                     self.resource_mgr.release_allocation(task_id, -1)
@@ -576,8 +579,8 @@ class TaskManager(object):
                 raise
             except Exception:
                 self.fwk.exception('TM:init_task_pool(): Allocation exception')
-                raise 
-            
+                raise
+
             if partial_node:
                 nodes = ','.join(nodelist)
                 (cmd, env_update) = self.build_launch_cmd(nproc, binary,
@@ -599,7 +602,7 @@ class TaskManager(object):
                                                           ppn, max_ppn, nodes,
                                                           accurateNodes, False,
                                                           task_id)
-            
+
             self.curr_task_table[task_id] = {'component'  : caller_id,
                                              'status'     : 'init_task',
                                              'binary'     : binary,
@@ -626,8 +629,8 @@ class TaskManager(object):
         #print "in finish task"
         caller_id = finish_task_msg.sender_id
         task_id = finish_task_msg.args[0]
-        task_data = finish_task_msg.args[1] 
-        try: #For node selection file that could be deleted if need be 
+        task_data = finish_task_msg.args[1]
+        try: #For node selection file that could be deleted if need be
             node_file = self.curr_task_table[task_id]['node_file']
         except:
             pass
@@ -646,5 +649,3 @@ class TaskManager(object):
 #        if node_file:
 #            os.remove(node_file)
         return 0
-
-

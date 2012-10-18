@@ -1,3 +1,6 @@
+#-------------------------------------------------------------------------------
+# Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
+#-------------------------------------------------------------------------------
 #! /usr/bin/env python
 
 from configobj import ConfigObj
@@ -7,18 +10,18 @@ import optparse
 import inspect
 
 def getCpFilesFromIps(ipsConf):
-   """
-   This goes through all of the components and gets the input and data files in order to
-   decide what to copy over.
-   """
-   allCpFiles=[]
-   for component in ipsConf['PORTS']['NAMES'].split():
-     compimp=ipsConf['PORTS'][component]['IMPLEMENTATION']
-     if ipsConf[compimp].has_key('INPUT_FILES'):
-         allCpFiles.append(ipsConf[compimp]['INPUT_FILES'])
-     if ipsConf[compimp].has_key('DATA_FILES'):
-         allCpFiles.append(ipsConf[compimp]['DATA_FILES'])
-   return allCpFiles
+    """
+    This goes through all of the components and gets the input and data files in order to
+    decide what to copy over.
+    """
+    allCpFiles=[]
+    for component in ipsConf['PORTS']['NAMES'].split():
+        compimp=ipsConf['PORTS'][component]['IMPLEMENTATION']
+        if ipsConf[compimp].has_key('INPUT_FILES'):
+            allCpFiles.append(ipsConf[compimp]['INPUT_FILES'])
+        if ipsConf[compimp].has_key('DATA_FILES'):
+            allCpFiles.append(ipsConf[compimp]['DATA_FILES'])
+    return allCpFiles
 
 
 def main(argv=None):
@@ -37,8 +40,8 @@ def main(argv=None):
 
     # Various checks
     if len(args) >= 1:
-      parser.print_usage()
-      return
+        parser.print_usage()
+        return
 
     cfgFile = ''
     config_key=''
@@ -80,7 +83,7 @@ def main(argv=None):
             compset_list.append(fullcfile)
         else:
             print "Could not find: ", cfile
-    else: 
+    else:
         if os.path.exists(os.path.join(ipsShareDir,'component-generic.conf')):
             compset_list.append(os.path.join(ipsShareDir,'component-generic.conf'))
         else:

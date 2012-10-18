@@ -1,3 +1,6 @@
+#-------------------------------------------------------------------------------
+# Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
+#-------------------------------------------------------------------------------
 #! /usr/bin/env python
 
 import os
@@ -49,7 +52,7 @@ class DakotaDynamic(object):
         self.platform_conf = None
         self.dakota_conf = None
         self.master_conf = ConfigObj()
-        
+
     def run(self):
         alt_paths = []
 
@@ -61,7 +64,7 @@ class DakotaDynamic(object):
             self.dakota_conf=[t.strip() for t in open(self.dakota_cfg).readlines()]
         except:
             raise
-        
+
         """
         Platform Configuration
         """
@@ -106,10 +109,10 @@ class DakotaDynamic(object):
         for k in self.platform_conf.keys():
             if k not in self.template_conf.keys():
                 self.template_conf[k] = self.platform_conf[k]
-                
+
         alt_paths.append(self.template_conf['IPS_ROOT'])
         alt_paths.append(os.path.join(self.template_conf['IPS_ROOT'],'framework/src'))
-        
+
         new_dakota_config = self.dakota_cfg+'.resolved'
         comp_vars = {}
 #        print self.dakota_conf
@@ -146,10 +149,10 @@ class DakotaDynamic(object):
                     print 'Using evaluation_concurrency = ', self.batch_size
                 else:
                     print 'Missing evaluation_concurrency spec, using default value of %d' % (self.batch_size)
-        
 
-        
-                
+
+
+
         self.master_conf['PORTS'] = {'NAMES' : 'DRIVER'}
         self.master_conf['PORTS']['DRIVER'] = {'IMPLEMENTATION': 'DAKOTA_BRIDGE'}
         self.master_conf['PORTS']['INIT'] = {'IMPLEMENTATION': ''}
@@ -164,7 +167,7 @@ class DakotaDynamic(object):
         driver_conf['OUTPUT_FILES'] = ''
         driver_conf['SCRIPT'] = os.path.join(self.template_conf['IPS_ROOT'], 'framework', 'src', 'dakota_bridge.py')
         self.master_conf['DAKOTA_BRIDGE'] = driver_conf
-        
+
         for (comp, val) in comp_vars.iteritems():
             try:
                 comp_conf = self.template_conf[comp]
@@ -180,7 +183,7 @@ class DakotaDynamic(object):
                 print 'Error creating Simulation directory %s : %d %s' % \
                         (sim_root, errno, strerror)
                 raise
-            
+
         for (k,v) in self.template_conf.iteritems():
             if k not in self.master_conf.keys():
                 try:
@@ -191,32 +194,32 @@ class DakotaDynamic(object):
         self.master_conf.filename = os.path.join(sim_root, 'dakota_bridge_%d.conf' % (os.getpid()))
         #self.master_conf.filename = os.path.join(sim_root, 'dakota_bridge_opt.conf')
         self.master_conf.write()
-                
-        
+
+
         sock_address = os.path.join(tempfile.gettempdir(), 'ips_dynamic_%d.tmp' %(os.getpid()))
         os.environ['IPS_DAKOTA_platform'] = os.path.abspath(self.platform_fname)
         os.environ['IPS_DAKOTA_config'] = os.path.abspath(self.config_template)
         os.environ['IPS_DAKOTA_runid'] = str(os.getpid())
         os.environ['IPS_DAKOTA_SOCKET_ADDRESS'] = sock_address
         print '%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%', sock_address
-        
+
         fd = open(new_dakota_config, 'w')
         [fd.write('%s\n'%(l)) for l in self.dakota_conf]
         fd.close()
-        
+
         ips = which('ips.py', alt_paths)
         if (not ips):
             raise Exception('Error: ips not found in path.')
-        
-        cmd = '%s --all --simulation=%s --platform=%s --verbose' % (ips, self.master_conf.filename, 
+
+        cmd = '%s --all --simulation=%s --platform=%s --verbose' % (ips, self.master_conf.filename,
                                                  os.environ['IPS_DAKOTA_platform'])
         if (self.log_file):
             cmd += ' --log=' + self.log_file
-        
+
         if self.debug:
             cmd += '  --debug'
-        
-        print 'cmd =', cmd 
+
+        print 'cmd =', cmd
         ips_server_proc = subprocess.Popen(cmd, shell = True)
         print '%s  Launched IPS' % (time.strftime("%b %d %Y %H:%M:%S", time.localtime()))
         sys.stdout.flush()
@@ -229,7 +232,7 @@ class DakotaDynamic(object):
                 response = conn.recv()
             except Exception as inst:
                 print '%s  %d ips_dakota_dynamic connecting to IPS dakota bridge' % \
-                    (time.strftime("%b %d %Y %H:%M:%S", time.localtime()), 
+                    (time.strftime("%b %d %Y %H:%M:%S", time.localtime()),
                      trials), type(inst), str(inst)
                 sys.stdout.flush()
                 if (trials == num_trials - 1):
@@ -240,16 +243,16 @@ class DakotaDynamic(object):
             else:
                 print '%s  ips_dakota_dynamic received response from IPS ' % \
                        (time.strftime("%b %d %Y %H:%M:%S", time.localtime())), str(response)
-                conn.close()  
+                conn.close()
                 break
- 
+
         command = 'dakota %s ' % new_dakota_config
         dakota_logfile = open('dakota_%s.log' % (str(os.getpid())),'w')
         proc = subprocess.Popen(command, shell=True, stdout=dakota_logfile, stderr=subprocess.STDOUT)
         print '%s  Launched DAKOTA' % (time.strftime("%b %d %Y %H:%M:%S", time.localtime()))
         sys.stdout.flush()
         proc.wait()
-        
+
         msg = {'SIMSTATUS':'END'}
         num_trials = 1
         for trials in range(num_trials):
@@ -269,12 +272,12 @@ class DakotaDynamic(object):
             else:
                 print '%s  ips_dakota_dynamic received response from IPS ' % \
                        (time.strftime("%b %d %Y %H:%M:%S", time.localtime())), str(response)
-                conn.close()  
+                conn.close()
                 break
- 
+
         ips_server_proc.wait()
-        return 
-        
+        return
+
 def printUsageMessage():
     print 'Usage: ips_dakota_dynamic --dakotaconfig=DAKOTA_CONFIG_FILE --simulation=CONFIG_FILE_NAME --platform=PLATFORM_FILE_NAME --log=LOG_FILE_NAME [--debug]'
 
@@ -322,7 +325,7 @@ def main(argv=None):
         sweep = DakotaDynamic(dakota_cfg, log_file_name, platform_filename, debug, ips_config_file)
         sweep.run()
     except :
-        raise 
+        raise
     return 0
 
 # ----- end main -----

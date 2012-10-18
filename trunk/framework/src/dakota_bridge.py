@@ -1,7 +1,10 @@
+#-------------------------------------------------------------------------------
+# Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
+#-------------------------------------------------------------------------------
 import os,sys
 from component import Component
 from configobj import ConfigObj
-from multiprocessing.connection import Listener 
+from multiprocessing.connection import Listener
 import select
 import time
 
@@ -25,19 +28,19 @@ class Driver(Component):
         self.in_file = None
         self.out_file = None
         self.idle_timeout = 300
-        
+
     def init(self, timestamp=0):
         self.services.subscribe('_IPS_DYNAMIC_SIMULATION', "process_event")
         return
 
     def step(self, timestamp=0):
-        
+
         services = self.services
         sim_root = services.get_config_param('SIM_ROOT')
         sim_name = services.get_config_param('SIM_NAME')
         self.socket_address = os.environ['IPS_DAKOTA_SOCKET_ADDRESS']
         self.config_file = os.environ['IPS_DAKOTA_config']
-                    
+
         override={}
         """
         Master Config file
@@ -53,14 +56,14 @@ class Driver(Component):
         self.sim_name = services.get_config_param('SIM_NAME')
         self.sim_logfile = services.get_config_param('LOG_FILE')
         dakota_runid = os.environ['IPS_DAKOTA_runid']
-        
+
         sim_config_files = []
         idx = 0
         print '%s  About to Create Listener %s' % (time.strftime("%b %d %Y %H:%M:%S", time.localtime()), str(self.socket_address))
         sys.stdout.flush()
         listener = Listener(str(self.socket_address), 'AF_UNIX')
         self.services.warning('Created listener %s', str(self.socket_address))
-        print '%s  Created Listener %s' % (time.strftime("%b %d %Y %H:%M:%S", time.localtime()), str(self.socket_address)), str(listener) 
+        print '%s  Created Listener %s' % (time.strftime("%b %d %Y %H:%M:%S", time.localtime()), str(self.socket_address)), str(listener)
         sys.stdout.flush()
         sim_cache = {}
         sock_fileno = listener._listener._socket.fileno()
@@ -98,10 +101,10 @@ class Driver(Component):
                     break
                 else:
                     continue
-                
+
             conn = listener.accept()
             #print '%s Accepted a new connection: ' % (time.strftime("%b %d %Y %H:%M:%S", time.localtime())), str (conn), dir(conn)
- 
+
             try:
                 msg = conn.recv()
             except Exception as inst:
@@ -109,7 +112,7 @@ class Driver(Component):
                 if (failed_connections > 5):
                     raise
                 else:
-                    failed_connections += 1 
+                    failed_connections += 1
                     continue
             try:
                 status = msg['SIMSTATUS']
@@ -129,11 +132,11 @@ class Driver(Component):
                     break
             instance_id =  '%s_%04d' % (dakota_runid, idx)
             file_name = os.path.join(self.sim_root, 'simulation_%s.conf' % (instance_id))
-            
+
             self.old_master_conf.filename = file_name
             self.old_master_conf['SIM_ROOT'] = os.path.join(self.sim_root, 'simulation_%s' % (instance_id))
             self.old_master_conf['SIM_NAME'] = self.sim_name + '_%s' % (instance_id)
-            self.old_master_conf['LOG_FILE'] = self.sim_logfile + '_%s' % (instance_id) 
+            self.old_master_conf['LOG_FILE'] = self.sim_logfile + '_%s' % (instance_id)
             try:
                 os.makedirs(self.old_master_conf['SIM_ROOT'])
             except OSError, (errno, strerror):
@@ -143,7 +146,7 @@ class Driver(Component):
                     raise
             if first_sim:
                 summary_file = open(os.path.join(self.sim_root, 'SIMULATION_LIST.%s' % (dakota_runid)), 'a')
-                
+
             param_file = os.path.join(self.old_master_conf['SIM_ROOT'], 'parameters.conf')
             param_string = ''
             summary_string = 'simulation_%s    ' % (instance_id)
@@ -173,7 +176,7 @@ class Driver(Component):
     def finalize(self, timestamp = 0):
         # Driver finalize - nothing to be done
         pass
-    
+
     def process_event(self, topicName, theEvent):
         event_body = theEvent.getBody()
         self.events_received.append(event_body)

@@ -1,3 +1,6 @@
+#-------------------------------------------------------------------------------
+# Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
+#-------------------------------------------------------------------------------
 #! /usr/bin/env python
 
 from  component import Component
@@ -21,7 +24,7 @@ class HelloWorker(Component):
         print 'Hello from HelloWorker'
         duration = random.random_integers(1, high=20, size=100)
         tasks = {}
-        bin = '/bin/sleep' 
+        bin = '/bin/sleep'
         cwd = self.services.get_working_dir()
         pool = self.services.create_task_pool('pool')
         for i in range(100):
@@ -30,7 +33,7 @@ class HelloWorker(Component):
         print 'ret_val = ', ret_val
         exit_status = self.services.get_finished_tasks('pool')
         print exit_status
-        
+
         print "====== Non Blocking "
         for i in range(100):
             self.services.add_task('pool', 'Nonblock_task_'+str(i), 1, cwd, bin, duration[i])
@@ -51,10 +54,9 @@ class HelloWorker(Component):
                 active_tasks += new_active_tasks
                 print 'Active = ', active_tasks, 'Finished = ', finished_tasks
 
-            
-            
+
+
         return
-    
+
     def finalize(self, timeStamp=0.0):
         return
-    

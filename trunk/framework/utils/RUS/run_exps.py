@@ -1,3 +1,6 @@
+#-------------------------------------------------------------------------------
+# Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
+#-------------------------------------------------------------------------------
 """
 Run Experiements
 ----------------
@@ -42,7 +45,7 @@ class experiment_suite():
         try:
             opts, args = getopt.getopt(sys.argv[1:], 't:c:r:n:', ['trials=', 'config_list=', 'res_list=', 'name='])
         except getopt.GetoptError, err:
-            # print help information and exit:                                                                  
+            # print help information and exit:
             print str(err) # will print something like "option -a not recognized"
             usage()
             sys.exit(2)
@@ -84,7 +87,7 @@ class experiment_suite():
         ltm = 'logTypeMap'
         log = 'gen' + self.id
         self.my_exps = list()
-        
+
         for c in self.cfiles:
             #------------------
             # determine ft mode
@@ -99,7 +102,7 @@ class experiment_suite():
                 ft_mode = 'none'
             elif c.find('_restart') > 0:
                 ft_mode = 'restart'
-                
+
             #------------------------
             # determine ckpt interval
             #------------------------
@@ -151,7 +154,7 @@ class experiment_suite():
                     print 'launch str:', e.launch_str
                     print 'problems with execution of %s using %s, trial %d' % (e.config, e.res, i)
                     #raise
-                    
+
     def post_analysis(self):
         """
         output data to a file to be parsed separately for viz work
@@ -168,12 +171,12 @@ class experiment_suite():
         for r in self.rfiles:
             print >> dump, '#', r
         print >> dump, "# ---------------------------------------- "
-        print >> dump, '# success/failure | fault model | ft_strategy | total time | allocation size | work | rework | ckpt | restart | launch delay | resubmit | overhead | # node failures | # ckpts | # fault | # relaunch | # restart | # resubmit | % work | % rework | % ckpt | % overhead'               
+        print >> dump, '# success/failure | fault model | ft_strategy | total time | allocation size | work | rework | ckpt | restart | launch delay | resubmit | overhead | # node failures | # ckpts | # fault | # relaunch | # restart | # resubmit | % work | % rework | % ckpt | % overhead'
         print >> dump, "# ---------------------------------------- "
         for e in self.my_exps:
             e.trials.minmaxavg()
             e.print_to_file(dump)
- 
+
 class trial_stats():
     """
     container class for trial statistics.
@@ -203,7 +206,7 @@ class trial_stats():
         self.percent_launch_delay = 0
         self.percent_overhead = 0
         self.success = False
-        
+
     def ts_set(self, s, t, c, w, r, p, rs, ld, rb, o, n, ns, nb, nf, nrl, nc):
         """
         set ``self`` to the values listed:
@@ -249,7 +252,7 @@ class trial_stats():
             self.percent_launch_delay = self.launch_delay / self.total_time * 100
             self.percent_resubmit = self.resubmit_time / self.total_time * 100
             self.percent_overhead = self.overhead_time / self.total_time * 100
-        
+
     def ts_copy(self, ts):
         """
         copy the values of ``ts`` to ``self``
@@ -373,7 +376,7 @@ class trial_tracker():
         self.ts = list()
         for x in range(t):
             self.ts.append(trial_stats())
-            
+
     def minmaxavg(self):  # based on time.... need to think about which metric to avg/min/max?
         """
         calculates the min, max and avg over the trials
@@ -383,7 +386,7 @@ class trial_tracker():
         max = trial_stats()
         min.ts_copy(self.ts[0])
         max.ts_copy(self.ts[0])
-        
+
         for x in self.ts:
             if x.cpuhrs_charged < min.cpuhrs_charged:
                 min.ts_copy(x)
@@ -395,7 +398,7 @@ class trial_tracker():
             if x.success:
                 sts += 1
         a.ts_div(float(sts))
-        
+
         #=======================================================================
         # # set min, max and avg
         #=======================================================================
@@ -423,8 +426,8 @@ class experiment():
         self.trials = trial_tracker(t)
         self.gen_launch_str()
 
-        
-        
+
+
     def gen_launch_str(self):
         """
         constructs the command to launch the experiment
@@ -439,7 +442,7 @@ class experiment():
         b = '-b'
         self.launch_str = ['python', 'rus.py', l, lval, r, rval, c, cval, f, b]
         #self.launch_str = ['python', 'rus.py', l, lval, r, rval, c, cval]
-        
+
     def print_to_file(self, fhandle):
         '''
         Prints the experiment's data to ``fhandle`` prettily.
@@ -474,13 +477,13 @@ class experiment():
             if t.success:
                 print >> fhandle, 'Success ',
             else:
-                print >> fhandle, 'Failed ', 
+                print >> fhandle, 'Failed ',
             #---------------------------------------
             # the rest of the data
             #---------------------------------------
-            print >> fhandle, header, t.total_time, t.cores, 
-            print >> fhandle, t.work_time, t.rework_time, t.ckpt_time, t.restart_time, t.launch_delay, t.resubmit_time, t.overhead_time, 
-            print >> fhandle, t.num_node_failures, t.num_ckpts, t.num_faults, t.num_relaunch, t.num_restart, t.num_resubmit, 
+            print >> fhandle, header, t.total_time, t.cores,
+            print >> fhandle, t.work_time, t.rework_time, t.ckpt_time, t.restart_time, t.launch_delay, t.resubmit_time, t.overhead_time,
+            print >> fhandle, t.num_node_failures, t.num_ckpts, t.num_faults, t.num_relaunch, t.num_restart, t.num_resubmit,
             print >> fhandle, t.percent_work, t.percent_rework, t.percent_ckpt, t.percent_restart, t.percent_launch_delay, t.percent_resubmit, t.percent_overhead
 
 if __name__ == "__main__":
