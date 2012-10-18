@@ -1,7 +1,6 @@
 #-------------------------------------------------------------------------------
 # Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
 #-------------------------------------------------------------------------------
-#! /usr/bin/env python
 
 """
 This is a stripped down component that contains the boilerplate for creating a component and an outline of where other things go in comments.

@@ -1,7 +1,7 @@
+#!/usr/bin/env python
 #-------------------------------------------------------------------------------
 # Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
 #-------------------------------------------------------------------------------
-#!/usr/bin/env python
 
 import os
 import sys

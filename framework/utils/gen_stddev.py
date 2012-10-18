@@ -1,8 +1,8 @@
+#! /usr/bin/env python
 #-------------------------------------------------------------------------------
 # Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
 #-------------------------------------------------------------------------------
 # -*- coding: utf-8 -*-
-#! /usr/bin/python
 """
 This script will scrape the SWIM portal to extract the task timings of a run and give you the
 mean and standard deviation of each task invocation in the given range.  You should use

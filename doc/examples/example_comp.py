@@ -1,7 +1,6 @@
 #-------------------------------------------------------------------------------
 # Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
 #-------------------------------------------------------------------------------
-#! /usr/bin/env python
 
 """
 This example component is ../../components/rf/toric/src/rf_ic_toric_mcmd.py

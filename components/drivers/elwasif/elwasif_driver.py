@@ -1,7 +1,6 @@
 #-------------------------------------------------------------------------------
 # Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
 #-------------------------------------------------------------------------------
-#! /usr/bin/env python
 
 # ssf - some comments explaining each step would be helpful for users
 #       I'll add what I *think* is going on.  Please correct me if I am wrong.
