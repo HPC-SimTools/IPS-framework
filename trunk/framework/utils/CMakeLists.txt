@@ -8,11 +8,11 @@
 
 # Variable holding executable scripts
 set(SCRIPTS
-      BeautifulSoup.py DataEvents.py Events.py Framework.py
+      BeautifulSoup.py 
       animate_parareal_converge.py animate_parareal_tasks.py
       batch_mgmt_script.py convert_log.py exec_timer.py
       exec_timer_parareal.py gen_stddev.py physics_timer.py
-      read_dict.py serial_timer.py utils.py xg2matlab.py
+      read_dict.py serial_timer.py 
 )
 
 # Installing executable scripts
