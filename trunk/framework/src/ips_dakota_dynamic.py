@@ -164,8 +164,18 @@ class DakotaDynamic(object):
         driver_conf['INPUT_DIR'] = '/dev/null'
         driver_conf['INPUT_FILES'] = ''
         driver_conf['OUTPUT_FILES'] = ''
-        driver_conf['SCRIPT'] = os.path.join(self.template_conf['IPS_ROOT'], 
+        script = os.path.join(self.template_conf['IPS_ROOT'], 
                                              'bin', 'dakota_bridge.py')
+        if os.path.isfile(script):
+            driver_conf['SCRIPT'] = script
+        else:
+            script = os.path.join(self.template_conf['IPS_ROOT'], 'framework',
+                                             'src', 'dakota_bridge.py')
+            if os.path.isfile(script):
+                driver_conf['SCRIPT'] = script
+            else:
+                raise Exception('Error: unable to locate dakota_bridge.py in \
+IPS_ROOT/bin or IPS_ROOT/framework/src')
         self.master_conf['DAKOTA_BRIDGE'] = driver_conf
 
         for (comp, val) in comp_vars.iteritems():
