@@ -20,6 +20,11 @@ After configuring, to build IPS and run the tests::
   
   make
   make test
+  
+It is highly recommended to install the IPS in a location separate from 
+the build tree using the command
+
+  make install
 
 If you have sphinx-build in your path and cmake detected it, then the
 following command will build the documentation::
