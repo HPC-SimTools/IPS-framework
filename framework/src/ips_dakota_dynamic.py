@@ -111,6 +111,7 @@ class DakotaDynamic(object):
                 self.template_conf[k] = self.platform_conf[k]
 
         alt_paths.append(self.template_conf['IPS_ROOT'])
+        alt_paths.append(os.path.join(self.template_conf['IPS_ROOT'],'bin'))
         alt_paths.append(os.path.join(self.template_conf['IPS_ROOT'],'framework/src'))
 
         new_dakota_config = self.dakota_cfg+'.resolved'
@@ -150,9 +151,6 @@ class DakotaDynamic(object):
                 else:
                     print 'Missing evaluation_concurrency spec, using default value of %d' % (self.batch_size)
 
-
-
-
         self.master_conf['PORTS'] = {'NAMES' : 'DRIVER'}
         self.master_conf['PORTS']['DRIVER'] = {'IMPLEMENTATION': 'DAKOTA_BRIDGE'}
         self.master_conf['PORTS']['INIT'] = {'IMPLEMENTATION': ''}
@@ -161,11 +159,13 @@ class DakotaDynamic(object):
         driver_conf['SUB_CLASS'] = 'BRIDGE'
         driver_conf['NAME'] = 'Driver'
         driver_conf['NPROC'] = 1
-        driver_conf['BIN_PATH'] = os.path.join(self.template_conf['IPS_ROOT'], 'framework', 'src')
+        driver_conf['BIN_PATH'] = os.path.join(self.template_conf['IPS_ROOT'], 'bin')
+        driver_conf['BIN_DIR'] = driver_conf['BIN_PATH']
         driver_conf['INPUT_DIR'] = '/dev/null'
         driver_conf['INPUT_FILES'] = ''
         driver_conf['OUTPUT_FILES'] = ''
-        driver_conf['SCRIPT'] = os.path.join(self.template_conf['IPS_ROOT'], 'framework', 'src', 'dakota_bridge.py')
+        driver_conf['SCRIPT'] = os.path.join(self.template_conf['IPS_ROOT'], 
+                                             'bin', 'dakota_bridge.py')
         self.master_conf['DAKOTA_BRIDGE'] = driver_conf
 
         for (comp, val) in comp_vars.iteritems():
