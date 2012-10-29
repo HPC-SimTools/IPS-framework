@@ -597,12 +597,15 @@ class ConfigurationManager(object):
                     comp_conf['DATA_TREE_ROOT']=sim_data.conf_file_dir
             if not comp_conf.has_key('BIN_DIR'):
                 if sim_conf.has_key('BIN_DIR'):
-                    comp_conf['BIN_DIR']=sim_conf['BIN_DIR']
+                    comp_conf['BIN_DIR'] = sim_conf['BIN_DIR']
                 else:
-                    comp_conf['BIN_DIR']=sim_data.conf_file_dir
+                    comp_conf['BIN_DIR'] = os.path.join(sim_conf['IPS_ROOT'], 'bin')
+#                    comp_conf['BIN_DIR']=sim_data.conf_file_dir
             if not comp_conf.has_key('BIN_PATH'):
                 if sim_conf.has_key('BIN_PATH'):
                     comp_conf['BIN_PATH']=sim_conf['BIN_PATH']
+                else:
+                    comp_conf['BIN_PATH']=comp_conf['BIN_DIR']
             if (not self.required_fields.issubset(conf_fields)):
                 self.fwk.exception('Error: missing required entries %s \
                     in simulation %s component %s configuration section' ,
