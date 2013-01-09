@@ -161,6 +161,7 @@ class Driver(Component):
                 summary_file.write("%s\n" %(title_string))
                 first_sim = False
             summary_file.write('%s\n' % (summary_string))
+            summary_file.flush()
             self.old_master_conf.write()
             open(param_file,'w').write(param_string)
             sim_config_files.append(file_name)
