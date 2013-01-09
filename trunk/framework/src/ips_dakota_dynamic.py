@@ -42,7 +42,7 @@ def which(program, alt_paths=None):
 #DakotaDynamic(dakota_cfg, meta_config, log_file_name, platform_filename, debug, ips_config_file)
 
 class DakotaDynamic(object):
-    def __init__(self, dakota_cfg, log_file, platform_filename, debug, ips_config_template):
+    def __init__(self, dakota_cfg, log_file, platform_filename, debug, ips_config_template, restart_file):
         self.dakota_cfg = dakota_cfg
         self.log_file = log_file
         self.platform_fname = platform_filename
@@ -52,6 +52,7 @@ class DakotaDynamic(object):
         self.platform_conf = None
         self.dakota_conf = None
         self.master_conf = ConfigObj()
+        self.restart_file = restart_file
 
     def run(self):
         alt_paths = []
@@ -211,7 +212,7 @@ IPS_ROOT/bin or IPS_ROOT/framework/src')
         os.environ['IPS_DAKOTA_config'] = os.path.abspath(self.config_template)
         os.environ['IPS_DAKOTA_runid'] = str(os.getpid())
         os.environ['IPS_DAKOTA_SOCKET_ADDRESS'] = sock_address
-        print '%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%', sock_address
+        #print '%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%', sock_address
 
         fd = open(new_dakota_config, 'w')
         [fd.write('%s\n'%(l)) for l in self.dakota_conf]
@@ -220,6 +221,11 @@ IPS_ROOT/bin or IPS_ROOT/framework/src')
         ips = which('ips.py', alt_paths)
         if (not ips):
             raise Exception('Error: ips not found in path.')
+
+        if (self.restart_file):
+            if not os.path.isfile(self.restart_file):
+                raise "Error accessing DAKOTA restart file %s" % (self.restart_file)
+            
 
         cmd = '%s --all --simulation=%s --platform=%s --verbose' % (ips, self.master_conf.filename,
                                                  os.environ['IPS_DAKOTA_platform'])
@@ -256,7 +262,10 @@ IPS_ROOT/bin or IPS_ROOT/framework/src')
                 conn.close()
                 break
 
-        command = 'dakota %s ' % new_dakota_config
+        if self.restart_file:
+            command = "dakota -read_restart %s -input %s" % (self.restart_file, new_dakota_config)
+        else:
+            command = 'dakota %s ' % new_dakota_config
         dakota_logfile = open('dakota_%s.log' % (str(os.getpid())),'w')
         proc = subprocess.Popen(command, shell=True, stdout=dakota_logfile, stderr=subprocess.STDOUT)
         print '%s  Launched DAKOTA' % (time.strftime("%b %d %Y %H:%M:%S", time.localtime()))
@@ -289,7 +298,7 @@ IPS_ROOT/bin or IPS_ROOT/framework/src')
         return
 
 def printUsageMessage():
-    print 'Usage: ips_dakota_dynamic --dakotaconfig=DAKOTA_CONFIG_FILE --simulation=CONFIG_FILE_NAME --platform=PLATFORM_FILE_NAME --log=LOG_FILE_NAME [--debug]'
+    print 'Usage: ips_dakota_dynamic --dakotaconfig=DAKOTA_CONFIG_FILE --simulation=CONFIG_FILE_NAME --platform=PLATFORM_FILE_NAME --log=LOG_FILE_NAME --restart=DAKOTA_RESTART_FILE [--debug]'
 
 def main(argv=None):
 #    print "hello from main"
@@ -306,7 +315,7 @@ def main(argv=None):
 
     try:
         opts, args = getopt.gnu_getopt(argv[first_arg:], '',
-                                       ["dakotaconfig=", "simulation=", "platform=", "log=", "debug"])
+                                       ["dakotaconfig=", "simulation=", "platform=", "log=", "restart=", "debug"])
     except getopt.error, msg:
         print 'Invalid command line arguments', msg
         printUsageMessage()
@@ -315,6 +324,7 @@ def main(argv=None):
     log_file_name = None
     dakota_cfg = None
     platform_filename = None
+    restart_file = None
     for arg, value in opts:
         if (arg == '--simulation'):
             ips_config_file =value
@@ -324,6 +334,8 @@ def main(argv=None):
             platform_filename = value
         elif (arg == '--dakotaconfig'):
             dakota_cfg = value
+        elif (arg == '--restart'):
+            restart_file = value
         elif (arg == '--debug'):
             debug = True
 
@@ -332,7 +344,7 @@ def main(argv=None):
         printUsageMessage()
         return 1
     try:
-        sweep = DakotaDynamic(dakota_cfg, log_file_name, platform_filename, debug, ips_config_file)
+        sweep = DakotaDynamic(dakota_cfg, log_file_name, platform_filename, debug, ips_config_file, restart_file)
         sweep.run()
     except :
         raise
