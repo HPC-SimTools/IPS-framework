@@ -145,7 +145,7 @@ class Driver(Component):
                             (self.old_master_conf['SIM_ROOT'], errno, strerror)
                     raise
             if first_sim:
-                summary_file = open(os.path.join(self.sim_root, 'SIMULATION_LIST.%s' % (dakota_runid)), 'a')
+                summary_file = open(os.path.join(self.sim_root, 'SIMULATION_LIST.%s' % (dakota_runid)), 'a', 1)
 
             param_file = os.path.join(self.old_master_conf['SIM_ROOT'], 'parameters.conf')
             param_string = ''
