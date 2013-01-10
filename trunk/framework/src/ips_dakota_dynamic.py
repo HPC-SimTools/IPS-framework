@@ -224,7 +224,7 @@ IPS_ROOT/bin or IPS_ROOT/framework/src')
 
         if (self.restart_file):
             if not os.path.isfile(self.restart_file):
-                raise "Error accessing DAKOTA restart file %s" % (self.restart_file)
+                raise Exception("Error accessing DAKOTA restart file %s" % (self.restart_file))
             
 
         cmd = '%s --all --simulation=%s --platform=%s --verbose' % (ips, self.master_conf.filename,
