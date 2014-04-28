@@ -340,7 +340,14 @@ class TaskManager(object):
         smp_node = len(self.resource_mgr.nodes) == 1
 
         if self.task_launch_cmd == 'eval':
-            cmd = binary
+            #cmd = binary
+            if len(cmd_args) > 0:
+               cmd_args = ' '.join(cmd_args)
+               cmd = ' '.join([binary, cmd_args])
+            else:
+               cmd = binary
+            return cmd, env_update
+
         #-------------------------------------
         # mpirun
         #-------------------------------------
