@@ -102,6 +102,8 @@ class runspaceInitComponent(Component):
             for comp_id in comp_list:
                 registry = services.fwk.comp_registry
                 comp_conf = registry.getEntry(comp_id).component_ref.config
+                if isinstance(comp_conf['INPUT_FILES'], list):
+                    comp_conf['INPUT_FILES']= ' '.join(comp_conf['INPUT_FILES'])
                 file_list = comp_conf['INPUT_FILES'].split()
                 for file in file_list:
                     ipsutil.writeToContainer(self.container_file,
@@ -168,6 +170,7 @@ class runspaceInitComponent(Component):
                         workdir, strerror)
 
         # for each simulation component
+        #print sim_comps
         for sim_name, comp_list in sim_comps.items():
             # for each component_id in the list of components
             for comp_id in comp_list:
@@ -181,7 +184,7 @@ class runspaceInitComponent(Component):
                 # compose the workdir name
                 workdir = os.path.join(self.simRootDir, 'work', full_comp_id)
 
-#               print 'workdir = ', workdir
+                #print 'workdir = ', workdir
 
                 # make the working directory
                 try:
@@ -216,14 +219,22 @@ class runspaceInitComponent(Component):
 
 
                 # copy the component's script to the simulation_setup directory
+                #print "COPYING SCRIPT FOR ", comp_conf['SCRIPT']
                 if os.path.abspath(comp_conf['SCRIPT'])==comp_conf['SCRIPT']:
                     ipsutil.copyFiles(os.path.dirname(comp_conf['SCRIPT']),
                                       [os.path.basename(comp_conf['SCRIPT'])],
                                       simulation_setup)
+                    print "Copying ", os.path.dirname(comp_conf['SCRIPT']), \
+                          [os.path.basename(comp_conf['SCRIPT'])], \
+                                      simulation_setup
+
                 else:
                     ipsutil.copyFiles(comp_conf['BIN_DIR'],
                                       [os.path.basename(comp_conf['SCRIPT'])],
                                       simulation_setup)
+                    print "Copying -2 " , comp_conf['BIN_DIR'], \
+                                      [os.path.basename(comp_conf['SCRIPT'])], \
+                                      simulation_setup
 
             # get the working directory from the runspaceInitComponent
             workdir = services.get_working_dir()

@@ -733,10 +733,13 @@ class ConfigurationManager(object):
     def get_simulation_components(self, sim_name):
         comp_list = []
         sim_data = self.sim_map[sim_name]
-        if (sim_data.init_comp):
-            comp_list.append(sim_data.init_comp)
-        comp_list.append(sim_data.driver_comp)
+        comp_list = sim_data.all_comps[:]
+        #print comp_list
         return comp_list
+        #if (sim_data.init_comp):
+        #    comp_list.append(sim_data.init_comp)
+        #comp_list.append(sim_data.driver_comp)
+        #return comp_list
 
     def get_driver_components(self):
         """
