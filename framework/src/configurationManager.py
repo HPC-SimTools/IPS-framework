@@ -309,7 +309,7 @@ class ConfigurationManager(object):
                     for key in csconf.keys():
                         if key in conf.keys(): csconf[key] = conf[key]
                     conf.merge(csconf)
-
+                conf['HOME'] = os.environ['HOME']
                 # Allow simulation file to override platform values
                 # and then put all platform values into simulation map
                 for key in self.platform_conf.keys():
