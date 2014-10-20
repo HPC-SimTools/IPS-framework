@@ -86,7 +86,8 @@ class runspaceInitComponent(Component):
         ipsutil.copyFiles(self.conf_file_loc, self.config_files, self.simRootDir)
         ipsutil.copyFiles(self.plat_file_loc, self.platform_file, self.simRootDir)
 
-        sim_comps = services.fwk.config_manager.get_component_map()
+        #sim_comps = services.fwk.config_manager.get_component_map()
+        sim_comps = services.fwk.config_manager.get_all_simulation_components_map()
         registry = services.fwk.comp_registry
         # Redoing the same container_file name calculation as in configuration manager because I
         # can't figure out where to put it such that I can get it where I need
@@ -156,7 +157,8 @@ class runspaceInitComponent(Component):
 
         services = self.services
 
-        sim_comps = services.fwk.config_manager.get_component_map()
+        #sim_comps = services.fwk.config_manager.get_component_map()
+        sim_comps = services.fwk.config_manager.get_all_simulation_components_map()
         registry = services.fwk.comp_registry
 
         simulation_setup = os.path.join(self.simRootDir, 'simulation_setup')
@@ -170,7 +172,6 @@ class runspaceInitComponent(Component):
                         workdir, strerror)
 
         # for each simulation component
-        #print sim_comps
         for sim_name, comp_list in sim_comps.items():
             # for each component_id in the list of components
             for comp_id in comp_list:
@@ -198,7 +199,7 @@ class runspaceInitComponent(Component):
 
                 # copy the input files into the working directory
                 ipsutil.copyFiles(os.path.abspath(comp_conf['INPUT_DIR']),
-                                  os.path.basename(comp_conf['INPUT_FILES']),
+                                  comp_conf['INPUT_FILES'],
                                   workdir)
 
 
@@ -219,22 +220,14 @@ class runspaceInitComponent(Component):
 
 
                 # copy the component's script to the simulation_setup directory
-                #print "COPYING SCRIPT FOR ", comp_conf['SCRIPT']
                 if os.path.abspath(comp_conf['SCRIPT'])==comp_conf['SCRIPT']:
                     ipsutil.copyFiles(os.path.dirname(comp_conf['SCRIPT']),
                                       [os.path.basename(comp_conf['SCRIPT'])],
                                       simulation_setup)
-                    print "Copying ", os.path.dirname(comp_conf['SCRIPT']), \
-                          [os.path.basename(comp_conf['SCRIPT'])], \
-                                      simulation_setup
-
                 else:
                     ipsutil.copyFiles(comp_conf['BIN_DIR'],
                                       [os.path.basename(comp_conf['SCRIPT'])],
                                       simulation_setup)
-                    print "Copying -2 " , comp_conf['BIN_DIR'], \
-                                      [os.path.basename(comp_conf['SCRIPT'])], \
-                                      simulation_setup
 
             # get the working directory from the runspaceInitComponent
             workdir = services.get_working_dir()
@@ -249,6 +242,7 @@ class runspaceInitComponent(Component):
                     #pytau.stop(timer)
                     raise
 
+        #print 'FINISHED RUNSPACEINIT'
         return
 
 

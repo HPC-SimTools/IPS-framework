@@ -310,6 +310,7 @@ class ConfigurationManager(object):
                         if key in conf.keys(): csconf[key] = conf[key]
                     conf.merge(csconf)
                 conf['HOME'] = os.environ['HOME']
+
                 # Allow simulation file to override platform values
                 # and then put all platform values into simulation map
                 for key in self.platform_conf.keys():
@@ -733,13 +734,16 @@ class ConfigurationManager(object):
     def get_simulation_components(self, sim_name):
         comp_list = []
         sim_data = self.sim_map[sim_name]
-        comp_list = sim_data.all_comps[:]
-        #print comp_list
+        if (sim_data.init_comp):
+            comp_list.append(sim_data.init_comp)
+        comp_list.append(sim_data.driver_comp)
         return comp_list
-        #if (sim_data.init_comp):
-        #    comp_list.append(sim_data.init_comp)
-        #comp_list.append(sim_data.driver_comp)
-        #return comp_list
+
+    def get_all_simulation_components_map(self):
+        sim_comps = {name : self.sim_map[name].all_comps[:] 
+                      for name in self.sim_map.keys()} 
+        del sim_comps[self.fwk_sim_name]
+        return sim_comps
 
     def get_driver_components(self):
         """
