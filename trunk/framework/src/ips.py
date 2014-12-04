@@ -203,8 +203,9 @@ class Framework(object):
                 if os.path.exists(fullcfile):
                     checked_compset_list.append(fullcfile)
             if not len(checked_compset_list):
-                print "Cannot find specified component configuration files."
-                print "  Assuming that variables are defined anyway"
+                #print "Cannot find specified component configuration files."
+                #print "  Assuming that variables are defined anyway"
+                pass
             else:
                 self.compset_list=checked_compset_list
         else:
@@ -212,8 +213,9 @@ class Framework(object):
                 checked_compset_list.append(os.path.join(self.ipsShareDir,'component-generic.conf'))
                 self.compset_list=checked_compset_list
             else:
-                print "Cannot find any component configuration files."
-                print "  Assuming that variables are defined anyway"
+                #print "Cannot find any component configuration files."
+                #print "  Assuming that variables are defined anyway"
+                pass
 
         # config file list
         self.config_file_list = config_file_list
@@ -1018,6 +1020,13 @@ def main(argv=None):
 
     # SIMYAN: parse the options from command line
     options, args = parser.parse_args()
+    # Default behavior : do all steps
+    if options.do_create_runspace or \
+        options.do_run_setup or \
+        options.do_run:
+        pass
+    else:
+        options.do_all = True
 
     ##-SIMYAN:----------------------------------------------------------------------------------
     ##
@@ -1185,7 +1194,7 @@ def main(argv=None):
         compset_list=options.component
 
     if options.do_all:
-        print 'doing all steps'
+        #print 'doing all steps'
         options.do_create_runspace = True
         options.do_run_setup = True
         options.do_run = True

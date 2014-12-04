@@ -307,14 +307,20 @@ class ConfigurationManager(object):
                 # The fact that csconf is a list is confusing
                 for csconf in self.compset_conf:
                     for key in csconf.keys():
-                        if key in conf.keys(): csconf[key] = conf[key]
+                        if key in conf.keys():
+                            csconf[key] = conf[key]
                     conf.merge(csconf)
-                conf['HOME'] = os.environ['HOME']
+                # Import environment variables into config file
+                # giving precedence to config file definitions in case of duplicates
+                for (k,v) in os.environ.iteritems():
+                    if k not in conf.keys():
+                        conf[k] = v
 
                 # Allow simulation file to override platform values
                 # and then put all platform values into simulation map
                 for key in self.platform_conf.keys():
-                    if key in conf.keys(): self.platform_conf[key] = conf[key]
+                    if key in conf.keys():
+                        self.platform_conf[key] = conf[key]
                 conf.merge(self.platform_conf)
 
             except IOError, (ex):
@@ -827,6 +833,12 @@ class ConfigurationManager(object):
         except SyntaxError, (ex):
             self.fwk.exception(' Error parsing config file %s: ', config_file)
             raise
+        # Incorporate environment variables into config file
+        # Use config file entries when duplicates are detected
+        for (k,v) in os.environ.iteritems():
+            if k not in conf.keys():
+                conf[k] = v
+
         # Allow propagation of entries from platform config file to simulation
         # config file
         for keyword in self.platform_conf.keys():
