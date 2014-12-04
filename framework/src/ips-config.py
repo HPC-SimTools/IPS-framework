@@ -87,8 +87,9 @@ def main(argv=None):
         if os.path.exists(os.path.join(ipsShareDir,'component-generic.conf')):
             compset_list.append(os.path.join(ipsShareDir,'component-generic.conf'))
         else:
-            print "Cannot find any component configuration files."
-            print "  Assuming that variables are defined anyway"
+            #print "Cannot find any component configuration files."
+            #print "  Assuming that variables are defined anyway"
+            pass
 
     # Construct list of all configuration files
     conf_list=platform_list+compset_list+[cfgFile]
