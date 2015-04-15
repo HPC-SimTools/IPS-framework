@@ -111,8 +111,9 @@ class DataManager(object):
         target_state_file = msg.args[1]
         log_file = msg.args[2]
 
-        fwk_bin_path = sys.path[0]
-        update_state = os.path.join(fwk_bin_path, 'update_state')
+        #fwk_bin_path = sys.path[0]
+        #update_state = os.path.join(fwk_bin_path, 'update_state')
+	update_state = 'update_state'
         plasma_work_dir = os.path.dirname(target_state_file)
         component_work_dir = os.path.dirname(partial_state_file)
         current_plasma_state = os.path.basename(target_state_file)
@@ -126,10 +127,15 @@ class DataManager(object):
                 self.fwk.exception('Error opening log file %s : using stdout',
                                log_fullpath)
 
-        retval = subprocess.call([update_state, '-input', target_state_file,
+        try:
+            retval = subprocess.call([update_state, '-input', target_state_file,
                                   '-updates', partial_state_file],
                                   stdout = merge_stdout,
-                                  stderr = subprocess.STDOUT,)
+                                  stderr = subprocess.STDOUT)
+        except Exception:
+            self.fwk.exception( 'Error calling update_state - probably not found in $PATH')
+            raise
+            
         if (retval != 0):
             return retval
         try:
