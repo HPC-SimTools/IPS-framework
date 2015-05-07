@@ -37,6 +37,7 @@ class ConfigurationManager(object):
         """
         def __init__(self, sim_name):
             self.sim_name = sim_name
+            self.portal_sim_name = None
             self.sim_root = None
             self.sim_conf = None
             self.config_file = None
@@ -371,6 +372,8 @@ class ConfigurationManager(object):
                 #pytau.stop(self.timers['initialize'])
                 #stop(self.timers['initialize'])
                 sys.exit(1)
+            if not conf.has_key('SIMULATION_CONFIG_FILE'):
+                                conf['SIMULATION_CONFIG_FILE'] = conf_file
             sim_name_list.append(sim_name)
             sim_root_list.append(sim_root)
             log_file_list.append(log_file)
@@ -823,7 +826,7 @@ class ConfigurationManager(object):
         #pytau.start(self.timers['process_service_request'])
         return retval
 
-    def create_simulation(self, sim_name, config_file, override):
+    def create_simulation(self, sim_name, config_file, override, sub_workflow=False):
         try:
             conf = ConfigObj(config_file, interpolation='template',
                             file_error=True)
@@ -833,6 +836,8 @@ class ConfigurationManager(object):
         except SyntaxError, (ex):
             self.fwk.exception(' Error parsing config file %s: ', config_file)
             raise
+        parent_sim_name = sim_name
+        parent_sim = self.sim_map[parent_sim_name]
         # Incorporate environment variables into config file
         # Use config file entries when duplicates are detected
         for (k,v) in os.environ.iteritems():
@@ -864,6 +869,11 @@ in configuration file %s', config_file)
         if (log_file in self.log_file_list):
             self.fwk.exception('Error: Duplicate LOG_FILE in configuration files')
             raise Exception('Duplicate LOG_FILE in configuration files')
+
+        # Add path to configuration file to simulation configuration in memory
+        if not conf.has_key('SIMULATION_CONFIG_FILE'):
+                            conf['SIMULATION_CONFIG_FILE'] = config_file
+
         self.sim_name_list.append(sim_name)
         self.sim_root_list.append(sim_root)
         self.log_file_list.append(log_file)
@@ -872,7 +882,14 @@ in configuration file %s', config_file)
         new_sim.config_file = config_file
         new_sim.sim_root = sim_root
         new_sim.log_file = log_file
-        new_sim.log_pipe_name = tempfile.mktemp('.logpipe', 'ips_')
+        if not sub_workflow:
+            new_sim.portal_sim_name = sim_name
+            new_sim.log_pipe_name = tempfile.mktemp('.logpipe', 'ips_')
+        else:
+            new_sim.portal_sim_name = parent_sim.portal_sim_name
+            new_sim.log_pipe_name = parent_sim.log_pipe_name
+
+        conf['__PORTAL_SIM_NAME'] = new_sim.portal_sim_name
         log_level = 'DEBUG'
         try:
             log_level = conf['LOG_LEVEL']
@@ -887,8 +904,11 @@ in configuration file %s', config_file)
         self.log_dynamic_sim_queue.put('CREATE_SIM  %s  %s' % (new_sim.log_pipe_name, new_sim.log_file))
         self.sim_map[sim_name] = new_sim
         self._initialize_sim(new_sim)
-        self.fwk.initiate_new_simulation(sim_name)
-        return sim_name
+
+        if not sub_workflow:
+            self.fwk.initiate_new_simulation(sim_name)
+
+        return (sim_name, new_sim.init_comp, new_sim.driver_comp)
 
     def getPort(self, sim_name, port_name):
         """
