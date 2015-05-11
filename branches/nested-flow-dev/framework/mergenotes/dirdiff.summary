@@ -1,0 +1,46 @@
+
+src//test_proc_placement.py has no counterpart in /Users/kruger/fcroot/facetsall/simyan/framework/src
+
+
+FILES THAT ARE THE DIFFERENT:
+
+component.py
+componentRegistry.py
+configurationManager.py
+ips-config.py
+ips.py
+ipsutil.py
+messages.py
+resourceHelper.py
+resourceManager.py
+services.py
+taskManager.py
+test_ips.py
+
+NO MODS BY WAEL:
+configobj.py
+
+NO MODS BY NICK OR SCOTT:
+portalBridge.py
+node_structure.py
+ipsLogging.py
+test_resource_parsing.py
+
+
+FILES THAT ARE THE SAME:
+
+cca_es_spec.py
+create_batch_script.py
+dakota_bridge.py
+dataManager.py
+debug.py
+eventService.py
+eventServiceProxy.py
+ftbBridge.py
+ipsExceptions.py
+ipsTiming.py
+ips_dakota_client.py
+ips_dakota_dynamic.py
+ips_es_spec.py
+sendPost.py
+topicManager.py

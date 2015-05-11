@@ -1,0 +1,87 @@
+Overheads to model in RUS
+=========================
+
+Resource Description
+--------------------
+ * READ_RATE and WRITE_RATE
+   + MB/s for reading/writing a file on shared file system
+   + used to calculate I/O bound activities
+
+Framework
+---------
+ * STARTUP
+   + constant, not dependent on I/O or other system things??
+   + captures IPS activities such as:
+     - config file parsing
+     - component creation
+     - portal connection
+     - resource detection
+ * SHUTDOWN
+   + constant, not dependent on I/O or other system things??
+   + captures IPS activities such as:
+     - final messages to portal
+     - portal disconnect
+     - component destruction
+     - final data movement activities???
+
+Simulation
+----------
+ * STARTUP
+   + mostly I/O, but perhaps some constant time stuff too
+   + captures IPS activities such as:
+     - init of driver component
+     - first part of driver component's execution where it sets up things and calls init on all the other components
+ * RESTART
+   + probably the same as STARTUP, but may be different
+   + captures IPS activities such as:
+     - init of driver component in restart mode
+     - first part of driver component's execution where it sets up things and calls restart on all the other components
+ * SHUTDOWN (?)
+ * CHECKPOINT
+   + I/O dominant
+     - dependent on read and write speeds (defined in resource config file) and amount of data to move
+   + captures IPS activities such as:
+     - creation of a directory for new checkpoint
+     - reading of all the output files from each component
+     - writing of those files to checkpoint location
+     - removal of old checkpoints
+   + only occurs at certain times (fixed or at intervals)
+     - mode: walltime_regular, walltime_explicit, phystime_regular, phystime_explicit
+     - {wall | phys}time_values  -or-  {wall | phys}time_interval
+     - num_checkpoint (how many to keep around)
+
+Component
+---------
+ * STARTUP
+   + I/O dominant
+     - data size should be constant throughout a phase, thus the time should remain constant throughout the phase
+   + captures IPS activities such as:
+     - copy input files from inputdir to workdir
+     - copy plasma state files from master to workdir
+     - copy input files to ouputdir
+ * SAVESTATE
+   + I/O dominant
+     - data size should be constant throughout a phase, thus the time should remain constant throughout the phase
+   + captures IPS activities such as:
+     - copy output files from workdir to outputdir
+     - copy plasma state files from workdir to master
+ * REWORK
+   + time spent redoing work after a failure
+     - includes data staging activities
+   + calculated by the system, not modeled
+ * WAITING
+   + time spent waiting for resources
+   + calculated by the system, not modeled
+
+...............................
+
+Other overheads:
+--------------------------
+ * monitor component activities
+   - this is a no resource, I/O dominant component
+ * framework and framework component overheads
+   - no data or inclination that this would impact overall performance in any meaningful way
+ * contention from other sims
+   - no data or inclination that this would impact overall performance in any meaningful way
+
+..................................

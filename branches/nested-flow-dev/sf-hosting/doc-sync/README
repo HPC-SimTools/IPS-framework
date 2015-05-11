@@ -1,0 +1,78 @@
+Documentation build and sync for a SourceForge project
+
+In general, one should not expect to be able to build projects, or
+even just their documentation trees, on SourceForge's own shell
+service.  There is no crontab capability for regular execution, and
+needed tools are not necessarily installled on the SourceForge servers
+(much less the versions you want).  
+
+While these are obstacles that could probably be surmounted, it is
+simpler to have someone build on their own machine and then rsync the
+relevant files SourceForge.
+
+The scripts and utilities in this directory supports that in the
+following fashion:
+
+* update-docs is designed to be run by a user as frequently as desired
+
+* update-docs.crontab is a crontab entry intended to be APPENDED to
+  the user's crontab
+
+* To minimize expense, update-docs is designed to operate on a
+  pre-existing working copy of the repository, and update a
+  pre-existing directory tree on the SourceForge project
+  web. 
+
+* Read-only access to the code repo is fine
+
+* Write access to the project web is required.  The script assumes the
+  use of ssh with key-based (non0interactice) authentication.
+
+* update-docs updates its copy of the repository, configures, and
+  builds as appropriate, then rsyncs the desired directory trees to
+  the project web.
+
+* Building a package often generates a lot of spew, and it can be hard
+  to distinguish, quickly and correctly, what is okay versus a problem
+  that prevents the documentation from building or updating
+  appropriately.  Therefore, update-docs uses a two-fold logging
+  strategy.
+
+* The output of update-docs will contain the complete spew, along with
+  information about commands being executed and their exit status.
+  This can be used for debugging.  The crontab entry directs this to a
+  location in the user's home directory tree which is a private
+  analogy to the system's /var/log directory.
+
+* logrotate.conf is a configuration fragment suitable for a personal
+  logrotate configuration in which the user invokes logrotate on a
+  daily basis.  This configuration adds date stamps to the filenames,
+  and keeps a month's worth in order to give some time to deal with
+  issues.
+
+* update-docs also uses logger to generate succinct syslog message
+  indicating only the overall start and finish of the update-doc
+  script, and the exit status of each of the commands executed.
+
+* The logwatch subdirectory contains appropriate files for the
+  logwatch program to extract and summarize the syslog messages
+  associated with the execution of update-docs.  Since this involves
+  the system-level logging infrastructure, this needs to be installed
+  into the system /etc/logwatch tree, where it will be picked up by
+  the daily system-level execution of logwatch.  Logwatch generates a
+  daily email to the sysadmin (configurable) summarizing the system
+  logs.  With these scripts, a summary of the upload-docs execution
+  will be included.
+
+* The logwatch summary lists mismatched start/completed messages, the
+  number of commands that completed successfully (status == 0) and
+  lists those with non-zero exit status.  Anything else logged by
+  update-docs which doesn't match these patterns is also displayed.
+
+* Even for a successful build and update, it may be that not all of
+  the commands in update-docs will complete with status == 0.
+  However, the expectation is that there will be a consistent pattern
+  to the exit statuses, and that deviation from that pattern may
+  indicate a problem needing investigation.  From the logwatch
+  summary, the user should be able to monitor each execution and
+  compare with the pattern they expect.

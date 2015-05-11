@@ -1,0 +1,38 @@
+#-------------------------------------------------------------------------------
+# Copyright 2006-2012 UT-Battelle, LLC. See LICENSE.txt for more information.
+#-------------------------------------------------------------------------------
+ips.py
+
+    run(self):
+        483 sending monitor event to start IPS simulation, this likely needs to be changed
+
+configurationManager.py 
+
+    If we are able to call _initialize_sim on each of the components and then stop, 
+    we should be able to only copy the input files into new directories.
+
+    __init__(self, fwk, config_file_list, platform_file_name):
+        95 platform_conf mapping defined
+        96 platform_keywords defined
+        105 sim_map keeps a map of simulation names to sim_data
+
+    initialize(self, data_mgr, resource_mgr, task_mgr, ftb):
+        143 parse config file into platform_conf[] array
+        282 simulations are created as a SimulationData(sim_name) object
+        313 same goes for framework components
+        329 iterate through all sim_name, sim_data pairs initializing the sim_data objects
+        
+    _initialize_sim(self, sim_data):
+        161 is grabbing the necessary values from the list of platform_keywords.
+        458-459 if the components configuration fields do not contain the required fields, error
+        466 is creating the component and assigning it to a component_id
+        482,484 copy config and platform files to new simRootDir
+        488-496 if not have statedir, make state dir
+
+    _create_component(self, comp_conf, sim_data):
+        547 creating a component_id object with the class_name and sim_name 
+        
+    get_component_map(self):
+        575 for all of the simulation components defined in sim_map
+        583 return a dictionary of simulation names and component references
+        

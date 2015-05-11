@@ -1,0 +1,240 @@
+------------------------------------------------------------------------
+r3666 | elwasif | 2011-10-31 06:49:22 -0600 (Mon, 31 Oct 2011) | 2 lines
+Changed paths:
+   M /ips/trunk/framework/src/dakota_bridge.py
+
+Increase fall-back idle time out to 300 Sec.
+Store SIMULATION_LIST in a unique file per dakota study.
+------------------------------------------------------------------------
+r3657 | elwasif | 2011-10-26 07:34:08 -0600 (Wed, 26 Oct 2011) | 1 line
+Changed paths:
+   M /ips/trunk/framework/src/ipsLogging.py
+
+Fixed bug that prevented logging of dynamically created simulations
+------------------------------------------------------------------------
+r3656 | elwasif | 2011-10-25 13:48:32 -0600 (Tue, 25 Oct 2011) | 2 lines
+Changed paths:
+   M /ips/trunk/framework/src/dakota_bridge.py
+   M /ips/trunk/framework/src/ips_dakota_client.py
+   M /ips/trunk/framework/src/ips_dakota_dynamic.py
+
+Use communication protocol from ips_dakota_dynamic to check for proper start of the IPS and the dakota_bridge component.
+Use explicit termination message from ips_dakota_dynamic to end the IPS simulation ensemble.
+------------------------------------------------------------------------
+r3655 | f2y | 2011-10-21 15:40:52 -0600 (Fri, 21 Oct 2011) | 1 line
+Changed paths:
+   M /ips/trunk/framework/src/services.py
+
+fixed bug in parsing a list of explicit checkpoint times
+------------------------------------------------------------------------
+r3641 | f2y | 2011-10-14 16:09:47 -0600 (Fri, 14 Oct 2011) | 1 line
+Changed paths:
+   M /ips/trunk/framework/src/configurationManager.py
+   M /ips/trunk/framework/src/services.py
+   M /ips/trunk/framework/src/taskManager.py
+
+added support for frost, an SGI machine
+------------------------------------------------------------------------
+r3635 | f2y | 2011-10-13 08:30:51 -0600 (Thu, 13 Oct 2011) | 1 line
+Changed paths:
+   M /ips/trunk/framework/src/node_structure.py
+   M /ips/trunk/framework/src/resourceHelper.py
+   M /ips/trunk/framework/src/resourceManager.py
+   M /ips/trunk/framework/src/taskManager.py
+   M /ips/trunk/framework/src/test_proc_placement.py
+
+numactl as an alternative to mpirun and updated resource detection for stix (and other SGIs)
+------------------------------------------------------------------------
+r3630 | f2y | 2011-10-12 16:14:30 -0600 (Wed, 12 Oct 2011) | 1 line
+Changed paths:
+   M /ips/trunk/framework/src/taskManager.py
+
+new logic in task manager to automaticall spread out processes on hopper nodes
+------------------------------------------------------------------------
+r3628 | f2y | 2011-10-12 11:45:13 -0600 (Wed, 12 Oct 2011) | 1 line
+Changed paths:
+   M /ips/trunk/framework/src/configurationManager.py
+
+fixed bug in accurate nodes setting
+------------------------------------------------------------------------
+r3627 | f2y | 2011-10-12 10:14:05 -0600 (Wed, 12 Oct 2011) | 1 line
+Changed paths:
+   M /ips/trunk/framework/src/configurationManager.py
+   M /ips/trunk/framework/src/resourceManager.py
+   M /ips/trunk/hopper.conf
+
+ability to turn on and off accurate nodes in the platform configuration file - set up for hopper
+------------------------------------------------------------------------
+r3623 | elwasif | 2011-10-10 10:19:12 -0600 (Mon, 10 Oct 2011) | 2 lines
+Changed paths:
+   M /ips/trunk/framework/src/dakota_bridge.py
+   M /ips/trunk/framework/src/ips_dakota_client.py
+
+Increase time_out value in the dakota_bridge to 20 Sec.
+Use re-trials in ips_dakota_client to work around some transient file system hiccups
+------------------------------------------------------------------------
+r3618 | f2y | 2011-10-03 15:52:31 -0600 (Mon, 03 Oct 2011) | 1 line
+Changed paths:
+   A /ips/trunk/framework/src/test_proc_placement.py
+
+utility to detect version of mpirun and launching abilities - work in progress
+------------------------------------------------------------------------
+r3615 | elwasif | 2011-09-29 10:22:27 -0600 (Thu, 29 Sep 2011) | 1 line
+Changed paths:
+   M /ips/trunk/framework/src/ips_dakota_dynamic.py
+
+Fix opening of dakota log file
+------------------------------------------------------------------------
+r3614 | elwasif | 2011-09-29 08:46:06 -0600 (Thu, 29 Sep 2011) | 1 line
+Changed paths:
+   M /ips/trunk/framework/src/ips_dakota_dynamic.py
+
+Direct output from dakota into a separate log file
+------------------------------------------------------------------------
+r3604 | f2y | 2011-09-28 09:46:19 -0600 (Wed, 28 Sep 2011) | 1 line
+Changed paths:
+   M /ips/trunk/framework/src/resourceHelper.py
+   M /ips/trunk/framework/src/test_resource_parsing.py
+
+fixed qstat2 method of resource detection
+------------------------------------------------------------------------
+r3603 | f2y | 2011-09-28 09:18:01 -0600 (Wed, 28 Sep 2011) | 1 line
+Changed paths:
+   M /ips/trunk/framework/src/resourceHelper.py
+   M /ips/trunk/framework/src/test_resource_parsing.py
+
+new qstat resource detection
+------------------------------------------------------------------------
+r3564 | f2y | 2011-09-24 14:37:54 -0600 (Sat, 24 Sep 2011) | 1 line
+Changed paths:
+   M /ips/trunk/components/drivers/ssfoley/config_files/branch_testing.conf
+   M /ips/trunk/doc/user_guides/basic_guide.rst
+   M /ips/trunk/framework/src/resourceHelper.py
+   M /ips/trunk/framework/utils/gen_stddev_parareal.py
+   M /ips/trunk/framework/utils/serial_timer.py
+
+random commits that haven't been done yet
+------------------------------------------------------------------------
+r3502 | elwasif | 2011-09-16 10:12:46 -0600 (Fri, 16 Sep 2011) | 1 line
+Changed paths:
+   M /ips/trunk/framework/src/services.py
+
+Added ARCHIVE_STATE_ON_OUTPUT configuration entry
+------------------------------------------------------------------------
+r3437 | elwasif | 2011-08-23 07:58:55 -0600 (Tue, 23 Aug 2011) | 1 line
+Changed paths:
+   M /ips/trunk/framework/src/services.py
+
+Missed a continuation line
+------------------------------------------------------------------------
+r3436 | elwasif | 2011-08-23 07:55:00 -0600 (Tue, 23 Aug 2011) | 1 line
+Changed paths:
+   M /ips/trunk/framework/src/ips.py
+   M /ips/trunk/framework/src/services.py
+
+Remove printing of certain exceptions to reduce size of log files (mainly for failed resource allocations)
+------------------------------------------------------------------------
+r3431 | elwasif | 2011-08-12 15:00:16 -0600 (Fri, 12 Aug 2011) | 1 line
+Changed paths:
+   M /ips/trunk/framework/src/component.py
+   M /ips/trunk/framework/src/componentRegistry.py
+   M /ips/trunk/framework/src/configurationManager.py
+   A /ips/trunk/framework/src/dakota_bridge.py
+   M /ips/trunk/framework/src/ips.py
+   M /ips/trunk/framework/src/ipsLogging.py
+   A /ips/trunk/framework/src/ips_dakota_client.py
+   A /ips/trunk/framework/src/ips_dakota_dynamic.py
+   M /ips/trunk/framework/src/portalBridge.py
+   M /ips/trunk/framework/src/services.py
+
+Changes to allow dynamic creation and termination of simulations in a running IPS framework instance. Added utilities to manage the execution of dynamic set of simulations controlled using DAKOTA for parameter sweep and optimization studies.
+------------------------------------------------------------------------
+r3364 | f2y | 2011-07-19 09:01:36 -0600 (Tue, 19 Jul 2011) | 1 line
+Changed paths:
+   M /ips/trunk/framework/src/resourceManager.py
+   M /ips/trunk/framework/src/taskManager.py
+
+fixed bug in obtaining resources
+------------------------------------------------------------------------
+r3360 | elwasif | 2011-07-19 07:36:04 -0600 (Tue, 19 Jul 2011) | 1 line
+Changed paths:
+   M /ips/trunk/framework/src/taskManager.py
+
+finish_task(): Do not fail if node file does not exist in task table.
+------------------------------------------------------------------------
+r3350 | elwasif | 2011-07-14 08:37:48 -0600 (Thu, 14 Jul 2011) | 1 line
+Changed paths:
+   M /ips/trunk/framework/src/resourceManager.py
+
+Suppress warning for one-node allocation
+------------------------------------------------------------------------
+r3348 | elwasif | 2011-07-13 16:29:47 -0600 (Wed, 13 Jul 2011) | 1 line
+Changed paths:
+   M /ips/trunk/framework/src/resourceManager.py
+
+Fixed bug in testing for max ppn on allocated nodes
+------------------------------------------------------------------------
+r3347 | elwasif | 2011-07-13 08:57:35 -0600 (Wed, 13 Jul 2011) | 1 line
+Changed paths:
+   M /ips/trunk/framework/src/resourceManager.py
+
+Adjust listOfNodes entries if a user sets PROCS_PER_NODE in the config file
+------------------------------------------------------------------------
+r3346 | elwasif | 2011-07-12 16:39:48 -0600 (Tue, 12 Jul 2011) | 1 line
+Changed paths:
+   M /ips/trunk/framework/src/resourceHelper.py
+
+Do not set all nodes to max_ppn for mixed_node allocation
+------------------------------------------------------------------------
+r3342 | elwasif | 2011-07-12 11:56:29 -0600 (Tue, 12 Jul 2011) | 1 line
+Changed paths:
+   M /ips/trunk/framework/src/services.py
+
+Make sure nproc is an int in portal event
+------------------------------------------------------------------------
+r3340 | elwasif | 2011-07-12 11:47:14 -0600 (Tue, 12 Jul 2011) | 1 line
+Changed paths:
+   M /ips/trunk/framework/src/services.py
+
+Added explicit nproc = nn entry to portal events to handle the case where a mode config file is used
+------------------------------------------------------------------------
+r3339 | elwasif | 2011-07-12 09:36:41 -0600 (Tue, 12 Jul 2011) | 2 lines
+Changed paths:
+   M /ips/trunk/framework/src/taskManager.py
+
+Fix node specification in node config file used by mpiexec on iter, and allow both
+shared and exclusive node allocation on the iter cluster.
+------------------------------------------------------------------------
+r3338 | f2y | 2011-07-12 07:54:09 -0600 (Tue, 12 Jul 2011) | 1 line
+Changed paths:
+   M /ips/trunk/framework/src/resourceManager.py
+
+clarified documentation for 'get_allocation'
+------------------------------------------------------------------------
+r3337 | f2y | 2011-07-11 15:22:49 -0600 (Mon, 11 Jul 2011) | 1 line
+Changed paths:
+   M /ips/trunk/framework/src/services.py
+   M /ips/trunk/framework/src/taskManager.py
+
+modified task launch to generate machine files in the work directory of the task and not delete them after use
+------------------------------------------------------------------------
+r3335 | elwasif | 2011-07-11 11:36:39 -0600 (Mon, 11 Jul 2011) | 1 line
+Changed paths:
+   M /ips/trunk/framework/src/taskManager.py
+
+Interim solution for explicit node assignment on the ITER cluster
+------------------------------------------------------------------------
+r3326 | elwasif | 2011-07-06 21:12:43 -0600 (Wed, 06 Jul 2011) | 2 lines
+Changed paths:
+   M /ips/trunk/framework/src/taskManager.py
+
+Fixed bug in command construction for iter
+
+------------------------------------------------------------------------
+r3322 | elwasif | 2011-07-05 08:07:05 -0600 (Tue, 05 Jul 2011) | 2 lines
+Changed paths:
+   M /ips/trunk/framework/src/taskManager.py
+
+Fixed bug with dealing with the iter cluster
+
+------------------------------------------------------------------------
