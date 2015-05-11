@@ -258,7 +258,7 @@ class TaskManager(object):
                                                       wnodes,
                                                       wsocks,
                                                       task_ppn=tppn)
-            print 'RM: get_allocation() returned %s', str(retval)
+            #print 'RM: get_allocation() returned %s', str(retval)
             self.fwk.debug('RM: get_allocation() returned %s', str(retval))
             partial_node = retval[0]
             if partial_node:
@@ -335,7 +335,6 @@ class TaskManager(object):
           *core_list* - used for creating host file with process to core mappings
         """
         # set up launch command
-        print 'build_launch_cmd(', nproc, binary, cmd_args, ppn, max_ppn, nodes, accurateNodes, partial_nodes,')'
         env_update = None
         nproc_flag = ''
         smp_node = len(self.resource_mgr.nodes) == 1
@@ -457,19 +456,14 @@ class TaskManager(object):
             ppn_flag = '-N'
             cpu_assign_flag = '-cc'
             by_numanode_flag = '-S'
-            if self.host in ['hopper', 'edison'] :
+            if self.host == 'hopper':
                 num_numanodes = self.resource_mgr.sockets_per_node
                 num_cores = self.resource_mgr.cores_per_node
                 if accurateNodes:
                     nlist_flag = '-L'
-                    num_nodes = len(nodes.split(','))
-                    #print 'num_nodes = ', num_nodes
+                    num_nodes = len(nodes)
                     ppn = int(ceil(float(nproc) / num_nodes))
-                    #print 'ppn = ', ppn
                     per_numa = int(ceil(float(ppn) / num_numanodes))
-                    #print 'per_numa = ' , per_numa
-                    #print 'num_numanodes = ', num_numanodes
-                    #print 'num_cores / num_numanodes', num_cores / num_numanodes
                     if per_numa == num_cores / num_numanodes:
 
                         cmd = ' '.join([self.task_launch_cmd,

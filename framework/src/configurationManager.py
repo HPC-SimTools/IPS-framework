@@ -314,7 +314,8 @@ class ConfigurationManager(object):
                 # Import environment variables into config file
                 # giving precedence to config file definitions in case of duplicates
                 for (k,v) in os.environ.iteritems():
-                    if k not in conf.keys():
+                    # do not include function definitions from environment
+                    if k not in conf.keys() and '(' not in k:
                         conf[k] = v
 
                 # Allow simulation file to override platform values
@@ -372,14 +373,15 @@ class ConfigurationManager(object):
                 #pytau.stop(self.timers['initialize'])
                 #stop(self.timers['initialize'])
                 sys.exit(1)
-            if not conf.has_key('SIMULATION_CONFIG_FILE'):
-                                conf['SIMULATION_CONFIG_FILE'] = conf_file
             sim_name_list.append(sim_name)
             sim_root_list.append(sim_root)
             log_file_list.append(log_file)
             new_sim = self.SimulationData(sim_name)
+            conf['__PORTAL_SIM_NAME'] = sim_name
             new_sim.sim_conf = conf
             new_sim.config_file = conf_file
+            new_sim.portal_sim_name = sim_name
+
             # SIMYAN: store the directory of the configuration file
             new_sim.conf_file_dir=os.path.dirname(os.path.abspath(conf_file))
             new_sim.sim_root = sim_root
@@ -410,6 +412,8 @@ class ConfigurationManager(object):
 
             # Use first simulation for framework components
             if (not self.fwk_sim_name):
+                for (k,v) in conf.iteritems():
+                    print k, v
                 fwk_sim_conf = conf.dict()
                 fwk_sim_conf['SIM_NAME'] = '_'.join([conf['SIM_NAME'], 'FWK'])
                 fwk_sim = self.SimulationData(fwk_sim_conf['SIM_NAME'])
@@ -841,7 +845,8 @@ class ConfigurationManager(object):
         # Incorporate environment variables into config file
         # Use config file entries when duplicates are detected
         for (k,v) in os.environ.iteritems():
-            if k not in conf.keys():
+            # Do not include functions from environment
+            if k not in conf.keys() and '(' not in k:
                 conf[k] = v
 
         # Allow propagation of entries from platform config file to simulation
@@ -869,11 +874,6 @@ in configuration file %s', config_file)
         if (log_file in self.log_file_list):
             self.fwk.exception('Error: Duplicate LOG_FILE in configuration files')
             raise Exception('Duplicate LOG_FILE in configuration files')
-
-        # Add path to configuration file to simulation configuration in memory
-        if not conf.has_key('SIMULATION_CONFIG_FILE'):
-                            conf['SIMULATION_CONFIG_FILE'] = config_file
-
         self.sim_name_list.append(sim_name)
         self.sim_root_list.append(sim_root)
         self.log_file_list.append(log_file)
@@ -885,6 +885,8 @@ in configuration file %s', config_file)
         if not sub_workflow:
             new_sim.portal_sim_name = sim_name
             new_sim.log_pipe_name = tempfile.mktemp('.logpipe', 'ips_')
+            self.log_dynamic_sim_queue.put('CREATE_SIM  %s  %s' %
+                                           (new_sim.log_pipe_name, new_sim.log_file))
         else:
             new_sim.portal_sim_name = parent_sim.portal_sim_name
             new_sim.log_pipe_name = parent_sim.log_pipe_name
@@ -901,7 +903,6 @@ in configuration file %s', config_file)
             self.fwk.exception('Invalid LOG_LEVEL value %s in config file %s ',
                   log_level, config_file)
             raise
-        self.log_dynamic_sim_queue.put('CREATE_SIM  %s  %s' % (new_sim.log_pipe_name, new_sim.log_file))
         self.sim_map[sim_name] = new_sim
         self._initialize_sim(new_sim)
 
