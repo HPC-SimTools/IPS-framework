@@ -129,6 +129,8 @@ class ServicesProxy(object):
         self.sim_name = ''
         self.replay_conf = None
         self.profile = False
+        self.subflow_count = 0
+        self.sub_flows = {}
         try:
             if os.environ['IPS_TIMING'] == '1':
                 self.profile = True
@@ -183,7 +185,7 @@ class ServicesProxy(object):
         # set shared_nodes
         # ------------------
         try:
-            pn_compconf = sim_conf['NODE_ALLOCATION_MODE']
+            pn_compconf = self.sim_conf['NODE_ALLOCATION_MODE']
             if pn_compconf.upper() == 'SHARED':
                 self.shared_nodes = True
             elif pn_compconf.upper() == 'EXCLUSIVE':
@@ -378,7 +380,7 @@ class ServicesProxy(object):
             portal_data['vizurl'] = self.monitor_url.split('//')[-1]
 
         event_data = {}
-        event_data['sim_name'] = self.sim_name
+        event_data['sim_name'] = self.sim_conf['__PORTAL_SIM_NAME']
         event_data['portal_data'] = portal_data
         self.publish('_IPS_MONITOR', 'PORTAL_EVENT', event_data)
         return
@@ -1218,8 +1220,7 @@ class ServicesProxy(object):
                                         self.full_comp_id)
         return self.workdir
 
-    # DM stageInput
-    def stage_input_files(self, input_file_list):
+    def stage_input_files_old(self, input_file_list):
         """
         Copy component input files to the component working directory
         (as obtained via a call to :py:meth:`ServicesProxy.get_working_dir`). Input files
@@ -1254,6 +1255,62 @@ class ServicesProxy(object):
                                            ok='False')
             self.exception('Error in stage_input_files')
             raise e
+        self._send_monitor_event('IPS_STAGE_INPUTS',
+                                           'Files = ' + str(input_file_list))
+
+        return
+    # DM stageInput
+    def stage_input_files(self, input_file_list):
+        """
+        Copy component input files to the component working directory
+        (as obtained via a call to :py:meth:`ServicesProxy.get_working_dir`). Input files
+        are assumed to be originally located in the directory variable
+        *INPUT_DIR* in the component configuration section.
+        """
+        workdir = self.get_working_dir()
+        old_conf = self.component_ref.config
+        inputDir = old_conf['INPUT_DIR']
+        ipsutil.copyFiles(inputDir, input_file_list, workdir)
+
+        # Copy input files into a central place in the output tree
+        simroot = self.sim_conf['SIM_ROOT']
+        try:
+            outprefix =  self.sim_conf['OUTPUT_PREFIX']
+        except KeyError, e:
+            outprefix=''
+
+        targetdir = os.path.join(simroot , 'simulation_setup',
+                                 self.full_comp_id)
+        try:
+            #print 'inputDir =', inputDir
+            #print 'input_file_list =', input_file_list
+            #print 'targetdir =', targetdir
+            #print 'outprefix =', outprefix
+
+            ipsutil.copyFiles(inputDir, input_file_list, targetdir, outprefix)
+        except Exception, e:
+            self._send_monitor_event('IPS_STAGE_INPUTS',
+                                           'Files = ' + str(input_file_list) + \
+                                           ' Exception raised : ' + str(e),
+                                           ok='False')
+            self.exception('Error in stage_input_files')
+            raise e
+        for (name, (new_conf, old_conf, init_comp, driver_comp)) in self.sub_flows.iteritems():
+            ports = old_conf['PORTS']['NAMES'].split()
+            comps = [old_conf['PORTS'][p]['IMPLEMENTATION'] for p in ports]
+            for c in comps:
+                input_dir = old_conf[c]['INPUT_DIR']
+                input_files = old_conf[c]['INPUT_FILES']
+                print '---- Staging inputs for %s:%s' %(name, c)
+                try:
+                    ipsutil.copyFiles(input_dir, input_files, os.getcwd())
+                except Exception, e:
+                    self._send_monitor_event('IPS_STAGE_INPUTS',
+                                             'Files = ' + str(input_files) +
+                                             ' Exception raised : ' + str(e),
+                                             ok='False')
+                    self.exception('Error in stage_input_files')
+                    raise e
         self._send_monitor_event('IPS_STAGE_INPUTS',
                                            'Files = ' + str(input_file_list))
 
@@ -1400,10 +1457,10 @@ class ServicesProxy(object):
         try:
             os.makedirs(plasma_dir)
         except OSError, (errno, strerror):
-            if (errno != 17):
+            if errno != 17:
                 self._send_monitor_event('IPS_STAGE_OUTPUTS',
                                          'Files = ' + str(file_list) + \
-                                         ' Exception raised : ' + str(e),
+                                         ' Exception raised : ' + strerror,
                                          ok='False')
                 self.exception('Error creating directory %s : %d-%s',
                                plasma_dir, errno, strerror)
@@ -1454,6 +1511,34 @@ class ServicesProxy(object):
                                  'Files = ' + str(file_list))
         return
 
+    def stage_subflow_output_files(self):
+        # Gather outputs from any sub-workflows. Sub-workflow output
+        # is defined to be the output files from its DRIVER component
+        # as they exist in the sub-workflow driver's work area at the
+        # end of the sub-simulation
+
+        for (sim_name, (sub_conf_new, _, _, driver_comp)) in self.sub_flows.iteritems():
+            ports = sub_conf_new['PORTS']['NAMES'].split()
+            driver = sub_conf_new[sub_conf_new['PORTS']['DRIVER']['IMPLEMENTATION']]
+            output_dir = os.path.join(sub_conf_new['SIM_ROOT'], 'work',
+                                      '_'.join([driver['CLASS'], driver['SUB_CLASS'],
+                                       driver['NAME'],
+                                       str(driver_comp.get_seq_num())]))
+            print '################',  output_dir
+            output_files = driver['OUTPUT_FILES']
+            try:
+                ipsutil.copyFiles(output_dir, output_files, self.get_working_dir(), keep_old=False)
+            except Exception, e:
+                self._send_monitor_event('IPS_STAGE_SUBFLOW_OUTPUTS',
+                                           'Files = ' + str(output_files) + \
+                                           ' Exception raised : ' + str(e),
+                                           ok='False')
+                self.exception('Error in stage_subflow_output_files()')
+                raise
+        return
+
+
+
     def stage_output_files(self, timeStamp, file_list, keep_old_files = True):
         """
         Copy associated component output files (from the working directory)
@@ -1477,6 +1562,7 @@ class ServicesProxy(object):
         except KeyError:
             outprefix = ''
         out_root = 'simulation_results'
+
 
         output_dir = os.path.join(sim_root, out_root, \
                                  str(timeStamp), 'components' ,
@@ -1506,7 +1592,7 @@ class ServicesProxy(object):
             if (errno != 17):
                 self._send_monitor_event('IPS_STAGE_OUTPUTS',
                                          'Files = ' + str(file_list) + \
-                                         ' Exception raised : ' + str(e),
+                                         ' Exception raised : ' + strerror,
                                          ok='False')
                 self.exception('Error creating directory %s : %d-%s',
                                plasma_dir, errno, strerror)
@@ -2168,17 +2254,49 @@ class ServicesProxy(object):
         del self.task_pools[task_pool_name]
         return
 
+    def create_sub_workflow(self, sub_name, config_file, override):
+        if sub_name in self.sub_flows.keys():
+            self.exception("Duplicate sub flow name")
+            raise Exception("Duplicate sub flow name")
+
+        self.subflow_count += 1
+        try:
+            sub_conf_new = ConfigObj(infile=config_file, interpolation='template', file_error=True)
+            sub_conf_old = ConfigObj(infile=config_file, interpolation='template', file_error=True)
+        except Exception:
+            self.exception("Error accessing sub-workflow config file %s" % config_file)
+            raise
+        sub_conf_new['SIM_ROOT'] = os.path.join(os.getcwd(), 'sub_workflow_%d' % self.subflow_count)
+        # Update INPUT_DIR for components to current working dir (super simulation working dir)
+        ports = sub_conf_new['PORTS']['NAMES'].split()
+        comps = [sub_conf_new['PORTS'][p]['IMPLEMENTATION'] for p in ports]
+        for c in comps:
+            sub_conf_new[c]['INPUT_DIR'] = os.getcwd()
+        sub_conf_new.filename = os.path.basename(config_file)
+        sub_conf_new.write()
+        try:
+            (sim_name, init_comp, driver_comp) = self._create_simulation(os.path.abspath(sub_conf_new.filename),
+                                                                         override, sub_workflow=True)
+        except Exception:
+            raise
+        self.sub_flows[sub_name] = (sub_conf_new, sub_conf_old, init_comp, driver_comp)
+        return (sim_name, init_comp, driver_comp)
+
+
     def create_simulation(self, config_file, override):
+        return self._create_simulation(config_file, override, sub_workflow=False)[0]
+
+    def _create_simulation(self, config_file, override, sub_workflow=False):
         try:
             msg_id = self._invoke_service(self.fwk.component_id,
-                                        'create_simulation', config_file, override)
+                                        'create_simulation', config_file, override, sub_workflow)
             self.debug('create_simulation() msg_id = %s', msg_id)
-            sim_name = self._get_service_response(msg_id, block=True)
+            (sim_name, init_comp, driver_comp) = self._get_service_response(msg_id, block=True)
             self.debug('Created simulation %s', sim_name)
         except Exception:
             self.exception('Error creating new simulation')
             raise
-        return sim_name
+        return (sim_name, init_comp, driver_comp)
 
 class TaskPool(object):
     """

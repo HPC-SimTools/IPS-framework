@@ -65,7 +65,7 @@ class testIPS(unittest.TestCase):
         absCfgFile_list = [os.path.abspath(cfgFile) for cfgFile in cfgFile_list]
 
         # test must return true if nothing bad happened, false otherwise.
-        self.assertTrue(fwk.run(), 'error in running fwk')
+        self.assertTrue(fwk.run, 'error in running fwk')
         return 0
 
 # ----- end main -----

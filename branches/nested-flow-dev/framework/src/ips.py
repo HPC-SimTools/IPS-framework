@@ -491,6 +491,7 @@ class Framework(object):
         #stop(self.timers['invoke_framework_comps'])
 
     #@ipsTiming.TauWrap(TIMERS['run'])
+    @property
     def run(self):
         """
         Run the communication outer loop of the framework.
@@ -660,6 +661,7 @@ class Framework(object):
                 msg = msg_list.pop(0)
                 self.debug('Framework sending message %s ', msg.__dict__)
                 call_id = self.task_manager.init_call(msg, manage_return=False)
+                print call_id, msg.__dict__
                 self.call_queue_map[call_id] = msg_list
                 self.outstanding_calls_list.append(call_id)
         except Exception:
@@ -667,7 +669,14 @@ class Framework(object):
             self.terminate_all_sims(status=Message.FAILURE)
             raise
 
-        while (len(self.outstanding_calls_list) > 0):
+        shutdown_time = 1.0E20
+        init_shutdown = False
+        while len(self.outstanding_calls_list) > 0 and time.time() < shutdown_time:
+            if len(self.outstanding_calls_list) == 0 and not init_shutdown:
+                init_shutdown = True
+                shutdown_time = time.time() + 5.0
+
+            # print self.outstanding_calls_list
             if (self.verbose_debug):
                 self.debug("Framework waiting for message")
             # get new messages
@@ -908,6 +917,7 @@ class Framework(object):
         """
         #start(self.timers['terminate_all_sims'])
         sim_names = self.config_manager.get_sim_names()
+        print 'Terminating ', sim_names
         for sim in sim_names:
             self.send_terminate_msg(sim, status)
         time.sleep(1)
@@ -1208,14 +1218,14 @@ def main(argv=None):
                       cfgFile_list, options.log_file, options.platform_filename,
                       compset_list, options.debug, options.ftb, options.verbose_debug,
                       options.cmd_nodes, options.cmd_ppn)
-                fwk.run()
+                fwk.run
             ipsTiming.dumpAll('framework')
         else:
             fwk = Framework(options.do_create_runspace, options.do_run_setup, options.do_run,
                   cfgFile_list, options.log_file, options.platform_filename,
                   compset_list, options.debug, options.ftb, options.verbose_debug,
                   options.cmd_nodes, options.cmd_ppn)
-            fwk.run()
+            fwk.run
             ipsTiming.dumpAll('framework')
     except :
         raise
