@@ -205,6 +205,13 @@ class ServicesProxy(object):
         except:
             self.ppn = 0
 
+        if conf['SIMULATION_MODE'] == 'RESTART':
+            if conf['TIME_LOOP']['RESTART_TIME'] == 'LATEST':
+                chkpts = glob.glob(os.path.join(conf['RESTART_ROOT'], 'restart', '*'))
+                base_dir = sorted(chkpts, key=lambda d: float(os.path.basename(d)))[-1]
+                conf['TIME_LOOP']['RESTART_TIME'] = os.path.basename(base_dir)
+
+
     def _init_event_service(self):
         """
         Initialize connection to the central framework event service
@@ -1664,13 +1671,8 @@ class ServicesProxy(object):
         work_dir = self.get_working_dir()
 
         conf = self.component_ref.config
-        if timeStamp == 'LATEST':
-            chkpts = glob.glob(os.path.join(restart_root, 'restart', '*'))
-            base_dir = sorted(chkpts, key=lambda d: float(os.path.basename(d)))[-1]
-        else:
-            base_dir = os.path.join(restart_root, 'restart',
+        base_dir = os.path.join(restart_root, 'restart',
                                     '%.3f' % (float(timeStamp)))
-
         source_dir = os.path.join(base_dir,
                                   '_'.join([conf['CLASS'],
                                            conf['SUB_CLASS'],
