@@ -183,7 +183,7 @@ class ServicesProxy(object):
         # set shared_nodes
         # ------------------
         try:
-            pn_compconf = sim_conf['NODE_ALLOCATION_MODE']
+            pn_compconf = conf['NODE_ALLOCATION_MODE']
             if pn_compconf.upper() == 'SHARED':
                 self.shared_nodes = True
             elif pn_compconf.upper() == 'EXCLUSIVE':
@@ -996,14 +996,20 @@ class ServicesProxy(object):
         sim_conf = self.sim_conf
         tlist = []
         time_conf = sim_conf['TIME_LOOP']
+        safe = lambda nums: len(set(str(nums)).difference(set("1234567890-+/*.e "))) == 0
         # generate tlist in regular mode (start, finish, step)
         if (time_conf['MODE'] == 'REGULAR'):
-            step = (float(time_conf['FINISH']) - \
-                    float(time_conf['START'])) / int(time_conf['NSTEP'])
-            tlist = [float(time_conf['START']) + \
-                     step * n for n in range(int(time_conf['NSTEP'])+1)]
+            for entry in ['FINISH', 'START', 'NSTEP']:
+                if not safe(time_conf[entry]):
+                    self.exception('Invalid TIME_LOOP value of %s = %s' % (entry, time_conf[entry]))
+                    raise Exception('Invalid TIME_LOOP value of %s = %s' % (entry, time_conf[entry]))
+            finish = float(eval(time_conf['FINISH']))
+            start = float(eval(time_conf['START']))
+            nstep = int(eval(time_conf['NSTEP']))
+            step = (finish - start) / nstep
+            tlist = [start + step * n for n in range(nstep+1)]
         # generate tlist in explicit mode (list of times)
-        elif  time_conf['MODE'] == 'EXPLICIT':
+        elif time_conf['MODE'] == 'EXPLICIT' :
             tlist = [float(v) for v in time_conf['VALUES'].split()]
         self.time_loop = tlist
         return tlist
@@ -1335,10 +1341,10 @@ class ServicesProxy(object):
         symlink_dir =  os.path.join(sim_root, out_root, self.full_comp_id)
         try:
             os.makedirs(symlink_dir)
-        except OSError, (errno, strerror):
-            if (errno != 17):
+        except OSError, e:
+            if (e.errno != 17):
                 self.exception('Error creating directory %s : %s' ,
-                               symlink_dir, strerror)
+                               symlink_dir, e.strerror)
                 raise
 
         all_files = sum([glob.glob(f) for f in file_list.split()], [])
@@ -1399,14 +1405,14 @@ class ServicesProxy(object):
                                  'plasma_state')
         try:
             os.makedirs(plasma_dir)
-        except OSError, (errno, strerror):
-            if (errno != 17):
+        except OSError, e:
+            if (e.errno != 17):
                 self._send_monitor_event('IPS_STAGE_OUTPUTS',
                                          'Files = ' + str(file_list) + \
-                                         ' Exception raised : ' + str(e),
+                                         ' Exception raised : ' + e.strerror,
                                          ok='False')
                 self.exception('Error creating directory %s : %d-%s',
-                               plasma_dir, errno, strerror)
+                               plasma_dir, e.errno, e.strerror)
                 raise
 
         try:
@@ -1502,14 +1508,14 @@ class ServicesProxy(object):
                                  'plasma_state')
         try:
             os.makedirs(plasma_dir)
-        except OSError, (errno, strerror):
-            if (errno != 17):
+        except OSError, e:
+            if (e.errno != 17):
                 self._send_monitor_event('IPS_STAGE_OUTPUTS',
                                          'Files = ' + str(file_list) + \
-                                         ' Exception raised : ' + str(e),
+                                         ' Exception raised : ' + e.strerror,
                                          ok='False')
                 self.exception('Error creating directory %s : %d-%s',
-                               plasma_dir, errno, strerror)
+                               plasma_dir, e.errno, e.strerror)
                 raise
 
         try:
@@ -1558,10 +1564,10 @@ class ServicesProxy(object):
         symlink_dir =  os.path.join(sim_root, out_root, self.full_comp_id)
         try:
             os.makedirs(symlink_dir)
-        except OSError, (errno, strerror):
-            if (errno != 17):
+        except OSError, e:
+            if (e.errno != 17):
                 self.exception('Error creating directory %s : %s' ,
-                               symlink_dir, strerror)
+                               symlink_dir, e.strerror)
                 raise
 
         all_files = sum([glob.glob(f) for f in file_list.split()], [])
@@ -1658,8 +1664,14 @@ class ServicesProxy(object):
         work_dir = self.get_working_dir()
 
         conf = self.component_ref.config
-        source_dir = os.path.join(restart_root, 'restart',
-                                  '%.3f' % (float(timeStamp)),
+        if timeStamp == 'LATEST':
+            chkpts = glob.glob(os.path.join(restart_root, 'restart', '*'))
+            base_dir = sorted(chkpts, key=lambda d: float(os.path.basename(d)))[-1]
+        else:
+            base_dir = os.path.join(restart_root, 'restart',
+                                    '%.3f' % (float(timeStamp)))
+
+        source_dir = os.path.join(base_dir,
                                   '_'.join([conf['CLASS'],
                                            conf['SUB_CLASS'],
                                            conf['NAME']]))
