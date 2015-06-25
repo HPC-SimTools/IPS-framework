@@ -205,11 +205,11 @@ class ServicesProxy(object):
         except:
             self.ppn = 0
 
-        if conf['SIMULATION_MODE'] == 'RESTART':
+        if self.sim_conf['SIMULATION_MODE'] == 'RESTART':
             if conf['TIME_LOOP']['RESTART_TIME'] == 'LATEST':
                 chkpts = glob.glob(os.path.join(conf['RESTART_ROOT'], 'restart', '*'))
                 base_dir = sorted(chkpts, key=lambda d: float(os.path.basename(d)))[-1]
-                conf['TIME_LOOP']['RESTART_TIME'] = os.path.basename(base_dir)
+                self.sim_conf['TIME_LOOP']['RESTART_TIME'] = os.path.basename(base_dir)
 
 
     def _init_event_service(self):
