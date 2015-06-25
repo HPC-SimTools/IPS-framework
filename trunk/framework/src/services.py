@@ -206,8 +206,8 @@ class ServicesProxy(object):
             self.ppn = 0
 
         if self.sim_conf['SIMULATION_MODE'] == 'RESTART':
-            if conf['TIME_LOOP']['RESTART_TIME'] == 'LATEST':
-                chkpts = glob.glob(os.path.join(conf['RESTART_ROOT'], 'restart', '*'))
+            if self.sim_conf['TIME_LOOP']['RESTART_TIME'] == 'LATEST':
+                chkpts = glob.glob(os.path.join(self.sim_conf['RESTART_ROOT'], 'restart', '*'))
                 base_dir = sorted(chkpts, key=lambda d: float(os.path.basename(d)))[-1]
                 self.sim_conf['TIME_LOOP']['RESTART_TIME'] = os.path.basename(base_dir)
 
