@@ -48,6 +48,12 @@ class IPSDakotaClient(object):
             raise
         except SyntaxError, (ex):
             raise
+        # Import environment variables into config file
+        # giving precedence to config file definitions in case of duplicates
+        for (k,v) in os.environ.iteritems():
+            if k not in self.old_master_conf.keys():
+                self.old_master_conf[k] = v
+
         self.sim_root = self.old_master_conf['SIM_ROOT']
         self.sim_name = self.old_master_conf['SIM_NAME']
         self.sim_logfile = self.old_master_conf['LOG_FILE']

@@ -111,6 +111,12 @@ class DakotaDynamic(object):
             if k not in self.template_conf.keys():
                 self.template_conf[k] = self.platform_conf[k]
 
+        # Import environment variables into config file
+        # giving precedence to config file definitions in case of duplicates
+        for (k,v) in os.environ.iteritems():
+            if k not in self.template_conf.keys():
+                self.template_conf[k] = v
+
         alt_paths.append(self.template_conf['IPS_ROOT'])
         alt_paths.append(os.path.join(self.template_conf['IPS_ROOT'],'bin'))
         alt_paths.append(os.path.join(self.template_conf['IPS_ROOT'],'framework/src'))
