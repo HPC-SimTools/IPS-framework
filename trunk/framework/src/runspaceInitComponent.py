@@ -92,8 +92,12 @@ class runspaceInitComponent(Component):
         # Redoing the same container_file name calculation as in configuration manager because I
         # can't figure out where to put it such that I can get it where I need
         self.container_file = os.path.basename(services.get_config_param('SIM_ROOT')) + os.path.extsep + container_ext
-        # The w here means that it is overwritten -- we are creating a new container file here
-
+        #Remove existing container file in case we are restarting an old simulation in the same directory
+        try:
+            os.remove(self.container_file)
+        except OSError , e:
+            if e.errno != 2:
+                raise
 
         ipsutil.writeToContainer(self.container_file, self.conf_file_loc, self.config_files)
         ipsutil.writeToContainer(self.container_file, self.plat_file_loc, self.platform_file)
