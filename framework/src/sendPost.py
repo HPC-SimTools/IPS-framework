@@ -7,6 +7,7 @@ import sys
 import urllib2
 import socket
 import time
+import traceback
 
 # timeout in seconds
 
@@ -39,11 +40,15 @@ if __name__ == "__main__":
     """
     timeout = 3
     socket.setdefaulttimeout(timeout)
-    l = sys.stdin.readline().rstrip('\n')
+    error_f = open("sendpost.err", 'a')
+    l = '   '
     while (l != ''):
-        tokens = l.split(' ', 1)
-        url = tokens[0]
-        msg = tokens[1]
-        sendEncodedMessage(url, msg)
-        l = sys.stdin.readline().rstrip('\n')
+        try:
+            l = sys.stdin.readline().rstrip('\n')
+            tokens = l.split(' ', 1)
+            url = tokens[0]
+            msg = tokens[1]
+            sendEncodedMessage(url, msg)
+        except:
+            traceback.print_exc(file=error_f) 
     sys.exit(0)
