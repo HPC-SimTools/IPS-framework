@@ -161,7 +161,7 @@ class ipsLogger(object):
                 rd = []
 
             if len(rd) > 0:
-                print rd
+                #print rd
                 for fileno in rd:
                     (recvr, log_handler, log_pipe_name) = self.log_map[fileno]
                     recvr.handle_request()
@@ -174,14 +174,14 @@ class ipsLogger(object):
                 tokens = msg.split()
                 if (tokens[0] == 'CREATE_SIM'): # Expecting Message: 'CREATE_SIM  log_pipe_name  log_file
                     self.add_sim_log(tokens[1], tokens[2])
-                    print list_fds()
-                    print '*************************************************'
+                    #print list_fds()
+                    #print '*************************************************'
                 elif (tokens[0] == 'END_SIM'):  # Expecting Message 'END_SIM log_pipe_name'
                     log_pipe_name = tokens[1]
-                    print list_fds()
-                    print '#################################################'
+                    #print list_fds()
+                    #print '#################################################'
                     for fileno , (recvr, log_handler, f_name) in self.log_map.items():
                         if f_name == log_pipe_name:
-                            print 'CLOSED file ', fileno
+                            #print 'CLOSED file ', fileno
                             del recvr
                             del self.log_map[fileno]
