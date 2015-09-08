@@ -1035,6 +1035,9 @@ class ServicesProxy(object):
 
         Possible *MODE* options are:
 
+        ALL:
+            Checkpint everytime the call is made (equivalent to always setting
+            Force =True)
         WALLTIME_REGULAR:
             checkpoints are saved upon invocation of the service call
             ``checkpoint_components()``, when a time interval greater than, or
@@ -1100,10 +1103,13 @@ class ServicesProxy(object):
         if (num_chkpt == 0):
             return
 
-        if (mode not in ['WALLTIME_REGULAR',  'WALLTIME_EXPLICIT',
+        if (mode not in ['ALL', 'WALLTIME_REGULAR',  'WALLTIME_EXPLICIT',
                          'PHYSTIME_REGULAR', 'PHYSTIME_EXPLICIT']):
             self.error('Invalid MODE = %s in checkpoint configuration', mode)
             raise Exception('Invalid MODE = %s in checkpoint configuration'% (mode))
+
+        if (mode == 'ALL'):
+            return self._dispatch_checkpoint(time_stamp, comp_id_list, Protect)
 
         if (mode == 'WALLTIME_REGULAR'):
             interval = float(chkpt_conf['WALLTIME_INTERVAL'])
