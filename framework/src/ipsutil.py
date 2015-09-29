@@ -123,7 +123,7 @@ def writeToContainer(ziphandle, src_dir, src_file_list):
                 else:
                     zout.write(file)
             else:
-                raise Exception('No such file : %s in directory %s', file, src_dir)
+                raise Exception('No such file : %s in directory %s'% (file, src_dir))
     else:
         for file in file_list:
             if os.path.exists(file):
