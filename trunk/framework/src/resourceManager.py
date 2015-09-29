@@ -142,7 +142,7 @@ class ResourceManager(object):
             #-------------------------------
             # set ppn
             #-------------------------------
-            uppn_config = self.CM.get_platform_parameter('PROCS_PER_NODE')
+            uppn_config = int(self.CM.get_platform_parameter('PROCS_PER_NODE'))
             if uppn_config == 0:
                 user_ppn = self.max_ppn
             else:
@@ -156,7 +156,7 @@ class ResourceManager(object):
                         listOfNodes[i] = (node, self.ppn)
                 self.fwk.warning("Using user set procs per node: %d", user_ppn)
             else:
-                self.fwk.warning("Platform specified  PROCS_PER_NODE is greater than batch job specification.")
+                self.fwk.warning("Platform specified  PROCS_PER_NODE = %d is greater than batch job specification = %d." % (user_ppn, self.max_ppn))
                 self.fwk.warning("Will use batch job specification to launch tasks")
                 self.ppn = self.max_ppn
 

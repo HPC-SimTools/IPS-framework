@@ -535,7 +535,9 @@ def getResourceList(services, host, ftb, partial_nodes=False):
                                                       silent=True)
     if node_detect_str == "checkjob":
         num_nodes, ppn, mixed_nodes, listOfNodes = get_checkjob_info()
-        accurateNodes = True
+        print "======================================================="
+        print num_nodes, ppn, mixed_nodes, listOfNodes
+        accurateNodes = False
     elif node_detect_str == "qstat":
         num_nodes, ppn, mixed_nodes, listOfNodes = get_qstat_jobinfo()
         accurateNodes = False
