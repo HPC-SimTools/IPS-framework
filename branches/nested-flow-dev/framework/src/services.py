@@ -1302,8 +1302,14 @@ class ServicesProxy(object):
                 input_dir = old_conf[c]['INPUT_DIR']
                 input_files = old_conf[c]['INPUT_FILES']
                 print '---- Staging inputs for %s:%s' %(name, c)
+                input_target_dir = os.path.join(os.getcwd(), c)
                 try:
-                    ipsutil.copyFiles(input_dir, input_files, os.getcwd())
+                    os.mkdir(input_target_dir)
+                except OSError, e:
+                    if e.errno != 17:
+                        raise
+                try:
+                    ipsutil.copyFiles(input_dir, input_files, input_target_dir)
                 except Exception, e:
                     self._send_monitor_event('IPS_STAGE_INPUTS',
                                              'Files = ' + str(input_files) +
@@ -2254,7 +2260,10 @@ class ServicesProxy(object):
         del self.task_pools[task_pool_name]
         return
 
-    def create_sub_workflow(self, sub_name, config_file, override):
+    def create_sub_workflow(self, sub_name, config_file, override= None):
+
+        if not override:
+            override = {}
         if sub_name in self.sub_flows.keys():
             self.exception("Duplicate sub flow name")
             raise Exception("Duplicate sub flow name")
@@ -2266,17 +2275,34 @@ class ServicesProxy(object):
         except Exception:
             self.exception("Error accessing sub-workflow config file %s" % config_file)
             raise
+        # Update undefined sub workflow configuration entries using top level configuration
+        # only applicable to non-component entries (ones with non-dictionary values)
+        for (k,v) in self.sim_conf.iteritems():
+            if k not in sub_conf_new.keys() and type(v).__name__ != 'dict':
+                sub_conf_new[k] = v
+
         sub_conf_new['SIM_ROOT'] = os.path.join(os.getcwd(), 'sub_workflow_%d' % self.subflow_count)
         # Update INPUT_DIR for components to current working dir (super simulation working dir)
         ports = sub_conf_new['PORTS']['NAMES'].split()
         comps = [sub_conf_new['PORTS'][p]['IMPLEMENTATION'] for p in ports]
         for c in comps:
-            sub_conf_new[c]['INPUT_DIR'] = os.getcwd()
+            sub_conf_new[c]['INPUT_DIR'] = os.path.join(os.getcwd(), c)
+            try:
+                override_vals = override[c]
+            except KeyError:
+                pass
+            else:
+                for (k,v) in override_vals.iteritems():
+                    sub_conf_new[c][k] = v
+        toplevel_override = set(override.keys()) - set(comps)
+        for param in toplevel_override:
+            sub_conf_new[param] = override[param]
+
         sub_conf_new.filename = os.path.basename(config_file)
         sub_conf_new.write()
         try:
             (sim_name, init_comp, driver_comp) = self._create_simulation(os.path.abspath(sub_conf_new.filename),
-                                                                         override, sub_workflow=True)
+                                                                         {}, sub_workflow=True)
         except Exception:
             raise
         self.sub_flows[sub_name] = (sub_conf_new, sub_conf_old, init_comp, driver_comp)
