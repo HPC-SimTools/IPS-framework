@@ -8,7 +8,7 @@ set(SCRIPTS
       portalBridge.py resourceHelper.py resourceManager.py
       runspaceInitComponent.py services.py taskManager.py
       checklist.py dakota_bridge.py 
-      test_ips.py test_resource_parsing.py topicManager.py platform.py
+      test_ips.py test_resource_parsing.py topicManager.py platformspec.py
 )
 
 set(EXC_SCRIPTS
