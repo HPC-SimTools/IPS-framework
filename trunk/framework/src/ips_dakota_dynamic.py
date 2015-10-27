@@ -6,7 +6,7 @@
 import os
 import sys
 import getopt
-import platform
+import platformspec
 import inspect
 from configobj import ConfigObj
 import subprocess
@@ -73,7 +73,7 @@ class DakotaDynamic(object):
         try:
             current_dir = inspect.getfile(inspect.currentframe())
             (self.platform_fname, self.ipsShareDir) = \
-                                  platform.get_share_and_platform(self.platform_fname,
+                                  platformspec.get_share_and_platform(self.platform_fname,
                                                                   current_dir)
 
             if self.ipsShareDir:
