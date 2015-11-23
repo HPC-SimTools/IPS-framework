@@ -12,6 +12,30 @@ except ImportError:
     pass
 
 remote_copy_fun = None
+
+def which(program, alt_paths=None):
+    def is_exe(fpath):
+        return os.path.exists(fpath) and os.access(fpath, os.X_OK)
+
+    fpath, fname = os.path.split(program)
+    if fpath:
+        if is_exe(program):
+            return program
+    else:
+        for path in os.environ["PATH"].split(os.pathsep):
+            exe_file = os.path.join(path, program)
+            if is_exe(exe_file):
+                return exe_file
+
+        # Trust locations in platform file over those in environment path
+        if alt_paths:
+            for path in alt_paths:
+                exe_file = os.path.join(path, program)
+                if is_exe(exe_file):
+                    return exe_file
+
+    return None
+
 def copyFiles(src_dir, src_file_list, target_dir, prefix='', keep_old = False):
     """
        Copy files in *src_file_list* from *src_dir* to *target_dir* with an
