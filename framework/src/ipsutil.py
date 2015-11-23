@@ -6,7 +6,12 @@ import shutil
 import time
 import glob
 import zipfile
+try:
+    import Pyro4
+except ImportError:
+    pass
 
+remote_copy_fun = None
 def copyFiles(src_dir, src_file_list, target_dir, prefix='', keep_old = False):
     """
        Copy files in *src_file_list* from *src_dir* to *target_dir* with an
@@ -15,6 +20,14 @@ def copyFiles(src_dir, src_file_list, target_dir, prefix='', keep_old = False):
        (default).
        Wild-cards in file name specification are allowed.
     """
+
+    global remote_copy_fun
+    use_data_server = os.getenv('USE_DATA_SERVER', "DATA_SERVER_NOT_USED")
+    if use_data_server != "DATA_SERVER_NOT_USED":
+        if not remote_copy_fun:
+            data_server = Pyro4.Proxy("PYRONAME:DataServer")
+        return data_server.copyFiles(src_dir, src_file_list, target_dir, prefix, keep_old)
+
     try:
         file_list = src_file_list.split()
     except AttributeError : # srcFileList is not a string
@@ -57,8 +70,8 @@ def copyFiles(src_dir, src_file_list, target_dir, prefix='', keep_old = False):
             os.makedirs(head)
         except OSError, (errno, strerror):
             if (errno != 17):
-                self.services.exception('Error creating directory %s : %s' ,
-                                        head, strerror)
+                print 'Error creating directory %s : %s' % (head, strerror)
+                raise
         try:
             #print 'trying to copy...'
             #print 'src_file =', src_file
@@ -108,13 +121,16 @@ def writeToContainer(ziphandle, src_dir, src_file_list):
 
     curdir=os.path.curdir
     if src_dir:
-        for file in file_list:
-            sfile=os.path.join(src_dir,file)
+        # Handle possible wildcards in input files.
+        # Build and flatten list of lists using sum(l_of_l, [])
+        for sfile in sum([glob.glob(os.path.join(src_dir, p)) \
+                          for p in file_list], []):
+            #sfile=os.path.join(src_dir,file)
             if os.path.exists(sfile):
                 #print 'srcdir has'
                 #print 'sfile =', sfile
                 #print 'file =', file
-                (head, tail) = os.path.split(os.path.abspath(file))
+                (head, tail) = os.path.split(os.path.abspath(sfile))
                 file = tail
                 if not os.path.exists(file):
                     shutil.copy(sfile, file)
