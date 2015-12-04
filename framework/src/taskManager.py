@@ -8,6 +8,7 @@ import string
 import time
 import configurationManager
 import messages
+import math
 from ipsExceptions import BlockedMessageException,  \
                           IncompleteCallException,  \
                           InsufficientResourcesException, \
@@ -532,6 +533,16 @@ class TaskManager(object):
                 proc_flag = ''
             cmd = ' '.join([self.task_launch_cmd,
                             proc_flag])
+        elif self.task_launch_cmd == 'srun':
+            #print 'now here'
+            nproc_flag = '-n'
+            nnodes_flag = '-N'
+            if accurateNodes:
+                num_nodes = len(nodes.split(','))
+            else:
+                num_nodes = int(math.ceil(float(nproc)/float(ppn)))
+            cmd = ' '.join([self.task_launch_cmd, nnodes_flag, \
+                            str(num_nodes), nproc_flag, str(nproc)])
         else:
             self.fwk.exception("invalid task launch command.")
             raise("invalid task launch command.")
