@@ -440,7 +440,9 @@ def get_pbs_info():
         node_file = os.environ['PBS_NODEFILE']
         # core_list is a misnomer, it is a list of (repeated) node names
         # where the node names are repeated for each process they can service
-        core_list = [line.strip() for line in open(node_file, 'r').readlines()]
+        core_list_all = [line.strip() for line in open(node_file, 'r').readlines()]
+        #core_list = [c for c in core_list_all if c != core_list_all[0]]
+        core_list = core_list_all
         node_dict = {}
         for core in core_list:
             # core is really a node name

@@ -129,6 +129,7 @@ class ServicesProxy(object):
         self.sim_name = ''
         self.replay_conf = None
         self.profile = False
+        self.binary_fullpath_cache = {}
         try:
             if os.environ['IPS_TIMING'] == '1':
                 self.profile = True
@@ -531,6 +532,16 @@ class ServicesProxy(object):
         .. note :: This is a nonblocking function, users must use a version of :py:meth:`ServicesProxy.wait_task` to get result.
 
         """
+        try:
+            binary_fullpath = self.binary_fullpath_cache[binary]
+        except KeyError:
+            binary_fullpath = ipsutil.which(binary)
+        if not binary_fullpath:
+            self.error("Program %s is not in path or is not executable" % binary)
+            raise Exception("Program %s is not in path or is not executable" % binary)
+        else:
+            self.binary_fullpath_cache[binary] = binary_fullpath
+
         task_ppn = self.ppn
         try:
             task_ppn = keywords['task_ppn']
@@ -571,7 +582,7 @@ class ServicesProxy(object):
         try:
             # SIMYAN: added working_dir to component method invocation
             msg_id = self._invoke_service(self.fwk.component_id,
-                                          'init_task', nproc, binary,
+                                          'init_task', nproc, binary_fullpath,
                                           working_dir, task_ppn, block,
                                           whole_nodes, whole_socks, *args)
             (task_id, command, env_update) = self._get_service_response(msg_id, block=True)
@@ -1245,6 +1256,7 @@ class ServicesProxy(object):
         are assumed to be originally located in the directory variable
         *INPUT_DIR* in the component configuration section.
         """
+        start_time = time.time()
         workdir = self.get_working_dir()
         conf = self.component_ref.config
         inputDir = conf['INPUT_DIR']
@@ -1273,8 +1285,10 @@ class ServicesProxy(object):
                                            ok='False')
             self.exception('Error in stage_input_files')
             raise e
+        elapsed_time = time.time() - start_time
         self._send_monitor_event('IPS_STAGE_INPUTS',
-                                           'Files = ' + str(input_file_list))
+                                           'Elapsed time = %.3f Files = %s' % \
+                                            (elapsed_time, str(input_file_list)))
 
         return
 
@@ -1488,6 +1502,7 @@ class ServicesProxy(object):
 
         Copying errors are not fatal (exception raised).
         """
+        start_time = time.time()
         workdir = self.get_working_dir()
         conf = self.component_ref.config
         sim_root = self.sim_conf['SIM_ROOT']
@@ -1610,8 +1625,10 @@ class ServicesProxy(object):
             relpath = os.path.join( *p )
             os.symlink(relpath, sym_link)
 
+        elapsed_time = time.time() - start_time
         self._send_monitor_event('IPS_STAGE_OUTPUTS',
-                                 'Files = ' + str(file_list))
+                                 'Elapsed time = %.3f Files = %s' % \
+                                  (elapsed_time, str(file_list)))
         return
 
     def stageOutputFiles(self, timeStamp, output_file_list):
@@ -1737,6 +1754,7 @@ class ServicesProxy(object):
         files are specified, component configuration specification is used.
         Raise exceptions upon copy.
         """
+        start_time = time.time()
         conf = self.component_ref.config
         if not plasma_state_files:
             try:
@@ -1759,8 +1777,10 @@ class ServicesProxy(object):
                                      ok='False')
             self.exception('Error updating plasma state files')
             raise
+        elapsed_time = time.time() - start_time
         self._send_monitor_event('IPS_UPDATE_PLASMA_STATE',
-                                 'Success')
+                                 'Elapsed time = %.3f   files = %s Success' % \
+                                  (elapsed_time, ' '.join(files)))
         return
 
     def merge_current_plasma_state(self, partial_state_file, logfile=None):
@@ -2253,11 +2273,21 @@ class TaskPool(object):
         Create :py:obj:`Task` object and add to *queued_tasks* of the task
         pool.  Raise exception if task name already exists in task pool.
         """
+        try:
+            binary_fullpath = self.binary_fullpath_cache[binary]
+        except KeyError:        
+            binary_fullpath = ipsutil.which(binary)
+        if not binary_fullpath:
+            self.error("Program %s is not in path or is not executable" % binary)
+            raise Exception("Program %s is not in path or is not executable" % binary)
+        else:
+            self.binary_fullpath_cache[binary] = binary_fullpath
+
         if (task_name in self.queued_tasks):
             raise Exception('Duplicate task name %s in task pool' % (task_name))
         keywords['block'] = False
 
-        self.queued_tasks[task_name] = Task(task_name, nproc, working_dir, binary, *args, **keywords)
+        self.queued_tasks[task_name] = Task(task_name, nproc, working_dir, binary_fullpath, *args, **keywords)
         return
 
     def submit_tasks(self, block = True):
