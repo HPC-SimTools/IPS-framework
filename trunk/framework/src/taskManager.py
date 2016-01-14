@@ -17,6 +17,7 @@ from ipsExceptions import BlockedMessageException,  \
                           ResourceRequestMismatchException
 import shutil
 from math import ceil
+from ipsutil import which
 
 # from event_service_spec import PublisherEventService,SubscriberEventService,EventListener,Topic,EventServiceException
 
@@ -55,6 +56,7 @@ class TaskManager(object):
         self.next_task_id = 1L
         self.outstanding_calls = {}
         self.finished_calls = {}
+        self.mpicmd = None  #USed only for CCM on edison
         # anything needed for pub/sub thru ES
         # -------------------------------
         #     set up publisher
@@ -356,16 +358,29 @@ class TaskManager(object):
         elif self.task_launch_cmd == 'mpirun':
             version = self.config_mgr.get_platform_parameter('MPIRUN_VERSION')
             if version == 'OpenMPI-generic':
+		# Need full path to mpirun on Edison under CCM
+                #print '####### HOST = ', self.host.upper()
+	        if self.host.upper() =='EDISON':
+                    #print '#######(2) HOST = ', self.host.upper()
+                    if not self.mpicmd:
+                        self.mpicmd = which('mpirun')
+                        #print '(3)####### self.MPICMD = ', self.mpicmd
+                    mpicmd = self.mpicmd
+                    #print '(4)####### CMD = ', mpicmd
+		    if not mpicmd:
+		        raise Exception('Missing mpirun command in PATH')
+		else:
+		    mpicmd = 'mpirun'
                 nproc_flag = '-np'
                 ppn_flag = '-npernode'
                 proc_bind_option = '-bind-to-core'
                 host_file = '-hostfile'
                 host_select = '-H'
                 if smp_node:
-                    cmd = ' '.join([self.task_launch_cmd,
+                    cmd = ' '.join([mpicmd,
                                     nproc_flag, str(nproc)])
                 else:
-                    cmd = ' '.join([self.task_launch_cmd,
+                    cmd = ' '.join([mpicmd,
                                     nproc_flag, str(nproc),
                                     ppn_flag, str(ppn)])
                     if accurateNodes:
@@ -537,10 +552,7 @@ class TaskManager(object):
             #print 'now here'
             nproc_flag = '-n'
             nnodes_flag = '-N'
-            if accurateNodes:
-                num_nodes = len(nodes.split(','))
-            else:
-                num_nodes = int(math.ceil(float(nproc)/float(ppn)))
+            num_nodes = len(nodes.split(','))
             cmd = ' '.join([self.task_launch_cmd, nnodes_flag, \
                             str(num_nodes), nproc_flag, str(nproc)])
         else:
