@@ -104,7 +104,21 @@ def copyFiles(src_dir, src_file_list, target_dir, prefix='', keep_old = False):
         except:
             raise
 
+def _ignore_exception(func):
+    ''' Ignore exception raised when calling a function, printing an error message
+    :param func:
+    :return: wrapped function
+    '''
+    def new_func(*args, **kwargs):
+        try:
+            func(*args, **kwargs)
+        except Exception, e:
+            print "Ignoring exception %s in call to %s : %s" % \
+                  (e.__class__, func.__name__, e.args)
+    return new_func
+
 # SIMYAN: added a utility method to write to the container file
+@_ignore_exception
 def writeToContainer(ziphandle, src_dir, src_file_list):
     """
     Write files to the ziphandle.  Because when one wants to unzip the
