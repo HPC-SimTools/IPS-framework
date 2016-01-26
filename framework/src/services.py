@@ -1719,6 +1719,7 @@ class ServicesProxy(object):
         """
         Copy current plasma state to work directory.
         """
+        start_time = time.time()
         conf = self.component_ref.config
         try:
             files = conf['PLASMA_STATE_FILES'].split()
@@ -1737,8 +1738,10 @@ class ServicesProxy(object):
                                      ok='False')
             self.exception('Error staging plasma state files')
             raise
+        elapsed_time = time.time() - start_time
         self._send_monitor_event('IPS_STAGE_PLASMA_STATE',
-                                 ' Success')
+                                 'Elapsed time = %.3f  files = %s Success' %\
+                                 (elapsed_time, ' '.join(files)))
         return
 
     def stageCurrentPlasmaState(self):
