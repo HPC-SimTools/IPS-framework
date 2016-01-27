@@ -2192,8 +2192,13 @@ class ServicesProxy(object):
         """
         Launch all unfinished tasks in task pool *task_pool_name*.  If *block* is ``True``, return when all tasks have been launched.  If *block* is ``False``, return when all tasks that can be launched immediately have been launched.  Return number of tasks submitted.
         """
+        start_time = time.time()
+        self._send_monitor_event('IPS_TASK_POOL_BEGIN', 'task_pool = %s ' % (task_pool_name))
         task_pool = self.task_pools[task_pool_name]
-        return task_pool.submit_tasks(block)
+        retval = task_pool.submit_tasks(block)
+        self._send_monitor_event('IPS_TASK_POOL_END', 'task_pool = %s  elapsed time = %.2f S' %
+                                 (task_pool_name, time.time() - start_time))
+        return retval
 
     def get_finished_tasks(self, task_pool_name):
         """
@@ -2277,14 +2282,14 @@ class TaskPool(object):
         pool.  Raise exception if task name already exists in task pool.
         """
         try:
-            binary_fullpath = self.binary_fullpath_cache[binary]
+            binary_fullpath = self.services.binary_fullpath_cache[binary]
         except KeyError:        
             binary_fullpath = ipsutil.which(binary)
         if not binary_fullpath:
             self.error("Program %s is not in path or is not executable" % binary)
             raise Exception("Program %s is not in path or is not executable" % binary)
         else:
-            self.binary_fullpath_cache[binary] = binary_fullpath
+            self.services.binary_fullpath_cache[binary] = binary_fullpath
 
         if (task_name in self.queued_tasks):
             raise Exception('Duplicate task name %s in task pool' % (task_name))
