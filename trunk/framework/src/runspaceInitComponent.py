@@ -224,7 +224,7 @@ class runspaceInitComponent(Component):
 
 
                 # copy the component's script to the simulation_setup directory
-                if os.path.abspath(comp_conf['SCRIPT'])==comp_conf['SCRIPT']:
+                if os.path.isabs(comp_conf['SCRIPT']):
                     ipsutil.copyFiles(os.path.dirname(comp_conf['SCRIPT']),
                                       [os.path.basename(comp_conf['SCRIPT'])],
                                       simulation_setup)
