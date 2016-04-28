@@ -13,4 +13,4 @@ export PATH=$IPS_ROOT/bin:$PATH
 
 cd $SCRATCH
 
-$IPS_ROOT/bin/ips --config=hello_world.config --platform=$IPS_ROOT/franklin.conf --log=hello_world_pbs.log
+$IPS_ROOT/bin/ips --config=hello_world.config --platform=$IPS_ROOT/edison.conf --log=hello_world.log
