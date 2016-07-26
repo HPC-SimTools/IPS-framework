@@ -56,6 +56,9 @@ class ComponentID(object):
         """
         return self.__str__()
 
+    def __eq__(self, other):
+        return str(self) == str(other)
+
     def get_instance_name(self):
         """
         Return instance name of component id.
