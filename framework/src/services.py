@@ -424,15 +424,15 @@ class ServicesProxy(object):
         target_class = component_id.get_class_name()
         target_seqnum = component_id.get_seq_num()
         target = target_class + '@' + str(target_seqnum)
-        msg_id = self._invoke_service(component_id,
-                                       'init_call',
-                                       method_name, *args)
-        call_id = self._get_service_response(msg_id, True)
         formatted_args = ['%.3f' % (x) if isinstance(x, float)
                                         else str(x) for x in args]
         self._send_monitor_event('IPS_CALL_BEGIN', 'Target = ' +
                                           target + ':' + method_name +'('+
                                           str(*formatted_args) + ')')
+        msg_id = self._invoke_service(component_id,
+                                       'init_call',
+                                       method_name, *args)
+        call_id = self._get_service_response(msg_id, True)
         self.call_targets[call_id] = (target, method_name, args)
         return call_id
 
@@ -1286,9 +1286,10 @@ class ServicesProxy(object):
             self.exception('Error in stage_input_files')
             raise e
         elapsed_time = time.time() - start_time
-        self._send_monitor_event('IPS_STAGE_INPUTS',
-                                           'Elapsed time = %.3f Files = %s' % \
-                                            (elapsed_time, str(input_file_list)))
+        self._send_monitor_event(eventType='IPS_STAGE_INPUTS',
+                                 comment='Elapsed time = %.3f Path = %s Files = %s' % \
+                                         (elapsed_time, os.path.abspath(inputDir), \
+                                          str(input_file_list)))
 
         return
 
@@ -1627,8 +1628,8 @@ class ServicesProxy(object):
 
         elapsed_time = time.time() - start_time
         self._send_monitor_event('IPS_STAGE_OUTPUTS',
-                                 'Elapsed time = %.3f Files = %s' % \
-                                  (elapsed_time, str(file_list)))
+                                 'Elapsed time = %.3f Path = %s Files = %s' % \
+                                  (elapsed_time, output_dir, str(file_list)))
         return
 
     def stageOutputFiles(self, timeStamp, output_file_list):
