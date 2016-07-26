@@ -314,7 +314,7 @@ class ConfigurationManager(object):
                 # Import environment variables into config file
                 # giving precedence to config file definitions in case of duplicates
                 for (k,v) in os.environ.iteritems():
-                    if k not in conf.keys():
+                    if k not in conf.keys() and '(' not in k:
                         conf[k] = v
 
                 # Allow simulation file to override platform values
@@ -841,7 +841,7 @@ class ConfigurationManager(object):
         # Incorporate environment variables into config file
         # Use config file entries when duplicates are detected
         for (k,v) in os.environ.iteritems():
-            if k not in conf.keys():
+            if k not in conf.keys() and '(' not in k:
                 conf[k] = v
 
         # Allow propagation of entries from platform config file to simulation
