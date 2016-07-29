@@ -378,8 +378,11 @@ class ConfigurationManager(object):
             sim_root_list.append(sim_root)
             log_file_list.append(log_file)
             new_sim = self.SimulationData(sim_name)
+            conf['__PORTAL_SIM_NAME'] = sim_name
             new_sim.sim_conf = conf
             new_sim.config_file = conf_file
+            new_sim.portal_sim_name = sim_name
+
             # SIMYAN: store the directory of the configuration file
             new_sim.conf_file_dir=os.path.dirname(os.path.abspath(conf_file))
             new_sim.sim_root = sim_root
@@ -841,6 +844,7 @@ class ConfigurationManager(object):
         # Incorporate environment variables into config file
         # Use config file entries when duplicates are detected
         for (k,v) in os.environ.iteritems():
+            # Do not include functions from environment
             if k not in conf.keys() and '(' not in k:
                 conf[k] = v
 
@@ -885,6 +889,7 @@ in configuration file %s', config_file)
         if not sub_workflow:
             new_sim.portal_sim_name = sim_name
             new_sim.log_pipe_name = tempfile.mktemp('.logpipe', 'ips_')
+            self.log_dynamic_sim_queue.put('CREATE_SIM  %s  %s' % (new_sim.log_pipe_name, new_sim.log_file))
         else:
             new_sim.portal_sim_name = parent_sim.portal_sim_name
             new_sim.log_pipe_name = parent_sim.log_pipe_name
@@ -901,7 +906,7 @@ in configuration file %s', config_file)
             self.fwk.exception('Invalid LOG_LEVEL value %s in config file %s ',
                   log_level, config_file)
             raise
-        self.log_dynamic_sim_queue.put('CREATE_SIM  %s  %s' % (new_sim.log_pipe_name, new_sim.log_file))
+        #self.log_dynamic_sim_queue.put('CREATE_SIM  %s  %s' % (new_sim.log_pipe_name, new_sim.log_file))
         self.sim_map[sim_name] = new_sim
         self._initialize_sim(new_sim)
 
