@@ -13,7 +13,6 @@ set(SCRIPTS
 
 set(EXC_SCRIPTS
       ips_dakota_client.py ips_dakota_dynamic.py ips.py sendPost.py
-      data_server.py
 ) 
 
 
