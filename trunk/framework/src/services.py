@@ -2437,7 +2437,7 @@ class TaskPool(object):
         except KeyError:        
             binary_fullpath = ipsutil.which(binary)
         if not binary_fullpath:
-            self.error("Program %s is not in path or is not executable" % binary)
+            self.services.error("Program %s is not in path or is not executable" % binary)
             raise Exception("Program %s is not in path or is not executable" % binary)
         else:
             self.services.binary_fullpath_cache[binary] = binary_fullpath
