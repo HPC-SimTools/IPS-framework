@@ -336,11 +336,11 @@ class ResourceManager(object):
                 self.fwk.warning("No partial node allocation available on this platform, using whole nodes instead.")
             whole_nodes = True
             whole_socks = True
-        if len(self.nodes) == 1:
+#        if len(self.nodes) == 1:
 #            if whole_nodes or whole_socks:
 #                self.fwk.warning("No whole node or socket allocation available on this platform, sharing nodes instead.")
-            whole_nodes = False
-            whole_socks = False
+#            whole_nodes = False
+#            whole_socks = False
 
         # Are there enough cores to satisfy the request?
         # Returns the list of nodes that fit the bill
