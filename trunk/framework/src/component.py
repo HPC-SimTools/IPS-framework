@@ -115,10 +115,17 @@ class Component(object):
             call_id = msg.call_id
             method_name = msg.target_method
             args = msg.args
-            self.services.debug('Calling method ' + method_name + ' args = ' + str(args))
+            keywords = msg.keywords
+            formatted_args = ['%.3f' % (x) if isinstance(x, float)
+                              else str(x) for x in args]
+            if keywords:
+                formatted_args += [" %s=" % k + str(v) for (k, v) in keywords.iteritems()]
+
+            self.services.debug('Calling method ' + method_name +
+                                "(" + ' ,'.join(formatted_args) + ")")
             try:
                 method = getattr(self, method_name)
-                retval = method(*args)
+                retval = method(*args, **keywords)
             except Exception, e:
                 self.services.exception('Uncaught Exception in component method.')
                 response_msg = MethodResultMessage(self.component_id,
@@ -133,7 +140,7 @@ class Component(object):
             self.services.fwk_in_q.put(response_msg)
         #pytau.stop(timer)
 
-    def init(self, timestamp=0.0):
+    def init(self, timestamp=0.0, **keywords):
         """
         Produce some default debugging information before the rest of the code
         is executed.
@@ -142,7 +149,7 @@ class Component(object):
         pass
 
     # SIMYAN: This is the step method that is used for run-setup
-    def setup(self, timestamp=0.0):
+    def setup(self, timestamp=0.0, **keywords):
         """
         Produce some default debugging information before the rest of the code
         is executed.
@@ -152,7 +159,7 @@ class Component(object):
 
     # SIMYAN: this is a placeholder for future validation methods (i.e.
     # checking data)
-    def validate(self, timestamp=0.0):
+    def validate(self, timestamp=0.0, **keywords):
         """
         Produce some default debugging information before the rest of the code
         is executed.
@@ -160,7 +167,7 @@ class Component(object):
         self.services.debug('validate() method called')
         pass
 
-    def restart(self, timestamp=0.0):
+    def restart(self, timestamp=0.0, **keywords):
         """
         Produce some default debugging information before the rest of the code
         is executed.
@@ -168,7 +175,7 @@ class Component(object):
         self.services.debug('restart() method called')
         pass
 
-    def step(self, timestamp=0.0):
+    def step(self, timestamp=0.0, **keywords):
         """
         Produce some default debugging information before the rest of the code
         is executed.
@@ -176,7 +183,7 @@ class Component(object):
         self.services.debug('step() method called')
         pass
 
-    def finalize(self, timestamp=0.0):
+    def finalize(self, timestamp=0.0, **keywords):
         """
         Produce some default debugging information before the rest of the code
         is executed.
@@ -184,7 +191,7 @@ class Component(object):
         self.services.debug('finalize() method called')
         pass
 
-    def checkpoint(self, timestamp=0.0):
+    def checkpoint(self, timestamp=0.0, **keywords):
         """
         Produce some default debugging information before the rest of the code
         is executed.

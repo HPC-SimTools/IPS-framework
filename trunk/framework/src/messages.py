@@ -42,11 +42,12 @@ class ServiceRequestMessage(Message):
     delimiter = '|'
     identifier = 'REQUEST'
 
-    def __init__(self, sender_id, receiver_id, target_comp_id, target_method, *args):
+    def __init__(self, sender_id, receiver_id, target_comp_id, target_method, *args, **keywords):
         Message.__init__(self, sender_id, receiver_id)
         self.target_comp_id = target_comp_id
         self.target_method = target_method
         self.args = args
+        self.keywords = keywords
         self.message_id = self.get_message_id()
         return
 
@@ -87,11 +88,12 @@ class MethodInvokeMessage(Message):
     delimiter = '|'
     identifier = 'INVOKE'
 
-    def __init__(self, sender_id, receiver_id, call_id, target_method, *args):
+    def __init__(self, sender_id, receiver_id, call_id, target_method, *args, **keywords):
         Message.__init__(self, sender_id, receiver_id)
         self.call_id = call_id
         self.target_method = target_method
         self.args = args
+        self.keywords = keywords
         self.message_id = self.get_message_id()
         return
 
