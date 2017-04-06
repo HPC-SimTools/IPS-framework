@@ -149,6 +149,7 @@ class TaskManager(object):
         callee_id = init_call_msg.target_comp_id
         method_name = init_call_msg.args[0]
         args = init_call_msg.args[1:]
+        keywords = init_call_msg.keywords
         caller_id = init_call_msg.sender_id
         call_id = self.get_call_id()
         self.fwk.debug('TM:init_call(): %s %s %s %s',
@@ -156,7 +157,7 @@ class TaskManager(object):
         invoke_msg = messages.MethodInvokeMessage(self.fwk.component_id,
                                                   callee_id,
                                                   call_id,
-                                                  method_name, *args)
+                                                  method_name, *args, **keywords)
         #print invoke_msg
         invocation_q = self.comp_registry.getComponentArtifact(callee_id,
                                                                'invocation_q')

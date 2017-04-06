@@ -8,7 +8,7 @@ import glob
 import zipfile
 try:
     import Pyro4
-except ImportError:
+except Exception:
     pass
 
 remote_copy_fun = None

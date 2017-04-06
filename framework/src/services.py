@@ -326,7 +326,7 @@ class ServicesProxy(object):
         return None
 
 
-    def _invoke_service(self, component_id, method_name, *args):
+    def _invoke_service(self, component_id, method_name, *args, **keywords):
         """
         Create and place in the ``self.fwk_in_q`` a new
         :py:meth:`messages.ServiceRequestMessage` for service
@@ -337,7 +337,7 @@ class ServicesProxy(object):
         new_msg = messages.ServiceRequestMessage(self.component_ref.component_id,
                                                  self.fwk.component_id,
                                                  component_id,
-                                                 method_name, *args)
+                                                 method_name, *args, **keywords)
         msg_id = new_msg.get_message_id()
         self.incomplete_calls[msg_id] = new_msg
         self.fwk_in_q.put(new_msg)
@@ -418,7 +418,7 @@ class ServicesProxy(object):
         self.warning('getPort() deprecated - use get_port() instead')
         return self.get_port(port_name)
 
-    def call_nonblocking(self, component_id, method_name, *args):
+    def call_nonblocking(self, component_id, method_name, *args, **keywords):
         """
         Invoke method *method_name* on component *component_id* with optional
         arguments *\*args*.  Return *call_id*.
@@ -428,22 +428,24 @@ class ServicesProxy(object):
         target = target_class + '@' + str(target_seqnum)
         formatted_args = ['%.3f' % (x) if isinstance(x, float)
                                         else str(x) for x in args]
+        if keywords:
+            formatted_args += ["%s=" % k  + str(v) for (k,v) in keywords.iteritems()]
         self._send_monitor_event('IPS_CALL_BEGIN', 'Target = ' +
-                                          target + ':' + method_name +'('+
-                                          str(*formatted_args) + ')')
+                                 target + ':' + method_name +'('+
+                                 ' ,'.join(formatted_args) + ')')
         msg_id = self._invoke_service(component_id,
                                        'init_call',
-                                       method_name, *args)
+                                       method_name, *args, **keywords)
         call_id = self._get_service_response(msg_id, True)
         self.call_targets[call_id] = (target, method_name, args)
         return call_id
 
-    def call(self, component_id, method_name, *args):
+    def call(self, component_id, method_name, *args, **keywords):
         """
         Invoke method *method_name* on component *component_id* with optional
         arguments *\*args*.  Return result from invoking the method.
         """
-        call_id = self.call_nonblocking(component_id, method_name, *args)
+        call_id = self.call_nonblocking(component_id, method_name, *args, **keywords)
         retval = self.wait_call(call_id, block=True)
         return retval
 
