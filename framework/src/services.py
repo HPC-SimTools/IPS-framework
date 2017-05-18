@@ -536,6 +536,10 @@ class ServicesProxy(object):
         .. note :: This is a nonblocking function, users must use a version of :py:meth:`ServicesProxy.wait_task` to get result.
 
         """
+        tokens = binary.split()
+        if len(tokens) > 1 :
+            binary = tokens[0]
+            args = tuple(tokens[1:]) + args
         try:
             binary_fullpath = self.binary_fullpath_cache[binary]
         except KeyError:
@@ -1614,8 +1618,11 @@ class ServicesProxy(object):
         output_dir = os.path.join(sim_root, out_root, \
                                  str(timeStamp), 'components' ,
                                  self.full_comp_id)
+        if (type(file_list).__name__ == 'str'):
+            file_list = file_list.split()
+        all_files = sum([glob.glob(f) for f in file_list], [])
         try:
-            ipsutil.copyFiles(workdir, file_list, output_dir, outprefix,
+            ipsutil.copyFiles(workdir, all_files, output_dir, outprefix,
                               keep_old=keep_old_files)
         except Exception, e:
             self._send_monitor_event('IPS_STAGE_OUTPUTS',
@@ -1697,7 +1704,7 @@ class ServicesProxy(object):
                                symlink_dir, e.strerror)
                 raise
 
-        all_files = sum([glob.glob(f) for f in file_list.split()], [])
+        all_files = sum([glob.glob(f) for f in file_list], [])
 
         for f in all_files:
             real_file = os.path.join(output_dir, outprefix + f)
@@ -2434,6 +2441,10 @@ class TaskPool(object):
         Create :py:obj:`Task` object and add to *queued_tasks* of the task
         pool.  Raise exception if task name already exists in task pool.
         """
+        tokens = binary.split()
+        if len(tokens) > 1 :
+            binary = tokens[0]
+            args = tuple(tokens[1:]) + args
         try:
             binary_fullpath = self.services.binary_fullpath_cache[binary]
         except KeyError:        
