@@ -989,7 +989,14 @@ def main(argv=None):
                       help='Run IPS verbosely')
     parser.add_option('-f','--ftb',dest='ftb', action='store_false',
                       help='Turn on FTB capability')
-    parser.add_option('-p', '--platform', dest='platform_filename', default='',
+    platform_default = ""
+    try:
+        platform_default = os.environ["IPS_PLATFORM_FILE"]
+    except KeyError:
+        pass
+    else:
+        print "IPS using platform file :", platform_default
+    parser.add_option('-p', '--platform', dest='platform_filename', default=platform_default,
                       type="string", help='IPS platform configuration file')
     parser.add_option('-c', '--component',
                       action='callback', callback=filelist_callback,
