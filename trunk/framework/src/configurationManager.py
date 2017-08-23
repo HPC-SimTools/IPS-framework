@@ -174,6 +174,11 @@ class ConfigurationManager(object):
             #pytau.stop(self.timers['initialize'])
             #stop(self.timers['initialize'])
             raise
+        # Grab environment variables
+        for (k, v) in os.environ.iteritems():
+            if k not in self.platform_conf.keys() and '(' not in k:
+                self.platform_conf[k] = v
+
         # get mandatory values
         for kw in self.platform_keywords:
             try:
