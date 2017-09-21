@@ -359,19 +359,19 @@ class TaskManager(object):
         elif self.task_launch_cmd == 'mpirun':
             version = self.config_mgr.get_platform_parameter('MPIRUN_VERSION')
             if version == 'OpenMPI-generic':
-		# Need full path to mpirun on Edison under CCM
+                # Need full path to mpirun on Edison under CCM
                 #print '####### HOST = ', self.host.upper()
-	        if self.host.upper() =='EDISON':
+                if self.host.upper() =='EDISON':
                     #print '#######(2) HOST = ', self.host.upper()
                     if not self.mpicmd:
                         self.mpicmd = which('mpirun')
                         #print '(3)####### self.MPICMD = ', self.mpicmd
                     mpicmd = self.mpicmd
                     #print '(4)####### CMD = ', mpicmd
-		    if not mpicmd:
-		        raise Exception('Missing mpirun command in PATH')
-		else:
-		    mpicmd = 'mpirun'
+                    if not mpicmd:
+                        raise Exception('Missing mpirun command in PATH')
+                else:
+                    mpicmd = 'mpirun'
                 nproc_flag = '-np'
                 ppn_flag = '-npernode'
                 proc_bind_option = '-bind-to-core'
