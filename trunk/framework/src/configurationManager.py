@@ -176,7 +176,8 @@ class ConfigurationManager(object):
             raise
         # Grab environment variables
         for (k, v) in os.environ.iteritems():
-            if k not in self.platform_conf.keys() and '(' not in k:
+            if k not in self.platform_conf.keys() \
+                    and not any([x in v for x in '{}()$']):
                 self.platform_conf[k] = v
 
         # get mandatory values
@@ -319,13 +320,14 @@ class ConfigurationManager(object):
                 # Import environment variables into config file
                 # giving precedence to config file definitions in case of duplicates
                 for (k,v) in os.environ.iteritems():
-                    if k not in conf.keys() and '(' not in k:
+                    if k not in self.platform_conf.keys() \
+                            and not any([x in v for x in '{}()$']):
                         conf[k] = v
 
                 # Allow simulation file to override platform values
                 # and then put all platform values into simulation map
                 for key in self.platform_conf.keys():
-                    if key in conf.keys():
+                    if key in conf.keys() and key not in os.environ.keys():
                         self.platform_conf[key] = conf[key]
                 conf.merge(self.platform_conf)
 
@@ -850,7 +852,8 @@ class ConfigurationManager(object):
         # Use config file entries when duplicates are detected
         for (k,v) in os.environ.iteritems():
             # Do not include functions from environment
-            if k not in conf.keys() and '(' not in k:
+            if k not in conf.keys() and \
+                    not any([x in v for x in '{}()$']):
                 conf[k] = v
 
         # Allow propagation of entries from platform config file to simulation
