@@ -863,7 +863,7 @@ class ServicesProxy(object):
             retval = self.wait_task(task_id)
             return retval
 
-    def wait_task(self, task_id):
+    def wait_task(self, task_id, timeout = -1, delay = 1):
         """
         Check the status of task *task_id*.  Return the return value of the task when finished successfully.  Raise exceptions if the task is not found, or if there are problems finalizing the task.
         """
@@ -873,9 +873,25 @@ class ServicesProxy(object):
         except KeyError, e:
             self.exception('Error: unrecognizable task_id = %s ', str(task_id))
             raise
-        task_retval = process.wait()
-        self._send_monitor_event('IPS_TASK_END', 'task_id = %s  elapsed time = %.2f S' %
-                                 (str(task_id), time.time() - start_time))
+        task_retval = None
+        if timeout < 0:
+            task_retval = process.wait()
+        else:
+            maxtime = start_time + timeout
+            while (time.time() < maxtime):
+                task_retval = process.poll()
+                if (task_retval == None):
+                    time.sleep(delay)
+                else:
+                    break
+        if task_retval is None:
+            process.kill()
+            task_retval = process.wait()
+            self._send_monitor_event('IPS_TASK_END', 'task_id = %s  TIMEOUT elapsed time = %.2f S' %
+                                     (str(task_id), time.time() - start_time))
+        else:
+            self._send_monitor_event('IPS_TASK_END', 'task_id = %s  elapsed time = %.2f S' %
+                                         (str(task_id), time.time() - start_time))
 
         del self.task_map[task_id]
         try:
