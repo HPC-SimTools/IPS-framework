@@ -174,13 +174,6 @@ class ConfigurationManager(object):
             #pytau.stop(self.timers['initialize'])
             #stop(self.timers['initialize'])
             raise
-        # Grab environment variables
-        for (k, v) in os.environ.iteritems():
-            if k not in self.platform_conf.keys() \
-                    and not any([x in v for x in '{}()$']):
-                print k,"    ", v
-                self.platform_conf[k] = v
-
         # get mandatory values
         for kw in self.platform_keywords:
             try:
@@ -209,6 +202,13 @@ class ConfigurationManager(object):
             except Exception:
                 pass
         self.platform_conf['USER'] = user
+
+        # Grab environment variables
+        plat_keys = self.platform_conf.keys()
+        for (k, v) in os.environ.iteritems():
+            if k not in plat_keys \
+                    and not any([x in v for x in '{}()$']):
+                self.platform_conf[k] = v
 
         try:
             mpirun_version = self.platform_conf['MPIRUN_VERSION']
@@ -320,16 +320,18 @@ class ConfigurationManager(object):
                     conf.merge(csconf)
                 # Import environment variables into config file
                 # giving precedence to config file definitions in case of duplicates
+                conf_keys = conf.keys()
                 for (k,v) in os.environ.iteritems():
-                    if not any([x in v for x in '{}()$']):
+                    if k not in conf_keys and not any([x in v for x in '{}()$']):
                         conf[k] = v
 
                 # Allow simulation file to override platform values
                 # and then put all platform values into simulation map
                 for key in self.platform_conf.keys():
-                    if key in conf.keys() and key not in os.environ.keys():
+                    if key in conf_keys and key not in os.environ.keys():
                         self.platform_conf[key] = conf[key]
-                conf.merge(self.platform_conf)
+                    if key not in conf_keys:
+                        conf[key] = self.platform_conf[key]
 
             except IOError, (ex):
                 self.fwk.exception('Error opening config file %s: ', conf_file)
@@ -850,9 +852,10 @@ class ConfigurationManager(object):
         parent_sim = self.sim_map[parent_sim_name]
         # Incorporate environment variables into config file
         # Use config file entries when duplicates are detected
+        conf_keys = conf.keys()
         for (k,v) in os.environ.iteritems():
             # Do not include functions from environment
-            if k not in conf.keys() and \
+            if k not in conf_keys and \
                     not any([x in v for x in '{}()$']):
                 conf[k] = v
 
