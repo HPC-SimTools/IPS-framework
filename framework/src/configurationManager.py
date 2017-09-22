@@ -178,6 +178,7 @@ class ConfigurationManager(object):
         for (k, v) in os.environ.iteritems():
             if k not in self.platform_conf.keys() \
                     and not any([x in v for x in '{}()$']):
+                print k,"    ", v
                 self.platform_conf[k] = v
 
         # get mandatory values
@@ -320,8 +321,7 @@ class ConfigurationManager(object):
                 # Import environment variables into config file
                 # giving precedence to config file definitions in case of duplicates
                 for (k,v) in os.environ.iteritems():
-                    if k not in self.platform_conf.keys() \
-                            and not any([x in v for x in '{}()$']):
+                    if not any([x in v for x in '{}()$']):
                         conf[k] = v
 
                 # Allow simulation file to override platform values
