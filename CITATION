@@ -1,0 +1,20 @@
+To cite the IPS, please use
+
+Wael Elwasif, David E. Bernholdt, Aniruddha G. Shet, Samantha S. Foley, Randall Bramley, Donald B. Batchelor, and Lee A. Berry, The Design and Implementation of the SWIM Integrated Plasma Simulator, in The 18th Euromicro International Conference on Parallel, Distributed and Network-Based Processing (PDP), pages 419–427, 2010.
+
+@InProceedings{Elwasif:2010:DIS,
+  author =       {Wael Elwasif and David E. Bernholdt and Aniruddha
+                  G. Shet and Samantha S. Foley and Randall Bramley
+                  and Donald B. Batchelor and Lee A. Berry},
+  title =        {The Design and Implementation of the {SWIM}
+                  {I}ntegrated {P}lasma {S}imulator},
+  booktitle =    {The 18th Euromicro International Conference on 
+                  Parallel, Distributed and Network-Based Processing (PDP)},
+  pages = {419--427},
+  year =         2010,
+  isbn = {978-0-7695-3939-3, 978-1-4244-5672-7},
+  doi = {10.1109/PDP.2010.63},
+  url = {http://doi.ieeecomputersociety.org/10.1109/PDP.2010.63},
+}
+
+
