@@ -68,13 +68,16 @@ class IPSDakotaClient(object):
             except ValueError:
                 print 'Invalid variable specification %s' % (var_spec)
                 raise
-            try:
-                comp_conf = self.old_master_conf[comp]
-            except KeyError:
-                print 'No component %s in IPS configuration file'
-                raise
-            comp_conf[var_name] = val
-            parameter_list.append((comp, var_name, val))
+            if (comp == ''): # This is a global configuration variable
+                parameter_list.append(("*", var_name, val))
+            else:
+                try:
+                    comp_conf = self.old_master_conf[comp]
+                except KeyError:
+                    print 'No component %s in IPS configuration file'
+                    raise
+                comp_conf[var_name] = val
+                parameter_list.append((comp, var_name, val))
 
         for k in self.platform_conf.keys():
             if k not in self.old_master_conf.keys():
