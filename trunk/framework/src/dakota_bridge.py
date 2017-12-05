@@ -152,8 +152,11 @@ class Driver(Component):
             summary_string = 'simulation_%s    ' % (instance_id)
             title_string =  'SIMULATION    '
             for (comp, param, val) in msg:
-                comp_conf = self.old_master_conf[comp]
-                comp_conf[param] = val
+                if comp == '*':
+                    self.old_master_conf[param] = val
+                else:
+                    comp_conf = self.old_master_conf[comp]
+                    comp_conf[param] = val
                 param_string += '%s  %s  %s\n' % (comp, param, val)
                 title_string += '%s:%s    '% (comp, param)
                 summary_string += '%s    ' % (val)

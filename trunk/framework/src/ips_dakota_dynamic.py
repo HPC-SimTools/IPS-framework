@@ -113,8 +113,8 @@ class DakotaDynamic(object):
 
         # Import environment variables into config file
         # giving precedence to config file definitions in case of duplicates
-        for (k,v) in os.environ.iteritems():
-            if k not in self.template_conf.keys():
+        for (k, v) in os.environ.iteritems():
+            if k not in self.template_conf.keys() and not any([x in v for x in '{}()$']):
                 self.template_conf[k] = v
 
         alt_paths.append(self.template_conf['IPS_ROOT'])
@@ -186,6 +186,8 @@ IPS_ROOT/bin or IPS_ROOT/framework/src')
         self.master_conf['DAKOTA_BRIDGE'] = driver_conf
 
         for (comp, val) in comp_vars.iteritems():
+            if comp == '':
+                continue
             try:
                 comp_conf = self.template_conf[comp]
             except KeyError:
