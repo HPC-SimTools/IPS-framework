@@ -357,45 +357,32 @@ class TaskManager(object):
         # mpirun
         #-------------------------------------
         elif self.task_launch_cmd == 'mpirun':
-            version = self.config_mgr.get_platform_parameter('MPIRUN_VERSION')
-            if version == 'OpenMPI-generic':
-                # Need full path to mpirun on Edison under CCM
-                #print '####### HOST = ', self.host.upper()
-                if self.host.upper() =='EDISON':
-                    #print '#######(2) HOST = ', self.host.upper()
-                    if not self.mpicmd:
-                        self.mpicmd = which('mpirun')
-                        #print '(3)####### self.MPICMD = ', self.mpicmd
-                    mpicmd = self.mpicmd
-                    #print '(4)####### CMD = ', mpicmd
-                    if not mpicmd:
-                        raise Exception('Missing mpirun command in PATH')
-                else:
-                    mpicmd = 'mpirun'
+            version = self.config_mgr.get_platform_parameter('MPIRUN_VERSION').upper()
+            if version.startswith("OPENMPI"):
+                if version == 'OPENMPI-DVM':
+                    mpi_binary = 'prun'
+                    smp_node = False
+                else:   #VERSION = OPENMPI_GENERIC
+                    mpi_binary = 'mpirun'
+                # Find and cache full path to launch executable
+                if not self.mpicmd:
+                    self.mpicmd = which(mpi_binary)
+                mpicmd = self.mpicmd
+                if not mpicmd:
+                    raise Exception('Missing %s command in $PATH' % (mpi_binary))
+
                 nproc_flag = '-np'
                 ppn_flag = '-npernode'
-                proc_bind_option = '-bind-to-core'
-                host_file = '-hostfile'
                 host_select = '-H'
-                if smp_node:
+                if smp_node or mpi_binary == 'prun':
                     cmd = ' '.join([mpicmd,
                                     nproc_flag, str(nproc)])
                 else:
                     cmd = ' '.join([mpicmd,
-                                    nproc_flag, str(nproc),
-                                    ppn_flag, str(ppn)])
-                    if accurateNodes:
-                        # if partial_nodes:
-                        #    hfname = "_gen_hf_" + str(task_id)
-                        #    hfname = os.path.join(working_dir, hfname)
-                        #    hfile = open(hfname, 'w')
-                        #    i = 0
-                        #    for s in core_list:
-                        #        print >> hfile, '%s slots=%s' % (s[0], len(s[1]))
-                        #    cmd = ' '.join([cmd, host_file, hfname, proc_bind_option])
-                        #    self.curr_task_table[task_id]['node_file'] = hfname
-                        # else:
-                        cmd = ' '.join([cmd, host_select, nodes])
+                                nproc_flag, str(nproc),
+                                ppn_flag, str(ppn)])
+                if accurateNodes:
+                     cmd = ' '.join([cmd, host_select, nodes])
             elif version == 'SGI':
                 if accurateNodes:
                     core_dict = {}
