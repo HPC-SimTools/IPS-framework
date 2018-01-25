@@ -92,6 +92,8 @@ for l in lines:
     if 'IPS_RESOURCE_ALLOC' not in l and 'IPS_START' not in l and 'IPS_END' not in l:
         tokens.append(parse_log_line(l))
         #print tokens
+header = ['Time', 'Sequence Num', 'Type', 'Code', 'State',  'Wall Time',
+                   'Physics Time', 'Comment']
 
-html_page = HTML.table(tokens)
+html_page = HTML.table(tokens, header_row=header)
 print html_page
