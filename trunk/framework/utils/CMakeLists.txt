@@ -10,7 +10,7 @@
 set(SCRIPTS
       BeautifulSoup.py 
       animate_parareal_converge.py animate_parareal_tasks.py
-      batch_mgmt_script.py convert_log.py convert_log_minima.py exec_timer.py
+      batch_mgmt_script.py convert_log.py convert_log_minimal.py exec_timer.py
       HTML.py exec_timer_parareal.py gen_stddev.py physics_timer.py
       read_dict.py serial_timer.py 
 )
