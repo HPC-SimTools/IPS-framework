@@ -394,15 +394,18 @@ def get_slurm_info():
     try:
         # parse node list for node names
         if nodelist.find('[') > -1:
-            # there is more than one node, need to parse list
-            n, r = nodelist.split('[')
-            #print l
-            r = r.strip(']')
-            ranges = r.split(",")
-            for r in ranges:
+            for nlist in nodelist.split(','):
+                # there is more than one node, need to parse list
+                try:
+                    n, r = nlist.split('[')
+                except ValueError:  # Entry is not a range, but a single node
+                    nodes.append((nlist, ppn))
+                    continue
+
+                r = r.strip(']')
                 if '-' in r:
                     b, e = r.split("-")
-                    frmt_str = n + "%0" + str(len(e)) + "d"                    
+                    frmt_str = n + "%0" + str(len(e)) + "d"
                 else:
                     b, e = r, None
                     frmt_str = n + "%0" + str(len(b)) + "d"
