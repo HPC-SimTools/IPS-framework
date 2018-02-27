@@ -977,7 +977,7 @@ class ServicesProxy(object):
             time.sleep(0.05)
         return ret_dict
 
-    def get_config_param(self, param):
+    def get_config_param(self, param, silent = False):
         """
         Return the value of the configuration parameter *param*.  Raise
         exception if not found.
@@ -990,7 +990,8 @@ class ServicesProxy(object):
                                             'get_config_parameter', param)
                 val = self._get_service_response(msg_id, block=True)
             except Exception:
-                self.exception('Error retrieving value of config parameter %s' , param)
+                if not silent:
+                    self.exception('Error retrieving value of config parameter %s' , param)
                 raise
         return val
 

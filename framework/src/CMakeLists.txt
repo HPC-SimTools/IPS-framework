@@ -7,13 +7,14 @@ set(SCRIPTS
       ips_es_spec.py ipsutil.py messages.py node_structure.py
       portalBridge.py resourceHelper.py resourceManager.py
       runspaceInitComponent.py services.py taskManager.py
-      checklist.py dakota_bridge.py 
+      checklist.py dakota_bridge.py
       test_ips.py test_resource_parsing.py topicManager.py platformspec.py
+      convert_log_function.py
 )
 
 set(EXC_SCRIPTS
       ips_dakota_client.py ips_dakota_dynamic.py ips.py sendPost.py
-) 
+)
 
 
 # Installing executable scripts
