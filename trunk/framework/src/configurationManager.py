@@ -507,6 +507,10 @@ class ConfigurationManager(object):
             portal_conf['OUTPUT_FILES'] = ''
             portal_conf['NPROC'] = 1
             portal_conf['LOG_LEVEL'] = 'WARNING'
+            try:
+                portal_conf['USER'] = self.sim_map[self.fwk_sim_name].sim_conf['USER']
+            except KeyError:
+                portal_conf['USER'] = self.platform_conf['USER']
             havePortal=True
             if (self.fwk.log_level == logging.DEBUG):
                 portal_conf['LOG_LEVEL'] = 'DEBUG'
