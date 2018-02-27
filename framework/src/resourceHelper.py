@@ -391,37 +391,46 @@ def get_slurm_info():
     except:
         # need to set later
         nproc = 0
+
     try:
-        # parse node list for node names
-        if nodelist.find('[') > -1:
-            for nlist in nodelist.split(','):
-                # there is more than one node, need to parse list
-                try:
-                    n, r = nlist.split('[')
-                except ValueError:  # Entry is not a range, but a single node
-                    nodes.append((nlist, ppn))
-                    continue
-
-                r = r.strip(']')
-                if '-' in r:
-                    b, e = r.split("-")
-                    frmt_str = n + "%0" + str(len(e)) + "d"
-                else:
-                    b, e = r, None
-                    frmt_str = n + "%0" + str(len(b)) + "d"
-                if e:
-                    nodes.extend([(frmt_str % k, ppn) for k in range(int(b), int(e) + 1)])
-                else:
-                    nodes.append((frmt_str % int(b), ppn))
-
-        elif nodelist.find(',') > -1:
-            nodes.extend([(k, ppn) for k in nodelist.split(',')])
-        else:
-            nodes.append((nodelist, ppn))
-            
-    except:
-        # print "problems parsing slurm_nodelist"
+        cmd = 'scontrol show hostname %s' % nodelist
+        sys_nodes = subprocess.check_output(cmd.split()).strip().split('\n')
+        nodes.extend([(k, ppn) for k in sys_nodes])
+        print 'IPS SLURM_NODES = ', nodes
+    except Exception:
         raise
+
+    # try:
+    #     # parse node list for node names
+    #     if nodelist.find('[') > -1:
+    #         for nlist in nodelist.split(','):
+    #             # there is more than one node, need to parse list
+    #             try:
+    #                 n, r = nlist.split('[')
+    #             except ValueError:  # Entry is not a range, but a single node
+    #                 nodes.append((nlist, ppn))
+    #                 continue
+    #
+    #             r = r.strip(']')
+    #             if '-' in r:
+    #                 b, e = r.split("-")
+    #                 frmt_str = n + "%0" + str(len(e)) + "d"
+    #             else:
+    #                 b, e = r, None
+    #                 frmt_str = n + "%0" + str(len(b)) + "d"
+    #             if e:
+    #                 nodes.extend([(frmt_str % k, ppn) for k in range(int(b), int(e) + 1)])
+    #             else:
+    #                 nodes.append((frmt_str % int(b), ppn))
+    #
+    #     elif nodelist.find(',') > -1:
+    #         nodes.extend([(k, ppn) for k in nodelist.split(',')])
+    #     else:
+    #         nodes.append((nodelist, ppn))
+    #
+    # except:
+    #     # print "problems parsing slurm_nodelist"
+    #     raise
 
     if nproc > 0 and nproc < len(nodes) * max_p:
         mixed_nodes = True
