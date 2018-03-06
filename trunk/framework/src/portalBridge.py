@@ -104,14 +104,14 @@ class PortalBridge(Component):
         Try to connect to the portal, subscribe to *_IPS_MONITOR* events and
         register callback :py:meth:`.process_event`.
         """
-        try:
-            self.portal_url = self.PORTAL_URL
-        except AttributeError:
-            pass
-        try:
-            self.runid_url = self.RUNID_URL
-        except AttributeError:
-            pass
+        # try:
+        #     self.portal_url = self.PORTAL_URL
+        # except AttributeError:
+        #     pass
+        # try:
+        #     self.runid_url = self.RUNID_URL
+        # except AttributeError:
+        #     pass
         self.host = self.services.get_config_param('HOST')
         self.services.subscribe('_IPS_MONITOR', "process_event")
         try:
@@ -468,8 +468,8 @@ class PortalBridge(Component):
         d = datetime.datetime.now()
         date_str = "%s.%03d" % (d.strftime("%Y-%m-%dT%H:%M:%S"), int(d.microsecond/1000))
         sim_data.portal_runid = "_".join([self.host, self.USER, date_str])
-        self.services.debug('PORTAL_RUNID_URL = %s', str(self.runid_url))
         if (self.runid_url != None):
+            self.services.debug('PORTAL_RUNID_URL = %s', str(self.runid_url))
             try:
                 #               raise urllib2.URLError('TEXT')
                 f = urllib2.urlopen(self.runid_url, None, 10)
