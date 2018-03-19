@@ -1,0 +1,16 @@
+######################################################################
+#
+# Makefile.show: A PETSc Makefile to get PETSc variables
+#
+# $Id: Makefile.show 800 2015-04-20 22:24:27Z dmeiser $
+#
+# Copyright 2010-2013 Tech-X Corporation.
+# See LICENSE file (EclipseLicense.txt) for conditions of use.
+#
+######################################################################
+# Makefile to grab PETSc make variables
+# PETSC_DIR is passed though CMake
+include ${PETSC_CONF_DIR}/rules
+include ${PETSC_CONF_DIR}/variables
+showvar:
+	-@echo -n  ${${PKG_VARIABLE}}
