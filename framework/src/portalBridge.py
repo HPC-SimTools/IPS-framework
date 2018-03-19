@@ -485,6 +485,8 @@ class PortalBridge(Component):
             self.services.error('Simulation %s is not accessible', sim_name)
             return
 
+        if sim_data.sim_root.strip() == '.':
+            sim_data.sim_root=os.environ['IPS_INITIAL_CWD']
         sim_log_dir = os.path.join(sim_data.sim_root, 'simulation_log')
         try:
             os.makedirs(sim_log_dir)

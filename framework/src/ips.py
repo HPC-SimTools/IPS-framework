@@ -1243,4 +1243,5 @@ def main(argv=None):
 if __name__ == "__main__":
     print "Starting IPS"
     sys.stdout.flush()
+    os.environ['IPS_INITIAL_CWD'] = os.getcwd()
     sys.exit(main())
