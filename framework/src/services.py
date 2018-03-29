@@ -2339,7 +2339,7 @@ class ServicesProxy(object):
         del self.task_pools[task_pool_name]
         return
 
-    def create_sub_workflow(self, sub_name, config_file, override= None):
+    def create_sub_workflow(self, sub_name, config_file, override= None, input_dir= None):
 
         if not override:
             override = {}
@@ -2368,7 +2368,10 @@ class ServicesProxy(object):
         for c in comps:
             if not c:
                 continue
-            sub_conf_new[c]['INPUT_DIR'] = os.path.join(os.getcwd(), c)
+            if input_dir == None:
+                sub_conf_new[c]['INPUT_DIR'] = os.path.join(os.getcwd(), c)
+            else:
+                sub_conf_new[c]['INPUT_DIR'] = os.path.join(os.getcwd(), input_dir)
             try:
                 override_vals = override[c]
             except KeyError:
