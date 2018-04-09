@@ -230,6 +230,12 @@ class PortalBridge(Component):
                     pass
                 #print "Missing USER_W3_DIR configuration"
                 else:
+                    # If the USER_W3_DIR does not exist yet create it. USER_W3_DIR could also
+                    # point to a directory.
+                    if not os.path.exists(html_dir):
+                        os.makedirs(html_dir)
+                    elif os.path.isfile(html_dir):
+                        print("USER_W3_DIR ({}) is not a directory.".format(html_dir))
                     html_file = os.path.join(html_dir, os.path.basename(html_filename))
                     try:
                         open(html_file, "w").writelines(html_page)
