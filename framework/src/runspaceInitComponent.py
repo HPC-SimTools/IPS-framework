@@ -11,6 +11,22 @@ import ipsutil
 import time
 from component import Component
 
+def catch_and_go(func_to_decorate):
+    def new_func(*original_args, **original_kwargs):
+        # print "Function has been decorated.  Congratulations."
+        # Do whatever else you want here
+        object  = original_args[0]
+        try:
+            func_to_decorate(*original_args, **original_kwargs)
+        except Exception as e:
+            #print '#################', object.__class__.__name__, func_to_decorate.__name__
+            object.services.exception ("Exception in call to %s:%s" % (object.__class__.__name__, func_to_decorate.__name__))
+            print e
+            # object.services.exception("Caught exception during component pre-initialization")
+#            raise
+    return new_func
+
+
 class runspaceInitComponent(Component):
     """
     Framework component to manage runspace initialization, container file
@@ -26,6 +42,7 @@ class runspaceInitComponent(Component):
         print 'Created %s' % (self.__class__)
 
 
+    @catch_and_go
     def init(self, timeStamp):
         """
         Creates base directory, copies IPS and FacetsComposer input files.
@@ -151,7 +168,7 @@ class runspaceInitComponent(Component):
         print 'runspaceInitComponent.validate() called'
         return
 
-
+    @catch_and_go
     def step(self, timestamp=0.0):
         """
         Copies individual subcomponent input files into working subdirectories.
@@ -202,9 +219,14 @@ class runspaceInitComponent(Component):
                         raise
 
                 # copy the input files into the working directory
-                ipsutil.copyFiles(os.path.abspath(comp_conf['INPUT_DIR']),
+                try:
+                    ipsutil.copyFiles(os.path.abspath(comp_conf['INPUT_DIR']),
                                   comp_conf['INPUT_FILES'],
                                   workdir)
+                except Exception:
+                    print 'Error copying input files for initialization'
+                    raise
+
 
 
                 # This is a bit tricky because we want to look either in the same
