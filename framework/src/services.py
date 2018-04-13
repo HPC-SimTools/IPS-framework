@@ -272,6 +272,7 @@ class ServicesProxy(object):
         ``None``.
         """
         #print 'in _wait_msg_response'
+        #print(msg_id, self.finished_calls.keys(), self.incomplete_calls.keys())
         if (msg_id in self.finished_calls.keys()):
             response = self.finished_calls[msg_id]
             del self.finished_calls[msg_id]
@@ -1649,6 +1650,19 @@ class ServicesProxy(object):
             self.exception('Error in stage_output_files()')
             raise
 
+#  Subworkflows can specify a OUTPUT directory. Copy files there.
+        if 'OUTPUT_DIR' in self.component_ref.config:
+            try:
+                ipsutil.copyFiles(workdir, all_files, self.component_ref.config['OUTPUT_DIR'],
+                                  outprefix, keep_old=keep_old_files)
+            except Exception, e:
+                self._send_monitor_event('IPS_STAGE_OUTPUTS',
+                                         'Files = ' + str(file_list) + \
+                                         ' Exception raised : ' + str(e),
+                                         ok='False')
+                self.exception('Error in stage_output_files()')
+                raise
+
         # Store plasma state files into $SIM_ROOT/history/plasma_state
         # Plasma state files are renamed, by appending the full component
         # name (CLASS_SUBCLASS_NAME) and timestamp to the file name.
@@ -2339,7 +2353,7 @@ class ServicesProxy(object):
         del self.task_pools[task_pool_name]
         return
 
-    def create_sub_workflow(self, sub_name, config_file, override= None, input_dir= None):
+    def create_sub_workflow(self, sub_name, config_file, override= None, input_dir= None, output_dir= None):
 
         if not override:
             override = {}
@@ -2366,12 +2380,12 @@ class ServicesProxy(object):
         ports = sub_conf_new['PORTS']['NAMES'].split()
         comps = [sub_conf_new['PORTS'][p]['IMPLEMENTATION'] for p in ports]
         for c in comps:
-            if not c:
-                continue
             if input_dir == None:
                 sub_conf_new[c]['INPUT_DIR'] = os.path.join(os.getcwd(), c)
             else:
                 sub_conf_new[c]['INPUT_DIR'] = os.path.join(os.getcwd(), input_dir)
+            if output_dir != None:
+                sub_conf_new[c]['OUTPUT_DIR'] = os.path.join(os.getcwd(), output_dir)
             try:
                 override_vals = override[c]
             except KeyError:
