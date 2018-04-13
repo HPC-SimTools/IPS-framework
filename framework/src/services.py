@@ -2380,6 +2380,8 @@ class ServicesProxy(object):
         ports = sub_conf_new['PORTS']['NAMES'].split()
         comps = [sub_conf_new['PORTS'][p]['IMPLEMENTATION'] for p in ports]
         for c in comps:
+            if not c:
+                continue
             if input_dir == None:
                 sub_conf_new[c]['INPUT_DIR'] = os.path.join(os.getcwd(), c)
             else:
