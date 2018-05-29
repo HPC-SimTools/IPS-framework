@@ -1848,23 +1848,16 @@ class ServicesProxy(object):
 
     def stage_state(self):
         """
-        Copy current plasma state to work directory.
+        Copy current state to work directory.
         """
         start_time = time.time()
         conf = self.component_ref.config
         try:
-            files = conf['PLASMA_STATE_FILES'].split()
+            files = conf['STATE_FILES'].split()
         except KeyError:
-            self.warning('Use of  PLASMA_STATE_FILES deprecated - will be removed in future release')
-            self.warning('use STATE_FILES instead')
-            files = self.get_config_param('PLASMA_STATE_FILES').split()
-        else:
-            try:
-                files = conf['STATE_FILES'].split()
-            except KeyError:
-                files = self.get_config_param('STATE_FILES').split()
+            files = self.get_config_param('STATE_FILES').split()
 
-        state_dir = self.get_config_param('PLASMA_STATE_WORK_DIR')
+        state_dir = self.get_config_param('STATE_WORK_DIR')
         workdir = self.get_working_dir()
 
         try:
@@ -1900,12 +1893,12 @@ class ServicesProxy(object):
         self.warning('update_plasma_state() deprecated - will be removed in future release')
         self.warning('use update_state() instead with optional argument state_files')
 
-        return self.update_state(plasma_state_files)
+        return self.update_state(state_files=plasma_state_files)
 
 
     def update_state(self, state_files = None):
         """
-        Copy local (updated) plasma state to global state.  If no plasma state
+        Copy local (updated) state to global state.  If no  state
         files are specified, component configuration specification is used.
         Raise exceptions upon copy.
         """
@@ -1914,20 +1907,13 @@ class ServicesProxy(object):
         files = ''
         if not state_files:
             try:
-                files = conf['PLASMA_STATE_FILES'].split()
+                files = conf['STATE_FILES'].split()
             except KeyError:
-                self.warning('Use of  PLASMA_STATE_FILES deprecated - will be removed in future release')
-                self.warning('use STATE_FILES instead')
-                files = self.get_config_param('PLASMA_STATE_FILES').split()
-            else:
-                try:
-                    files = conf['STATE_FILES'].split()
-                except KeyError:
-                    files = self.get_config_param('STATE_FILES').split()
+                files = self.get_config_param('STATE_FILES').split()
         else:
             files = ' '.join(state_files).split()
 
-        state_dir = self.get_config_param('PLASMA_STATE_WORK_DIR')
+        state_dir = self.get_config_param('STATE_WORK_DIR')
         workdir = self.get_working_dir()
         try:
             msg_id = self._invoke_service(self.fwk.component_id,
@@ -1953,7 +1939,7 @@ class ServicesProxy(object):
         simulation.  Raise exceptions on bad merge.  Optional *logfile* will
         capture ``stdout`` from merge.
         """
-        state_dir = self.get_config_param('PLASMA_STATE_WORK_DIR')
+        state_dir = self.get_config_param('STATE_WORK_DIR')
         current_plasma_state = self.get_config_param('CURRENT_STATE')
         workdir = self.get_working_dir()
         if (os.path.isabs(partial_state_file)):

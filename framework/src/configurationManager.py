@@ -598,6 +598,13 @@ class ConfigurationManager(object):
                 self.fwk.warning('Overriding STATE_FILES configuration parameter ' +
                       'with entries from PLASMA_STATE_FILES')
             sim_conf["STATE_FILES"] = sim_conf["PLASMA_STATE_FILES"]
+            del sim_conf["PLASMA_STATE_FILES"]
+
+        if 'PLASMA_STATE_WORK_DIR' in sim_conf.keys():
+            self.fwk.warning("deprecated PLASMA_STATE_WORK_DIR field in simulation configuration")
+            self.fwk.warning("Use STATE_WORK_DIR field instead")
+            sim_conf["STATE_WORK_DIR"] = sim_conf["PLASMA_STATE_WORK_DIR"]
+            del sim_conf["PLASMA_STATE_WORK_DIR"]
 
         for port in ports_list:
             try:
@@ -675,7 +682,7 @@ class ConfigurationManager(object):
         # try to find the statedir
         try:
             statedir = self.get_sim_parameter(sim_name,
-                                        'PLASMA_STATE_WORK_DIR')
+                                        'STATE_WORK_DIR')
             haveStateDir=True
         except:
             haveStateDir=False
@@ -720,6 +727,7 @@ class ConfigurationManager(object):
                 self.fwk.warning('overriding STATE_FILES component configuration parameter ' +
                       'with entries from component-level PLASMA_STATE_FILES')
             comp_conf["STATE_FILES"] = comp_conf["PLASMA_STATE_FILES"]
+            del comp_conf["PLASMA_STATE_FILES"]
         try:
             (modFile, pathname, description) = imp.find_module(script, path)
             module = imp.load_module(script, modFile, pathname, description)
