@@ -230,12 +230,15 @@ class PortalBridge(Component):
                     pass
                 #print "Missing USER_W3_DIR configuration"
                 else:
-                    html_file = os.path.join(html_dir, os.path.basename(html_filename))
-                    try:
-                        open(html_file, "w").writelines(html_page)
-                    except Exception:
-                        self.services.exception("Error writing html file into USER_W3_DIR directory")
+                    if html_dir.strip() == '':
                         self.write_to_htmldir = False
+                    else:
+                        html_file = os.path.join(html_dir, os.path.basename(html_filename))
+                        try:
+                            open(html_file, "w").writelines(html_page)
+                        except Exception:
+                            self.services.exception("Error writing html file into USER_W3_DIR directory")
+                            self.write_to_htmldir = False
         #        self.services.debug('Wrote to monitor file : %s', buf)
         if (self.portal_url):
             webmsg = urllib.urlencode(event_data)
