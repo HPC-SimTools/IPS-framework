@@ -591,6 +591,13 @@ class ConfigurationManager(object):
         except:
             sim_data.sim_conf['NODE_ALLOCATION_MODE'] = self.platform_conf['NODE_ALLOCATION_MODE']
 
+        if 'PLASMA_STATE_FILES' in sim_conf.keys():
+            self.fwk.warning("deprecated PLASMA_STATE_FILES field in simulation configuration")
+            self.fwk.warning("Use STATE_FILES field instead")
+            if "STATE_FILES"in sim_conf.keys():
+                self.fwk.warning('Overriding STATE_FILES configuration parameter ' +
+                      'with entries from PLASMA_STATE_FILES')
+            sim_conf["STATE_FILES"] = sim_conf["PLASMA_STATE_FILES"]
 
         for port in ports_list:
             try:
@@ -706,6 +713,13 @@ class ConfigurationManager(object):
                     comp_conf['SCRIPT'][0:endpath] + '/' + script,
                     comp_conf['SCRIPT'][0:endpath] + '/' + script + '.py']
         class_name = comp_conf['NAME']
+        if 'PLASMA_STATE_FILES' in comp_conf.keys():
+            self.fwk.warning("deprecated PLASMA_STATE_FILES field in component configuration")
+            self.fwk.warning("Use STATE_FILES field instead")
+            if "STATE_FILES"in comp_conf.keys():
+                self.fwk.warning('overriding STATE_FILES component configuration parameter ' +
+                      'with entries from component-level PLASMA_STATE_FILES')
+            comp_conf["STATE_FILES"] = comp_conf["PLASMA_STATE_FILES"]
         try:
             (modFile, pathname, description) = imp.find_module(script, path)
             module = imp.load_module(script, modFile, pathname, description)
