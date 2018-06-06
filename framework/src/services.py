@@ -867,7 +867,7 @@ class ServicesProxy(object):
         """
         Check the status of task *task_id*.  Return the return value of the task when finished successfully.  Raise exceptions if the task is not found, or if there are problems finalizing the task.
         """
-        print "in wait task"
+        #print "in wait task"
         try:
             process, start_time = self.task_map[task_id]
         except KeyError, e:
