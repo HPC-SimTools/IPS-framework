@@ -1579,13 +1579,24 @@ class ServicesProxy(object):
                                  'Files = ' + str(file_list))
         return
 
-    def stage_subflow_output_files(self):
-        # Gather outputs from any sub-workflows. Sub-workflow output
+    def stage_subflow_output_files(self, subflow_name = 'ALL'):
+        # Gather outputs from sub-workflows. Sub-workflow output
         # is defined to be the output files from its DRIVER component
         # as they exist in the sub-workflow driver's work area at the
-        # end of the sub-simulation
+        # end of the sub-simulation. If subflow_name != 'ALL' then get
+        # output from only that sub-flow
+        subflow_dict = {}
+        if (subflow_name == 'ALL'):
+            subflow_dict = self.sub_flows
+        else:
+            try:
+                subflow_dict[subflow_name] = self.sub_flows[subflow_name]
+            except KeyError:
+                self.exception("Subflow name %s not found" % subflow_name)
+                raise Exception("Subflow name %s not found" % subflow_name)
 
-        for (sim_name, (sub_conf_new, _, _, driver_comp)) in self.sub_flows.iteritems():
+        return_dict ={}
+        for (sim_name, (sub_conf_new, _, _, driver_comp)) in subflow_dict.iteritems():
             ports = sub_conf_new['PORTS']['NAMES'].split()
             driver = sub_conf_new[sub_conf_new['PORTS']['DRIVER']['IMPLEMENTATION']]
             output_dir = os.path.join(sub_conf_new['SIM_ROOT'], 'work',
@@ -1601,9 +1612,14 @@ class ServicesProxy(object):
                                            'Files = ' + str(output_files) + \
                                            ' Exception raised : ' + str(e),
                                            ok='False')
-                self.exception('Error in stage_subflow_output_files()')
+                self.exception('Error in stage_subflow_output_files() for subflow %s' % sim_name)
                 raise
-        return
+            else:
+                if isinstance(output_files, basestring):
+                    return_dict[sim_name] = output_files.split()
+                else:
+                    return_dict[sim_name] = output_files
+        return return_dict
 
 
 
