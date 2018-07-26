@@ -34,9 +34,9 @@ class DataManager(object):
         self.outPrefix = ""
         self.simroot = ""
         self.statedir = ""
-        self.plasmaStateFiles = []
-        self.service_methods = ['stage_plasma_state',
-                                'update_plasma_state',
+        self.state_files = []
+        self.service_methods = ['stage_state',
+                                'update_state',
                                 'merge_current_plasma_state']
         self.fwk.register_service_handler(self.service_methods,
                                   getattr(self,'process_service_request'))
@@ -51,46 +51,46 @@ class DataManager(object):
         retval = method(msg)
         return retval
 
-    def stage_plasma_state(self, msg):
+    def stage_state(self, msg):
         """
         Copy plasma state files from source dir to target dir.  Return 0.
         Exception raised on copy error.
 
         *msg.args*:
 
-          0. plasma_files
+          0. state_files
           1. source_dir
           2. target_dir
         """
-        plasma_files = msg.args[0]
+        state_files = msg.args[0]
         source_dir = msg.args[1]
         target_dir = msg.args[2]
         try:
-            ipsutil.copyFiles(source_dir, plasma_files, target_dir)
+            ipsutil.copyFiles(source_dir, state_files, target_dir)
         except Exception, e:
             self.fwk.exception('Error staging plasma state files to directory %s',
                                target_dir)
             raise
         return 0
 
-    def update_plasma_state(self, msg):
+    def update_state(self, msg):
         """
         Copy plasma state files from source dir to target dir.  Return 0.
         Exception raised on copy error.
 
         *msg.args*:
 
-          0. plasma_files
+          0. state_files
           1. source_dir
           2. target_dir
         """
-        plasma_files = msg.args[0]
+        state_files = msg.args[0]
         source_dir = msg.args[1]
         target_dir = msg.args[2]
         try:
-            ipsutil.copyFiles(source_dir, plasma_files, target_dir)
+            ipsutil.copyFiles(source_dir, state_files, target_dir)
         except Exception, e:
-            self.fwk.exception( 'Error updating plasma state files from directory %s',
+            self.fwk.exception( 'Error updating state files from directory %s',
                                 source_dir)
             raise
         return 0
@@ -113,7 +113,7 @@ class DataManager(object):
 
         #fwk_bin_path = sys.path[0]
         #update_state = os.path.join(fwk_bin_path, 'update_state')
-	update_state = 'update_state'
+        update_state = 'update_state'
         plasma_work_dir = os.path.dirname(target_state_file)
         component_work_dir = os.path.dirname(partial_state_file)
         current_plasma_state = os.path.basename(target_state_file)

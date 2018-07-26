@@ -867,7 +867,7 @@ class ServicesProxy(object):
         """
         Check the status of task *task_id*.  Return the return value of the task when finished successfully.  Raise exceptions if the task is not found, or if there are problems finalizing the task.
         """
-        print "in wait task"
+        #print "in wait task"
         try:
             process, start_time = self.task_map[task_id]
         except KeyError, e:
@@ -1535,12 +1535,12 @@ class ServicesProxy(object):
                 raise
 
         try:
-            plasma_state_files = conf['PLASMA_STATE_FILES'].split()
+            state_files = conf['STATE_FILES'].split()
         except KeyError:
-            plasma_state_files = self.get_config_param('PLASMA_STATE_FILES').split()
+            state_files = self.get_config_param('STATE_FILES').split()
 
         all_plasma_files=[]
-        for plasma_file in plasma_state_files:
+        for plasma_file in state_files:
             globbed_files = glob.glob(plasma_file)
             if (len(globbed_files) > 0):
                 all_plasma_files += globbed_files
@@ -1579,13 +1579,24 @@ class ServicesProxy(object):
                                  'Files = ' + str(file_list))
         return
 
-    def stage_subflow_output_files(self):
-        # Gather outputs from any sub-workflows. Sub-workflow output
+    def stage_subflow_output_files(self, subflow_name = 'ALL'):
+        # Gather outputs from sub-workflows. Sub-workflow output
         # is defined to be the output files from its DRIVER component
         # as they exist in the sub-workflow driver's work area at the
-        # end of the sub-simulation
+        # end of the sub-simulation. If subflow_name != 'ALL' then get
+        # output from only that sub-flow
+        subflow_dict = {}
+        if (subflow_name == 'ALL'):
+            subflow_dict = self.sub_flows
+        else:
+            try:
+                subflow_dict[subflow_name] = self.sub_flows[subflow_name]
+            except KeyError:
+                self.exception("Subflow name %s not found" % subflow_name)
+                raise Exception("Subflow name %s not found" % subflow_name)
 
-        for (sim_name, (sub_conf_new, _, _, driver_comp)) in self.sub_flows.iteritems():
+        return_dict ={}
+        for (sim_name, (sub_conf_new, _, _, driver_comp)) in subflow_dict.iteritems():
             ports = sub_conf_new['PORTS']['NAMES'].split()
             driver = sub_conf_new[sub_conf_new['PORTS']['DRIVER']['IMPLEMENTATION']]
             output_dir = os.path.join(sub_conf_new['SIM_ROOT'], 'work',
@@ -1601,9 +1612,14 @@ class ServicesProxy(object):
                                            'Files = ' + str(output_files) + \
                                            ' Exception raised : ' + str(e),
                                            ok='False')
-                self.exception('Error in stage_subflow_output_files()')
+                self.exception('Error in stage_subflow_output_files() for subflow %s' % sim_name)
                 raise
-        return
+            else:
+                if isinstance(output_files, basestring):
+                    return_dict[sim_name] = output_files.split()
+                else:
+                    return_dict[sim_name] = output_files
+        return return_dict
 
 
 
@@ -1670,12 +1686,12 @@ class ServicesProxy(object):
                 raise
 
         try:
-            plasma_state_files = conf['PLASMA_STATE_FILES'].split()
+            state_files = conf['STATE_FILES'].split()
         except KeyError:
-            plasma_state_files = self.get_config_param('PLASMA_STATE_FILES').split()
+            state_files = self.get_config_param('STATE_FILES').split()
 
         all_plasma_files=[]
-        for plasma_file in plasma_state_files:
+        for plasma_file in state_files:
             globbed_files = glob.glob(plasma_file)
             if (len(globbed_files) > 0):
                 all_plasma_files += globbed_files
@@ -1842,27 +1858,36 @@ class ServicesProxy(object):
         """
         Copy current plasma state to work directory.
         """
+        self.warning('stage_plasma_state() deprecated - will be removed in a future release')
+        self.warning('use stage_state() instead')
+        return self.stage_state()
+
+    def stage_state(self):
+        """
+        Copy current state to work directory.
+        """
         start_time = time.time()
         conf = self.component_ref.config
         try:
-            files = conf['PLASMA_STATE_FILES'].split()
+            files = conf['STATE_FILES'].split()
         except KeyError:
-            files = self.get_config_param('PLASMA_STATE_FILES').split()
+            files = self.get_config_param('STATE_FILES').split()
 
-        state_dir = self.get_config_param('PLASMA_STATE_WORK_DIR')
+        state_dir = self.get_config_param('STATE_WORK_DIR')
         workdir = self.get_working_dir()
+
         try:
             msg_id = self._invoke_service(self.fwk.component_id,
-                            'stage_plasma_state', files, state_dir, workdir)
+                            'stage_state', files, state_dir, workdir)
             retval = self._get_service_response(msg_id, block=True)
         except Exception, e:
-            self._send_monitor_event('IPS_STAGE_PLASMA_STATE',
+            self._send_monitor_event('IPS_STAGE_STATE',
                                      ' Exception raised : ' + str(e),
                                      ok='False')
-            self.exception('Error staging plasma state files')
+            self.exception('Error staging state files')
             raise
         elapsed_time = time.time() - start_time
-        self._send_monitor_event('IPS_STAGE_PLASMA_STATE',
+        self._send_monitor_event('IPS_STAGE_STATE',
                                  'Elapsed time = %.3f  files = %s Success' %\
                                  (elapsed_time, ' '.join(files)))
         return
@@ -1874,37 +1899,51 @@ class ServicesProxy(object):
         self.warning('stageCurrentPlasmaState() deprecated - use stage_plasma_state() instead')
         return self.stage_plasma_state()
 
+
     def update_plasma_state(self, plasma_state_files = None):
         """
         Copy local (updated) plasma state to global state.  If no plasma state
         files are specified, component configuration specification is used.
         Raise exceptions upon copy.
         """
+        self.warning('update_plasma_state() deprecated - will be removed in future release')
+        self.warning('use update_state() instead with optional argument state_files')
+
+        return self.update_state(state_files=plasma_state_files)
+
+
+    def update_state(self, state_files = None):
+        """
+        Copy local (updated) state to global state.  If no  state
+        files are specified, component configuration specification is used.
+        Raise exceptions upon copy.
+        """
         start_time = time.time()
         conf = self.component_ref.config
-        if not plasma_state_files:
+        files = ''
+        if not state_files:
             try:
-                files = conf['PLASMA_STATE_FILES'].split()
+                files = conf['STATE_FILES'].split()
             except KeyError:
-                files = self.get_config_param('PLASMA_STATE_FILES').split()
+                files = self.get_config_param('STATE_FILES').split()
         else:
-            files = ' '.join(plasma_state_files).split()
+            files = ' '.join(state_files).split()
 
-        state_dir = self.get_config_param('PLASMA_STATE_WORK_DIR')
+        state_dir = self.get_config_param('STATE_WORK_DIR')
         workdir = self.get_working_dir()
         try:
             msg_id = self._invoke_service(self.fwk.component_id,
-                            'update_plasma_state', files, workdir, state_dir)
+                            'update_state', files, workdir, state_dir)
             retval = self._get_service_response(msg_id, block=True)
         except Exception, e:
-            print 'Error updating plasma state files', str(e)
-            self._send_monitor_event('IPS_UPDATE_PLASMA_STATE',
+            print 'Error updating state files', str(e)
+            self._send_monitor_event('IPS_UPDATE_STATE',
                                      ' Exception raised : ' + str(e),
                                      ok='False')
-            self.exception('Error updating plasma state files')
+            self.exception('Error updating state files')
             raise
         elapsed_time = time.time() - start_time
-        self._send_monitor_event('IPS_UPDATE_PLASMA_STATE',
+        self._send_monitor_event('IPS_UPDATE_STATE',
                                  'Elapsed time = %.3f   files = %s Success' % \
                                   (elapsed_time, ' '.join(files)))
         return
@@ -1916,7 +1955,7 @@ class ServicesProxy(object):
         simulation.  Raise exceptions on bad merge.  Optional *logfile* will
         capture ``stdout`` from merge.
         """
-        state_dir = self.get_config_param('PLASMA_STATE_WORK_DIR')
+        state_dir = self.get_config_param('STATE_WORK_DIR')
         current_plasma_state = self.get_config_param('CURRENT_STATE')
         workdir = self.get_working_dir()
         if (os.path.isabs(partial_state_file)):
@@ -2020,18 +2059,18 @@ class ServicesProxy(object):
             raise Exception('Could not find a single component instance implementing port %s ' +
                        replay_port)
         replay_comp_id = os.path.basename(comp_dirs[0])
-        plasma_files = []
+        state_files = []
         try:
-            plasma_files = comp_conf['PLASMA_STATE_FILES'].split()
+            state_files = comp_conf['STATE_FILES'].split()
         except KeyError:
-            plasma_files = self.replay_conf['PLASMA_STATE_FILES'].split()
+            state_files = self.replay_conf['STATE_FILES'].split()
 
         return (comp_conf,
                 outprefix,
                 replay_sim_root,
                 replay_comp_id,
                 output_files,
-                plasma_files)
+                state_files)
 
     def stage_replay_output_files(self, timeStamp):
         """

@@ -262,7 +262,7 @@ class TaskManager(object):
                                                       wnodes,
                                                       wsocks,
                                                       task_ppn=tppn)
-            print 'RM: get_allocation() returned %s', str(retval)
+            # print 'RM: get_allocation() returned %s', str(retval)
             self.fwk.debug('RM: get_allocation() returned %s', str(retval))
             partial_node = retval[0]
             if partial_node:
@@ -339,7 +339,7 @@ class TaskManager(object):
           *core_list* - used for creating host file with process to core mappings
         """
         # set up launch command
-        print 'build_launch_cmd(', nproc, binary, cmd_args, ppn, max_ppn, nodes, accurateNodes, partial_nodes,')'
+        # print 'build_launch_cmd(', nproc, binary, cmd_args, ppn, max_ppn, nodes, accurateNodes, partial_nodes,')'
         env_update = None
         nproc_flag = ''
         smp_node = len(self.resource_mgr.nodes) == 1
