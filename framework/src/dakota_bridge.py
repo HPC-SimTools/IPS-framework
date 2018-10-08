@@ -137,6 +137,11 @@ class Driver(Component):
             self.old_master_conf['SIM_ROOT'] = os.path.join(self.sim_root, 'simulation_%s' % (instance_id))
             self.old_master_conf['SIM_NAME'] = self.sim_name + '_%s' % (instance_id)
             self.old_master_conf['LOG_FILE'] = self.sim_logfile + '_%s' % (instance_id)
+            self.old_master_conf['OUT_REDIRECT'] = 'TRUE'
+            fname = "%s.out" %(self.old_master_conf['SIM_NAME'])
+            fname = os.path.join(self.sim_root, fname)
+            self.old_master_conf['OUT_REDIRECT_FNAME'] = fname
+            print 'Redirecting stdout for %s to %s ' % (self.old_master_conf['SIM_NAME'], fname)
             try:
                 os.makedirs(self.old_master_conf['SIM_ROOT'])
             except OSError, (errno, strerror):

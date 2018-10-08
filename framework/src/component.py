@@ -79,6 +79,30 @@ class Component(object):
         tmp = sys.exit
         sys.exit = self.__my_exit__
         self.sys_exit = tmp
+        try:
+            redirect = self.services.sim_conf['OUT_REDIRECT']
+        except KeyError:
+            pass
+        else:
+            if str(redirect).strip() !='':
+                if ('OUT_REDIRECT_FNAME') not in self.services.sim_conf.keys():
+                    fname = "%s.out" %(self.services.sim_conf['SIM_NAME'])
+                    fname = os.path.join(self.services.sim_conf['PWD'], fname)
+                    print 'Redirecting stdout to ', fname
+                else:
+                    fname = self.services.sim_conf['OUT_REDIRECT_FNAME']
+                original_stdout_fd = sys.stdout.fileno()
+                original_sterr_fd = sys.stderr.fileno()
+                saved_stdout_fd = os.dup(original_stdout_fd)
+                saved_stderr_fd = os.dup(original_sterr_fd)
+                outf = open(fname, "a")
+                outf_fno = outf.fileno()
+                #sys.stdout.close()
+                os.dup2(outf_fno, original_stdout_fd)
+                os.dup2(outf_fno, original_sterr_fd)
+                sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 0)
+                sys.stderr = os.fdopen(sys.stderr.fileno(), 'w', 0)
+
         # SIMYAN: reversed changes that took directory creation in work out of
         # a component's hands. Now this class creates the directory and changes
         # into it as before.
