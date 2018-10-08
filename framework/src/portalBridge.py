@@ -223,8 +223,8 @@ class PortalBridge(Component):
             open(html_filename,"w").writelines(html_page)
             if self.write_to_htmldir:
                 try:
-                    html_dir = self.services.get_config_param("USER_W3_DIR")
-                except KeyError:
+                    html_dir = self.services.get_config_param("USER_W3_DIR", silent=True)
+                except Exception:
                     self.services.warning("Missing USER_W3_DIR configuration - disabling web-visible logging")
                     self.write_to_htmldir = False
                     pass
