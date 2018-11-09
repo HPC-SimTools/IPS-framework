@@ -97,6 +97,7 @@ class PortalBridge(Component):
         self.counter = 0
         self.dump_freq = 10
         self.write_to_htmldir = True
+        self.use_google_analytics = True
 
 
     def init(self, timestamp=0.0):
@@ -261,6 +262,30 @@ class PortalBridge(Component):
         if (sim_data.mpo_wid):
             self.send_mpo_data(event_data, sim_data)
 
+        if (self.use_google_analytics):
+            self.send_google_data(event_data, sim_data)
+
+        return
+
+    def send_google_data(self, event_data, sim_data):
+        import urllib
+        recordable_events = ['IPS_START', 'IPS_END']
+        if event_data['eventtype'] not in recordable_events:
+            return
+
+        payload = {
+            "v" : 1,                    # version
+            "tid" : "UA-128956298-2",   # tracking ID
+            "cid" : 1111,               # Client ID
+            "t" : "event",              # Event hit type
+            "dh" : self.host,           # Destination host
+            "dp" : sim_data.sim_name,   # Destination page
+            "ec" : "IPS_SIMULATION",    # Event category
+            "ea" : event_data['eventtype'] # Event action
+        }
+        url = "http://www.google-analytics.com/collect"
+        msg = urllib.urlencode(payload)
+        urllib2.urlopen(url, msg).close()
         return
 
     def send_mpo_data(self, event_data, sim_data):
