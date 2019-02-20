@@ -16,6 +16,7 @@ import hashlib
 import glob
 import itertools
 from convert_log_function import *
+import json
 
 ENABLE_MPO = False
 
@@ -68,6 +69,7 @@ class PortalBridge(Component):
             self.sim_name = ''
             self.sim_root = ''
             self.monitor_file = None
+            self.json_monitor_file = None
             self.phys_time_stamp = -1
             self.monitor_url = None
             self.mpo_steps = [None]
@@ -146,6 +148,16 @@ class PortalBridge(Component):
             self.services.process_events()
             time.sleep(0.5)
 
+    def finalize(self, timestamp=0.0):
+        for sim_name in self.sim_map.keys():
+            sim_data = self.sim_map[sim_name]
+            try:
+                sim_data.monitor_file.close()
+                sim_data.json_monitor_file.close()
+            except Exception as e:
+                pass
+
+
     def get_elapsed_time(self):
         """
         Return total elapsed time since simulation started in seconds
@@ -163,6 +175,11 @@ class PortalBridge(Component):
         #        self.services.debug('Processing : %s -- %s ', topicName, str(event_body))
         sim_name = event_body['sim_name']
         portal_data = event_body['portal_data']
+        try:
+            portal_data["sim_name"] = event_body['real_sim_name']
+        except KeyError:
+            portal_data["sim_name"] = sim_name
+
         if (portal_data['eventtype'] == 'IPS_START'):
             sim_root = event_body['sim_root']
             self.init_simulation(sim_name, sim_root)
@@ -215,6 +232,10 @@ class PortalBridge(Component):
         buf += '\n'
         sim_data.monitor_file.write(buf)
         sim_data.bigbuf += buf
+
+        # json.dump(event_data, sim_data.json_monitor_file, indent=3);
+        buf = json.dumps(event_data);
+        sim_data.json_monitor_file.write("%s\n" % buf)
 
         freq = self.dump_freq
         if ((self.counter % freq == 0) or (event_data['eventtype'] == 'IPS_END')):
@@ -508,6 +529,8 @@ class PortalBridge(Component):
                                 (sim_data.monitor_file_name, errno, strerror))
             self.services.error('Using /dev/null instead')
             sim_data.monitor_file = open('/dev/null', 'w')
+        json_fname = sim_data.monitor_file_name.replace('eventlog', 'json')
+        sim_data.json_monitor_file = open(json_fname, 'w')
 
         if self.mpo:
             try:
