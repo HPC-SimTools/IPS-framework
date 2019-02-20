@@ -227,6 +227,7 @@ class Component(object):
         """
         Clean up services and call :py:obj:`sys_exit`.
         """
+        #print self.services.full_comp_id, ": terminate() method called"
         self.services._cleanup()
 #        self.services.debug('###(1) %s %s', str(self), str(self.__dict__))
 

@@ -389,6 +389,7 @@ class ServicesProxy(object):
 
         event_data = {}
         event_data['sim_name'] = self.sim_conf['__PORTAL_SIM_NAME']
+        event_data['real_sim_name'] = self.sim_name
         event_data['portal_data'] = portal_data
         self.publish('_IPS_MONITOR', 'PORTAL_EVENT', event_data)
         return
@@ -2400,7 +2401,9 @@ class ServicesProxy(object):
             if k not in sub_conf_new.keys() and type(v).__name__ != 'dict':
                 sub_conf_new[k] = v
 
-        sub_conf_new['SIM_ROOT'] = os.path.join(os.getcwd(), 'sub_workflow_%d' % self.subflow_count)
+        sub_conf_new['SIM_NAME'] = self.sim_name + "::" + sub_name
+        sub_conf_new['SIM_ROOT'] = os.path.join(os.getcwd(), sub_name)
+        #sub_conf_new['SIM_ROOT'] = os.path.join(os.getcwd(), 'sub_workflow_%d' % self.subflow_count)
         # Update INPUT_DIR for components to current working dir (super simulation working dir)
         ports = sub_conf_new['PORTS']['NAMES'].split()
         comps = [sub_conf_new['PORTS'][p]['IMPLEMENTATION'] for p in ports]
