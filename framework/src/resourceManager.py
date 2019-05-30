@@ -97,10 +97,12 @@ class ResourceManager(object):
         #SIMYAN: try to safely make the directory...
         try:
             os.makedirs(self.CM.sim_map[self.CM.fwk_sim_name].sim_root)
-        except OSError, (errno, strerror):
+        except OSError as oserr:
+            (errno, strerror) = oserr.args
             if (errno != 17):
                 self.services.exception('Error creating directory %s : %s' ,
-                                        workdir, strerror)
+                                        self.CM.sim_map[self.CM.fwk_sim_name].sim_root, strerror)
+                raise
 
         self.reporting_file = open(rfile_name, "w")
 
@@ -111,8 +113,8 @@ class ResourceManager(object):
             # use cmd resource specification
             self.host = "override_%s" % os.environ['HOST']
             self.max_ppn = cmd_ppn
-            self.cores_per_node = cmd_ppn
-            self.ppn = cmd_ppn
+            self.cores_per_node = int(cmd_ppn)
+            self.ppn = int(cmd_ppn)
             self.sockets_per_node = 1
             self.accurateNodes = False
             listOfNodes = []
@@ -135,8 +137,8 @@ class ResourceManager(object):
                 if self.accurateNodes == True and not self.CM.get_platform_parameter('USE_ACCURATE_NODES'):
                     self.accurateNodes = False
                     self.fwk.warning('RM: User set accurateNodes to False')
-            except Exception, e:
-                print "can't get resource info"
+            except Exception as e:
+                print("can't get resource info")
                 raise
 
             #-------------------------------
@@ -180,7 +182,7 @@ class ResourceManager(object):
             #-----------------------------------
             #print ">>>> CPN %d --- SPN %d" % (self.cores_per_node, self.sockets_per_node)
             if (self.cores_per_node % self.sockets_per_node) == 0:
-                self.cores_per_socket = self.cores_per_node / self.sockets_per_node
+                self.cores_per_socket = self.cores_per_node // self.sockets_per_node
             else:
                 self.fwk.warning("cpn (%d) not divisible by spn(%d) - setting spn to 1" % (self.cores_per_node, self.sockets_per_node))
                 self.sockets_per_node = 1
@@ -206,13 +208,13 @@ class ResourceManager(object):
         """
         Print header information for resource usage reporting file.
         """
-        print >> self.reporting_file, "# host:", self.host
-        print >> self.reporting_file, "# total nodes:", self.num_nodes
-        print >> self.reporting_file, "# processors per node:", self.ppn
-        print >> self.reporting_file, "using accurate nodes:", self.accurateNodes
-        print >> self.reporting_file, "# time (in seconds since the | available | allocated | percent allocated | processes | percent used | notes "
-        print >> self.reporting_file, "#   resource manager started |           |           |                   |           |              |"
-        print >> self.reporting_file, "#-----------------------------------------------------------------------------------------------------------"
+        print("# host:", self.host, file=self.reporting_file)
+        print("# total nodes:", self.num_nodes, file=self.reporting_file)
+        print("# processors per node:", self.ppn, file=self.reporting_file)
+        print("using accurate nodes:", self.accurateNodes, file=self.reporting_file)
+        print("# time (in seconds since the | available | allocated | percent allocated | processes | percent used | notes ", file=self.reporting_file)
+        print("#   resource manager started |           |           |                   |           |              |", file=self.reporting_file)
+        print("#-----------------------------------------------------------------------------------------------------------", file=self.reporting_file)
         self.report_RM_status('initial state of resources')
 
     def report_RM_status(self, notes = ""):
@@ -227,24 +229,24 @@ class ResourceManager(object):
          - % cores used by processes
          - notes (a description of the event that changed the resource usage)
         """
-        print >> self.reporting_file, " %27.5f |" % (time.time() - self.rm_start_of_time),
-        print >> self.reporting_file, " %8d |" % self.avail_cores,
-        print >> self.reporting_file, " %8d |" % self.alloc_cores,
-        print >> self.reporting_file, " %16.2f |" % (100 * (float(self.alloc_cores) / self.total_cores)),
-        print >> self.reporting_file, " %8d |" % self.processes,
-        print >> self.reporting_file, " %10.2f  # " % (100 * (float(self.processes) / self.total_cores)),
-        print >> self.reporting_file,  notes
+        print(" %27.5f |" % (time.time() - self.rm_start_of_time), end=' ', file=self.reporting_file)
+        print(" %8d |" % self.avail_cores, end=' ', file=self.reporting_file)
+        print(" %8d |" % self.alloc_cores, end=' ', file=self.reporting_file)
+        print(" %16.2f |" % (100 * (float(self.alloc_cores) / self.total_cores)), end=' ', file=self.reporting_file)
+        print(" %8d |" % self.processes, end=' ', file=self.reporting_file)
+        print(" %10.2f  # " % (100 * (float(self.processes) / self.total_cores)), end=' ', file=self.reporting_file)
+        print(notes, file=self.reporting_file)
         self.reporting_file.flush()
 
     def printRMState(self):
         """
         Print the node tree to ``stdout``.
         """
-        print "*** RM.nodeTable ***"
-        for n,i in self.nodes.items():
-            print n
+        print("*** RM.nodeTable ***")
+        for n,i in list(self.nodes.items()):
+            print(n)
             i.print_sockets()
-        print "====================="
+        print("=====================")
 
     def add_nodes(self, listOfNodes):
         """
@@ -261,6 +263,7 @@ class ResourceManager(object):
         tot_cores = 0
         for n, p in listOfNodes:
             if n not in self.nodes:
+                print(n, self.sockets_per_node, self.cores_per_node,)
                 self.nodes.update({n:Node(n, self.sockets_per_node,
                                           self.cores_per_node, p)})
                 self.num_nodes += 1
@@ -437,20 +440,20 @@ class ResourceManager(object):
                     self.avail_cores -= k
                     self.active_tasks.update({task_id:(comp_id, nproc, k)})
             except:
-                print "Available Nodes:"
+                print("Available Nodes:")
                 for nm in self.avail_nodes:
                     n = self.nodes[nm]
-                    print n.name, n.avail_cores
+                    print(n.name, n.avail_cores)
                     n.print_sockets()
-                print "\nAllocated Nodes:"
+                print("\nAllocated Nodes:")
                 for nm in self.alloc_nodes:
                     n = self.nodes[nm]
-                    print n.name, n.avail_cores
+                    print(n.name, n.avail_cores)
                     n.print_sockets()
-                print "\n ***** Neither List!"
-                for nm, n in self.nodes.items():
+                print("\n ***** Neither List!")
+                for nm, n in list(self.nodes.items()):
                     if nm not in self.avail_nodes and nm not in self.alloc_nodes:
-                        print nm, n.avail_cores
+                        print(nm, n.avail_cores)
                         n.print_sockets()
                 raise
 
@@ -496,7 +499,7 @@ class ResourceManager(object):
             raise
         # check to see if it is possible to satify the request
         tot_cap = 0
-        for n in self.nodes.values():
+        for n in list(self.nodes.values()):
             tot_cap += min([ppn, n.total_cores])
             if tot_cap >= nproc:
                 return False, "insufficient"
@@ -540,7 +543,7 @@ class ResourceManager(object):
             raise
         # check to see if it is possible to satify the request
         tot_cap = 0
-        for n in self.nodes.values():
+        for n in list(self.nodes.values()):
             tot_cap += min([ppn, n.total_cores])
             if tot_cap >= nproc:
                 return False, "insufficient"
@@ -589,7 +592,7 @@ class ResourceManager(object):
             raise
         # check to see if it is possible to satify the request
         tot_cap = 0
-        for n in self.nodes.values():
+        for n in list(self.nodes.values()):
             tot_cap += min([ppn, n.total_cores])
             if tot_cap >= nproc:
                 return False, "insufficient"
@@ -611,7 +614,7 @@ class ResourceManager(object):
 
         o, nproc, num_cores = self.active_tasks[task_id]
         tot_avc = 0
-        for n, node in self.nodes.items():
+        for n, node in list(self.nodes.items()):
             if task_id in node.task_ids:
                 node.release(task_id, o)
                 if node.avail_cores > 0 and n not in self.avail_nodes:
@@ -678,9 +681,9 @@ class ResourceManager(object):
                             self.nodes[node].is_available = 1
                         except:
                             self.add_nodes([node])
-        except Exception, e:
-            print e
-            print ">>> Problems with the FTB."
+        except Exception as e:
+            print(e)
+            print(">>> Problems with the FTB.")
 
     """
     ### AGS: SC09 demo code, also useful for debugging FT capabilities.

@@ -5,7 +5,7 @@
 
 import sys
 import BeautifulSoup
-import urllib2
+import urllib.request, urllib.error, urllib.parse
 PLOT = True
 try:
     from pylab import *
@@ -15,9 +15,9 @@ except:
 
 def plot_exec_time(task_time_map):
     figure()
-    for (comp_name, time_map) in task_time_map.items():
-        x = [float(k) for k in sorted(time_map.keys(), key = float)]
-        y = [float(time_map[k]) for k in sorted(time_map.keys(), key = float)]
+    for (comp_name, time_map) in list(task_time_map.items()):
+        x = [float(k) for k in sorted(list(time_map.keys()), key = float)]
+        y = [float(time_map[k]) for k in sorted(list(time_map.keys()), key = float)]
         plot(x, y, label = comp_name)
     l = legend()
     xlabel('Physics Time')
@@ -31,9 +31,9 @@ def get_task_times(url_list):
     phys_time_map = {}
     for url in url_list:
         try:
-            page = urllib2.urlopen(url)
+            page = urllib.request.urlopen(url)
         except:
-            print 'Error retreiving URL ', url
+            print('Error retreiving URL ', url)
             raise
         parsed_page = BeautifulSoup.BeautifulSoup(page)
         events_table = parsed_page('table')[3]
@@ -46,9 +46,9 @@ def get_task_times(url_list):
             phys_time = field_values[6]
             wall_time = float(field_values[5])
             #print field_values[2]
-            if (field_values[2] == u'IPS_UPDATE_TIME_STAMP'):
+            if (field_values[2] == 'IPS_UPDATE_TIME_STAMP'):
                 sim_time_map[phys_time] = float(wall_time)
-        sorted_keys = sorted(sim_time_map.keys(), key = float)
+        sorted_keys = sorted(list(sim_time_map.keys()), key = float)
         for k in range(1, len(sorted_keys)):
             cur_step = sorted_keys[k]
             prior_step = sorted_keys[k-1]
@@ -61,12 +61,12 @@ def get_task_times(url_list):
                 phys_time_map[cur_step] = [phys_exec_time[cur_step]]
             #print cur_step, phys_exec_time[cur_step], phys_time_map[cur_step]
 
-    print 'Physics Time         Time/Physics Sec.'
+    print('Physics Time         Time/Physics Sec.')
     x = []
     y = []
-    for k  in sorted(phys_time_map.keys(), key = float):
+    for k  in sorted(list(phys_time_map.keys()), key = float):
         val = sum(phys_time_map[k]) / len(phys_time_map[k])
-        print k, val
+        print(k, val)
         x.append(float(k))
         y.append(val)
 

@@ -8,7 +8,7 @@ import sys
 import subprocess
 import os
 import BeautifulSoup
-import urllib2
+import urllib.request, urllib.error, urllib.parse
 import numpy as np
 import math
 
@@ -54,12 +54,12 @@ def plot_task_data(end_time_map, max_slice, max_iteration, max_wall_time):
     X = np.ma.array(np.zeros([len(iterations) + 1, len(slices) + 1]))
     Y = np.ma.array(np.zeros([len(iterations) + 1, len(slices) + 1]))
 
-    comp_names = end_time_map.keys()
+    comp_names = list(end_time_map.keys())
     for i in range(len(comp_names)):
         offset = (1.0 / num_components) * i
         end_map = end_time_map[comp_names[i]]
         #print end_map
-        for ((iteration, slice), value) in sorted(end_map.iteritems()):
+        for ((iteration, slice), value) in sorted(end_map.items()):
     #        print iteration, slice, '%.3e' % (value)
             iter_idx = num_components * iteration + i
             convergence[iter_idx, slice] = value
@@ -71,12 +71,12 @@ def plot_task_data(end_time_map, max_slice, max_iteration, max_wall_time):
 
         # find minimum value not equal to zero
         value_min = 1000.0
-        for ((iteration, slice), value) in sorted(end_map.iteritems()):
+        for ((iteration, slice), value) in sorted(end_map.items()):
             if value > 0.0 and value < value_min:
                 value_min = value
 
         # set zeros to value min
-        for ((iteration, slice), value) in sorted(end_map.iteritems()):
+        for ((iteration, slice), value) in sorted(end_map.items()):
             if value < value_min:
                 #print 'changed ', value
                 convergence[iter_idx, slice] = value_min
@@ -94,12 +94,12 @@ def plot_task_data(end_time_map, max_slice, max_iteration, max_wall_time):
         ax.set_xlabel('Iteration')
         ax.set_ylabel('Slice')
         ax.xaxis.set_major_formatter(plt.FuncFormatter(format))
-        xmajorLocator = FixedLocator(range(2 * max_iteration + 1), 5)
+        xmajorLocator = FixedLocator(list(range(2 * max_iteration + 1)), 5)
         ax.xaxis.set_major_locator( xmajorLocator )
 
     filename = 'plot_%09.3f.png' % (max_wall_time)
     plt.savefig(filename, dpi=100)
-    print 'Wrote file', filename
+    print('Wrote file', filename)
     plt.clf()
     return convergence
 
@@ -108,9 +108,9 @@ def get_task_times(url):
     task_map = {}
     all_comp_names = []
     try:
-        page = urllib2.urlopen(url)
+        page = urllib.request.urlopen(url)
     except:
-        print 'Error retrieving URL ', url
+        print('Error retrieving URL ', url)
         raise
     parsed_page = BeautifulSoup.BeautifulSoup(page)
     events_table = parsed_page('table')[3]
@@ -122,7 +122,7 @@ def get_task_times(url):
         fields = event('td')
         field_values = [field.contents[0].strip() for field in fields]
         phys_stamp = field_values[-2]
-        if (field_values[2] == u'IPS_TASK_END'):
+        if (field_values[2] == 'IPS_TASK_END'):
             #print ' '.join(field_values)
             comment = field_values[-1]
             comp = field_values[3]
@@ -141,7 +141,7 @@ def get_task_times(url):
                 task_map[task_id] = new_task
             else:
                 new_task.end_time = float(wall_time)
-        elif (field_values[2] in [u'IPS_LAUNCH_TASK_POOL', u'IPS_LAUNCH_TASK']):
+        elif (field_values[2] in ['IPS_LAUNCH_TASK_POOL', 'IPS_LAUNCH_TASK']):
             comment = field_values[-1]
             comp = field_values[3]
             wall_time = field_values[-3]
@@ -150,7 +150,7 @@ def get_task_times(url):
             try:
                 tag = comment_fields[comment_fields.index('Tag')+ 2]
             except ValueError :
-                if field_values[2] == u'IPS_LAUNCH_TASK':
+                if field_values[2] == 'IPS_LAUNCH_TASK':
                     try:
                         (iter, slice) = [int(v) for v in comment.split()[-1].split('.')]
                     except ValueError:
@@ -218,23 +218,23 @@ def get_task_times(url):
         wall_time = float(field_values[-3])
         update_plot = False
         value = None
-        if (field_values[2] == u'IPS_TASK_END'):
+        if (field_values[2] == 'IPS_TASK_END'):
             #print ' '.join(field_values)
             task_id = comment_fields[comment_fields.index('task_id') + 2]
             task = task_map[task_id]
             slice = task.slice
             iteration = task.iteration
             task_life = task_life_map[comp]
-            value = float(task_life_map.keys().index(comp)) + 1.0
+            value = float(list(task_life_map.keys()).index(comp)) + 1.0
             update_plot = True
             #print '###', iteration, slice, task_id, task_life[iteration, slice]
-        elif (field_values[2] in [u'IPS_LAUNCH_TASK_POOL', u'IPS_LAUNCH_TASK']):
+        elif (field_values[2] in ['IPS_LAUNCH_TASK_POOL', 'IPS_LAUNCH_TASK']):
             task_id = comment_fields[comment_fields.index('task_id')+ 2]
             task = task_map[task_id]
             slice = task.slice
             iteration = task.iteration
             task_life = task_life_map[comp]
-            value = float(task_life_map.keys().index(comp)) + 0.5
+            value = float(list(task_life_map.keys()).index(comp)) + 0.5
             update_plot = True
 
         if wall_time > max_wall_time:
@@ -248,7 +248,7 @@ def get_task_times(url):
         if update_plot:
             task_life[iteration, slice] = value
             if (PLOT_ALL_CHANGES or first_plot):
-                print max_slice, max_iteration, wall_time
+                print(max_slice, max_iteration, wall_time)
                 plot_task_data(task_life_map, max_slice, max_iteration, wall_time)
                 last_frame_time = wall_time
                 first_plot = False
@@ -287,12 +287,12 @@ def get_task_times(url):
 
 #os.spawnvp(os.P_WAIT, 'mencoder', command)
 
-    print "\n\nabout to execute:\n%s\n\n" % ' '.join(command)
+    print("\n\nabout to execute:\n%s\n\n" % ' '.join(command))
     subprocess.check_call(command)
 
-    print "\n\n The movie was written to 'output.avi'"
+    print("\n\n The movie was written to 'output.avi'")
 
-    print "\n\n You may want to delete *.png now.\n\n"
+    print("\n\n You may want to delete *.png now.\n\n")
 
 
 class Task(object):

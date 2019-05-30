@@ -166,8 +166,8 @@ def get_checkjob_info():
             if line.strip() != "":
                 data_lines.append(line.strip())
         #print '%%%%%%%%%%%%%%%%', data_lines
-    except Exception, e:
-        print e
+    except Exception as e:
+        print(e)
         raise e
         #return nodes, procs
     # parse output to get allocated nodes data
@@ -196,8 +196,8 @@ def get_checkjob_info():
                 #m,p = n.split(':')
                 nodes.append(m)
                 #print '##############', nodes
-        except Exception, e:
-            print 'problem parsing - small format'
+        except Exception as e:
+            print('problem parsing - small format')
             raise e
     elif data_lines[0].find("*") > -1:
             #large node number format
@@ -229,18 +229,18 @@ def get_checkjob_info():
                     #this is a single node id
                     nodes.append(r)
             ndata = [(n, p) for n in nodes]              
-        except Exception, e:
-            print 'problem parsing - large format'
+        except Exception as e:
+            print('problem parsing - large format')
             raise e
     else:
             # TODO: make this into a real exception type
-        raise "could not parse resource data"
+        raise Exception("could not parse resource data")
     #print nodes, p, tot_procs
     if abs(len(nodes)*int(p) - tot_procs) > 1 :
-        print 'len(nodes) = %d  p = %d  tot_procs = %d' % (len(nodes), int(p), tot_procs)
-        print "something wrong with parsing - node count*cores does not match task count"
+        print('len(nodes) = %d  p = %d  tot_procs = %d' % (len(nodes), int(p), tot_procs))
+        print("something wrong with parsing - node count*cores does not match task count")
         raise Exception("something wrong with parsing - node count*cores does not match task count")
-    print nodes, int(p), mixed_nodes, ndata
+    print(nodes, int(p), mixed_nodes, ndata)
     return nodes, int(p), mixed_nodes, ndata
 #    return nodes, int(p)
 
@@ -265,7 +265,7 @@ def get_checkjob_info_old():
     try:
         job_id = os.environ['PBS_JOBID']
     except:
-        print 'problems getting job id'
+        print('problems getting job id')
         raise
 
     """
@@ -302,7 +302,7 @@ def get_checkjob_info_old():
             if line.strip() != "":
                 data_lines.append(line.strip())
     except:
-        print 'problems getting checkjob output'
+        print('problems getting checkjob output')
         raise
 
     """
@@ -396,7 +396,7 @@ def get_slurm_info():
         cmd = 'scontrol show hostname %s' % nodelist
         sys_nodes = subprocess.check_output(cmd.split()).strip().split('\n')
         nodes.extend([(k, ppn) for k in sys_nodes])
-        print 'IPS SLURM_NODES = ', nodes
+        print('IPS SLURM_NODES = ', nodes)
     except Exception:
         raise
 
@@ -462,7 +462,7 @@ def get_pbs_info():
                 node_dict[core] += 1
             except KeyError:
                 node_dict[core] = 1
-        listOfNodes = [(k,v) for k,v in node_dict.items()]
+        listOfNodes = [(k,v) for k,v in list(node_dict.items())]
         max_p = max(node_dict.values())
         mixed_nodes = (max_p != min(node_dict.values()))
         accurateNodes = True
@@ -511,11 +511,11 @@ def get_topo(services):
 
     .. note:: Not available on all platforms.
     """
-    print "***in get_topo"
+    print("***in get_topo")
     # TODO: change launch_str to use mpirun and command line flags from 
     # platform config.
     script = services.get_platform_parameter('HWLOC_DETECT_SCRIPT')
-    print script
+    print(script)
     launch_str = 'mpirun -n 1 -bind-to-core %s' % script
     p = subprocess.Popen(launch_str, shell=True, 
                          stdout=subprocess.PIPE, 
@@ -523,11 +523,11 @@ def get_topo(services):
     p.wait()
     if p.returncode == 0:
         topo = p.communicate()[0]
-        print topo
+        print(topo)
         return topo.count('Socket'), topo.count('Core')
     else:
-        print "returncode = %d\nproblem launching: '%s'" % (p.returncode, launch_str)
-        print topo
+        print("returncode = %d\nproblem launching: '%s'" % (p.returncode, launch_str))
+        print(topo)
 
 def getResourceList(services, host, ftb, partial_nodes=False):
     """
@@ -549,8 +549,8 @@ def getResourceList(services, host, ftb, partial_nodes=False):
                                                       silent=True)
     if node_detect_str == "checkjob":
         num_nodes, ppn, mixed_nodes, listOfNodes = get_checkjob_info()
-        print "======================================================="
-        print num_nodes, ppn, mixed_nodes, listOfNodes
+        print("=======================================================")
+        print(num_nodes, ppn, mixed_nodes, listOfNodes)
         accurateNodes = False
     elif node_detect_str == "qstat":
         num_nodes, ppn, mixed_nodes, listOfNodes = get_qstat_jobinfo()
@@ -574,7 +574,7 @@ def getResourceList(services, host, ftb, partial_nodes=False):
         num_nodes, ppn, mixed_nodes, listOfNodes = manual_detection(services)
         accurateNodes = False
     else:
-        print "WARNING: no node detection strategy specified in platform config file ('NODE_DETECTION').  Valid options are: checkjob, qstat, pbs_env, slurm_env, manual.  Trying all detection schemes."
+        print("WARNING: no node detection strategy specified in platform config file ('NODE_DETECTION').  Valid options are: checkjob, qstat, pbs_env, slurm_env, manual.  Trying all detection schemes.")
         try:
             num_nodes, ppn, mixed_nodes, listOfNodes = get_checkjob_info()
             accurateNodes = True
@@ -601,7 +601,7 @@ def getResourceList(services, host, ftb, partial_nodes=False):
                             num_nodes, ppn, mixed_nodes, listOfNodes = manual_detection()
                             accurateNodes = False
                         except:
-                            print "*** NO DETECTION MECHANISM WORKS ***" 
+                            print("*** NO DETECTION MECHANISM WORKS ***") 
                             raise
     # detect topology
     cpn = int(services.get_platform_parameter('CORES_PER_NODE'))
@@ -637,7 +637,7 @@ def getResourceList(services, host, ftb, partial_nodes=False):
     #if cpn < ppn:
     #    cpn = ppn
     # return list of node names
-    print listOfNodes, cpn, spn, ppn, accurateNodes
+    print(listOfNodes, cpn, spn, ppn, accurateNodes)
     return listOfNodes, cpn, spn, ppn, accurateNodes 
 
 

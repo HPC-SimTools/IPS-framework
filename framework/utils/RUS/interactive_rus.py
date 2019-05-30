@@ -68,9 +68,9 @@ class framework():
         """
         try:
             opts, args = getopt.getopt(sys.argv[1:], 'r:m:c:l:s:', ['resource=','config=','mapfile=','log=','seed='])
-        except getopt.GetoptError, err:
+        except getopt.GetoptError as err:
             # print help information and exit:
-            print str(err) # will print something like "option -a not recognized"
+            print(str(err)) # will print something like "option -a not recognized"
             usage()
             sys.exit(2)
 
@@ -94,17 +94,17 @@ class framework():
                 elif o == '-s' or o =='--seed':
                     self.myseed = int(a)
                 else:
-                    print 'bad input'
+                    print('bad input')
                     usage()
         except:
-            print 'problems getting the command line args'
+            print('problems getting the command line args')
             raise
 
         try:
-            print self.myseed,
+            print(self.myseed, end=' ')
         except:
             self.myseed = int(time())
-            print self.myseed,
+            print(self.myseed, end=' ')
         self.my_rand = random.Random()
         self.my_rand.seed(self.myseed)
 
@@ -115,7 +115,7 @@ class framework():
         try:
             self.create_logfiles()
         except:
-            print "problems creating log files"
+            print("problems creating log files")
             raise
 
         #-----------------------------------------
@@ -124,7 +124,7 @@ class framework():
         try:
             self.RM = resource_mgr(self, self.resource_file)
         except:
-            print "problems initializing the resource manager"
+            print("problems initializing the resource manager")
             raise
 
         #-----------------------------------------
@@ -133,7 +133,7 @@ class framework():
         try:
             self.parse_config(self.config_files)
         except:
-            print "problems reading config file"
+            print("problems reading config file")
             raise
 
         #-----------------------------------------
@@ -142,7 +142,7 @@ class framework():
         try:
             self.setup_logfiles()
         except:
-            print "problems setting up sim, comp and log type maps"
+            print("problems setting up sim, comp and log type maps")
             raise
 
         #----------------------------------------
@@ -199,7 +199,7 @@ class framework():
         for s in self.simulations:
             self.sim_map.update({s.name:scount})
             self.comp_map.update({s.name + '_' + 'None':0})
-            for c in s.my_comps.values():
+            for c in list(s.my_comps.values()):
                 self.comp_map.update({s.name + '_' + c.name:ccount})
                 ccount = ccount + 1
             scount = scount + 1
@@ -225,16 +225,16 @@ class framework():
 
         allocated, total = self.RM.get_curr_usage()
         #print >> self.logFile, comment_symbol, 'The following data is associated with the run executed at', self.beginning_of_time
-        print >> self.rlogFile, comment_symbol, 'The following data is associated with the run executed at', self.beginning_of_time
+        print(comment_symbol, 'The following data is associated with the run executed at', self.beginning_of_time, file=self.rlogFile)
         #print >> self.logFile, comment_symbol, 'On host', os.uname()[1], 'with configuration files:' #self.config_file, self.resource_file
-        print >> self.rlogFile, comment_symbol, 'On host', os.uname()[1], 'with configuration files:' #self.config_file, self.resource_file
+        print(comment_symbol, 'On host', os.uname()[1], 'with configuration files:', file=self.rlogFile) #self.config_file, self.resource_file
         for c in self.config_files:
             #print >> self.logFile, comment_symbol, c
-            print >> self.rlogFile, comment_symbol, c
+            print(comment_symbol, c, file=self.rlogFile)
         #print >> self.logFile, comment_symbol, self.resource_file
-        print >> self.rlogFile, comment_symbol, self.resource_file
+        print(comment_symbol, self.resource_file, file=self.rlogFile)
         #print >> self.logFile, comment_symbol, '================================================================='
-        print >> self.rlogFile, comment_symbol, '================================================================='
+        print(comment_symbol, '=================================================================', file=self.rlogFile)
         self.logEvent(None, None, 'start_sim', "starting simulation")
 
     #-----------------------------------------------------------------------------------------------------
@@ -258,13 +258,13 @@ class framework():
 
         if s == 'None' and c == 'None':
             #print >> self.logFile, self.fwk_global_time, 0, 0, self.log_types[ltype], allocated, total, self.comment_symbol, msg
-            print >> self.rlogFile, self.fwk_global_time, 'fwk', '---' , ltype, percent, '%  ', allocated, total, self.comment_symbol, msg
+            print(self.fwk_global_time, 'fwk', '---' , ltype, percent, '%  ', allocated, total, self.comment_symbol, msg, file=self.rlogFile)
         elif c == 'None':
             #print >> self.logFile, self.fwk_global_time, self.sim_map[s], self.comp_map[s + '_' + c], self.log_types[ltype], percent, '%  ',allocated, total, self.comment_symbol, msg
-            print >> self.rlogFile, self.fwk_global_time, sim, '---', ltype, percent, '%  ',allocated, total, self.comment_symbol, msg
+            print(self.fwk_global_time, sim, '---', ltype, percent, '%  ',allocated, total, self.comment_symbol, msg, file=self.rlogFile)
         else:
             #print >> self.logFile, self.fwk_global_time, self.sim_map[s], self.comp_map[s + '_' + c], self.log_types[ltype], percent, '%  ', allocated, total, self.comment_symbol, msg
-            print >> self.rlogFile, self.fwk_global_time, sim, comp, ltype, percent, '%  ', allocated, total, self.comment_symbol, msg
+            print(self.fwk_global_time, sim, comp, ltype, percent, '%  ', allocated, total, self.comment_symbol, msg, file=self.rlogFile)
         #print >> self.raw_usage, self.fwk_global_time, ' ', percent
 
         #pass
@@ -275,7 +275,7 @@ class framework():
         percent = 100 * (allocated / (float(total)))
         self.usage_times.append(self.fwk_global_time)
         self.usage_vals.append(percent)
-        print >> self.raw_usage, self.fwk_global_time, ' ', percent
+        print(self.fwk_global_time, ' ', percent, file=self.raw_usage)
         #"""
         #pass
 
@@ -287,13 +287,15 @@ class framework():
         for conf_file in conf_files:
             try:
                 config = ConfigObj(conf_file, file_error=True, interpolation='template')
-            except IOError, (ex):
-                print 'Error opening/finding config file %s' % conf_file
-                print 'ConfigObj error message: ', ex
+            except IOError as xxx_todo_changeme:
+                (ex) = xxx_todo_changeme
+                print('Error opening/finding config file %s' % conf_file)
+                print('ConfigObj error message: ', ex)
                 raise
-            except SyntaxError, (ex):
-                print 'Syntax problem in config file %s' % conf_file
-                print 'ConfigObj error message: ', ex
+            except SyntaxError as xxx_todo_changeme1:
+                (ex) = xxx_todo_changeme1
+                print('Syntax problem in config file %s' % conf_file)
+                print('ConfigObj error message: ', ex)
                 raise
 
             try:
@@ -304,7 +306,7 @@ class framework():
                     self.simulations.append(simulation(config[s], self, len(self.simulations)))
                 self.description = config['description']
             except:
-                print 'problem parsing simulations'
+                print('problem parsing simulations')
                 raise
 
     def go(self):
@@ -322,8 +324,8 @@ class framework():
 
         for s in sims:
             to_run.extend(s.get_ready_comps())
-        print 'length of sims:', len(sims)
-        print 'length of to_run:', len(to_run)
+        print('length of sims:', len(sims))
+        print('length of to_run:', len(to_run))
 
         #print [k.name for k in to_run]
         while sims:
@@ -354,8 +356,8 @@ class framework():
                 s.update_resource_info()
 
             #log resource usage for current global time
-            print 'to_run:', [k.name for k in to_run]
-            print 'running:', [k.name for k in running]
+            print('to_run:', [k.name for k in to_run])
+            print('running:', [k.name for k in running])
             #find update time
             #print 'about to update time'
             try:
@@ -364,7 +366,7 @@ class framework():
                     if c.curr_exec_time < min_update_time:
                         min_update_time = c.curr_exec_time
             except:
-                print 'not enough nodes to run tasks'
+                print('not enough nodes to run tasks')
                 #self.logFile.close()
                 self.rlogFile.close()
                 #self.raw_usage.close()
@@ -376,8 +378,8 @@ class framework():
             self.fwk_global_time += min_update_time
             for s in sims:
                 finished_comps, nctr = s.sync(min_update_time)
-                print 'added comps:', nctr
-                print 'finished comps:', finished_comps
+                print('added comps:', nctr)
+                print('finished comps:', finished_comps)
                 # add next comps to run to to_run list
                 for c in nctr:
                     to_run.append(c)
@@ -402,7 +404,7 @@ class framework():
         efficiency = cpuhrs_used / cpuhrs_charged
         # print the config file name, nodes, ppn, total time, CPU hours
         #print confs,  self.RM.nodes, 'nodes,', self.RM.ppn, 'ppn,' , self.fwk_global_time, 'seconds,', (self.RM.nodes * self.RM.ppn * self.fwk_global_time) / 3600.0, 'CPU hours'
-        print self.fwk_global_time, cpuhrs_charged, cpuhrs_used, efficiency
+        print(self.fwk_global_time, cpuhrs_charged, cpuhrs_used, efficiency)
 
     def crunch(self):
         """
@@ -416,12 +418,12 @@ class framework():
 # end of framework
 
 def usage():
-    print "This script will simulate resource usage over time of a simulation."
-    print "Please use the following options:"
-    print "   -c, --config : file containing component information"
-    print "   -m, --mapfile : file containing valid states and an explanation of what they mean"
-    print "   -l, --log : log file location, default is log.<config file name>_<num procs>"
-    print "   -r, --resource : file containing resource info"
+    print("This script will simulate resource usage over time of a simulation.")
+    print("Please use the following options:")
+    print("   -c, --config : file containing component information")
+    print("   -m, --mapfile : file containing valid states and an explanation of what they mean")
+    print("   -l, --log : log file location, default is log.<config file name>_<num procs>")
+    print("   -r, --resource : file containing resource info")
 
 if __name__ == "__main__":
     my_fwk = framework()

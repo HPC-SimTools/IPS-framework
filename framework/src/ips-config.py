@@ -17,9 +17,9 @@ def getCpFilesFromIps(ipsConf):
     allCpFiles=[]
     for component in ipsConf['PORTS']['NAMES'].split():
         compimp=ipsConf['PORTS'][component]['IMPLEMENTATION']
-        if ipsConf[compimp].has_key('INPUT_FILES'):
+        if 'INPUT_FILES' in ipsConf[compimp]:
             allCpFiles.append(ipsConf[compimp]['INPUT_FILES'])
-        if ipsConf[compimp].has_key('DATA_FILES'):
+        if 'DATA_FILES' in ipsConf[compimp]:
             allCpFiles.append(ipsConf[compimp]['DATA_FILES'])
     return allCpFiles
 
@@ -49,12 +49,12 @@ def main(argv=None):
     if options.cfgFile:
         cfgFile=os.path.abspath(options.cfgFile)
     else:
-        print "config file required"
+        print("config file required")
         return
     if options.var:
         config_key=options.var
     else:
-        print "config variable required"
+        print("config variable required")
         return
 
     # Try to see if we can find the platform file
@@ -82,7 +82,7 @@ def main(argv=None):
         if os.path.exists(fullcfile):
             compset_list.append(fullcfile)
         else:
-            print "Could not find: ", cfile
+            print("Could not find: ", cfile)
     else:
         if os.path.exists(os.path.join(ipsShareDir,'component-generic.conf')):
             compset_list.append(os.path.join(ipsShareDir,'component-generic.conf'))
@@ -98,32 +98,34 @@ def main(argv=None):
     # Create confObj object
     try:
         conf = ConfigObj(conf_tuple, interpolation='template', file_error=True)
-    except SyntaxError, (ex):
-        print ' Error parsing config file: ', str(ex)
+    except SyntaxError as oserr:
+        (ex) = oserr
+        print(' Error parsing config file: ', str(ex))
         sys.exit(1)
-    except IOError, (ex):
-        print 'Error opening config file: ', str(ex)
+    except IOError as ioerr:
+        (ex) = ioerr
+        print('Error opening config file: ', str(ex))
         sys.exit(1)
 
     # Now get data as needed
     if config_key == 'CP_FILES':
         try:
-            print 'call getCpFilesFromIps'
+            print('call getCpFilesFromIps')
             val = getCpFilesFromIps(conf)
         except KeyError:
-            print 'Error: cannot get copy files in config file %s' %(str(conf_tuple))
+            print('Error: cannot get copy files in config file %s' %(str(conf_tuple)))
             return 1
         else:
-            print val
+            print(val)
             return 0
     else:
         try:
             val = conf[config_key]
         except KeyError:
-            print 'Error: no variable %s in config file %s' %(config_key, str(conf_tuple))
+            print('Error: no variable %s in config file %s' %(config_key, str(conf_tuple)))
             return 1
         else:
-            print val
+            print(val)
             return 0
 
 # ----- end main -----

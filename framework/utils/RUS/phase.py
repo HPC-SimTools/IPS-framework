@@ -36,10 +36,10 @@ class phase():
         try:
             self.nsteps = int(info_dict["nsteps"])
         except:
-            print "bad nsteps in phase %s" % self.name
+            print("bad nsteps in phase %s" % self.name)
             raise
         try:
             self.comp_list = info_dict["components"]
         except:
-            print "bad components in phase %s" % self.name
+            print("bad components in phase %s" % self.name)
             raise

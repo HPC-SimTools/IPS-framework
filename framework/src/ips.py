@@ -280,7 +280,7 @@ class Framework(object):
                                              self.ftb,
                                              cmd_nodes,
                                              cmd_ppn)
-        except Exception, e:
+        except Exception as e:
             self.exception("Problem initializing managers")
             self.terminate_all_sims(status=Message.FAILURE)
             #stop(self.timers['__init__'])
@@ -327,7 +327,7 @@ class Framework(object):
         self.debug('Framework dispatching method: %s from %s', method_name, str(comp_id))
         try:
             handler = self.service_handler[method_name]
-        except KeyError, e:
+        except KeyError as e:
             self.exception("Unsupported method : %s", method_name)
             response_msg = ServiceResponseMessage(self.component_id,
                                  comp_id,
@@ -337,13 +337,13 @@ class Framework(object):
         else:
             try:
                 ret_val = handler(msg)
-            except BlockedMessageException, e:
+            except BlockedMessageException as e:
                 if self.verbose_debug:
                     self.debug('Blocked message : %s', e.__str__())
                 self.blocked_messages.append(msg)
                 #stop(self.timers['_dispatch_service_request'])
                 return
-            except Exception, e:
+            except Exception as e:
                 #self.exception('Exception handling service message: %s - %s', str(msg.__dict__), str(e))
                 response_msg = ServiceResponseMessage(self.component_id,
                                                      comp_id,
@@ -439,7 +439,7 @@ class Framework(object):
         try:
             self.logger.critical(*args)
         except:
-            print 'error in Framework.critical', args
+            print('error in Framework.critical', args)
             raise
 
     #@ipsTiming.TauWrap(TIMERS['_invoke_framework_comps'])
@@ -528,7 +528,7 @@ class Framework(object):
             fwk_comps = self.config_manager.get_framework_components()
             sim_comps = self.config_manager.get_component_map()
             outstanding_sim_calls = {}
-        except Exception, e:
+        except Exception as e:
             self.exception('encountered exception during fwk.run() initialization')
             self.terminate_all_sims(status=Message.FAILURE)
             #stop(self.timers['run'])
@@ -560,11 +560,11 @@ class Framework(object):
             self.ips_status['RUN_SETUP'] = False
             self.ips_status['RUN'] = False
         elif not self.ips_dosteps['CREATE_RUNSPACE'] and self.ips_status['CREATE_RUNSPACE']:
-            print 'Skipping CREATE_RUNSPACE, option was %s but runspace exists' % \
-                    self.ips_dosteps['CREATE_RUNSPACE']
+            print('Skipping CREATE_RUNSPACE, option was %s but runspace exists' % \
+                    self.ips_dosteps['CREATE_RUNSPACE'])
         else:
-            print 'Skipping CREATE_RUNSPACE, option was %s and runspace did not exist' % \
-                    self.ips_dosteps['CREATE_RUNSPACE']
+            print('Skipping CREATE_RUNSPACE, option was %s and runspace did not exist' % \
+                    self.ips_dosteps['CREATE_RUNSPACE'])
 
         try:
             # Each Framework Component is treated as a stand-alone simulation
@@ -581,14 +581,14 @@ class Framework(object):
 
                 # SIMYAN: add those calls to the outstanding call map
                 if self.ips_dosteps['CREATE_RUNSPACE']:
-                    outstanding_sim_calls[comp_id] = msg_list
+                    outstanding_sim_calls[str(comp_id)] = msg_list
 
             # generate a queue of invocation messages for each simulation
             #   - list will look like: [init_comp.init(), init_comp.step(), init_comp.finalize(),
             #                           driver.init(), driver.step(), driver.finalize()]
             # these messages will be sent on a FIFO basis, thus running the init components,
             # then the corresponding drivers.
-            for sim_name, comp_list in sim_comps.items():
+            for sim_name, comp_list in list(sim_comps.items()):
                 msg_list = []
                 self._send_monitor_event(sim_name, 'IPS_START', 'Starting IPS Simulation')
                 self._send_dynamic_sim_event(sim_name = sim_name, event_type = 'IPS_START')
@@ -605,12 +605,12 @@ class Framework(object):
                     methods.append('setup')
                 elif self.ips_dosteps['RUN_SETUP'] and not self.ips_status['CREATE_RUNSPACE']:
                     self.ips_status['RUN_SETUP'] = False
-                    print 'RUN_SETUP was requested, but a runspace does not exist...'
+                    print('RUN_SETUP was requested, but a runspace does not exist...')
                 elif self.ips_status['RUN_SETUP'] and self.ips_status['CREATE_RUNSPACE']:
-                    print 'RUN_SETUP already performed by a previous run, continuing...'
+                    print('RUN_SETUP already performed by a previous run, continuing...')
                 elif self.ips_status['RUN_SETUP'] and not self.ips_status['CREATE_RUNSPACE']:
                     self.ips_status['RUN_SETUP'] = False
-                    print 'RUN_SETUP is marked as complete, but a runspace does not exist...'
+                    print('RUN_SETUP is marked as complete, but a runspace does not exist...')
                 else:
                     self.ips_status['RUN'] = False
 
@@ -622,12 +622,12 @@ class Framework(object):
                     methods.append('finalize')
                 elif self.ips_dosteps['RUN'] and not self.ips_status['RUN_SETUP']:
                     self.ips_status['RUN'] = False
-                    print 'RUN was requested, but run setup hasn\'t been performed...'
+                    print('RUN was requested, but run setup hasn\'t been performed...')
                 elif self.ips_status['RUN'] and self.ips_dosteps['RUN_SETUP']:
                     self.ips_status['RUN'] = False
-                    print 'RUN was not requested, but had been performed.'
+                    print('RUN was not requested, but had been performed.')
                 elif not self.ips_dosteps['RUN'] and self.ips_status['RUN'] and self.ips_status['RUN_SETUP']:
-                    print 'RUN was not requested, but had been performed.'
+                    print('RUN was not requested, but had been performed.')
                 else:
                     self.ips_status['RUN'] = False
 
@@ -646,7 +646,7 @@ class Framework(object):
                         outstanding_sim_calls[sim_name] = msg_list
 
 
-        except Exception, e:
+        except Exception as e:
             self.exception('encountered exception during fwk.run() genration of call messages')
             self.terminate_all_sims(status=Message.FAILURE)
             #stop(self.timers['run'])
@@ -656,7 +656,7 @@ class Framework(object):
         call_queue_map = {}
         # send off first round of invocations...
         try:
-            for sim_name, msg_list in outstanding_sim_calls.items():
+            for sim_name, msg_list in list(outstanding_sim_calls.items()):
                 msg = msg_list.pop(0)
                 self.debug('Framework sending message %s ', msg.__dict__)
                 call_id = self.task_manager.init_call(msg, manage_return=False)
@@ -727,7 +727,7 @@ class Framework(object):
                         self.call_queue_map[call_id] = sim_msg_list
                     except IndexError:
                         sim_comps = self.config_manager.get_component_map() #Get any new dynamic simulations
-                        if sim_name in sim_comps.keys():
+                        if sim_name in list(sim_comps.keys()):
                             self._send_monitor_event(sim_name, 'IPS_END',
                                                     comment, ok)
                             self._send_dynamic_sim_event(sim_name, 'IPS_END', ok)
@@ -897,9 +897,9 @@ class Framework(object):
                                           'terminate', status)
                 self.debug('Sending terminate message to %s', str(id))
                 invocation_q.put(msg)
-            except Exception, e:
+            except Exception as e:
                 self.exception('exception encountered while terminating comp %s', id)
-                print e
+                print(e)
 
     def terminate_all_sims(self, status= Message.SUCCESS):
         """
@@ -916,7 +916,7 @@ class Framework(object):
         time.sleep(1)
         try:
             self.config_manager.terminate(status)
-        except Exception, e:
+        except Exception as e:
             self.exception('exception encountered while cleaning up config_manager')
         #sys.exit(status)
         #stop(self.timers['terminate_sim'])
@@ -928,10 +928,10 @@ def modifyConfigObjFile(configFile,parameter,newValue,writeNew=True):
     cfg_file = ConfigObj(configFile, interpolation='template', file_error=True)
 
     # modify the SIM_NAME value to the new value
-    if cfg_file.has_key(parameter):
+    if parameter in cfg_file:
         cfg_file[parameter] = newValue
     else:
-        print configFile + " has no parameter: "+parameter
+        print(configFile + " has no parameter: "+parameter)
         return ""
 
     newFileName = newValue + '.ips'
@@ -960,7 +960,7 @@ def extractIpsFile(containerFile,newSimName):
     ifile=zf.read(oldIpsFile)
     ipsFile=newSimName+".ips"
     if os.path.exists(ipsFile):
-        print "Moving "+ipsFile+" to "+"Save"+ipsFile
+        print("Moving "+ipsFile+" to "+"Save"+ipsFile)
         shutil.copy(ipsFile, "Save"+ipsFile)
     ff=open(ipsFile,"w")
     ff.write(ifile)
@@ -995,7 +995,7 @@ def main(argv=None):
     except KeyError:
         pass
     else:
-        print "IPS using platform file :", platform_default
+        print("IPS using platform file :", platform_default)
     parser.add_option('-p', '--platform', dest='platform_filename', default=platform_default,
                       type="string", help='IPS platform configuration file')
     parser.add_option('-c', '--component',
@@ -1073,7 +1073,7 @@ def main(argv=None):
         usedSim_name=True
         if usedSimulation:
             if nSimName != nCfgFile and usedSimulation:
-                print "When using both --simulation and --sim_name the list length must be the same"
+                print("When using both --simulation and --sim_name the list length must be the same")
                 return
 
     # SIMYAN: grab the list of clone container files, and make sure the
@@ -1083,17 +1083,17 @@ def main(argv=None):
     multiCloneSingleSource=False
     if options.clone:
         if not usedSim_name:
-            print "Must specify SIM_NAME using --sim_name when cloning"
+            print("Must specify SIM_NAME using --sim_name when cloning")
             return
         if usedSimulation:
-            print "Cannot use both --simulation and --clone"
+            print("Cannot use both --simulation and --clone")
             return
         clone_list=options.clone
         nClone=len(clone_list)
         usedClone=True
         if nSimName > nClone and nClone == 1:
             #print "When using both --clone and --sim_name the list length must be the same"
-            print 'Cloning from single clone file', clone_list[0], 'into multiple simulations', simName_list
+            print('Cloning from single clone file', clone_list[0], 'into multiple simulations', simName_list)
             multiCloneSingleSource = True
             #return
 
@@ -1159,7 +1159,7 @@ def main(argv=None):
             else:
                 i=i+1
                 new_sim_name=simName_list[i]
-                print 'else'
+                print('else')
                 iFile=extractIpsFile(clone_file,new_sim_name)
                 file=modifyConfigObjFile(iFile,'SIM_NAME',new_sim_name,writeNew=False)
                 sim_file_map[new_sim_name].append(iFile)
@@ -1183,17 +1183,17 @@ def main(argv=None):
             foundFile=""
             for testFile in glob.glob(simname+"/*.ips"):
                 cfg_file = ConfigObj(testFile,interpolation='template')
-                if cfg_file.has_key("SIM_NAME"):
+                if "SIM_NAME" in cfg_file:
                     testSimName=cfg_file["SIM_NAME"]
                     if testSimName == simname:
                         foundFile=testFile
                         sim_file_map[sim_name].append(foundFile)
 
-            print "FOUND FILE", foundFile
+            print("FOUND FILE", foundFile)
             if foundFile:
                 cleaned_file_list.append(foundFile)
             else:
-                print "Cannot find ips file associated with SIM_NAME= ", simname
+                print("Cannot find ips file associated with SIM_NAME= ", simname)
                 return
 
         cfgFile_list = cleaned_file_list
@@ -1241,7 +1241,7 @@ def main(argv=None):
 # ----- end main -----
 
 if __name__ == "__main__":
-    print "Starting IPS"
+    print("Starting IPS")
     sys.stdout.flush()
     os.environ['IPS_INITIAL_CWD'] = os.getcwd()
     sys.exit(main())

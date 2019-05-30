@@ -88,7 +88,7 @@ class fsp_job:   #our new job class
                 name, val = line.split("=")
                 name = name.strip()
                 val = val.strip()
-                if self.my_vals.has_key(name):
+                if name in self.my_vals:
                     if name == "num_nodes":
                         self.my_vals[name] = int(val)
                     elif name == "mpi_job":
@@ -98,15 +98,15 @@ class fsp_job:   #our new job class
                     else:
                         self.my_vals[name] = val
                 else:
-                    print "unrecognized name in name-value pair: %s = %s\n" % (name, val)
+                    print("unrecognized name in name-value pair: %s = %s\n" % (name, val))
                 if config_file:
                     line = config_file.readline().strip()
                 else:
                     line = ""
 
             config_file.close()
-        except Exception, ex:
-            print "problems parsing config file: %s" % ex
+        except Exception as ex:
+            print("problems parsing config file: %s" % ex)
 
 
     #states = something.... see notes above
@@ -162,13 +162,13 @@ class fsp_job:   #our new job class
                 self.my_vals["jobid"] = str(p1.pid)
 
             if debug_on:
-                print cmd
-                print "my jobid is: %s" % self.my_vals["jobid"]
+                print(cmd)
+                print("my jobid is: %s" % self.my_vals["jobid"])
 
             message = "job %s started" % self.my_vals["jobid"]
             Events.publish_event(message, topic='FSP_job')
-        except Exception, ex:
-            print "submit_job failed with exception %s" % ex
+        except Exception as ex:
+            print("submit_job failed with exception %s" % ex)
 
     def monitor_job(self, interval=1, debug_on = False):
         #checks the status of the job
@@ -190,7 +190,7 @@ class fsp_job:   #our new job class
                     self.my_vals["status"] = SLURM_STATES[s]
                     message = "The status of job %s is %s. -- The cpu time is %s."  % (self.my_vals["jobid"], self.my_vals["status"], t)
                     if debug_on:
-                        print "monitor:\n" + message
+                        print("monitor:\n" + message)
                     Events.publish_event(message,topic='FSP_job')
                     time.sleep(interval)
                     p1 = sp.Popen(cmd, shell=True, stdout=sp.PIPE, stderr=sp.PIPE)
@@ -215,7 +215,7 @@ class fsp_job:   #our new job class
                     self.my_vals["status"] = PBS_STATES[s]
                     message = "The status of job %s is %s. -- The cpu time is %s."  % (self.my_vals["jobid"], self.my_vals["status"], t)
                     if debug_on:
-                        print "monitor:\n" + message
+                        print("monitor:\n" + message)
                     Events.publish_event(message,topic='FSP_job')
                     time.sleep(interval)
                     p1 = sp.Popen(cmd, shell=True, stdout=sp.PIPE, stderr=sp.PIPE)
@@ -236,7 +236,7 @@ class fsp_job:   #our new job class
                     self.my_vals["status"] = PROC_STATES[s[0]]
                     message = "The status of job %s is %s. -- The cpu time is %s."  % (self.my_vals["jobid"], self.my_vals["status"], t)
                     if debug_on:
-                        print "monitor:\n" + message
+                        print("monitor:\n" + message)
                     Events.publish_event(message,topic='FSP_job')
                     time.sleep(interval)
                     p1 = sp.Popen(cmd, shell=True, stdout=sp.PIPE, stderr=sp.PIPE)
@@ -245,10 +245,10 @@ class fsp_job:   #our new job class
             self.my_vals["status"] = "done"
             message = "The status of job %s is %s." % (self.my_vals["jobid"], self.my_vals["status"])
             if debug_on:
-                print "monitor:\n" + message
+                print("monitor:\n" + message)
             Events.publish_event(message,topic='FSP_job')
-        except Exception, ex:
-            print "monitor_job failed with exception %s" % ex
+        except Exception as ex:
+            print("monitor_job failed with exception %s" % ex)
 
     def remove_from_q(self, debug_on = False):
         #removes the job from the queue
@@ -269,10 +269,10 @@ class fsp_job:   #our new job class
             out = p1.stdout.read()
             message = out
             if debug_on:
-                print "rfq:\n" + out
+                print("rfq:\n" + out)
             Events.publish_event(message,topic='FSP_job')
-        except Exception, ex:
-            print "remove_from_q failed with exception %s" % ex
+        except Exception as ex:
+            print("remove_from_q failed with exception %s" % ex)
 
     def kill_job(self, debug_on = False):
         #kills a running job -- which is exactly what remove from queue does
@@ -287,8 +287,8 @@ class fsp_job:   #our new job class
 
         try:
             Events.set_default_broker(self.my_vals["event_channel"])
-        except Exception, ex:
-            print "events not working: %s" % ex
+        except Exception as ex:
+            print("events not working: %s" % ex)
 
 if __name__ == "__main__":
     my_job = fsp_job()

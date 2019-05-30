@@ -160,4 +160,4 @@ for token_line in tokens:
     table_body += '</tr> \n\n'
 
 html_page = str(page).replace('@TABLE_BODY@',table_body)
-print html_page
+print(html_page)

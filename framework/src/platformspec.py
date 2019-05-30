@@ -21,7 +21,7 @@ def get_share_and_platform(platform_file_name,ipsPathName):
         elif os.path.exists(os.path.join(ipsPDir2,pconf)):
             ipsShareDir=os.path.join(ipsPDir2,'share')
         else:
-            print "Need to specify a platform file"
+            print("Need to specify a platform file")
             sys.exit(Message.FAILURE)
         platform_file_name=os.path.join(ipsShareDir,'platform.conf')
         return os.path.abspath(platform_file_name), ipsShareDir

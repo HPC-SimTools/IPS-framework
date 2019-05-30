@@ -32,10 +32,10 @@ fwk_logfile=@SIM_NAME@_${host}_${now}.log
 """
 
 def printUsageMessage():
-    print 'Usage: create_batch_script.py --ips=PATH_TO_IPS [--config=CONFIG_FILE_NAME]+ \
+    print('Usage: create_batch_script.py --ips=PATH_TO_IPS [--config=CONFIG_FILE_NAME]+ \
 --platform=PLATFORM_FILE_NAME [--account=CHRGE_ACCOUNT] [--queue=BATCH_QUEUE] \
 [--walltime=ALLOCATION_TIME] [--nproc=NPROCESSES] [--debug] [--ftb] \
-[--output=BATCH_SCRIPT]'
+[--output=BATCH_SCRIPT]')
 
 def create_script(ips_path,  cfgFile_list,  platform_file,
                   debug, ftb, account='AAAA', queue='QQQQ',
@@ -47,10 +47,10 @@ def create_script(ips_path,  cfgFile_list,  platform_file,
             cfg = ConfigObj(cfg_file, interpolation='template',
                                  file_error=True)
         except IOError:
-            print 'Error opening config file: ', cfg_file
+            print('Error opening config file: ', cfg_file)
             raise
         except:
-            print 'Error parsing config file: ', cfg_file
+            print('Error parsing config file: ', cfg_file)
             raise
         conf.append(cfg)
         config_cmd_string += '--config='+ cfg_file+' '
@@ -63,12 +63,13 @@ def create_script(ips_path,  cfgFile_list,  platform_file,
     HOST = plat['HOST']
     try:
         os.makedirs(sim_root)
-    except OSError, (errno, strerror):
+    except OSError as oserr:
+        (errno, strerror) = oserr.args
         if (errno != 17):
-            print 'Error creating directory ', sim_root
+            print('Error creating directory ', sim_root)
             raise
     except:
-        print 'Error creating directory ', sim_root
+        print('Error creating directory ', sim_root)
         raise
 
     if (HOST.upper() == 'FRANKLIN'):
@@ -129,8 +130,8 @@ def main(argv=None):
                                         "nproc=",
                                         "walltime=",
                                         "output="])
-    except getopt.error, msg:
-        print 'Invalid command line arguments', msg
+    except getopt.error as msg:
+        print('Invalid command line arguments', msg)
         printUsageMessage()
         return 1
     debug = False

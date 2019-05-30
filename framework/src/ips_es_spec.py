@@ -22,7 +22,7 @@ class eventManager(object):
 
 
     def publish(self,topicName,eventName,eventBody):
-        if self.objcache.has_key(self.publisher):
+        if self.publisher in self.objcache:
             pub = self.objcache[self.publisher]
         else:
             pub = PublisherEventService()
@@ -43,13 +43,13 @@ class eventManager(object):
             #      throw an exception?
             return
 
-        if self.objcache.has_key(self.subscriber):
+        if self.subscriber in self.objcache:
             sub = self.objcache[self.subscriber]
         else:
             sub = SubscriberEventService()
             self.objcache[self.subscriber] = sub
 
-        if self.objcache.has_key(topicName):
+        if topicName in self.objcache:
             #TODO: do we notify the client to do an unsubscribe before
             #      re-subscribing to the same topic? the event service
             #      currently throws an exception in this scenario...
@@ -63,7 +63,7 @@ class eventManager(object):
 
 
     def unsubscribe(self,topicName):
-        if self.objcache.has_key(topicName):
+        if topicName in self.objcache:
             self.objcache[topicName].unregisterEventListener(topicName)
             del self.objcache[topicName]
         #else:
@@ -72,7 +72,7 @@ class eventManager(object):
 
 
     def process_events(self):
-        if self.objcache.has_key(self.subscriber):
+        if self.subscriber in self.objcache:
             self.objcache[self.subscriber].processEvents()
         #else:
             #TODO: do we notify the client to do a subscribe before processing?

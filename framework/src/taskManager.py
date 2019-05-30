@@ -52,8 +52,8 @@ class TaskManager(object):
         # table of currently running tasks
         self.curr_task_table = {}
         # nextCall
-        self.next_call_id = 1L
-        self.next_task_id = 1L
+        self.next_call_id = 1
+        self.next_task_id = 1
         self.outstanding_calls = {}
         self.finished_calls = {}
         self.mpicmd = None  #USed only for CCM on edison
@@ -94,8 +94,8 @@ class TaskManager(object):
         self.node_alloc_mode = self.config_mgr.get_platform_parameter('NODE_ALLOCATION_MODE')
         try:
             self.task_launch_cmd = self.config_mgr.get_platform_parameter('MPIRUN')
-        except Exception, e:
-            print 'Error accessing platform parameter MPIRUN'
+        except Exception as e:
+            print('Error accessing platform parameter MPIRUN')
             raise
 
         #print "\nDEBUG: TM initialize"
@@ -125,12 +125,12 @@ class TaskManager(object):
         Prints the task table pretty-like.
         """
         ctt = self.curr_task_table
-        for c,i in ctt.items():
-            print c
-            for k,v in i.items():
-                print "   ", k, "=", v
-            print "------"
-        print "====================="
+        for c,i in list(ctt.items()):
+            print(c)
+            for k,v in list(i.items()):
+                print("   ", k, "=", v)
+            print("------")
+        print("=====================")
 
     # TM call
     def init_call(self, init_call_msg, manage_return=True):
@@ -198,7 +198,7 @@ class TaskManager(object):
         call_id = wait_msg.args[0]
         blocking = wait_msg.args[1]
         self.fwk.debug('TM:wait_call() call_id = %s', call_id)
-        if (call_id in self.finished_calls.keys()):
+        if (call_id in list(self.finished_calls.keys())):
             response_msg = self.finished_calls[call_id][1]
             del self.finished_calls[call_id]
             if (response_msg.status == messages.Message.FAILURE):
@@ -269,21 +269,21 @@ class TaskManager(object):
                 (nodelist, corelist, ppn, max_ppn, accurateNodes) = retval[1:]
             else:
                 (nodelist, ppn, max_ppn, accurateNodes) = retval[1:]
-        except InsufficientResourcesException, e:
+        except InsufficientResourcesException as e:
             if (block):
                 raise BlockedMessageException(init_task_msg, '***%s waiting for %d resources' %
                                           (caller_id, nproc))
             else:
                 raise
-        except BadResourceRequestException, e:
+        except BadResourceRequestException as e:
             self.fwk.error("There has been a fatal error, %s requested %d too many processors in task %d",
                            caller_id, e.deficit, e.task_id)
             raise
-        except ResourceRequestMismatchException, e:
+        except ResourceRequestMismatchException as e:
             self.fwk.error("There has been a fatal error, %s requested too few processors per node to launch task %d (requested: procs = %d, ppn = %d)",
                            caller_id, e.task_id, e.nproc, e.ppn)
             raise
-        except Exception, e:
+        except Exception as e:
             raise
 
         # SIMYAN: moved up a few lines and ret_data, node_file added
@@ -390,14 +390,14 @@ class TaskManager(object):
                     num_cores = self.resource_mgr.cores_per_socket
                     for (n, cl) in core_list:
                         core_dict.update({n:cl})
-                        if len(cl) in ppn_groups.keys():
+                        if len(cl) in list(ppn_groups.keys()):
                             ppn_groups[len(cl)].append(n)
                         else:
                             ppn_groups.update({len(cl):[n]})
                     cmdlets = []
                     envlets = []
                     bin_n_args = binary + ' '.join(cmd_args)
-                    for p, ns in ppn_groups.items():
+                    for p, ns in list(ppn_groups.items()):
                         cmdlets.append(' '.join([','.join(ns), str(p),
                                                  bin_n_args]))
                         el_node = []
@@ -440,7 +440,7 @@ class TaskManager(object):
                 else:
                     for node in nodes.split(' ,'):
                         node_spec += ('%s ' % (node)) * ppn
-                print >> cfg_file, '%s: %s' % (node_spec, node_command)
+                print('%s: %s' % (node_spec, node_command), file=cfg_file)
                 config_option = '-config='+ cfg_fname
                 cmd = ' '.join([self.task_launch_cmd, config_option])
                 self.curr_task_table[task_id]['node_file'] = cfg_fname
@@ -567,7 +567,7 @@ class TaskManager(object):
         caller_id = init_task_msg.sender_id
         task_dict = init_task_msg.args[0]
         ret_dict = {}
-        for task_name in task_dict.keys():
+        for task_name in list(task_dict.keys()):
         # handle for task related things
             task_id = self.get_task_id()
             (nproc, working_dir, binary, cmd_args, tppn, wnodes, wsocks) = task_dict[task_name]
@@ -585,19 +585,19 @@ class TaskManager(object):
                 else:
                     (nodelist, ppn, max_ppn, accurateNodes) = retval[1:]
 
-            except InsufficientResourcesException, e:
+            except InsufficientResourcesException as e:
                 continue
-            except BadResourceRequestException, e:
+            except BadResourceRequestException as e:
                 self.fwk.error("There has been a fatal error, %s requested %d too many processors in task %d",
                            caller_id, e.deficit, e.task_id)
-                for (task_id, cmd) in ret_dict.values():
+                for (task_id, cmd) in list(ret_dict.values()):
                     self.resource_mgr.release_allocation(task_id, -1)
                     del self.curr_task_table[task_id]
                 raise
-            except ResourceRequestMismatchException, e:
+            except ResourceRequestMismatchException as e:
                 self.fwk.error("There has been a fatal error, %s requested too few processors per node to launch task %d (request: procs = %d, ppn = %d)",
                            caller_id, e.task_id, e.nproc, e.ppn)
-                for (task_id, cmd) in ret_dict.values():
+                for (task_id, cmd) in list(ret_dict.values()):
                     self.resource_mgr.release_allocation(task_id, -1)
                     del self.curr_task_table[task_id]
                 raise
@@ -664,11 +664,11 @@ class TaskManager(object):
 #            self.curr_task_table[task_id]['ret_data'] = task_data
             del self.curr_task_table[task_id]
             #os.remove('_gen_rf_' + str(task_id))
-        except AllocatedNodeDownException, e:
+        except AllocatedNodeDownException as e:
             del self.curr_task_table[task_id]
             return 1
-        except Exception , e:
-            print 'Error finishing task ', task_id
+        except Exception as e:
+            print('Error finishing task ', task_id)
             raise
 #        if node_file:
 #            os.remove(node_file)

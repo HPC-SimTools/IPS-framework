@@ -34,7 +34,7 @@ def create_timer(name, fnc, pid):
             return pytau.profileTimer(name + '.' + fnc, '', str(pid))
         #else:
             #print 'timing not on'
-    except Exception, e:
+    except Exception as e:
         #print "*********** NO TIMING *************"
         #print e
         return None
@@ -65,8 +65,8 @@ def dumpAll (label = ""):
         #    print 'timing not on'
     except KeyError:
         pass
-    except Exception, e:
-        print 'something happened during dump'
+    except Exception as e:
+        print('something happened during dump')
         raise
 
 class TauWrap(object):
@@ -94,7 +94,7 @@ def weave_tau_timer(self, target):
         try:
             timer = getattr(self,timers_dict_name)[target.__name__]
         except KeyError:
-            print 'weave_tau_timer: Key error : ', target.__name__
+            print('weave_tau_timer: Key error : ', target.__name__)
             return target(self, *args, **kwargs)
 #        print 'Starting timer for ', target.__name__, timer
         start(timer)
@@ -128,19 +128,19 @@ def instrument_object_with_tau(obj_name, obj, exclude = None):
         raw_method_dict = getattr(obj, raw_method_dict_name)
     except AttributeError:
         raw_method_dict = {}
-        for name, value in obj.__class__.__dict__.iteritems():
+        for name, value in obj.__class__.__dict__.items():
 #            print '###', name, value
             if (inspect.ismethod(getattr(obj, name))):
 #                print name, 'is a method'
                 raw_method_dict[name] = value
     pid = os.getpid()
-    for name, value in obj.__class__.__dict__.iteritems():
+    for name, value in obj.__class__.__dict__.items():
         if (name not in my_exclude):
             if (callable(value)):
                 timers_dict[name] = create_timer(obj_name, name, pid)
 
 #    print raw_method_dict
-    for name, method in raw_method_dict.iteritems():
+    for name, method in raw_method_dict.items():
 #        print obj, name, method
         if (name not in my_exclude):
 #            print 'weaving tau timer for ', obj, name

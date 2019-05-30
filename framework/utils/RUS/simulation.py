@@ -88,7 +88,7 @@ class simulation():
             elif self.phase_list:
                 self.old_style = False
             else:
-                print "bad config file"
+                print("bad config file")
                 raise
 
             try:
@@ -182,7 +182,7 @@ class simulation():
                     self.next_ckpt = self.ckpt_values.pop(0)
                 self.my_overheads.update({'checkpoint':overhead(None, self.fwk, self, None, 'checkpoint', ckpt_section)})
             except:
-                print "problems setting up checkpoint parameters"
+                print("problems setting up checkpoint parameters")
                 raise
         self.ckpt_comps = list()
         self.ckpt_step = 0
@@ -221,15 +221,15 @@ class simulation():
             raise
 
         if self.fwk.debug:
-            for k, v in self.phases.items():
-                print "phase:", k, "nsteps:", v.nsteps, "comps:", v.comp_list
-                for c in self.all_comps.values():
-                    print c.name, c.nproc, c.runtime, c.stddev
+            for k, v in list(self.phases.items()):
+                print("phase:", k, "nsteps:", v.nsteps, "comps:", v.comp_list)
+                for c in list(self.all_comps.values()):
+                    print(c.name, c.nproc, c.runtime, c.stddev)
         self.get_next_phase()
 
         # populate handles to total_time components
         if self.mode == 'total_time':
-            for c in self.my_comps.values():
+            for c in list(self.my_comps.values()):
                 if c.type == 'sandia_work':
                     self.work_comp = c
                     self.work_comp.state = "ready"
@@ -242,7 +242,7 @@ class simulation():
 
         #self.get_ready_comps()
         if self.fwk.debug:
-            print self.my_comps.keys()
+            print(list(self.my_comps.keys()))
 
 
     def get_ready_comps(self):
@@ -254,10 +254,10 @@ class simulation():
         ready_comps = list()
         #print "in get ready comps"
         if self.mode == "total_time":
-            for c in self.my_comps.values():
+            for c in list(self.my_comps.values()):
                 if c.state == "ready":
                     return [c]
-        for c in self.my_comps.values():
+        for c in list(self.my_comps.values()):
             #print c.name, c.state
             # update the waiting on parents components
             if isinstance(c, component):
@@ -288,10 +288,10 @@ class simulation():
         returns all comps and overheads that are in the state "running"
         """
         r = list()
-        for o in self.my_overheads.values():
+        for o in list(self.my_overheads.values()):
             if o and o.state == "running":
                 r.append(o)
-        for c in self.my_comps.values():
+        for c in list(self.my_comps.values()):
             if c.state == "running":
                 r.append(c)
         return r
@@ -322,8 +322,8 @@ class simulation():
         if self.state == "failed":
             self.fwk.logEvent(self.name, None, 'all_fail', 'simulation failed before completing its work')
             if self.fwk.debug:
-                print " ##### failed", self.fwk.fwk_global_time, self.curr_phase, self.curr_step
-                print "bad things happened and now we are shutting down"
+                print(" ##### failed", self.fwk.fwk_global_time, self.curr_phase, self.curr_step)
+                print("bad things happened and now we are shutting down")
             del self.my_comps
             self.my_comps = {}
             #self.state = 'shutdown'
@@ -337,10 +337,10 @@ class simulation():
         #-----------------------------------------
         #  are we ready for the next step??
         #-----------------------------------------
-        for c in self.my_comps.values():
+        for c in list(self.my_comps.values()):
             if isinstance(c, component) and c.ready_for_step < next_step:
                 if c.ready_for_step < next_step - 1:
-                    print 'ready for step not equal to curr step!!! (%s-%s: ready for step: %d -- curr step: %d)' % (c.phase, c.name, c.ready_for_step, self.curr_step)
+                    print('ready for step not equal to curr step!!! (%s-%s: ready for step: %d -- curr step: %d)' % (c.phase, c.name, c.ready_for_step, self.curr_step))
                     raise
                 return False
 
@@ -353,7 +353,7 @@ class simulation():
         if self.ckpt_on:
             if self.curr_phase_index == (len(self.phases) - 1) and next_step > self.phases[self.curr_phase].nsteps:
                 if self.fwk.debug:
-                    print "not checkpointing because it is the last step of the last phase!!!!!!!!!!!!!!!!!!!"
+                    print("not checkpointing because it is the last step of the last phase!!!!!!!!!!!!!!!!!!!")
             else:
                 if self.ckpt_mode == 'phys_explicit':
                     #print ">",
@@ -389,7 +389,7 @@ class simulation():
         #------------------------------
         self.fwk.logEvent(self.name, None, "end_step", "ending step %d" % (self.curr_step - 1))
         if self.fwk.debug:
-            print "curr step", self.curr_step, "next phase at", self.phases[self.curr_phase].nsteps, "steps"
+            print("curr step", self.curr_step, "next phase at", self.phases[self.curr_phase].nsteps, "steps")
 
         #------------------------------
         # done with rework?
@@ -399,7 +399,7 @@ class simulation():
             self.state = "work"
             #self.total_rework_time += self.fwk.fwk_global_time - self.start_rework_time
             if self.fwk.debug:
-                print " ##### work", self.fwk.fwk_global_time, self.curr_phase, self.curr_step
+                print(" ##### work", self.fwk.fwk_global_time, self.curr_phase, self.curr_step)
             self.fwk.logEvent(self.name, None, "state_change", "work")
 
         #------------------------------------------
@@ -423,7 +423,7 @@ class simulation():
         if not self.is_done:
             #self.fwk.logEvent(self.name, None, "start_step", "starting new step %d" % self.curr_step)
             # set all components to beginning of step
-            for c in self.my_comps.values():
+            for c in list(self.my_comps.values()):
                 c.state = 'not_done'
                 c.ready_for_step = self.curr_step
         return False
@@ -441,12 +441,12 @@ class simulation():
             # it is the beginning or time
             self.last_submission_time = self.fwk.fwk_global_time
             if self.fwk.debug:
-                print " ##### startup", self.fwk.fwk_global_time
-                print "in get next phase, it is the beginning of time, so we are doing startup"
+                print(" ##### startup", self.fwk.fwk_global_time)
+                print("in get next phase, it is the beginning of time, so we are doing startup")
             self.my_comps.update({'startup':self.my_overheads['startup']})
             self.my_comps['startup'].state = "ready"
             if self.fwk.debug:
-                print "new my comps", self.my_comps.keys()
+                print("new my comps", list(self.my_comps.keys()))
             self.fwk.logEvent(self.name, None, "state_change", "startup")
             self.fwk.logEvent(self.name, None, "phase_change", "changing from %s to %s" % ('startup', self.curr_phase))
             return False
@@ -459,15 +459,15 @@ class simulation():
             self.curr_phase = self.phase_list[self.curr_phase_index]
             #self.phase_list.remove(self.curr_phase)
             if self.fwk.debug:
-                print "in get next phase, phase_list = ", self.phase_list
-                print "old my comps", self.my_comps.keys()
+                print("in get next phase, phase_list = ", self.phase_list)
+                print("old my comps", list(self.my_comps.keys()))
             del self.my_comps
             self.my_comps = {}
-            for n, comp in self.all_comps.items():
+            for n, comp in list(self.all_comps.items()):
                 if comp.phase == self.curr_phase:
                     self.my_comps.update({n:comp})
             if self.fwk.debug:
-                print "new my comps", self.my_comps.keys()
+                print("new my comps", list(self.my_comps.keys()))
             self.fwk.logEvent(self.name, None, "phase_change", "changing from %s to %s" % (old_phase, self.curr_phase))
             return False
         elif self.state == 'rework' and self.curr_phase_index < len(self.phase_list) - 1:
@@ -478,15 +478,15 @@ class simulation():
             self.curr_phase_index += 1
             self.curr_phase = self.phase_list[self.curr_phase_index]
             if self.fwk.debug:
-                print "in get next phase, phase_list = ", self.phase_list
-                print "old my comps", self.my_comps.keys()
+                print("in get next phase, phase_list = ", self.phase_list)
+                print("old my comps", list(self.my_comps.keys()))
             del self.my_comps
             self.my_comps = {}
-            for n, comp in self.all_comps.items():
+            for n, comp in list(self.all_comps.items()):
                 if comp.phase == self.curr_phase:
                     self.my_comps.update({n:comp})
             if self.fwk.debug:
-                print "new my comps", self.my_comps.keys()
+                print("new my comps", list(self.my_comps.keys()))
             self.fwk.logEvent(self.name, None, "phase_change", "changing from %s to %s" % (old_phase, self.curr_phase))
             return False
         elif (self.state == 'work' or self.state == 'rework') and self.curr_phase_index >= len(self.phase_list) - 1 :
@@ -494,17 +494,17 @@ class simulation():
             old_phase = self.curr_phase
             self.state = 'shutdown'
             if self.fwk.debug:
-                print "in get next phase, no more phases, time to shutdown"
-                print "old my comps", self.my_comps.keys()
+                print("in get next phase, no more phases, time to shutdown")
+                print("old my comps", list(self.my_comps.keys()))
             del self.my_comps
             self.my_comps = {}
             if self.fwk.debug:
-                print " ##### shutdown", self.fwk.fwk_global_time
+                print(" ##### shutdown", self.fwk.fwk_global_time)
             self.fwk.logEvent(self.name, None, "state_change", "shutdown")
             self.my_comps.update({'shutdown':self.my_overheads['shutdown']})
             self.my_comps['shutdown'].state = "ready"
             if self.fwk.debug:
-                print "new my comps", self.my_comps.keys()
+                print("new my comps", list(self.my_comps.keys()))
             self.fwk.logEvent(self.name, None, "phase_change", "changing from %s to %s" % (old_phase, 'shutdown'))
             return False
 
@@ -521,7 +521,7 @@ class simulation():
         finished_comps = list()
         failed_comps = list()
         nctr = list()
-        for o in self.my_overheads.values():
+        for o in list(self.my_overheads.values()):
             if o and o.state == "running" and (o.start_exec_time + o.curr_exec_time) <= self.fwk.fwk_global_time:
                 """
                 the overhead has finished, time to move on to the next thing
@@ -551,9 +551,9 @@ class simulation():
                     if not self.is_done:
                         self.fwk.logEvent(self.name, o.name, "start_step", "starting new step %d" % self.curr_step)
                     # set all components to beginning of step
-                    for c in self.my_comps.values():
+                    for c in list(self.my_comps.values()):
                         c.state = 'not_done'
-                    for c in self.my_comps.keys():
+                    for c in list(self.my_comps.keys()):
                         self.ckpt_comps.append(c)
                     return [o], self.get_ready_comps()
                 elif o.name == 'resubmit':
@@ -567,11 +567,11 @@ class simulation():
                     self.fwk.logEvent(self.name, o.name, "end_step", "ending simulation launch delay")
                     finished_comps.append(o)
                 else:
-                    print 'ack ack ack'
+                    print('ack ack ack')
             elif o and o.state == 'ready' and o.name == 'resubmit':
                 #print 'time to run resubmit!!!'
                 return [], [self.my_overheads['resubmit']]
-        for c in self.my_comps.values():
+        for c in list(self.my_comps.values()):
             if c.state == "running" and (c.start_exec_time + c.curr_exec_time) <= self.fwk.fwk_global_time:
                 c.finish_task()
                 finished_comps.append(c)
@@ -579,24 +579,24 @@ class simulation():
                 # **** check policy
                 #  - task relaunch: c.failed_task
                 #  - simulation restart: call restart
-                print 'before failed_task  - ', self.ft_strategy
+                print('before failed_task  - ', self.ft_strategy)
                 c.failed_task() # need to keep!!! does accounting for num_faults
                 if not (self.state == "work" or self.state == "rework"):
-                    print self.state
+                    print(self.state)
                 if self.ft_strategy == "task_relaunch":
                     failed_comps.append(self.my_overheads['launch_delay'])
                 elif self.ft_strategy == "sim_cr":
-                    print 'in ft_strategy = sim_cr'
+                    print('in ft_strategy = sim_cr')
                     self.restart_setup()
                     failed_comps.append(self.my_overheads['restart'])
                 elif self.ft_strategy == "restart":
                     if self.fwk.debug:
-                        print 'encountered a failure, restarting from the beginning'
+                        print('encountered a failure, restarting from the beginning')
                     self.restart_setup()
                     failed_comps.append(self.my_overheads['restart'])
                 else:
                     if self.fwk.debug:
-                        print 'killing simulation from simulation because we do not have a fault tolerance strategy'
+                        print('killing simulation from simulation because we do not have a fault tolerance strategy')
                     self.kill()
 
         if self.mode == 'total_time':
@@ -656,9 +656,9 @@ class simulation():
         """
 
         if self.fwk.debug:
-            print " ##### failed", self.fwk.fwk_global_time, self.curr_phase, self.curr_step, self.my_comps.keys()
-            print "bad things happened and now we are shutting down"
-        for c in self.my_comps.values():
+            print(" ##### failed", self.fwk.fwk_global_time, self.curr_phase, self.curr_step, list(self.my_comps.keys()))
+            print("bad things happened and now we are shutting down")
+        for c in list(self.my_comps.values()):
             if isinstance(c, component) and c.using.nodes > 0:
                 c.kill_task()
         self.is_done = True
@@ -677,12 +677,12 @@ class simulation():
         Current maximum resubmissions is 5.
         """
         if self.fwk.debug:
-            print "\n\n ##### resubmitting", self.fwk.fwk_global_time, self.curr_phase, self.curr_step, "\n\n\n"
+            print("\n\n ##### resubmitting", self.fwk.fwk_global_time, self.curr_phase, self.curr_step, "\n\n\n")
         # time to resubmit, is that ok?
         #self.num_faults += 1
         if self.resubmissions > self.resubmission_threshold:
             if self.fwk.debug:
-                print "too many resubmissions (", self.resubmissions, ")"
+                print("too many resubmissions (", self.resubmissions, ")")
             raise
         self.resubmissions += 1
         # setup rework for after restart period
@@ -695,11 +695,11 @@ class simulation():
         else:
             #print 'state in resubmit setup:', self.state
             if self.fwk.debug:
-                print "failure occured during rework period"
+                print("failure occured during rework period")
 
         self.state = 'resubmit'
         # kill any running tasks (really there shouldn't be any)
-        for c in self.all_comps.values():
+        for c in list(self.all_comps.values()):
             if c.retry:
                 c.retry = False
                 c.curr_retries = 0
@@ -722,7 +722,7 @@ class simulation():
         counters reset for this new allocation.
         """
         if self.fwk.debug:
-            print " ##### restarting", self.fwk.fwk_global_time, self.curr_phase, self.curr_step
+            print(" ##### restarting", self.fwk.fwk_global_time, self.curr_phase, self.curr_step)
 
         # kill running tasks
         self.last_submission_time = self.fwk.fwk_global_time
@@ -736,7 +736,7 @@ class simulation():
         self.curr_step = self.ckpt_step
         #self.total_steps = self.curr_step
         if self.fwk.debug:
-            print " ##### rework", self.fwk.fwk_global_time, self.curr_phase, self.curr_step
+            print(" ##### rework", self.fwk.fwk_global_time, self.curr_phase, self.curr_step)
         self.fwk.logEvent(self.name, None, 'resubmit_restart', 'resubmit - restarting simulation at step %d' % self.curr_step)
         del self.my_comps
         self.my_comps = {}
@@ -753,7 +753,7 @@ class simulation():
         The point from which to restart is saved.
         """
         if self.fwk.debug:
-            print ".",
+            print(".", end=' ')
         #print " ##### checkpointing", self.fwk.fwk_global_time, self.curr_phase, self.curr_step
         self.fwk.logEvent(self.name, None, 'checkpoint', 'checkpointing simulation at step %d' % self.curr_step)
         self.num_ckpts += 1
@@ -766,7 +766,7 @@ class simulation():
             self.ckpt_phase_index = self.curr_phase_index
             self.ckpt_step = self.curr_step
             self.ckpt_fwk_global_time = self.fwk.fwk_global_time
-            for c in self.my_comps.keys():
+            for c in list(self.my_comps.keys()):
                 self.ckpt_comps.append(c)
         else:
             # we are transitioning to a new phase
@@ -776,7 +776,7 @@ class simulation():
             self.ckpt_fwk_global_time = self.fwk.fwk_global_time
             del self.my_comps
             self.my_comps = {}
-            for n, c in self.all_comps.items():
+            for n, c in list(self.all_comps.items()):
                 if c.phase == self.ckpt_phase:
                     self.ckpt_comps.append(n)
 
@@ -786,7 +786,7 @@ class simulation():
         This is called when a restart is needed.  Current state is saved to determine when rework will be done.
         """
         if self.fwk.debug:
-            print " ##### restarting", self.fwk.fwk_global_time, self.curr_phase, self.curr_step
+            print(" ##### restarting", self.fwk.fwk_global_time, self.curr_phase, self.curr_step)
         #self.num_faults += 1
         self.fwk.logEvent(self.name, None, 'restart_setup', 'restarting simulation at step %d' % self.curr_step)
         if self.state == 'work':
@@ -797,12 +797,12 @@ class simulation():
             self.total_lost_time += min(self.fwk.fwk_global_time - self.ckpt_fwk_global_time, self.fwk.fwk_global_time - self.last_submission_time)
         else:
             if self.fwk.debug:
-                print "failure occured during rework period"
+                print("failure occured during rework period")
         # kill running tasks
         self.state = 'restart'
-        for c in self.all_comps.values():
+        for c in list(self.all_comps.values()):
             c.ready_for_step = 0
-        for c in self.my_comps.values():
+        for c in list(self.my_comps.values()):
             if c.retry:
                 c.retry = False
                 c.curr_retries = 0
@@ -825,11 +825,11 @@ class simulation():
         self.curr_step = self.ckpt_step
         #self.total_steps = self.curr_step
         if self.fwk.debug:
-            print " ##### rework", self.fwk.fwk_global_time, self.curr_phase, self.curr_step
+            print(" ##### rework", self.fwk.fwk_global_time, self.curr_phase, self.curr_step)
         self.fwk.logEvent(self.name, None, 'restart_restore', 'restarting simulation from step %d' % self.curr_step)
         del self.my_comps
         self.my_comps = {}
-        print self.ckpt_comps
+        print(self.ckpt_comps)
         for c in self.ckpt_comps:
             self.my_comps.update({c:self.all_comps[c]})
             self.all_comps[c].ready_for_step = self.curr_step
@@ -843,7 +843,7 @@ class simulation():
         """
         After the simulation has completed, the framework calls the method to get the accounting information from the simulation.  The component and overhead objects are queried for their accounting information.  The framework uses this information to relay it back to the user.
         """
-        for c in self.all_comps.values():
+        for c in list(self.all_comps.values()):
             #print c.name
             self.total_usage += c.total_usage
             self.total_work_time += c.total_time
@@ -865,7 +865,7 @@ class simulation():
             self.total_restart_time = self.my_overheads['restart'].total_time
             self.total_resubmit_time = self.my_overheads['resubmit'].total_time
             self.total_launch_delay = self.my_overheads['launch_delay'].total_time
-            for p in self.phases.values():
+            for p in list(self.phases.values()):
                 self.steps_todo += p.nsteps
             self.completed_work = self.total_steps
 

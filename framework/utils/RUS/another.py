@@ -30,7 +30,7 @@ def read_data(file_to_read, bin):
         times[i-1].append(float(rt))
     infile.close()
     combo_data = list()
-    for k in xrange(6):
+    for k in range(6):
         maxe = max(effcy[k])
         maxe_i = effcy[k].index(maxe)
         c = cores[k][maxe_i]
@@ -49,7 +49,7 @@ def do_plotting(feature):
     plt.figure()
 
     #plt.subplot(1, 3, 1, autoscale_on=False)
-    for k in xrange(6):
+    for k in range(6):
         bins = list()
         effcys = list()
         for e in f_list[k]:

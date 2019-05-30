@@ -30,5 +30,5 @@ def trigger(fwk):
     if to_kill:
         to_kill.state = "failed"
     else:
-        print 'failure killed an unoccupied node'
+        print('failure killed an unoccupied node')
     fwk.logEvent(None, None, 'node_failure', 'fault killed a node')

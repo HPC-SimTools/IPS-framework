@@ -23,15 +23,15 @@ def usage():
     """
     Prints a summary of the flags you can use.
     """
-    print "This script will run and process the results from executing an ensemble of RUS runs."
-    print "Please use the following options to specify what experiments to perform and graph:"
-    print "   -i, --interleave : number of simulations that execute at the same time."
-    print "   -p, --ppn : processes per node"
-    print "   -t, --trials : number of times to run each experiment"
-    print "   -n, --name : name of experiment to help with identification"
-    print "   -m, --minnodes : minimum number of nodes needed to run the sim(s)"
-    print "   -f, --cfile : path to config file to simulate"
-    print "   -j, --nodeinterval : number of nodes between allocation sizes to simulate"
+    print("This script will run and process the results from executing an ensemble of RUS runs.")
+    print("Please use the following options to specify what experiments to perform and graph:")
+    print("   -i, --interleave : number of simulations that execute at the same time.")
+    print("   -p, --ppn : processes per node")
+    print("   -t, --trials : number of times to run each experiment")
+    print("   -n, --name : name of experiment to help with identification")
+    print("   -m, --minnodes : minimum number of nodes needed to run the sim(s)")
+    print("   -f, --cfile : path to config file to simulate")
+    print("   -j, --nodeinterval : number of nodes between allocation sizes to simulate")
 
 class summ_dt():
     def __init__(self):
@@ -60,9 +60,9 @@ class experiment_suite():
         try:
             opts, args = getopt.getopt(sys.argv[1:], 'c:s:v:i:p:t:n:k:f:m:j:z:',
                                        ['ncomps=','simtime=','var=','interleave=','ppn=', 'trials=', 'name=', 'steps=', 'cfile=', 'minnodes=', 'nodeinterval='])
-        except getopt.GetoptError, err:
+        except getopt.GetoptError as err:
             # print help information and exit:
-            print str(err) # will print something like "option -a not recognized"
+            print(str(err)) # will print something like "option -a not recognized"
             usage()
             sys.exit(2)
 
@@ -93,7 +93,7 @@ class experiment_suite():
                 elif o == '-j' or o == '--nodeinterval':
                     self.node_interval = int(a)
         except:
-            print 'problems getting command line arguments'
+            print('problems getting command line arguments')
             raise
         #print "ready to construct simulations"
         #self.perms = generate_perms(self.num_comps, self.time_per_sim_step)
@@ -117,7 +117,7 @@ class experiment_suite():
             self.maxnodes = self.concurrent_min * self.interleaving
 
         except:
-            print "problem setting up sim objects"
+            print("problem setting up sim objects")
             raise
 
         #=======================================================================
@@ -125,7 +125,7 @@ class experiment_suite():
         #=======================================================================
         node_vals = list()
         for j in range(1, self.interleaving + 1):
-            node_vals.append(range(self.minnodes, self.concurrent_min * j + 1, self.node_interval))
+            node_vals.append(list(range(self.minnodes, self.concurrent_min * j + 1, self.node_interval)))
 
         for r in node_vals[-1]:
             fname = 'resource_files/res_' + 'n' + str(r) + '_p' + str(self.ppn)
@@ -134,11 +134,11 @@ class experiment_suite():
                 # #need to create resource file
                 #===============================================================
                 f = open(fname, 'w')
-                print >> f, 'machine_name = unicorn'
-                print >> f, 'nodes = ', r
-                print >> f, 'ppn = ', self.ppn
-                print >> f, 'mem_pernode = 0'
-                print >> f, 'disk_pernode = 0'
+                print('machine_name = unicorn', file=f)
+                print('nodes = ', r, file=f)
+                print('ppn = ', self.ppn, file=f)
+                print('mem_pernode = 0', file=f)
+                print('disk_pernode = 0', file=f)
                 f.close()
 
         #=======================================================================
@@ -148,7 +148,7 @@ class experiment_suite():
         log = 'gen' + self.id
         self.my_exps = list()
 
-        for k,v in self.my_sims.items():
+        for k,v in list(self.my_sims.items()):
             for i in range(0, self.interleaving):
                 for r in node_vals[i]:
                     e = experiment(v, r, self.ppn, self.trials, self.id, i+1)
@@ -163,7 +163,7 @@ class experiment_suite():
                 try:
                     p = subprocess.Popen(e.launch_str, stdout=subprocess.PIPE, close_fds=True)
                     o = p.communicate()[0]
-                    print o
+                    print(o)
                     #status: *Succeeded* if the simulation was able to
                     #complete, otherwise, *Failed*.
                     #seed: random number seed used for this run.
@@ -194,7 +194,7 @@ class experiment_suite():
                     s, ms, t, c, chc, chu, w, r, p, rs, ld, rb, o, nc, n, nf, nrl, ns, nb = o.split()
                     e.trials.ts[i].ts_set(t,chc,chu,float(chu)/float(chc),ms)
                 except:
-                    print 'problems with run %s on %d nodes, trial %d' % (e.sim.name, e.nodes, i)
+                    print('problems with run %s on %d nodes, trial %d' % (e.sim.name, e.nodes, i))
                     raise
 
     def post_analysis(self):
@@ -232,7 +232,7 @@ class experiment_suite():
         max_effcy.val = [0]*self.interleaving
         min_effcy.nodes = [0]*self.interleaving
         max_effcy.nodes = [0]*self.interleaving
-        print >> dump, 'interleave nodes time charged used effcy'
+        print('interleave nodes time charged used effcy', file=dump)
         for e in self.my_exps:
             i = e.interleave - 1
             e.trials.minmaxavg()
@@ -247,7 +247,7 @@ class experiment_suite():
             y_u[i].append(u)
             y_e[i].append(f)
 
-            print >> dump, e.interleave, n, e.trials.avg.time, c, u, f
+            print(e.interleave, n, e.trials.avg.time, c, u, f, file=dump)
 
             #===================================================================
             # # calculate min and max
@@ -364,22 +364,22 @@ class experiment_suite():
         # #   - minimum and maximum efficiency values
         #=======================================================================
         summ_file = open("summary." + tm, 'w')
-        print >> summ_file, "Simulations: ", ", ".join(self.my_sims.keys())
-        print >> summ_file, "Allocation sizes: from", self.minnodes, "to", self.maxnodes,
-        print >> summ_file, "with an interval of", self.node_interval, ", a ppn value of", self.ppn, ", and a trial count of", self.trials
-        print >> summ_file, "Minimum and Maximum Efficiency values for each interleaving level:"
+        print("Simulations: ", ", ".join(list(self.my_sims.keys())), file=summ_file)
+        print("Allocation sizes: from", self.minnodes, "to", self.maxnodes, end=' ', file=summ_file)
+        print("with an interval of", self.node_interval, ", a ppn value of", self.ppn, ", and a trial count of", self.trials, file=summ_file)
+        print("Minimum and Maximum Efficiency values for each interleaving level:", file=summ_file)
         for i in range(self.interleaving):
-            print >> summ_file, "\t%d |\tmin: %d percent \t%d cores |\tmax: %d percent \t%d cores |" % (i+1, min_effcy.val[i], min_effcy.nodes[i]*self.ppn, max_effcy.val[i], max_effcy.nodes[i]*self.ppn)
+            print("\t%d |\tmin: %d percent \t%d cores |\tmax: %d percent \t%d cores |" % (i+1, min_effcy.val[i], min_effcy.nodes[i]*self.ppn, max_effcy.val[i], max_effcy.nodes[i]*self.ppn), file=summ_file)
 
-        print >> summ_file, "============================================"
-        print >> summ_file, "Local Minima:"
+        print("============================================", file=summ_file)
+        print("Local Minima:", file=summ_file)
         for m in self.my_mins:
-            print >> summ_file, "# sims: %d\t efficiency: %d\t cores: %d\t time: %d\t cost: %f CPU Hours" % (m.interleave, m.effcy, m.nodes*self.ppn, m.time, m.cost)
+            print("# sims: %d\t efficiency: %d\t cores: %d\t time: %d\t cost: %f CPU Hours" % (m.interleave, m.effcy, m.nodes*self.ppn, m.time, m.cost), file=summ_file)
 
-        print >> summ_file, "============================================"
-        print >> summ_file, "Local Maxima:"
+        print("============================================", file=summ_file)
+        print("Local Maxima:", file=summ_file)
         for m in self.my_maxs:
-            print >> summ_file, "# sims: %d\t efficiency: %d\t cores: %d\t time: %d\t cost: %f CPU Hours" % (m.interleave, m.effcy, m.nodes*self.ppn, m.time, m.cost)
+            print("# sims: %d\t efficiency: %d\t cores: %d\t time: %d\t cost: %f CPU Hours" % (m.interleave, m.effcy, m.nodes*self.ppn, m.time, m.cost), file=summ_file)
 
     def minimamaxima(self, effcy, nodes, interleave, neighborhood, time, cost):
         """

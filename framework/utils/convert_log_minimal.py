@@ -96,4 +96,4 @@ header = ['Time', 'Sequence Num', 'Type', 'Code', 'State',  'Wall Time',
                    'Physics Time', 'Comment']
 
 html_page = HTML.table(tokens, header_row=header)
-print html_page
+print(html_page)

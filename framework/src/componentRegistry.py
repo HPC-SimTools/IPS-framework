@@ -24,7 +24,7 @@ class ComponentID(object):
         """
         tokens = comp_id_string.split(ComponentID.delimiter)
         if (len(tokens) != 3) :
-            print 'Invalid serialized component ID : ', comp_id_string
+            print('Invalid serialized component ID : ', comp_id_string)
             sys.exit(1)
         return ComponentID.all_ids[comp_id_string]
 
@@ -120,7 +120,7 @@ class ComponentRegistry(Singleton):
 #           comp_id = ComponentID.deserialize(i)
 #            if (comp_id.get_sim_name() == sim_name):
 #                ids.append(comp_id)
-        ids = [ ComponentID.deserialize(i) for i in self.registry.keys() \
+        ids = [ ComponentID.deserialize(i) for i in list(self.registry.keys()) \
                if ComponentID.deserialize(i).get_sim_name() == sim_name ]
         return ids
 
@@ -137,9 +137,9 @@ class ComponentRegistry(Singleton):
                                    services, config )
         try:
             self.registry[key] = value
-        except KeyError, e:
-            print 'Error creating component registery entry for ', key, \
-                  ' : ', str(e)
+        except KeyError as e:
+            print('Error creating component registery entry for ', key, \
+                  ' : ', str(e))
             raise e
         return
 
@@ -147,9 +147,9 @@ class ComponentRegistry(Singleton):
         key = component_id.get_serialization()
         try:
             del self.registry[key]
-        except KeyError, e:
-            print 'Error removing component registry entry for ', key, \
-                  ' : ', str(e)
+        except KeyError as e:
+            print('Error removing component registry entry for ', key, \
+                  ' : ', str(e))
             raise
         return
 
@@ -163,7 +163,7 @@ class ComponentRegistry(Singleton):
         try:
             entry = self.registry[key]
         except KeyError:
-            print 'No registry entry found for ', key
+            print('No registry entry found for ', key)
             raise
         return entry
 
@@ -175,13 +175,13 @@ class ComponentRegistry(Singleton):
         try:
             entry = self.registry[key]
         except KeyError:
-            print 'No registry entry found for ', key
+            print('No registry entry found for ', key)
             raise
         try:
             value = entry.__getattribute__(artifact)
         except KeyError:
-            print 'Invalid registry attribute : ', artifact
-            print 'Possible values are : ', entry.__dict__.keys()
+            print('Invalid registry attribute : ', artifact)
+            print('Possible values are : ', list(entry.__dict__.keys()))
             raise
         return value
 
@@ -194,7 +194,7 @@ class ComponentRegistry(Singleton):
         try:
             entry = self.registry[key]
         except KeyError:
-            print 'No registry entry found for ', key
+            print('No registry entry found for ', key)
             raise
         setattr(entry, artifact, value)
         return

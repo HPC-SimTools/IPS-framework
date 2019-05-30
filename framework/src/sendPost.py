@@ -4,7 +4,7 @@
 #-------------------------------------------------------------------------------
 
 import sys
-import urllib2
+import urllib.request, urllib.error, urllib.parse
 import socket
 import time
 import traceback
@@ -19,8 +19,8 @@ def sendEncodedMessage(url, msg):
 
     while (trial < num_trials):
         try:
-            f = urllib2.urlopen(url, msg)
-        except (urllib2.URLError), e :
+            f = urllib.request.urlopen(url, msg)
+        except (urllib.error.URLError) as e :
             trial += 1
             if trial > num_trials:
                 open('PORTAL.err', 'a').write('%s\n'% (msg))

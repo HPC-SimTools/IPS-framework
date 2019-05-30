@@ -19,8 +19,8 @@ def read_dict (conf_dict = {}, filename = "SWIM_config"):
     except:
         message = "Unable to open config file " + filename
         publish_event(message, topic = FSP_log, action = "halt_run")
-        print message
-        raise IOError, "Unable to open config file in read_dict"
+        print(message)
+        raise IOError("Unable to open config file in read_dict")
 
     try:
         while line:
@@ -34,6 +34,6 @@ def read_dict (conf_dict = {}, filename = "SWIM_config"):
                 line = ""
         config_file.close()
         return conf_dict
-    except Exception, ex:
-        print "Unable to augment conf_dict in read_dict: %s" % ex
-        raise IOError, "Unable to augment conf_dict in read_dict"
+    except Exception as ex:
+        print("Unable to augment conf_dict in read_dict: %s" % ex)
+        raise IOError("Unable to augment conf_dict in read_dict")

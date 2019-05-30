@@ -139,7 +139,7 @@ class component():
                 self.curr_exec_time = self.my_rand.gauss(self.runtime, self.stddev)
             except:
                 if self.fwk.debug:
-                    print "not varying the execution time"
+                    print("not varying the execution time")
                 self.curr_exec_time = self.runtime
                 raise
             self.start_exec_time = self.fwk.fwk_global_time
@@ -161,7 +161,7 @@ class component():
             self.start_exec_time = self.fwk.fwk_global_time
             self.state = "running"
         else:
-            print 'error error error!!!  problem with component type in get_curr_exec_time'
+            print('error error error!!!  problem with component type in get_curr_exec_time')
             raise
 
     def run(self):
@@ -200,7 +200,7 @@ class component():
                     else:
                         #print "exceeded retry limit"
                         if self.fwk.debug:
-                            print 'exceeded retry limit, killing sim from component.'
+                            print('exceeded retry limit, killing sim from component.')
                         self.sim.kill()
                 else:
                     self.fwk.logEvent(self.sim.name, self.name, "start_task", "started running on %d processes on %d nodes" % (self.using.procs, self.using.nodes))
@@ -266,7 +266,7 @@ class component():
                 self.state = "not_ready"
                 self.num_faults += 1
         elif self.type == 'sandia_restart':
-            print "time spent in rework", self.fwk.fwk_global_time - self.start_exec_time
+            print("time spent in rework", self.fwk.fwk_global_time - self.start_exec_time)
             self.total_restart_time += self.fwk.fwk_global_time - self.start_exec_time
             self.total_restart_usage = self.total_restart_time * self.nproc
             #if self.state == "running":
@@ -277,7 +277,7 @@ class component():
                 self.state = "ready"
                 self.num_faults += 1
         else:
-            print "problems updating state in report_total_usage"
+            print("problems updating state in report_total_usage")
             raise
         if self.type == 'normal':
             if self.sim.state == 'rework':
@@ -302,8 +302,8 @@ class component():
                 self.RM.release_allocation(self, self.using.nodes)
             self.fwk.logEvent(self.sim.name, self.name, "finish_task", "task killed due to simulation failure")
         else:
-            print 'trying to kill task %s that has no nodes allocated (%d)' % (self.name, self.using.nodes)
-            print "problems!"
+            print('trying to kill task %s that has no nodes allocated (%d)' % (self.name, self.using.nodes))
+            print("problems!")
             self.fwk.logEvent(self.sim.name, self.name, "finish_task", "@@@@task killed due to simulation failure")
             raise
         self.report_total_usage()

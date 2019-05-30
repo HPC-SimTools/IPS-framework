@@ -1,9 +1,9 @@
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 # Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 import messages
 import sys
-import Queue
+import queue
 import os
 import subprocess
 
@@ -26,7 +26,9 @@ from symbol import except_clause
 import weakref
 
 MY_VERSION = float(sys.version[:3])
-#import pytau
+
+
+# import pytau
 
 def make_timers_parent():
     """
@@ -34,9 +36,10 @@ def make_timers_parent():
     object is forked into its own separate process.
     """
     pid = str(os.getpid())
-    return {'__init__':ipsTiming.create_timer("services", "__init__", pid),
-            'get_config_param':ipsTiming.create_timer("services", "get_config_param", pid),
-            '__initialize__':ipsTiming.create_timer("services", "__initialize__", pid)}
+    return {'__init__': ipsTiming.create_timer("services", "__init__", pid),
+            'get_config_param': ipsTiming.create_timer("services", "get_config_param", pid),
+            '__initialize__': ipsTiming.create_timer("services", "__initialize__", pid)}
+
 
 def make_timers_child():
     """
@@ -44,36 +47,36 @@ def make_timers_child():
     object is forked into its own separate process.
     """
     pid = str(os.getpid())
-    return {'_init_event_service':ipsTiming.create_timer("services", "_init_event_service", pid),
-            '_get_elapsed_time':ipsTiming.create_timer("services", "_get_elapsed_time", pid),
-            '_get_incoming_responses':ipsTiming.create_timer("services", "_get_incoming_responses", pid),
-            '_wait_msg_response':ipsTiming.create_timer("services", "_wait_msg_response", pid),
-            '_invoke_service':ipsTiming.create_timer("services", "invoke_service", pid),
-            '_get_service_response':ipsTiming.create_timer("services", "_get_service_response", pid),
-            '_send_monitor_event':ipsTiming.create_timer("services", "_send_monitor_event", pid),
-            'get_port':ipsTiming.create_timer("services", "get_port", pid),
-            'call_nonblocking':ipsTiming.create_timer("services", "call_nonblocking", pid),
-            'call':ipsTiming.create_timer("services", "call", pid),
-            'wait_call':ipsTiming.create_timer("services", "wait_call", pid),
-            'wait_call_list':ipsTiming.create_timer("services", "wait_call_list", pid),
-            'launch_task':ipsTiming.create_timer("services", "launch_task", pid),
-            'kill_task':ipsTiming.create_timer("services", "kill_task", pid),
-            'kill_all_tasks':ipsTiming.create_timer("services", "kill_all_tasks", pid),
-            'wait_task_nonblocking':ipsTiming.create_timer("services", "wait_task_nonblocking", pid),
-            'wait_task':ipsTiming.create_timer("services", "wait_task", pid),
-            'wait_tasklist':ipsTiming.create_timer("services", "wait_tasklist", pid),
-            'get_config_param':ipsTiming.create_timer("services", "get_config_param", pid),
-            'get_time_loop':ipsTiming.create_timer("services", "get_time_loop", pid),
-            'get_working_dir':ipsTiming.create_timer("services", "get_working_dir", pid),
-            'stage_input_files':ipsTiming.create_timer("services", "stage_input_files", pid),
-            'stage_data_files':ipsTiming.create_timer("services", "stage_data_files", pid),
-            'stage_output_files':ipsTiming.create_timer("services", "stage_output_files", pid),
-            'stage_nonPS_output_files':ipsTiming.create_timer("services", "stage_nonPS_output_files", pid),
-            'stage_PS_output_files':ipsTiming.create_timer("services", "stage_PS_output_files", pid),
-            'stage_plasma_state':ipsTiming.create_timer("services", "stage_plasma_state", pid),
-            'update_plasma_state':ipsTiming.create_timer("services", "update_plasma_state", pid),
-            'update_time_stamp':ipsTiming.create_timer("services", "update_time_stamp", pid),
-            'setMonitorURL':ipsTiming.create_timer("services", "setMonitorURL", pid)}
+    return {'_init_event_service': ipsTiming.create_timer("services", "_init_event_service", pid),
+            '_get_elapsed_time': ipsTiming.create_timer("services", "_get_elapsed_time", pid),
+            '_get_incoming_responses': ipsTiming.create_timer("services", "_get_incoming_responses", pid),
+            '_wait_msg_response': ipsTiming.create_timer("services", "_wait_msg_response", pid),
+            '_invoke_service': ipsTiming.create_timer("services", "invoke_service", pid),
+            '_get_service_response': ipsTiming.create_timer("services", "_get_service_response", pid),
+            '_send_monitor_event': ipsTiming.create_timer("services", "_send_monitor_event", pid),
+            'get_port': ipsTiming.create_timer("services", "get_port", pid),
+            'call_nonblocking': ipsTiming.create_timer("services", "call_nonblocking", pid),
+            'call': ipsTiming.create_timer("services", "call", pid),
+            'wait_call': ipsTiming.create_timer("services", "wait_call", pid),
+            'wait_call_list': ipsTiming.create_timer("services", "wait_call_list", pid),
+            'launch_task': ipsTiming.create_timer("services", "launch_task", pid),
+            'kill_task': ipsTiming.create_timer("services", "kill_task", pid),
+            'kill_all_tasks': ipsTiming.create_timer("services", "kill_all_tasks", pid),
+            'wait_task_nonblocking': ipsTiming.create_timer("services", "wait_task_nonblocking", pid),
+            'wait_task': ipsTiming.create_timer("services", "wait_task", pid),
+            'wait_tasklist': ipsTiming.create_timer("services", "wait_tasklist", pid),
+            'get_config_param': ipsTiming.create_timer("services", "get_config_param", pid),
+            'get_time_loop': ipsTiming.create_timer("services", "get_time_loop", pid),
+            'get_working_dir': ipsTiming.create_timer("services", "get_working_dir", pid),
+            'stage_input_files': ipsTiming.create_timer("services", "stage_input_files", pid),
+            'stage_data_files': ipsTiming.create_timer("services", "stage_data_files", pid),
+            'stage_output_files': ipsTiming.create_timer("services", "stage_output_files", pid),
+            'stage_nonPS_output_files': ipsTiming.create_timer("services", "stage_nonPS_output_files", pid),
+            'stage_PS_output_files': ipsTiming.create_timer("services", "stage_PS_output_files", pid),
+            'stage_plasma_state': ipsTiming.create_timer("services", "stage_plasma_state", pid),
+            'update_plasma_state': ipsTiming.create_timer("services", "update_plasma_state", pid),
+            'update_time_stamp': ipsTiming.create_timer("services", "update_time_stamp", pid),
+            'setMonitorURL': ipsTiming.create_timer("services", "setMonitorURL", pid)}
 
 
 class ServicesProxy(object):
@@ -137,11 +140,10 @@ class ServicesProxy(object):
                 self.profile = True
         except:
             pass
-        ipsTiming.instrument_object_with_tau('services', self, exclude = ['__init__'])
+        ipsTiming.instrument_object_with_tau('services', self, exclude=['__init__'])
 
     def _make_timers(self):
-        ipsTiming.instrument_object_with_tau('services', self, exclude = ['__init__'])
-
+        ipsTiming.instrument_object_with_tau('services', self, exclude=['__init__'])
 
     def __initialize__(self, component_ref):
         """
@@ -153,9 +155,9 @@ class ServicesProxy(object):
 
         self.component_ref = weakref.proxy(component_ref)
         conf = self.component_ref.config
-        self.full_comp_id =  '_'.join([conf['CLASS'], conf['SUB_CLASS'],
-                                       conf['NAME'],
-                                       str(self.component_ref.component_id.get_seq_num())])
+        self.full_comp_id = '_'.join([conf['CLASS'], conf['SUB_CLASS'],
+                                      conf['NAME'],
+                                      str(self.component_ref.component_id.get_seq_num())])
         #
         # Set up logging path to the IPS logging daemon
         #
@@ -180,7 +182,7 @@ class ServicesProxy(object):
         self.logger.setLevel(real_log_level)
         self.logger.addHandler(socketHandler)
         self.debug('__initialize__(): %s  %s ',
-                    str(self.component_ref), str(self.component_ref.component_id))
+                   str(self.component_ref), str(self.component_ref.component_id))
         self.sim_name = self.component_ref.component_id.get_sim_name()
         # ------------------
         # set shared_nodes
@@ -193,7 +195,7 @@ class ServicesProxy(object):
                 self.shared_nodes = False
             else:
                 self.fwk.exception("Bad 'NODE_ALLOCATION_MODE' value %s" % pn_compconf)
-                raise("Bad 'NODE_ALLOCATION_MODE' value %s" % pn_compconf)
+                raise "Bad 'NODE_ALLOCATION_MODE' value %s"
         except:
             if self.sim_conf['NODE_ALLOCATION_MODE'] == 'SHARED':
                 self.shared_nodes = True
@@ -213,7 +215,6 @@ class ServicesProxy(object):
                 chkpts = glob.glob(os.path.join(self.sim_conf['RESTART_ROOT'], 'restart', '*'))
                 base_dir = sorted(chkpts, key=lambda d: float(os.path.basename(d)))[-1]
                 self.sim_conf['RESTART_TIME'] = os.path.basename(base_dir)
-
 
     def _init_event_service(self):
         """
@@ -249,18 +250,17 @@ class ServicesProxy(object):
         response_list = []
         finish = False
         timeout = 0.01
-        while(not finish):
+        while (not finish):
             try:
                 response = self.svc_response_q.get(block, timeout)
                 response_list.append(response)
-            except Queue.Empty:
+            except queue.Empty:
                 if (not block):
                     finish = True
                 elif (len(response_list) > 0):
                     finish = True
-#        dumpAll()
+        #        dumpAll()
         return response_list
-
 
     def _wait_msg_response(self, msg_id, block=True):
         """
@@ -271,12 +271,12 @@ class ServicesProxy(object):
         :py:meth:`messages.ServiceResponseMessage` when available, otherwise
         ``None``.
         """
-        #print 'in _wait_msg_response'
-        if (msg_id in self.finished_calls.keys()):
+        # print 'in _wait_msg_response'
+        if (msg_id in list(self.finished_calls.keys())):
             response = self.finished_calls[msg_id]
             del self.finished_calls[msg_id]
             return response
-        elif (msg_id not in self.incomplete_calls.keys()):
+        elif (msg_id not in list(self.incomplete_calls.keys())):
             self.error('Invalid call ID : %s ', str(msg_id))
             raise Exception('Invalid message request ID argument')
 
@@ -296,10 +296,10 @@ class ServicesProxy(object):
                 # response to my message
                 elif (r.__class__ == messages.ServiceResponseMessage):
                     if (r.request_msg_id not in
-                        self.incomplete_calls.keys()):
+                            list(self.incomplete_calls.keys())):
                         self.error('Mismatched service response msg_id %s',
                                    str(r.request_msg_id))
-#                        dumpAll()
+                        #                        dumpAll()
                         raise Exception('Mismatched service response msg_id.')
                     else:
                         del self.incomplete_calls[msg_id]
@@ -310,21 +310,20 @@ class ServicesProxy(object):
                 else:
                     self.error('Unexpected service response of type %s',
                                r.__class__.__name__)
-#                    dumpAll()
+                    #                    dumpAll()
                     raise Exception('Unexpected service response of type ' +
-                               r.__class__.__name__)
+                                    r.__class__.__name__)
 
             if (not block):
                 keep_going = False
         # if this message corresponds to a finish invocation, return the response message
-        if (msg_id in self.finished_calls.keys()):
+        if (msg_id in list(self.finished_calls.keys())):
             response = self.finished_calls[msg_id]
             del self.finished_calls[msg_id]
-#            dumpAll()
+            #            dumpAll()
             return response
-#        dumpAll()
+        #        dumpAll()
         return None
-
 
     def _invoke_service(self, component_id, method_name, *args, **keywords):
         """
@@ -351,7 +350,7 @@ class ServicesProxy(object):
         on to the component.  If the status of the response is failure
         (``Message.FAILURE``), then the exception body is raised.
         """
-        #print "in _get_service_response"
+        # print "in _get_service_response"
         self.debug('_get_service_response(%s)', str(msg_id))
         response = self._wait_msg_response(msg_id, block)
         self.debug('_get_service_response(%s), response = %s', str(msg_id), str(response))
@@ -377,14 +376,14 @@ class ServicesProxy(object):
         """
         portal_data = {}
         portal_data['code'] = '_'.join([self.component_ref.CLASS,
-                                      self.component_ref.SUB_CLASS,
-                                      self.component_ref.NAME])
+                                        self.component_ref.SUB_CLASS,
+                                        self.component_ref.NAME])
         portal_data['eventtype'] = eventType
         portal_data['ok'] = ok
         portal_data['walltime'] = '%.2f' % (time.time() - self.component_ref.start_time)
         portal_data['state'] = state
         portal_data['comment'] = comment
-        if(self.monitor_url):
+        if (self.monitor_url):
             portal_data['vizurl'] = self.monitor_url.split('//')[-1]
 
         event_data = {}
@@ -408,7 +407,7 @@ class ServicesProxy(object):
         Return a reference to the component implementing port *port_name*.
         """
         msg_id = self._invoke_service(self.fwk.component_id,
-                            'get_port', port_name)
+                                      'get_port', port_name)
         response = self._get_service_response(msg_id, True)
         return response
 
@@ -428,15 +427,15 @@ class ServicesProxy(object):
         target_seqnum = component_id.get_seq_num()
         target = target_class + '@' + str(target_seqnum)
         formatted_args = ['%.3f' % (x) if isinstance(x, float)
-                                        else str(x) for x in args]
+                          else str(x) for x in args]
         if keywords:
-            formatted_args += ["%s=" % k  + str(v) for (k,v) in keywords.iteritems()]
+            formatted_args += ["%s=" % k + str(v) for (k, v) in keywords.items()]
         self._send_monitor_event('IPS_CALL_BEGIN', 'Target = ' +
-                                 target + ':' + method_name +'('+
+                                 target + ':' + method_name + '(' +
                                  ' ,'.join(formatted_args) + ')')
         msg_id = self._invoke_service(component_id,
-                                       'init_call',
-                                       method_name, *args, **keywords)
+                                      'init_call',
+                                      method_name, *args, **keywords)
         call_id = self._get_service_response(msg_id, True)
         self.call_targets[call_id] = (target, method_name, args)
         return call_id
@@ -467,10 +466,10 @@ class ServicesProxy(object):
                                       call_id, block)
         response = self._get_service_response(msg_id, block=True)
         formatted_args = ['%.3f' % (x) if isinstance(x, float)
-                                        else str(x) for x in args]
+                          else str(x) for x in args]
         self._send_monitor_event('IPS_CALL_END', 'Target = ' +
-                                          target + ':' + method_name +'('+
-                                          str(*formatted_args) + ')')
+                                 target + ':' + method_name + '(' +
+                                 str(*formatted_args) + ')')
         del self.call_targets[call_id]
         return response
 
@@ -487,7 +486,7 @@ class ServicesProxy(object):
         for call_id in call_id_list:
             try:
                 ret_val = self.wait_call(call_id, block)
-            except Exception, e:
+            except Exception as e:
                 self.exception('Caught exception in wait_call()')
                 caught_exceptions.append(e)
             else:
@@ -538,7 +537,7 @@ class ServicesProxy(object):
 
         """
         tokens = binary.split()
-        if len(tokens) > 1 :
+        if len(tokens) > 1:
             binary = tokens[0]
             args = tuple(tokens[1:]) + args
         try:
@@ -571,7 +570,7 @@ class ServicesProxy(object):
 
         try:
             whole_nodes = keywords['whole_nodes']
-            #print ">>>> value of whole_nodes", whole_nodes
+            # print ">>>> value of whole_nodes", whole_nodes
         except:
             if self.shared_nodes == True:
                 whole_nodes = False
@@ -580,14 +579,14 @@ class ServicesProxy(object):
 
         try:
             whole_socks = keywords['whole_sockets']
-            #print ">>>> value of whole_socks", whole_socks
+            # print ">>>> value of whole_socks", whole_socks
         except:
             if self.shared_nodes == True:
                 whole_socks = False
             else:
                 whole_socks = True
 
-        #print "about to call init task"
+        # print "about to call init task"
         try:
             # SIMYAN: added working_dir to component method invocation
             msg_id = self._invoke_service(self.fwk.component_id,
@@ -595,8 +594,8 @@ class ServicesProxy(object):
                                           working_dir, task_ppn, block,
                                           whole_nodes, whole_socks, *args)
             (task_id, command, env_update) = self._get_service_response(msg_id, block=True)
-        except Exception, e:
-            #self.exception('Error initiating task %s %s on %d nodes' %  (binary, str(args), int(nproc)))
+        except Exception as e:
+            # self.exception('Error initiating task %s %s on %d nodes' %  (binary, str(args), int(nproc)))
             raise
 
         log_filename = None
@@ -622,24 +621,24 @@ class ServicesProxy(object):
             if env_update:
                 new_env = os.environ
                 new_env.update(env_update)
-                process = subprocess.Popen(cmd_lst, stdout = task_stdout,
-                                           stderr = subprocess.STDOUT,
-                                           cwd = working_dir,
-                                           env = new_env)
+                process = subprocess.Popen(cmd_lst, stdout=task_stdout,
+                                           stderr=subprocess.STDOUT,
+                                           cwd=working_dir,
+                                           env=new_env)
             else:
-                process = subprocess.Popen(cmd_lst, stdout = task_stdout,
-                                           stderr = subprocess.STDOUT,
-                                           cwd = working_dir)
-        except Exception, e:
+                process = subprocess.Popen(cmd_lst, stdout=task_stdout,
+                                           stderr=subprocess.STDOUT,
+                                           cwd=working_dir)
+        except Exception as e:
             self.exception('Error executing command : %s', command)
             raise
-        self._send_monitor_event('IPS_LAUNCH_TASK', 'task_id = %s , Tag = %s , nproc = %d , Target = %s'  % \
-                                      (str(task_id), tag, int(nproc), command))
+        self._send_monitor_event('IPS_LAUNCH_TASK', 'task_id = %s , Tag = %s , nproc = %d , Target = %s' % \
+                                 (str(task_id), tag, int(nproc), command))
 
         # FIXME: process Monitoring Command : ps --no-headers -o pid,state pid1  pid2 pid3 ...
 
         self.task_map[task_id] = (process, time.time())
-        return task_id #process.pid
+        return task_id  # process.pid
 
     def launch_task_resilient(self, nproc, working_dir, binary, *args, **keywords):
         """
@@ -666,9 +665,9 @@ class ServicesProxy(object):
                                           working_dir, task_ppn,
                                           block, wnodes, wsocks, *args)
             (task_id, command, env_update) = self._get_service_response(msg_id, block=True)
-        except Exception, e:
+        except Exception as e:
             self.exception('Error initiating task %s %s on %d nodes' % \
-                                (binary, str(args), int(nproc)))
+                           (binary, str(args), int(nproc)))
             raise
 
         log_filename = None
@@ -690,15 +689,15 @@ class ServicesProxy(object):
             if env_update:
                 new_env = os.environ
                 new_env.update(env_update)
-                process = subprocess.Popen(cmd_lst, stdout = task_stdout,
-                                           stderr = subprocess.STDOUT,
-                                           cwd = working_dir,
-                                           env = new_env)
+                process = subprocess.Popen(cmd_lst, stdout=task_stdout,
+                                           stderr=subprocess.STDOUT,
+                                           cwd=working_dir,
+                                           env=new_env)
             else:
-                process = subprocess.Popen(cmd_lst, stdout = task_stdout,
-                                           stderr = subprocess.STDOUT,
-                                           cwd = working_dir)
-        except Exception, e:
+                process = subprocess.Popen(cmd_lst, stdout=task_stdout,
+                                           stderr=subprocess.STDOUT,
+                                           cwd=working_dir)
+        except Exception as e:
             self.exception('Error executing command : %s', command)
             raise
         self._send_monitor_event('IPS_LAUNCH_TASK', 'Target = ' + command + \
@@ -707,9 +706,9 @@ class ServicesProxy(object):
         # FIXME: process Monitoring Command : ps --no-headers -o pid,state pid1
         # pid2 pid3 ...
 
-        self.task_map[task_id] = (process,time.time(),nproc,working_dir,binary,
-                                  args,keywords)
-        return task_id #process.pid
+        self.task_map[task_id] = (process, time.time(), nproc, working_dir, binary,
+                                  args, keywords)
+        return task_id  # process.pid
 
     def launch_task_pool(self, task_pool_name):
         """
@@ -720,8 +719,8 @@ class ServicesProxy(object):
         task_pool = self.task_pools[task_pool_name]
         queued_tasks = task_pool.queued_tasks
         submit_dict = {}
-        for (task_name, task) in queued_tasks.iteritems():
-            #(nproc, working_dir, binary, args, keywords) = queued_tasks[task_name]
+        for (task_name, task) in queued_tasks.items():
+            # (nproc, working_dir, binary, args, keywords) = queued_tasks[task_name]
             task_ppn = self.ppn
             try:
                 task_ppn = task.keywords['task_ppn']
@@ -747,15 +746,15 @@ class ServicesProxy(object):
 
         try:
             msg_id = self._invoke_service(self.fwk.component_id,
-                            'init_task_pool', submit_dict)
+                                          'init_task_pool', submit_dict)
             allocated_tasks = self._get_service_response(msg_id, block=True)
-        except Exception, e:
+        except Exception as e:
             self.exception('Error initiating task pool %s ', task_pool_name)
             raise
 
         active_tasks = {}
-        for task_name in allocated_tasks.keys():
-            #(nproc, working_dir, binary, args, keywords) = queued_tasks[task_name]
+        for task_name in list(allocated_tasks.keys()):
+            # (nproc, working_dir, binary, args, keywords) = queued_tasks[task_name]
             task = queued_tasks[task_name]
             (task_id, command, env_update) = allocated_tasks[task_name]
             tag = 'None'
@@ -783,19 +782,20 @@ class ServicesProxy(object):
                 if env_update:
                     new_env = os.environ
                     new_env.update(env_update)
-                    process = subprocess.Popen(cmd_lst, stdout = task_stdout,
-                                               stderr = subprocess.STDOUT,
-                                               cwd = task.working_dir,
-                                               env = new_env)
+                    process = subprocess.Popen(cmd_lst, stdout=task_stdout,
+                                               stderr=subprocess.STDOUT,
+                                               cwd=task.working_dir,
+                                               env=new_env)
                 else:
-                    process = subprocess.Popen(cmd_lst, stdout = task_stdout,
-                                               stderr = subprocess.STDOUT,
-                                               cwd = task.working_dir)
-            except Exception, e:
+                    process = subprocess.Popen(cmd_lst, stdout=task_stdout,
+                                               stderr=subprocess.STDOUT,
+                                               cwd=task.working_dir)
+            except Exception as e:
                 self.exception('Error executing task %s - command : %s', task_name, command)
                 raise
-            self._send_monitor_event('IPS_LAUNCH_TASK_POOL', 'task_id = %s , Tag = %s , nproc = %d , Target = %s , task_name = %s'  % \
-                                      (str(task_id), str(tag), int(task.nproc), command, task_name))
+            self._send_monitor_event('IPS_LAUNCH_TASK_POOL',
+                                     'task_id = %s , Tag = %s , nproc = %d , Target = %s , task_name = %s' % \
+                                     (str(task_id), str(tag), int(task.nproc), command, task_name))
 
             self.task_map[task_id] = (process, time.time())
             active_tasks[task_name] = task_id
@@ -807,12 +807,12 @@ class ServicesProxy(object):
         """
         try:
             process, start_time = self.task_map[task_id]
-            #TODO: process and start_time will have to be accessed as shown
+            # TODO: process and start_time will have to be accessed as shown
             #      below if this task can be relaunched to support FT...
-            #process, start_time = self.task_map[task_id][0], self.task_map[task_id][1]
-        except KeyError, e:
+            # process, start_time = self.task_map[task_id][0], self.task_map[task_id][1]
+        except KeyError as e:
             self.exception('Error: unrecognizable task_id = %s ', task_id)
-            raise # do we really want to raise an error or just return?
+            raise  # do we really want to raise an error or just return?
         task_retval = 'killed'
         # kill process
         try:
@@ -820,17 +820,17 @@ class ServicesProxy(object):
                 os.kill(process.pid, signal.SIGTERM)
             else:
                 process.terminate()
-        except Exception, e:
+        except Exception as e:
             self.exception('exception during process termination for task %d', task_id)
             raise
 
         del self.task_map[task_id]
         try:
             msg_id = self._invoke_service(self.fwk.component_id,
-                            'finish_task', task_id, task_retval)
+                                          'finish_task', task_id, task_retval)
             retval = self._get_service_response(msg_id, block=True)
-        except Exception, e:
-            self.exception('Error finalizing task  %s' , task_id)
+        except Exception as e:
+            self.exception('Error finalizing task  %s', task_id)
             raise
         return
 
@@ -841,7 +841,7 @@ class ServicesProxy(object):
         while len(self.task_map) > 0:
             try:
                 self.kill_task(self.task_map[0])
-            except Exception, e:
+            except Exception as e:
                 raise
         return
 
@@ -851,10 +851,10 @@ class ServicesProxy(object):
         """
         try:
             process, start_time = self.task_map[task_id]
-            #TODO: process and start_time will have to be accessed as shown
+            # TODO: process and start_time will have to be accessed as shown
             #      below if this task can be relaunched to support FT...
-            #process, start_time = self.task_map[task_id][0], self.task_map[task_id][1]
-        except KeyError, e:
+            # process, start_time = self.task_map[task_id][0], self.task_map[task_id][1]
+        except KeyError as e:
             self.exception('Error: unrecognizable task_id = %s ', task_id)
             raise
         task_retval = process.poll()
@@ -864,14 +864,14 @@ class ServicesProxy(object):
             retval = self.wait_task(task_id)
             return retval
 
-    def wait_task(self, task_id, timeout = -1, delay = 1):
+    def wait_task(self, task_id, timeout=-1, delay=1):
         """
         Check the status of task *task_id*.  Return the return value of the task when finished successfully.  Raise exceptions if the task is not found, or if there are problems finalizing the task.
         """
-        #print "in wait task"
+        # print "in wait task"
         try:
             process, start_time = self.task_map[task_id]
-        except KeyError, e:
+        except KeyError as e:
             self.exception('Error: unrecognizable task_id = %s ', str(task_id))
             raise
         task_retval = None
@@ -892,15 +892,15 @@ class ServicesProxy(object):
                                      (str(task_id), time.time() - start_time))
         else:
             self._send_monitor_event('IPS_TASK_END', 'task_id = %s  elapsed time = %.2f S' %
-                                         (str(task_id), time.time() - start_time))
+                                     (str(task_id), time.time() - start_time))
 
         del self.task_map[task_id]
         try:
             msg_id = self._invoke_service(self.fwk.component_id,
-                            'finish_task', task_id, task_retval)
+                                          'finish_task', task_id, task_retval)
             retval = self._get_service_response(msg_id, block=True)
-        except Exception, e:
-            self.exception('Error finalizing task  %s' , task_id)
+        except Exception as e:
+            self.exception('Error finalizing task  %s', task_id)
             raise
         return task_retval
 
@@ -909,8 +909,8 @@ class ServicesProxy(object):
         **not used**
         """
         try:
-            process,start_time,nproc,working_dir,binary,args,keywords = self.task_map[task_id]
-        except KeyError, e:
+            process, start_time, nproc, working_dir, binary, args, keywords = self.task_map[task_id]
+        except KeyError as e:
             self.exception('Error: unrecognizable task_id = %s ', str(task_id))
             raise
         task_retval = process.wait()
@@ -920,10 +920,10 @@ class ServicesProxy(object):
         del self.task_map[task_id]
         try:
             msg_id = self._invoke_service(self.fwk.component_id,
-                            'finish_task', task_id, task_retval)
+                                          'finish_task', task_id, task_retval)
             retval = self._get_service_response(msg_id, block=True)
-        except Exception, e:
-            self.exception('Error finalizing task  %s' , task_id)
+        except Exception as e:
+            self.exception('Error finalizing task  %s', task_id)
             raise
 
         if task_retval == 0:
@@ -937,7 +937,7 @@ class ServicesProxy(object):
                 raise Exception('Execution failed presumably due to application error.')
             elif retval == 1:
                 self.exception('Unsuccessful execution and FTB trace.')
-                if (not keywords.has_key('relaunch')) or (keywords['relaunch'] != 'N'):
+                if ('relaunch' not in keywords) or (keywords['relaunch'] != 'N'):
                     relaunch_task_id = self.launch_task_resilient(nproc, working_dir, binary, args, keywords)
                     self.debug('Relaunched failed task.')
                     return self.wait_task_resilient(relaunch_task_id)
@@ -946,7 +946,7 @@ class ServicesProxy(object):
 
         return task_retval
 
-    def wait_tasklist(self, task_id_list, block = True):
+    def wait_tasklist(self, task_id_list, block=True):
         """
         Check the status of a list of tasks.  If *block* is ``True``, return a
         dictionary of return values when *all* tasks have completed.  If
@@ -963,7 +963,7 @@ class ServicesProxy(object):
             except KeyError:
                 self.exception('Error: unknown task id : %s', task_id)
                 raise
-        while (len(running_tasks) > 0) :
+        while (len(running_tasks) > 0):
             for task_id in task_id_list:
                 if task_id not in running_tasks:
                     continue
@@ -978,7 +978,7 @@ class ServicesProxy(object):
             time.sleep(0.05)
         return ret_dict
 
-    def get_config_param(self, param, silent = False):
+    def get_config_param(self, param, silent=False):
         """
         Return the value of the configuration parameter *param*.  Raise
         exception if not found.
@@ -988,11 +988,11 @@ class ServicesProxy(object):
         except KeyError:
             try:
                 msg_id = self._invoke_service(self.fwk.component_id,
-                                            'get_config_parameter', param)
+                                              'get_config_parameter', param)
                 val = self._get_service_response(msg_id, block=True)
             except Exception:
                 if not silent:
-                    self.exception('Error retrieving value of config parameter %s' , param)
+                    self.exception('Error retrieving value of config parameter %s', param)
                 raise
         return val
 
@@ -1006,14 +1006,14 @@ class ServicesProxy(object):
             sim_name = self.sim_name
         else:
             sim_name = target_sim_name
-        if (param in self.sim_conf.keys()):
+        if (param in list(self.sim_conf.keys())):
             raise Exception('Cannot dynamically alter simulation configuration parameter ' + param)
         try:
             msg_id = self._invoke_service(self.fwk.component_id,
-                                        'set_config_parameter', param, value, sim_name)
+                                          'set_config_parameter', param, value, sim_name)
             retval = self._get_service_response(msg_id, block=True)
         except Exception:
-            self.exception('Error setting value of configuration parameter %s' , param)
+            self.exception('Error setting value of configuration parameter %s', param)
             raise
         return retval
 
@@ -1051,14 +1051,14 @@ class ServicesProxy(object):
             start = float(eval(time_conf['START']))
             nstep = int(eval(time_conf['NSTEP']))
             step = (finish - start) / nstep
-            tlist = [start + step * n for n in range(nstep+1)]
+            tlist = [start + step * n for n in range(nstep + 1)]
         # generate tlist in explicit mode (list of times)
-        elif time_conf['MODE'] == 'EXPLICIT' :
+        elif time_conf['MODE'] == 'EXPLICIT':
             tlist = [float(v) for v in time_conf['VALUES'].split()]
         self.time_loop = tlist
         return tlist
 
-    def checkpoint_components(self, comp_id_list, time_stamp, Force = False, Protect = False):
+    def checkpoint_components(self, comp_id_list, time_stamp, Force=False, Protect=False):
         """
         Selectively checkpoint components in *comp_id_list* based on the
         configuration section *CHECKPOINT*.  If *Force* is ``True``, the
@@ -1129,7 +1129,7 @@ class ServicesProxy(object):
         if (Force):
             return self._dispatch_checkpoint(time_stamp, comp_id_list, Protect)
         try:
-            chkpt_conf =  self.sim_conf['CHECKPOINT']
+            chkpt_conf = self.sim_conf['CHECKPOINT']
             mode = chkpt_conf['MODE']
             num_chkpt = int(chkpt_conf['NUM_CHECKPOINT'])
         except KeyError:
@@ -1140,10 +1140,10 @@ class ServicesProxy(object):
         if (num_chkpt == 0):
             return
 
-        if (mode not in ['ALL', 'WALLTIME_REGULAR',  'WALLTIME_EXPLICIT',
+        if (mode not in ['ALL', 'WALLTIME_REGULAR', 'WALLTIME_EXPLICIT',
                          'PHYSTIME_REGULAR', 'PHYSTIME_EXPLICIT']):
             self.error('Invalid MODE = %s in checkpoint configuration', mode)
-            raise Exception('Invalid MODE = %s in checkpoint configuration'% (mode))
+            raise Exception('Invalid MODE = %s in checkpoint configuration' % (mode))
 
         if (mode == 'ALL'):
             return self._dispatch_checkpoint(time_stamp, comp_id_list, Protect)
@@ -1163,7 +1163,7 @@ class ServicesProxy(object):
             wt_values = [float(t) for t in wt_values]
             for t in wt_values:
                 if ((elapsed_time >= t) and
-                    (self.last_ckpt_walltime - self.start_time < t)):
+                        (self.last_ckpt_walltime - self.start_time < t)):
                     return self._dispatch_checkpoint(time_stamp, comp_id_list, Protect)
             return None
         elif (mode == 'PHYSTIME_REGULAR'):
@@ -1176,18 +1176,18 @@ class ServicesProxy(object):
                 return self._dispatch_checkpoint(time_stamp, comp_id_list, Protect)
             else:
                 return None
-        elif(mode == 'PHYSTIME_EXPLICIT'):
-            #print ">>>>>>> chkpt_conf['PHYSTIME_VALUES'] = ", chkpt_conf['PHYSTIME_VALUES']
+        elif (mode == 'PHYSTIME_EXPLICIT'):
+            # print ">>>>>>> chkpt_conf['PHYSTIME_VALUES'] = ", chkpt_conf['PHYSTIME_VALUES']
             try:
                 pt_values = chkpt_conf['PHYSTIME_VALUES'].split()
             except AttributeError:
                 pt_values = chkpt_conf['PHYSTIME_VALUES']
             pt_values = [float(t) for t in pt_values]
-            #print ">>>>>>> pt_values = ", pt_values
+            # print ">>>>>>> pt_values = ", pt_values
             pt_current = float(time_stamp)
             for pt in pt_values:
                 if (pt_current >= pt and
-                    self.last_ckpt_phystime < pt):
+                        self.last_ckpt_phystime < pt):
                     return self._dispatch_checkpoint(time_stamp, comp_id_list, Protect)
             return None
         return None
@@ -1203,9 +1203,9 @@ class ServicesProxy(object):
         self.last_ckpt_walltime = self.cur_time
         self.last_ckpt_phystime = float(time_stamp)
         self.debug('Checkpointing components after %.3f sec with physics time = %.3f',
-                   self.last_ckpt_walltime-self.start_time, self.last_ckpt_phystime)
+                   self.last_ckpt_walltime - self.start_time, self.last_ckpt_phystime)
         self._send_monitor_event('IPS_CHECKPOINT_START',
-                                'Components = ' + str(comp_id_list))
+                                 'Components = ' + str(comp_id_list))
         call_id_list = []
         for comp_id in comp_id_list:
             call_id = self.call_nonblocking(comp_id, 'checkpoint', time_stamp)
@@ -1223,7 +1223,7 @@ class ServicesProxy(object):
             return ret_dict
 
         base_dir = os.path.join(sim_root, 'restart')
-        timeStamp_str =  '%0.3f' % (float(time_stamp))
+        timeStamp_str = '%0.3f' % (float(time_stamp))
         self.new_chkpts.append(timeStamp_str)
         try:
             protect_freq = chkpt_conf['PROTECT_FREQUENCY']
@@ -1234,16 +1234,16 @@ class ServicesProxy(object):
                 self.protected_chkpts.append(timeStamp_str)
 
         if (os.path.isdir(base_dir)):
-            all_chkpts = [os.path.basename(f)  for f in glob.glob(os.path.join(base_dir,'*'))
-                               if os.path.isdir(f)]
+            all_chkpts = [os.path.basename(f) for f in glob.glob(os.path.join(base_dir, '*'))
+                          if os.path.isdir(f)]
             prior_runs_chkpts_dirs = [chkpt for chkpt in all_chkpts if chkpt not in self.new_chkpts]
             purge_candidates = sorted(prior_runs_chkpts_dirs, key=float)
             purge_candidates += [chkpt for chkpt in self.new_chkpts if (chkpt in all_chkpts and
-                           chkpt not in self.protected_chkpts)]
-#            self.debug('CHECKPOINT: all_chkpts = %s', str(all_chkpts))
-#            self.debug('CHECKPOINT: purge_candidates = %s', str(purge_candidates))
-#            self.debug('CHECKPOINT: protected_chkpts = %s', str(self.protected_chkpts))
-#            self.debug('CHECKPOINT: ***********************')
+                                                                        chkpt not in self.protected_chkpts)]
+            #            self.debug('CHECKPOINT: all_chkpts = %s', str(all_chkpts))
+            #            self.debug('CHECKPOINT: purge_candidates = %s', str(purge_candidates))
+            #            self.debug('CHECKPOINT: protected_chkpts = %s', str(self.protected_chkpts))
+            #            self.debug('CHECKPOINT: ***********************')
             while (len(purge_candidates) > num_chkpt):
                 obsolete_chkpt = purge_candidates.pop(0)
                 chkpt_dir = os.path.join(base_dir, obsolete_chkpt)
@@ -1253,7 +1253,7 @@ class ServicesProxy(object):
                     self.exception('Error removing directory %s', chkpt_dir)
                     raise
         self._send_monitor_event('IPS_CHECKPOINT_END',
-                                'Components = ' + str(comp_id_list))
+                                 'Components = ' + str(comp_id_list))
         return ret_dict
 
     # DM getWorkDir
@@ -1269,7 +1269,7 @@ class ServicesProxy(object):
             ${SIM_ROOT}/work/$CLASS_${SUB_CLASS}_$NAME_<instance_num>
 
         """
-        if (self.workdir ==''):
+        if (self.workdir == ''):
             self.workdir = os.path.join(self.sim_conf['SIM_ROOT'], 'work',
                                         self.full_comp_id)
         return self.workdir
@@ -1291,24 +1291,24 @@ class ServicesProxy(object):
         # Copy input files into a central place in the output tree
         simroot = self.sim_conf['SIM_ROOT']
         try:
-            outprefix =  self.sim_conf['OUTPUT_PREFIX']
-        except KeyError, e:
-            outprefix=''
+            outprefix = self.sim_conf['OUTPUT_PREFIX']
+        except KeyError as e:
+            outprefix = ''
 
-        targetdir = os.path.join(simroot , 'simulation_setup',
+        targetdir = os.path.join(simroot, 'simulation_setup',
                                  self.full_comp_id)
         try:
-            #print 'inputDir =', inputDir
-            #print 'input_file_list =', input_file_list
-            #print 'targetdir =', targetdir
-            #print 'outprefix =', outprefix
+            # print 'inputDir =', inputDir
+            # print 'input_file_list =', input_file_list
+            # print 'targetdir =', targetdir
+            # print 'outprefix =', outprefix
 
             ipsutil.copyFiles(inputDir, input_file_list, targetdir, outprefix)
-        except Exception, e:
+        except Exception as e:
             self._send_monitor_event('IPS_STAGE_INPUTS',
-                                           'Files = ' + str(input_file_list) + \
-                                           ' Exception raised : ' + str(e),
-                                           ok='False')
+                                     'Files = ' + str(input_file_list) + \
+                                     ' Exception raised : ' + str(e),
+                                     ok='False')
             self.exception('Error in stage_input_files')
             raise e
         elapsed_time = time.time() - start_time
@@ -1318,6 +1318,7 @@ class ServicesProxy(object):
                                           str(input_file_list)))
 
         return
+
     # DM stageInput
     def stage_input_files(self, input_file_list):
         """
@@ -1335,42 +1336,42 @@ class ServicesProxy(object):
         # Copy input files into a central place in the output tree
         simroot = self.sim_conf['SIM_ROOT']
         try:
-            outprefix =  self.sim_conf['OUTPUT_PREFIX']
-        except KeyError, e:
-            outprefix=''
+            outprefix = self.sim_conf['OUTPUT_PREFIX']
+        except KeyError as e:
+            outprefix = ''
 
-        targetdir = os.path.join(simroot , 'simulation_setup',
+        targetdir = os.path.join(simroot, 'simulation_setup',
                                  self.full_comp_id)
         try:
-            #print 'inputDir =', inputDir
-            #print 'input_file_list =', input_file_list
-            #print 'targetdir =', targetdir
-            #print 'outprefix =', outprefix
+            # print 'inputDir =', inputDir
+            # print 'input_file_list =', input_file_list
+            # print 'targetdir =', targetdir
+            # print 'outprefix =', outprefix
 
             ipsutil.copyFiles(inputDir, input_file_list, targetdir, outprefix)
-        except Exception, e:
+        except Exception as e:
             self._send_monitor_event('IPS_STAGE_INPUTS',
-                                           'Files = ' + str(input_file_list) + \
-                                           ' Exception raised : ' + str(e),
-                                           ok='False')
+                                     'Files = ' + str(input_file_list) + \
+                                     ' Exception raised : ' + str(e),
+                                     ok='False')
             self.exception('Error in stage_input_files')
             raise e
-        for (name, (new_conf, old_conf, init_comp, driver_comp)) in self.sub_flows.iteritems():
+        for (name, (new_conf, old_conf, init_comp, driver_comp)) in self.sub_flows.items():
             ports = old_conf['PORTS']['NAMES'].split()
             comps = [old_conf['PORTS'][p]['IMPLEMENTATION'] for p in ports]
             for c in comps:
                 input_dir = old_conf[c]['INPUT_DIR']
                 input_files = old_conf[c]['INPUT_FILES']
-                print '---- Staging inputs for %s:%s' %(name, c)
+                print('---- Staging inputs for %s:%s' % (name, c))
                 input_target_dir = os.path.join(os.getcwd(), c)
                 try:
                     os.mkdir(input_target_dir)
-                except OSError, e:
+                except OSError as e:
                     if e.errno != 17:
                         raise
                 try:
                     ipsutil.copyFiles(input_dir, input_files, input_target_dir)
-                except Exception, e:
+                except Exception as e:
                     self._send_monitor_event('IPS_STAGE_INPUTS',
                                              'Files = ' + str(input_files) +
                                              ' Exception raised : ' + str(e),
@@ -1409,27 +1410,26 @@ class ServicesProxy(object):
         # Copy input files into a central place in the output tree
         simroot = self.sim_conf['SIM_ROOT']
         try:
-            outprefix =  self.sim_conf['OUTPUT_PREFIX']
-        except KeyError, e:
-            outprefix=''
+            outprefix = self.sim_conf['OUTPUT_PREFIX']
+        except KeyError as e:
+            outprefix = ''
 
-        targetdir = os.path.join(simroot , 'simulation_setup',
+        targetdir = os.path.join(simroot, 'simulation_setup',
                                  self.full_comp_id)
         try:
             ipsutil.copyFiles(dataDir, data_file_list, targetdir, outprefix)
-        except Exception, e:
+        except Exception as e:
             self._send_monitor_event('IPS_STAGE_DATA',
-                                           'Files = ' + str(data_file_list) + \
-                                           ' Exception raised : ' + str(e),
-                                           ok='False')
+                                     'Files = ' + str(data_file_list) + \
+                                     ' Exception raised : ' + str(e),
+                                     ok='False')
             self.exception('Error in stage_data_files')
             raise e
-        self._send_monitor_event('IPS_STAGE_DATA','Files = '+str(data_file_list))
+        self._send_monitor_event('IPS_STAGE_DATA', 'Files = ' + str(data_file_list))
 
         return
 
-
-    def stage_nonPS_output_files(self, timeStamp, file_list, keep_old_files = True):
+    def stage_nonPS_output_files(self, timeStamp, file_list, keep_old_files=True):
         """
         Same as stage_output_files, but does not do anything with the Plasma State.
         """
@@ -1443,27 +1443,27 @@ class ServicesProxy(object):
         out_root = 'simulation_results'
 
         output_dir = os.path.join(sim_root, out_root, \
-                                 str(timeStamp), 'components' ,
-                                 self.full_comp_id)
+                                  str(timeStamp), 'components',
+                                  self.full_comp_id)
         try:
             ipsutil.copyFiles(workdir, file_list, output_dir, outprefix,
                               keep_old=keep_old_files)
-        except Exception, e:
+        except Exception as e:
             self._send_monitor_event('IPS_STAGE_OUTPUTS',
-                                           'Files = ' + str(file_list) + \
-                                           ' Exception raised : ' + str(e),
-                                           ok='False')
+                                     'Files = ' + str(file_list) + \
+                                     ' Exception raised : ' + str(e),
+                                     ok='False')
             self.exception('Error in stage_nonPS_output_files()')
             raise
 
         # Store symlinks to component output files in a single top-level directory
 
-        symlink_dir =  os.path.join(sim_root, out_root, self.full_comp_id)
+        symlink_dir = os.path.join(sim_root, out_root, self.full_comp_id)
         try:
             os.makedirs(symlink_dir)
-        except OSError, e:
+        except OSError as e:
             if (e.errno != 17):
-                self.exception('Error creating directory %s : %s' ,
+                self.exception('Error creating directory %s : %s',
                                symlink_dir, e.strerror)
                 raise
 
@@ -1472,8 +1472,8 @@ class ServicesProxy(object):
         for f in all_files:
             real_file = os.path.join(output_dir, outprefix + f)
             tokens = f.rsplit('.', 1)
-            if (len(tokens) == 1) :
-                newName = '_'.join([f , str(timeStamp)])
+            if (len(tokens) == 1):
+                newName = '_'.join([f, str(timeStamp)])
             else:
                 name = tokens[0]
                 ext = tokens[1]
@@ -1483,22 +1483,22 @@ class ServicesProxy(object):
                 os.remove(sym_link)
             # We need to use relative path for the symlinks
             common1 = os.path.commonprefix([real_file, sym_link])
-            (head, sep, tail)= common1.rpartition('/')
+            (head, sep, tail) = common1.rpartition('/')
             common = head.split('/')
-            file_suffix = real_file.split('/')[len(common):] # Include file name
-            link_suffix = sym_link.split('/')[len(common):-1] # No file name
+            file_suffix = real_file.split('/')[len(common):]  # Include file name
+            link_suffix = sym_link.split('/')[len(common):-1]  # No file name
             p = []
             if len(link_suffix) > 0:
-                p = [ '../' * len(link_suffix) ]
+                p = ['../' * len(link_suffix)]
             p = p + file_suffix
-            relpath = os.path.join( *p )
+            relpath = os.path.join(*p)
             os.symlink(relpath, sym_link)
 
         self._send_monitor_event('IPS_STAGE_OUTPUTS',
                                  'Files = ' + str(file_list))
         return
 
-    def stage_PS_output_files(self, timeStamp, file_list, keep_old_files = True):
+    def stage_PS_output_files(self, timeStamp, file_list, keep_old_files=True):
         """
         Same as stage_output_files, but only does Plasma State files.
         """
@@ -1512,8 +1512,8 @@ class ServicesProxy(object):
         out_root = 'simulation_results'
 
         output_dir = os.path.join(sim_root, out_root, \
-                                 str(timeStamp), 'components' ,
-                                 self.full_comp_id)
+                                  str(timeStamp), 'components',
+                                  self.full_comp_id)
 
         # Store plasma state files into $SIM_ROOT/history/plasma_state
         # Plasma state files are renamed, by appending the full component
@@ -1521,11 +1521,11 @@ class ServicesProxy(object):
         # A version number is added to the end of the file name to avoid
         # overwriting existing plasma state files
         plasma_dir = os.path.join(self.sim_conf['SIM_ROOT'],
-                                 'simulation_results',
-                                 'plasma_state')
+                                  'simulation_results',
+                                  'plasma_state')
         try:
             os.makedirs(plasma_dir)
-        except OSError, e:
+        except OSError as e:
             if (e.errno != 17):
                 self._send_monitor_event('IPS_STAGE_OUTPUTS',
                                          'Files = ' + str(file_list) + \
@@ -1540,7 +1540,7 @@ class ServicesProxy(object):
         except KeyError:
             state_files = self.get_config_param('STATE_FILES').split()
 
-        all_plasma_files=[]
+        all_plasma_files = []
         for plasma_file in state_files:
             globbed_files = glob.glob(plasma_file)
             if (len(globbed_files) > 0):
@@ -1550,37 +1550,37 @@ class ServicesProxy(object):
             if not os.path.isfile(f):
                 continue
             tokens = f.split('.')
-            if (len(tokens) == 1) :
-                newName = '_'.join([outprefix + f , self.full_comp_id , str(timeStamp)])
+            if (len(tokens) == 1):
+                newName = '_'.join([outprefix + f, self.full_comp_id, str(timeStamp)])
             else:
                 name = '.'.join(tokens[:-1])
                 ext = tokens[-1]
                 newName = '_'.join([outprefix + name, self.full_comp_id, str(timeStamp)]) + \
-                           '.' + ext
+                          '.' + ext
             target_name = os.path.join(plasma_dir, newName)
             if os.path.isfile(target_name):
                 for i in range(1000):
                     newName = target_name + '.' + str(i)
-                    if  os.path.isfile(newName):
+                    if os.path.isfile(newName):
                         continue
                     target_name = newName
                     break
             try:
                 shutil.copy(f, target_name)
-            except (IOError, os.error), why:
-                self.exception('Error copying file: %s from %s to %s - %s' ,
+            except (IOError, os.error) as why:
+                self.exception('Error copying file: %s from %s to %s - %s',
                                f, workdir, target_name, str(why))
                 self._send_monitor_event('IPS_STAGE_OUTPUTS',
-                                     'Files = ' + str(file_list) + \
-                                     ' Exception raised : ' + str(why),
-                                     ok='False')
+                                         'Files = ' + str(file_list) + \
+                                         ' Exception raised : ' + str(why),
+                                         ok='False')
                 raise
 
         self._send_monitor_event('IPS_STAGE_OUTPUTS',
                                  'Files = ' + str(file_list))
         return
 
-    def stage_subflow_output_files(self, subflow_name = 'ALL'):
+    def stage_subflow_output_files(self, subflow_name='ALL'):
         # Gather outputs from sub-workflows. Sub-workflow output
         # is defined to be the output files from its DRIVER component
         # as they exist in the sub-workflow driver's work area at the
@@ -1596,35 +1596,33 @@ class ServicesProxy(object):
                 self.exception("Subflow name %s not found" % subflow_name)
                 raise Exception("Subflow name %s not found" % subflow_name)
 
-        return_dict ={}
-        for (sim_name, (sub_conf_new, _, _, driver_comp)) in subflow_dict.iteritems():
+        return_dict = {}
+        for (sim_name, (sub_conf_new, _, _, driver_comp)) in subflow_dict.items():
             ports = sub_conf_new['PORTS']['NAMES'].split()
             driver = sub_conf_new[sub_conf_new['PORTS']['DRIVER']['IMPLEMENTATION']]
             output_dir = os.path.join(sub_conf_new['SIM_ROOT'], 'work',
                                       '_'.join([driver['CLASS'], driver['SUB_CLASS'],
-                                       driver['NAME'],
-                                       str(driver_comp.get_seq_num())]))
-            #print '################',  output_dir
+                                                driver['NAME'],
+                                                str(driver_comp.get_seq_num())]))
+            # print '################',  output_dir
             output_files = driver['OUTPUT_FILES']
             try:
                 ipsutil.copyFiles(output_dir, output_files, self.get_working_dir(), keep_old=False)
-            except Exception, e:
+            except Exception as e:
                 self._send_monitor_event('IPS_STAGE_SUBFLOW_OUTPUTS',
-                                           'Files = ' + str(output_files) + \
-                                           ' Exception raised : ' + str(e),
-                                           ok='False')
+                                         'Files = ' + str(output_files) + \
+                                         ' Exception raised : ' + str(e),
+                                         ok='False')
                 self.exception('Error in stage_subflow_output_files() for subflow %s' % sim_name)
                 raise
             else:
-                if isinstance(output_files, basestring):
+                if isinstance(output_files, str):
                     return_dict[sim_name] = output_files.split()
                 else:
                     return_dict[sim_name] = output_files
         return return_dict
 
-
-
-    def stage_output_files(self, timeStamp, file_list, keep_old_files = True):
+    def stage_output_files(self, timeStamp, file_list, keep_old_files=True):
         """
         Copy associated component output files (from the working directory)
         to the component simulation results directory. Output files
@@ -1650,19 +1648,19 @@ class ServicesProxy(object):
         out_root = 'simulation_results'
 
         output_dir = os.path.join(sim_root, out_root, \
-                                 str(timeStamp), 'components' ,
-                                 self.full_comp_id)
+                                  str(timeStamp), 'components',
+                                  self.full_comp_id)
         if (type(file_list).__name__ == 'str'):
             file_list = file_list.split()
         all_files = sum([glob.glob(f) for f in file_list], [])
         try:
             ipsutil.copyFiles(workdir, all_files, output_dir, outprefix,
                               keep_old=keep_old_files)
-        except Exception, e:
+        except Exception as e:
             self._send_monitor_event('IPS_STAGE_OUTPUTS',
-                                           'Files = ' + str(file_list) + \
-                                           ' Exception raised : ' + str(e),
-                                           ok='False')
+                                     'Files = ' + str(file_list) + \
+                                     ' Exception raised : ' + str(e),
+                                     ok='False')
             self.exception('Error in stage_output_files()')
             raise
 
@@ -1672,11 +1670,11 @@ class ServicesProxy(object):
         # A version number is added to the end of the file name to avoid
         # overwriting existing plasma state files
         plasma_dir = os.path.join(self.sim_conf['SIM_ROOT'],
-                                 'simulation_results',
-                                 'plasma_state')
+                                  'simulation_results',
+                                  'plasma_state')
         try:
             os.makedirs(plasma_dir)
-        except OSError, e:
+        except OSError as e:
             if (e.errno != 17):
                 self._send_monitor_event('IPS_STAGE_OUTPUTS',
                                          'Files = ' + str(file_list) + \
@@ -1691,7 +1689,7 @@ class ServicesProxy(object):
         except KeyError:
             state_files = self.get_config_param('STATE_FILES').split()
 
-        all_plasma_files=[]
+        all_plasma_files = []
         for plasma_file in state_files:
             globbed_files = glob.glob(plasma_file)
             if (len(globbed_files) > 0):
@@ -1701,40 +1699,40 @@ class ServicesProxy(object):
             if not os.path.isfile(f):
                 continue
             tokens = f.split('.')
-            if (len(tokens) == 1) :
-                newName = '_'.join([outprefix + f , self.full_comp_id , str(timeStamp)])
+            if (len(tokens) == 1):
+                newName = '_'.join([outprefix + f, self.full_comp_id, str(timeStamp)])
             else:
                 name = '.'.join(tokens[:-1])
                 ext = tokens[-1]
                 newName = '_'.join([outprefix + name, self.full_comp_id, str(timeStamp)]) + \
-                           '.' + ext
+                          '.' + ext
             target_name = os.path.join(plasma_dir, newName)
             if os.path.isfile(target_name):
                 for i in range(1000):
                     newName = target_name + '.' + str(i)
-                    if  os.path.isfile(newName):
+                    if os.path.isfile(newName):
                         continue
                     target_name = newName
                     break
             try:
                 shutil.copy(f, target_name)
-            except (IOError, os.error), why:
-                self.exception('Error copying file: %s from %s to %s - %s' ,
+            except (IOError, os.error) as why:
+                self.exception('Error copying file: %s from %s to %s - %s',
                                f, workdir, target_name, str(why))
                 self._send_monitor_event('IPS_STAGE_OUTPUTS',
-                                     'Files = ' + str(file_list) + \
-                                     ' Exception raised : ' + str(why),
-                                     ok='False')
+                                         'Files = ' + str(file_list) + \
+                                         ' Exception raised : ' + str(why),
+                                         ok='False')
                 raise
 
         # Store symlinks to component output files in a single top-level directory
 
-        symlink_dir =  os.path.join(sim_root, out_root, self.full_comp_id)
+        symlink_dir = os.path.join(sim_root, out_root, self.full_comp_id)
         try:
             os.makedirs(symlink_dir)
-        except OSError, e:
+        except OSError as e:
             if (e.errno != 17):
-                self.exception('Error creating directory %s : %s' ,
+                self.exception('Error creating directory %s : %s',
                                symlink_dir, e.strerror)
                 raise
 
@@ -1743,8 +1741,8 @@ class ServicesProxy(object):
         for f in all_files:
             real_file = os.path.join(output_dir, outprefix + f)
             tokens = f.rsplit('.', 1)
-            if (len(tokens) == 1) :
-                newName = '_'.join([f , str(timeStamp)])
+            if (len(tokens) == 1):
+                newName = '_'.join([f, str(timeStamp)])
             else:
                 name = tokens[0]
                 ext = tokens[1]
@@ -1754,21 +1752,21 @@ class ServicesProxy(object):
                 os.remove(sym_link)
             # We need to use relative path for the symlinks
             common1 = os.path.commonprefix([real_file, sym_link])
-            (head, sep, tail)= common1.rpartition('/')
+            (head, sep, tail) = common1.rpartition('/')
             common = head.split('/')
-            file_suffix = real_file.split('/')[len(common):] # Include file name
-            link_suffix = sym_link.split('/')[len(common):-1] # No file name
+            file_suffix = real_file.split('/')[len(common):]  # Include file name
+            link_suffix = sym_link.split('/')[len(common):-1]  # No file name
             p = []
             if len(link_suffix) > 0:
-                p = [ '../' * len(link_suffix) ]
+                p = ['../' * len(link_suffix)]
             p = p + file_suffix
-            relpath = os.path.join( *p )
+            relpath = os.path.join(*p)
             os.symlink(relpath, sym_link)
 
         elapsed_time = time.time() - start_time
         self._send_monitor_event('IPS_STAGE_OUTPUTS',
                                  'Elapsed time = %.3f Path = %s Files = %s' % \
-                                  (elapsed_time, output_dir, str(file_list)))
+                                 (elapsed_time, output_dir, str(file_list)))
         return
 
     def stageOutputFiles(self, timeStamp, output_file_list):
@@ -1797,7 +1795,7 @@ class ServicesProxy(object):
             return
         conf = self.component_ref.config
         base_dir = os.path.join(sim_root, 'restart')
-        timeStamp_str =  '%0.3f' % (float(timeStamp))
+        timeStamp_str = '%0.3f' % (float(timeStamp))
         self.new_chkpts.append(timeStamp_str)
 
         targetdir = os.path.join(base_dir,
@@ -1809,11 +1807,11 @@ class ServicesProxy(object):
 
         try:
             ipsutil.copyFiles(workdir, file_list, targetdir)
-        except Exception, e:
+        except Exception as e:
             self._send_monitor_event('IPS_STAGE_RESTART',
-                                           'Files = ' + str(file_list) + \
-                                           ' Exception raised : ' + str(e),
-                                           ok='False')
+                                     'Files = ' + str(file_list) + \
+                                     ' Exception raised : ' + str(e),
+                                     ok='False')
             self.exception('Error in stage_restart_files()')
             raise
 
@@ -1835,19 +1833,19 @@ class ServicesProxy(object):
 
         conf = self.component_ref.config
         base_dir = os.path.join(restart_root, 'restart',
-                                    '%.3f' % (float(timeStamp)))
+                                '%.3f' % (float(timeStamp)))
         source_dir = os.path.join(base_dir,
                                   '_'.join([conf['CLASS'],
-                                           conf['SUB_CLASS'],
-                                           conf['NAME']]))
+                                            conf['SUB_CLASS'],
+                                            conf['NAME']]))
 
         try:
             ipsutil.copyFiles(source_dir, file_list, work_dir)
-        except Exception, e:
+        except Exception as e:
             self._send_monitor_event('IPS_GET_RESTART',
-                                           'Files = ' + str(file_list) + \
-                                           ' Exception raised : ' + str(e),
-                                           ok='False')
+                                     'Files = ' + str(file_list) + \
+                                     ' Exception raised : ' + str(e),
+                                     ok='False')
             self.exception('Error in get_restart_files()')
             raise
 
@@ -1879,9 +1877,9 @@ class ServicesProxy(object):
 
         try:
             msg_id = self._invoke_service(self.fwk.component_id,
-                            'stage_state', files, state_dir, workdir)
+                                          'stage_state', files, state_dir, workdir)
             retval = self._get_service_response(msg_id, block=True)
-        except Exception, e:
+        except Exception as e:
             self._send_monitor_event('IPS_STAGE_STATE',
                                      ' Exception raised : ' + str(e),
                                      ok='False')
@@ -1889,7 +1887,7 @@ class ServicesProxy(object):
             raise
         elapsed_time = time.time() - start_time
         self._send_monitor_event('IPS_STAGE_STATE',
-                                 'Elapsed time = %.3f  files = %s Success' %\
+                                 'Elapsed time = %.3f  files = %s Success' % \
                                  (elapsed_time, ' '.join(files)))
         return
 
@@ -1900,8 +1898,7 @@ class ServicesProxy(object):
         self.warning('stageCurrentPlasmaState() deprecated - use stage_plasma_state() instead')
         return self.stage_plasma_state()
 
-
-    def update_plasma_state(self, plasma_state_files = None):
+    def update_plasma_state(self, plasma_state_files=None):
         """
         Copy local (updated) plasma state to global state.  If no plasma state
         files are specified, component configuration specification is used.
@@ -1912,8 +1909,7 @@ class ServicesProxy(object):
 
         return self.update_state(state_files=plasma_state_files)
 
-
-    def update_state(self, state_files = None):
+    def update_state(self, state_files=None):
         """
         Copy local (updated) state to global state.  If no  state
         files are specified, component configuration specification is used.
@@ -1934,10 +1930,10 @@ class ServicesProxy(object):
         workdir = self.get_working_dir()
         try:
             msg_id = self._invoke_service(self.fwk.component_id,
-                            'update_state', files, workdir, state_dir)
+                                          'update_state', files, workdir, state_dir)
             retval = self._get_service_response(msg_id, block=True)
-        except Exception, e:
-            print 'Error updating state files', str(e)
+        except Exception as e:
+            print('Error updating state files', str(e))
             self._send_monitor_event('IPS_UPDATE_STATE',
                                      ' Exception raised : ' + str(e),
                                      ok='False')
@@ -1946,7 +1942,7 @@ class ServicesProxy(object):
         elapsed_time = time.time() - start_time
         self._send_monitor_event('IPS_UPDATE_STATE',
                                  'Elapsed time = %.3f   files = %s Success' % \
-                                  (elapsed_time, ' '.join(files)))
+                                 (elapsed_time, ' '.join(files)))
         return
 
     def merge_current_plasma_state(self, partial_state_file, logfile=None):
@@ -1966,19 +1962,19 @@ class ServicesProxy(object):
         source_plasma_file = os.path.join(state_dir, current_plasma_state)
         try:
             msg_id = self._invoke_service(self.fwk.component_id,
-                            'merge_current_plasma_state', update_file,
-                            source_plasma_file, logfile)
+                                          'merge_current_plasma_state', update_file,
+                                          source_plasma_file, logfile)
             retval = self._get_service_response(msg_id, block=True)
-        except Exception, e:
-            print 'Error merging plasma state files', str(e)
+        except Exception as e:
+            print('Error merging plasma state files', str(e))
             self._send_monitor_event('IPS_MERGE_PLASMA_STATE',
                                      ' Exception raised : ' + str(e),
                                      ok='False')
-            self.exception('Error merging plasma state file '+ partial_state_file)
+            self.exception('Error merging plasma state file ' + partial_state_file)
             raise
         if (retval == 0):
             self._send_monitor_event('IPS_MERGE_PLASMA_STATE',
-                                 'Success')
+                                     'Success')
             return
         else:
             self._send_monitor_event('IPS_MERGE_PLASMA_STATE',
@@ -1986,8 +1982,8 @@ class ServicesProxy(object):
                                      ok='False')
             self.error('Error merging update %s into current plasma state file %s',
                        partial_state_file, current_plasma_state)
-            raise Exception('Error merging update %s into current plasma state file %s'%
-                       (partial_state_file, current_plasma_state))
+            raise Exception('Error merging update %s into current plasma state file %s' %
+                            (partial_state_file, current_plasma_state))
 
     def updatePlasmaState(self):
         """
@@ -1996,20 +1992,20 @@ class ServicesProxy(object):
         self.warning('updatePlasmaState() deprecated - use update_plasma_state() instead')
         return self.update_plasma_state()
 
-    def updateTimeStamp(self, newTimeStamp = -1):
+    def updateTimeStamp(self, newTimeStamp=-1):
         """
         .. deprecated :: 1.0 Use :py:meth:`ServicesProxy.update_time_stamp`
         """
         self.warning('updateTimeStamp() deprecated - use update_time_stamp() instead')
         self.update_time_stamp(newTimeStamp)
 
-    def update_time_stamp(self, new_time_stamp = -1):
+    def update_time_stamp(self, new_time_stamp=-1):
         """
         Update time stamp on portal.
         """
         event_data = {}
         event_data['sim_name'] = self.sim_name
-        portal_data={}
+        portal_data = {}
         portal_data['phystimestamp'] = new_time_stamp
         portal_data['eventtype'] = 'PORTALBRIDGE_UPDATE_TIMESTAMP'
         event_data['portal_data'] = portal_data
@@ -2030,8 +2026,8 @@ class ServicesProxy(object):
             raise
         if not self.replay_conf:
             try:
-                self.replay_conf=ConfigObj(replay_config_file, interpolation='template',
-                                 file_error=True)
+                self.replay_conf = ConfigObj(replay_config_file, interpolation='template',
+                                             file_error=True)
             except IOError:
                 self.exception('Error opening config file: %s', replay_config_file)
                 raise
@@ -2050,15 +2046,15 @@ class ServicesProxy(object):
             outprefix = ''
         out_root = 'simulation_results'
         comp_id_prefix = '_'.join([comp_conf['CLASS'],
-                                    comp_conf['SUB_CLASS'],
-                                    comp_conf['NAME']])
+                                   comp_conf['SUB_CLASS'],
+                                   comp_conf['NAME']])
         out_path = os.path.join(replay_sim_root, out_root)
         comp_dirs = glob.glob(os.path.join(out_path, comp_id_prefix + '_*'))
         if (len(comp_dirs) != 1):
             self.error('Could not find a single component instance implementing port %s',
                        replay_port)
             raise Exception('Could not find a single component instance implementing port %s ' +
-                       replay_port)
+                            replay_port)
         replay_comp_id = os.path.basename(comp_dirs[0])
         state_files = []
         try:
@@ -2085,9 +2081,9 @@ class ServicesProxy(object):
         replay_comp_id = replay_comp_data[3]
         output_files = replay_comp_data[4]
 
-        symlink_dir  = os.path.join(replay_sim_root, 'simulation_results', replay_comp_id)
-        prefix_out_files = [outprefix+f for f in output_files]
-        local_output_files=[]
+        symlink_dir = os.path.join(replay_sim_root, 'simulation_results', replay_comp_id)
+        prefix_out_files = [outprefix + f for f in output_files]
+        local_output_files = []
         use_sym_link = False
         try:
             use_sym_link = self.component_ref.config['USE_SYM_LINK']
@@ -2095,8 +2091,8 @@ class ServicesProxy(object):
             pass
         for f in prefix_out_files:
             tokens = f.rsplit('.', 1)
-            if (len(tokens) == 1) :
-                link_name = '_'.join([f , str(timeStamp)])
+            if (len(tokens) == 1):
+                link_name = '_'.join([f, str(timeStamp)])
             else:
                 name = tokens[0]
                 ext = tokens[1]
@@ -2125,11 +2121,11 @@ class ServicesProxy(object):
         physics time *timeStamp*.  Return location of new local copies.
         """
         replay_comp_data = self._get_replay_comp_data(timeStamp)
-#        comp_conf = replay_comp_data[0]
+        #        comp_conf = replay_comp_data[0]
         outprefix = replay_comp_data[1]
         replay_sim_root = replay_comp_data[2]
         replay_comp_id = replay_comp_data[3]
-#        output_files = replay_comp_data[4]
+        #        output_files = replay_comp_data[4]
         replay_plasma_files = replay_comp_data[5]
 
         plasma_dir = os.path.join(replay_sim_root,
@@ -2144,7 +2140,7 @@ class ServicesProxy(object):
         for f in replay_plasma_files:
             # Find config macro for the current file
             macro_name = None
-            for (key, value) in self.replay_conf.iteritems():
+            for (key, value) in self.replay_conf.items():
                 if (f == value):
                     macro_name = key
             if not macro_name:
@@ -2153,13 +2149,13 @@ class ServicesProxy(object):
 
             # Get name of replay file with embedded outprefix and timestamp
             tokens = f.split('.')
-            if (len(tokens) == 1) :
-                replay_fname = '_'.join([outprefix + f , replay_comp_id , str(timeStamp)])
+            if (len(tokens) == 1):
+                replay_fname = '_'.join([outprefix + f, replay_comp_id, str(timeStamp)])
             else:
                 name = '.'.join(tokens[:-1])
                 ext = tokens[-1]
                 replay_fname = '_'.join([outprefix + name, replay_comp_id, str(timeStamp)]) + \
-                           '.' + ext
+                               '.' + ext
             replay_file = os.path.join(plasma_dir, replay_fname)
 
             # Find the last file generated from this timestamp
@@ -2168,7 +2164,7 @@ class ServicesProxy(object):
 
             tmp = None
             for i in range(1000):
-                if  os.path.isfile(replay_file + '.' + str(i)):
+                if os.path.isfile(replay_file + '.' + str(i)):
                     tmp = replay_file + '.' + str(i)
                     continue
                 break
@@ -2181,7 +2177,7 @@ class ServicesProxy(object):
                         os.symlink(replay_file, target_name)
                     except Exception:
                         self.exception('Error creating symlink %s to %s',
-                               target_name, replay_file)
+                                       target_name, replay_file)
                         shutil.copy(replay_file, target_name)
                 else:
                     shutil.copy(replay_file, target_name)
@@ -2189,9 +2185,9 @@ class ServicesProxy(object):
                 self.exception('Error copying replay file from %s to %s',
                                replay_file, target_name)
                 self._send_monitor_event('IPS_STAGE_REPLAY_PLASMA_STATE',
-                                     'Files = ' + str(replay_plasma_files) + \
-                                     ' Exception raised : ',
-                                     ok='False')
+                                         'Files = ' + str(replay_plasma_files) + \
+                                         ' Exception raised : ',
+                                         ok='False')
                 raise
             local_plasma_files.append(replay_file)
 
@@ -2205,10 +2201,10 @@ class ServicesProxy(object):
         put data.
         """
         self.monitor_url = url
-        self._send_monitor_event(eventType = 'IPS_SET_MONITOR_URL', comment = 'SUCCESS')
+        self._send_monitor_event(eventType='IPS_SET_MONITOR_URL', comment='SUCCESS')
         return
 
-    def publish(self,topicName,eventName,eventBody):
+    def publish(self, topicName, eventName, eventBody):
         """
         Publish event consisting of *eventName* and *eventBody* to topic *topicName* to the IPS event service.
         """
@@ -2238,22 +2234,20 @@ class ServicesProxy(object):
         """
         self.event_service.process_events()
 
-
     def send_portal_event(self,
                           event_type="COMPONENT_EVENT",
                           event_comment=""):
         """
         Send event to web portal.
         """
-        return self._send_monitor_event(eventType = event_type,
-                                        comment = event_comment)
+        return self._send_monitor_event(eventType=event_type,
+                                        comment=event_comment)
 
     def log(self, *args):
         """
         Wrapper for :py:meth:`ServicesProxy.info`.
         """
         return self.info(args)
-
 
     def debug(self, *args):
         """
@@ -2337,9 +2331,9 @@ class ServicesProxy(object):
         """
         Create an empty pool of tasks with the name *task_pool_name*.  Raise exception if duplicate name.
         """
-        if task_pool_name in self.task_pools.keys():
-            raise Exception('Error: Duplicate task pool name %s' %(task_pool_name))
-        self.task_pools[task_pool_name]= TaskPool(task_pool_name, self)
+        if task_pool_name in list(self.task_pools.keys()):
+            raise Exception('Error: Duplicate task pool name %s' % (task_pool_name))
+        self.task_pools[task_pool_name] = TaskPool(task_pool_name, self)
         return
 
     def add_task(self, task_pool_name, task_name, nproc, working_dir,
@@ -2379,15 +2373,15 @@ class ServicesProxy(object):
         del self.task_pools[task_pool_name]
         return
 
-    def create_sub_workflow(self, sub_name, config_file, override= None, input_dir= None):
+    def create_sub_workflow(self, sub_name, config_file, override=None, input_dir=None):
 
         if not override:
             override = {}
-        if sub_name in self.sub_flows.keys():
+        if sub_name in list(self.sub_flows.keys()):
             self.exception("Duplicate sub flow name")
             raise Exception("Duplicate sub flow name")
 
-        print "Creating worflow using ", config_file
+        print("Creating worflow using ", config_file)
         self.subflow_count += 1
         try:
             sub_conf_new = ConfigObj(infile=config_file, interpolation='template', file_error=True)
@@ -2397,13 +2391,13 @@ class ServicesProxy(object):
             raise
         # Update undefined sub workflow configuration entries using top level configuration
         # only applicable to non-component entries (ones with non-dictionary values)
-        for (k,v) in self.sim_conf.iteritems():
-            if k not in sub_conf_new.keys() and type(v).__name__ != 'dict':
+        for (k, v) in self.sim_conf.items():
+            if k not in list(sub_conf_new.keys()) and type(v).__name__ != 'dict':
                 sub_conf_new[k] = v
 
         sub_conf_new['SIM_NAME'] = self.sim_name + "::" + sub_name
         sub_conf_new['SIM_ROOT'] = os.path.join(os.getcwd(), sub_name)
-        #sub_conf_new['SIM_ROOT'] = os.path.join(os.getcwd(), 'sub_workflow_%d' % self.subflow_count)
+        # sub_conf_new['SIM_ROOT'] = os.path.join(os.getcwd(), 'sub_workflow_%d' % self.subflow_count)
         # Update INPUT_DIR for components to current working dir (super simulation working dir)
         ports = sub_conf_new['PORTS']['NAMES'].split()
         comps = [sub_conf_new['PORTS'][p]['IMPLEMENTATION'] for p in ports]
@@ -2419,7 +2413,7 @@ class ServicesProxy(object):
             except KeyError:
                 pass
             else:
-                for (k,v) in override_vals.iteritems():
+                for (k, v) in override_vals.items():
                     sub_conf_new[c][k] = v
         toplevel_override = set(override.keys()) - set(comps)
         for param in toplevel_override:
@@ -2436,14 +2430,13 @@ class ServicesProxy(object):
         self._send_monitor_event('IPS_CREATE_SUB_WORKFLOW', 'workflow_name = %s' % sub_name)
         return (sim_name, init_comp, driver_comp)
 
-
     def create_simulation(self, config_file, override):
         return self._create_simulation(config_file, override, sub_workflow=False)[0]
 
     def _create_simulation(self, config_file, override, sub_workflow=False):
         try:
             msg_id = self._invoke_service(self.fwk.component_id,
-                                        'create_simulation', config_file, override, sub_workflow)
+                                          'create_simulation', config_file, override, sub_workflow)
             self.debug('create_simulation() msg_id = %s', msg_id)
             (sim_name, init_comp, driver_comp) = self._get_service_response(msg_id, block=True)
             self.debug('Created simulation %s', sim_name)
@@ -2452,10 +2445,12 @@ class ServicesProxy(object):
             raise
         return (sim_name, init_comp, driver_comp)
 
+
 class TaskPool(object):
     """
     Class to contain and manage a pool of tasks.
     """
+
     def __init__(self, name, services):
         self.name = name
         self.services = services
@@ -2464,7 +2459,7 @@ class TaskPool(object):
         self.queued_tasks = {}
         self.blocked_tasks = {}
 
-    def _wait_any_task(self, block = True):
+    def _wait_any_task(self, block=True):
         """
         Check the status of all tasks in *active_tasks*, finishing them as
         needed, and returning when at least one of them has finished.  If
@@ -2478,7 +2473,7 @@ class TaskPool(object):
             return
         done = False
         while not done:
-            for task_id in self.active_tasks.keys():
+            for task_id in list(self.active_tasks.keys()):
                 exit_status = self.services.wait_task_nonblocking(task_id)
                 if (exit_status != None):
                     task = self.active_tasks.pop(task_id)
@@ -2506,12 +2501,12 @@ class TaskPool(object):
         pool.  Raise exception if task name already exists in task pool.
         """
         tokens = binary.split()
-        if len(tokens) > 1 :
+        if len(tokens) > 1:
             binary = tokens[0]
             args = tuple(tokens[1:]) + args
         try:
             binary_fullpath = self.services.binary_fullpath_cache[binary]
-        except KeyError:        
+        except KeyError:
             binary_fullpath = ipsutil.which(binary)
         if not binary_fullpath:
             self.services.error("Program %s is not in path or is not executable" % binary)
@@ -2526,7 +2521,7 @@ class TaskPool(object):
         self.queued_tasks[task_name] = Task(task_name, nproc, working_dir, binary_fullpath, *args, **keywords)
         return
 
-    def submit_tasks(self, block = True):
+    def submit_tasks(self, block=True):
         """
         Launch tasks in *queued_tasks*.  Finished tasks are handled before
         launching new ones.  If *block* is ``True``, the number of tasks
@@ -2537,12 +2532,12 @@ class TaskPool(object):
         submit_count = 0
         # Make sure any finished tasks are handled before attempting to submit
         # new ones
-        self._wait_any_task(block = False)
+        self._wait_any_task(block=False)
         while True:
             if (len(self.queued_tasks) == 0):
                 break
             active_tasks = self.services.launch_task_pool(self.name)
-            for task_name, task_id in active_tasks.iteritems():
+            for task_name, task_id in active_tasks.items():
                 self.active_tasks[task_id] = self.queued_tasks.pop(task_name)
                 submit_count += 1
             if (block):
@@ -2554,8 +2549,7 @@ class TaskPool(object):
             self._wait_active_tasks()
         return submit_count
 
-
-    def submit_tasks_old(self, block = True):
+    def submit_tasks_old(self, block=True):
         """
         .. deprecated :: Experimental Use :py:meth:`TaskPool.submit_tasks`
         """
@@ -2576,7 +2570,7 @@ class TaskPool(object):
                         return submit_count
 
             self.services.debug('Attempting to launch task %s', task_name)
-            #(nproc, working_dir, binary, args, keywords) = task_data
+            # (nproc, working_dir, binary, args, keywords) = task_data
             try:
                 task_id = self.services.launch_task(task.nproc, task.working_dir, task.binary,
                                                     *task.args, **task.keywords)
@@ -2599,7 +2593,7 @@ class TaskPool(object):
 
         exit_status = {}
         self._wait_any_task()
-        for task_name in self.finished_tasks.keys():
+        for task_name in list(self.finished_tasks.keys()):
             task = self.finished_tasks.pop(task_name)
             exit_status[task_name] = task.exit_status
         return exit_status
@@ -2609,13 +2603,14 @@ class TaskPool(object):
         Kill all active tasks, clear all queued, blocked and finished tasks.
         """
         if (len(self.active_tasks) > 0):
-            for task_id in self.active_tasks.keys():
+            for task_id in list(self.active_tasks.keys()):
                 self.services.kill_task(task_id)
-        self.queued_tasks={}
-        self.blocked_tasks={}
-        self.active_tasks={}
-        self.finished_tasks={}
+        self.queued_tasks = {}
+        self.blocked_tasks = {}
+        self.active_tasks = {}
+        self.finished_tasks = {}
         return
+
 
 class Task(object):
     """
@@ -2628,6 +2623,7 @@ class Task(object):
     * *\*args*: arguments for *binary*
     * *\*\*keywords*: keyword arguments for launching the task.  See :py:meth:`ServicesProxy.launch_task` for details.
     """
+
     def __init__(self, task_name, nproc, working_dir, binary, *args, **keywords):
         self.name = task_name
         self.nproc = int(nproc)

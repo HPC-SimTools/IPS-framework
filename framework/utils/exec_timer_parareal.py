@@ -6,7 +6,7 @@
 
 import sys
 import BeautifulSoup
-import urllib2
+import urllib.request, urllib.error, urllib.parse
 import numpy as np
 import math
 
@@ -31,14 +31,14 @@ def plot_exec_time(task_time_map, converge, energy):
     markers = ['s', '*', '+', 'o', '1', '2', '3', '4']
     min_count = 1000
     max_count = -1
-    for (comp_name, time_map) in task_time_map.items():
-        x = [float(k) for k in sorted(time_map.keys(), key = float)]
+    for (comp_name, time_map) in list(task_time_map.items()):
+        x = [float(k) for k in sorted(list(time_map.keys()), key = float)]
         y_low = []
         y_high = []
         y_mean = []
         y_error = []
         count = []
-        for k in sorted(time_map.keys(), key = float):
+        for k in sorted(list(time_map.keys()), key = float):
             y_mean.append(time_map[k][2])
             y_low.append(y_mean[-1] - time_map[k][0])
             y_high.append(time_map[k][1] - y_mean[-1])
@@ -88,7 +88,7 @@ def plot_exec_time(task_time_map, converge, energy):
         plt.figure(3)
         max_slice = -1
         max_iteration = -1
-        for (iteration, slice) in converge.keys():
+        for (iteration, slice) in list(converge.keys()):
             if iteration > max_iteration:
                 max_iteration = iteration
             if (slice > max_slice):
@@ -99,7 +99,7 @@ def plot_exec_time(task_time_map, converge, energy):
         iterations = np.linspace(1, max_iteration, max_iteration)
         slices = np.linspace(1, max_slice, max_slice)
         #print iterations, slices
-        print [len(iterations), len(slices), len(iterations), len(slices)]
+        print([len(iterations), len(slices), len(iterations), len(slices)])
         convergence = np.ma.array(np.zeros([len(iterations), len(slices)]),
                             mask = np.ones((len(iterations), len(slices))))
         X = np.ma.array(np.zeros([len(iterations) + 1, len(slices) + 1]))
@@ -114,8 +114,8 @@ def plot_exec_time(task_time_map, converge, energy):
 
 
 
-        for ((iteration, slice), value) in sorted(converge.iteritems()):
-            print iteration, slice, '%.3e' % (value)
+        for ((iteration, slice), value) in sorted(converge.items()):
+            print(iteration, slice, '%.3e' % (value))
             convergence[iteration, slice] = value
             convergence.mask[iteration, slice] = False
             X[iteration, slice] = X[iteration, slice + 1] = iteration - 0.5
@@ -131,14 +131,14 @@ def plot_exec_time(task_time_map, converge, energy):
         # print slices
         # find minimum value not equal to zero
         value_min = 1000.0
-        for ((iteration, slice), value) in sorted(converge.iteritems()):
+        for ((iteration, slice), value) in sorted(converge.items()):
 
             if value > 0.0 and value < value_min:
                 value_min = value
                 #print 'min = ', value_min
 
         # set zeros to value min
-        for ((iteration, slice), value) in sorted(converge.iteritems()):
+        for ((iteration, slice), value) in sorted(converge.items()):
             if value < value_min:
                 #print 'changed ', value
                 convergence[iteration, slice] = value_min
@@ -163,7 +163,7 @@ def plot_exec_time(task_time_map, converge, energy):
     if energy:
         max_iter_map = {}
         final_energy = {}
-        for (iter, slice), value in energy.iteritems():
+        for (iter, slice), value in energy.items():
             try:
                 max_iter_map[slice] = max(max_iter_map[slice], iter)
             except KeyError:
@@ -188,9 +188,9 @@ def get_task_times(url_list):
     total_energy = 0.0
     for url in url_list:
         try:
-            page = urllib2.urlopen(url)
+            page = urllib.request.urlopen(url)
         except:
-            print 'Error retreiving URL ', url
+            print('Error retreiving URL ', url)
             raise
         parsed_page = BeautifulSoup.BeautifulSoup(page)
         events_table = parsed_page('table')[3]
@@ -205,13 +205,13 @@ def get_task_times(url_list):
             comp_task = field_values[3]
             comment = field_values[-1]
             phys_stamp_portal = field_values[-2]
-            if (field_values[2] == u'IPS_LAUNCH_TASK' or field_values[2] == u'IPS_LAUNCH_TASK_POOL'):
+            if (field_values[2] == 'IPS_LAUNCH_TASK' or field_values[2] == 'IPS_LAUNCH_TASK_POOL'):
                 comment_lst = comment.split()
                 task_id = comment_lst[comment_lst.index('task_id')+ 2]
                 try:
                     tag = comment_lst[comment_lst.index('Tag')+ 2]
                 except ValueError :
-                    if field_values[2] == u'IPS_LAUNCH_TASK':
+                    if field_values[2] == 'IPS_LAUNCH_TASK':
                         try:
                             (phys_stamp, slice) = comment.split()[-1].split('.')
                         except ValueError:
@@ -229,12 +229,12 @@ def get_task_times(url_list):
                 if float(phys_stamp_portal) > 0.0:
                     phys_stamp = phys_stamp_portal
                 phys_stamp_map[task_id] = (phys_stamp, slice)
-            elif (field_values[2] == u'IPS_TASK_END'):
+            elif (field_values[2] == 'IPS_TASK_END'):
                 task_id = comment.split()[2]
                 (phys_stamp, slice) = phys_stamp_map[task_id]
                 #print ' '.join(field_values)
                 exec_time = comment.split()[-2]
-                print '%s.%s  %10s  %s' % (phys_stamp, slice, task_id, exec_time)
+                print('%s.%s  %10s  %s' % (phys_stamp, slice, task_id, exec_time))
                 try:
                     comp_task_map = task_time_map[comp_task]
                 except KeyError:
@@ -254,7 +254,7 @@ def get_task_times(url_list):
                 values.append(exec_time)
                 comp_task_map[phys_stamp] = (low, high, new_mean, values)
                 all_phys_stamps.add(phys_stamp)
-            elif (field_values[2] == u'converge_out'):
+            elif (field_values[2] == 'converge_out'):
                 entries = comment.split()
                 iteration = int(entries[0])
                 slice = int(entries[1])
@@ -267,22 +267,22 @@ def get_task_times(url_list):
                 energy[iteration, slice] = energy_value
                 total_energy += energy_value
 
-    print 'Phys_stamp',
-    for comp in task_time_map.keys():
+    print('Phys_stamp', end=' ')
+    for comp in list(task_time_map.keys()):
         for suffix in ['_count', '_low', '_high', '_mean']:
-            print ',   ', comp+suffix,
-    print
+            print(',   ', comp+suffix, end=' ')
+    print()
 
     for phys_stamp in sorted(all_phys_stamps, key = float):
-        print phys_stamp,
-        for comp_map in task_time_map.values():
+        print(phys_stamp, end=' ')
+        for comp_map in list(task_time_map.values()):
             #print comp_map
             try:
                 (low, high, mean, values) = comp_map[phys_stamp]
-                print ',   ', len(values), ',', low, ',', high, ',', mean,
+                print(',   ', len(values), ',', low, ',', high, ',', mean, end=' ')
             except KeyError:
-                print ',   ,    ,    ,     ,    ,'
-        print
+                print(',   ,    ,    ,     ,    ,')
+        print()
 
     if (PLOT):
         if (total_energy > 0.0):

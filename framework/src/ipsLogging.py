@@ -5,15 +5,15 @@ This file implements several objects that customize logging in the IPS.
 import logging
 import atexit
 import sys
-import cPickle
+import pickle
 import logging.handlers
-import SocketServer
+import socketserver
 import struct
 import functools
 import logging.handlers
 import socket
 import os, os.path
-import Queue
+import queue
 import errno
 import threading
 import time
@@ -49,11 +49,11 @@ class IPSLogSocketHandler(logging.handlers.SocketHandler):
             self.my_socket = s
         return self.my_socket
 
-class myLogRecordStreamHandler(SocketServer.StreamRequestHandler):
+class myLogRecordStreamHandler(socketserver.StreamRequestHandler):
 
     def __init__(self, request, client_address, server, handler):
         self.handler=handler
-        SocketServer.StreamRequestHandler.__init__(self,
+        socketserver.StreamRequestHandler.__init__(self,
                                                    request,
                                                    client_address,
                                                    server)
@@ -76,11 +76,11 @@ class myLogRecordStreamHandler(SocketServer.StreamRequestHandler):
             obj = self.unPickle(chunk)
             record = logging.makeLogRecord(obj)
             self.handleLogRecord(record)
-        except Exception, e:
+        except Exception as e:
             pass
 
     def unPickle(self, data):
-        return cPickle.loads(data)
+        return pickle.loads(data)
 
     def handleLogRecord(self, record):
         name = record.name
@@ -97,7 +97,7 @@ class myLogRecordStreamHandler(SocketServer.StreamRequestHandler):
         logger.removeHandler(self.handler)
         return
 
-class LogRecordSocketReceiver(SocketServer.ThreadingUnixStreamServer):
+class LogRecordSocketReceiver(socketserver.ThreadingUnixStreamServer):
     """simple TCP socket-based logging receiver suitable for testing.
     """
 
@@ -105,7 +105,7 @@ class LogRecordSocketReceiver(SocketServer.ThreadingUnixStreamServer):
 
     def __init__(self, log_pipe,
                  handler=myLogRecordStreamHandler):
-        SocketServer.UnixStreamServer.__init__(self, log_pipe, handler)
+        socketserver.UnixStreamServer.__init__(self, log_pipe, handler)
 
     def get_file_no(self):
         return self.socket.fileno()
@@ -123,16 +123,17 @@ class ipsLogger(object):
         if (log_file == sys.stdout or log_file == None):
             log_handler = self.stdout_handler
         else:
-            if(log_file.__class__.__name__ == 'file'):
+            if(log_file.__class__.__name__ == 'TextIOWrapper'):
                 log_handler = logging.StreamHandler(log_file)
             else:
                 dir = os.path.dirname(os.path.abspath(log_file))
                 try:
                     os.makedirs(dir)
-                except OSError, (errno, strerror):
+                except OSError as oserr:
+                    (errno, strerror) = oserr.args
                     if (errno != 17):
-                        print 'Error creating directory %s : %s-%s' % \
-                            (dir, errno, strerror)
+                        print('Error creating directory %s : %s-%s' % \
+                            (dir, errno, strerror))
                         sys.exit(1)
                 log_handler = logging.FileHandler(log_file, mode = 'w')
 
@@ -149,7 +150,7 @@ class ipsLogger(object):
         import select
         time_out = 1.0
         while 1:
-            read_set = self.log_map.keys()
+            read_set = list(self.log_map.keys())
             #print 'read_set = ', read_set
             #read_set = []
             if read_set:
@@ -168,7 +169,7 @@ class ipsLogger(object):
                 rd = []
             try:
                 msg = self.log_dynamic_sim_queue.get(block=False)
-            except Queue.Empty:
+            except queue.Empty:
                 pass
             else:
                 tokens = msg.split()
@@ -180,7 +181,7 @@ class ipsLogger(object):
                     log_pipe_name = tokens[1]
                     #print list_fds()
                     #print '#################################################'
-                    for fileno , (recvr, log_handler, f_name) in self.log_map.items():
+                    for fileno , (recvr, log_handler, f_name) in list(self.log_map.items()):
                         if f_name == log_pipe_name:
                             #print 'CLOSED file ', fileno
                             del recvr
