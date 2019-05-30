@@ -55,7 +55,7 @@ class basic_concurrent1(Component):
 
         # ssf - iterate through the timeloop
         for t in tlist_str:
-            print 'Current time = ', t
+            print('Current time = ', t)
 
             # ssf - call step for each component
 
@@ -75,7 +75,7 @@ class basic_concurrent1(Component):
         return
 
     def process_event(self, topicName, theEvent):
-        print "Driver: processed ", (topicName, str(theEvent))
+        print("Driver: processed ", (topicName, str(theEvent)))
 
     def terminate(self, status):
         self.services.log('Really Calling terminate()')

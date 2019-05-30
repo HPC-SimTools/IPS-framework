@@ -14,13 +14,13 @@ class small_worker(Component):
         #self.timer = pytau.profileTimer('small_worker', "", str(os.getpid()))
         #pytau.start(self.timer)
         Component.__init__(self, services, config)
-        print 'Created %s' % (self.__class__)
+        print('Created %s' % (self.__class__))
         #pytau.stop(self.timer)
 
     def init(self, timestamp):
         #pytau.start(self.timer)
-        print self.__class__.__name__, ':', 'init() called'
-        print 'timestamp = ', timestamp
+        print(self.__class__.__name__, ':', 'init() called')
+        print('timestamp = ', timestamp)
         self.services.log('Initing Worker')
         #pytau.stop(self.timer)
         return [self.__class__.__name__+ ':'+ str(timestamp), 234]
@@ -41,7 +41,7 @@ class small_worker(Component):
 
 
     def process_event(self, topicName, theEvent):
-        print "Worker: processed ", (topicName, str(theEvent))
+        print("Worker: processed ", (topicName, str(theEvent)))
 
     def terminate(self, status):
         #pytau.start(self.timer)

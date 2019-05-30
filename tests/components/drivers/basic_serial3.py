@@ -22,11 +22,11 @@ class MCMDDriver(Component):
         Component.__init__(self, services, config)
 
     def init(self, timestamp):
-        print timestamp
+        print(timestamp)
         p = self.services.get_port('WORKER')
-        print p
+        print(p)
         retval = self.services.call(p, 'init', '00.00')
-        print 'MCMDDriver:init(): ', retval
+        print('MCMDDriver:init(): ', retval)
         self.services.log('Initing')
         return
 
@@ -38,7 +38,7 @@ class MCMDDriver(Component):
         self.services.log('Stepping')
         p = self.services.get_port('WORKER')
         retval = self.services.call(p, 'step', '01.00')
-        print 'retval of worker step: ', retval
+        print('retval of worker step: ', retval)
 
         # Need to fix timeloop invocation....
         #self.services.get_timeloop()
@@ -57,7 +57,7 @@ class MCMDDriver(Component):
         return
 
     def process_event(self, topicName, theEvent):
-        print "Driver: processed ", (topicName, str(theEvent))
+        print("Driver: processed ", (topicName, str(theEvent)))
 
     def terminate(self, status):
         self.services.log('Really Calling terminate()')

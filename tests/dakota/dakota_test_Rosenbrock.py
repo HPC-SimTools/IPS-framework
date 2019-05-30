@@ -12,12 +12,12 @@ class ResenbrockDriver(Component):
         Component.__init__(self, services, config)
 
     def init(self, timestamp=0):
-        print 'init from dakota test driver'
+        print('init from dakota test driver')
         return
 
     def step(self, timestamp=0):
         
-        print 'step from dakota test driver'
+        print('step from dakota test driver')
         services = self.services
         services.stage_input_files(self.INPUT_FILES)
         x1 = float(self.X1)
@@ -30,6 +30,6 @@ class ResenbrockDriver(Component):
         return
 
     def finalize(self, timestamp = 0):
-        print 'finalize from dakota test driver'
+        print('finalize from dakota test driver')
         # Driver finalize - nothing to be done
         pass

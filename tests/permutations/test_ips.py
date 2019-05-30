@@ -48,7 +48,7 @@ class testIPS(unittest.TestCase):
             self.platform_filename = None
 
     def printUsageMessage(self):
-        print 'Usage: ips [--create-runspace | --run-setup | --run]+ --simulation=SIM_FILE_NAME --platform=PLATFORM_FILE_NAME --log=LOG_FILE_NAME [--debug | --ftb]'
+        print('Usage: ips [--create-runspace | --run-setup | --run]+ --simulation=SIM_FILE_NAME --platform=PLATFORM_FILE_NAME --log=LOG_FILE_NAME [--debug | --ftb]')
 
     """
     def test_single_permutation(self):
@@ -78,7 +78,7 @@ class testIPS(unittest.TestCase):
 
 #   """
     def test_basic_serial1_permutations(self):
-        print 
+        print() 
         cfgFile_list = []
         cfgFile_list.append('basic_serial1.ips')
 
@@ -108,17 +108,17 @@ class testIPS(unittest.TestCase):
                                 try:
                                    param.platform_filename = platform_filename
                                 except:
-                                   print "Getting platform file from build"
+                                   print("Getting platform file from build")
                                 suite = unittest.TestSuite()
                                 suite.addTest(ParameterizedTestCase.parametrize(test_permutations, param=param))
                                 res = unittest.TextTestRunner(verbosity=2).run(suite)
                                 if res.failures:
                                     failure_count += 1
-        self.assertEquals(failure_count, 0)
+        self.assertEqual(failure_count, 0)
 #   """
 
 
 if __name__ == "__main__":
-    print "Starting IPS"
+    print("Starting IPS")
     sys.stdout.flush()
     unittest.main()
