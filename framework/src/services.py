@@ -190,7 +190,7 @@ class ServicesProxy(object):
                 self.shared_nodes = False
             else:
                 self.fwk.exception("Bad 'NODE_ALLOCATION_MODE' value %s" % pn_compconf)
-                raise "Bad 'NODE_ALLOCATION_MODE' value %s"
+                raise Exception ("Bad 'NODE_ALLOCATION_MODE' value %s")
         except:
             if self.sim_conf['NODE_ALLOCATION_MODE'] == 'SHARED':
                 self.shared_nodes = True
