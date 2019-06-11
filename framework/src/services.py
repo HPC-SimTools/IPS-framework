@@ -10,25 +10,20 @@ import subprocess
 import time
 import ipsutil
 import shutil
-import string
 from cca_es_spec import initialize_event_service
 from ips_es_spec import eventManager
 import logging
 import logging.handlers
 import ipsLogging
 import signal
-import ipsTiming
 from configobj import ConfigObj
 import glob
 import ipsExceptions
 import ipsTiming
-from symbol import except_clause
 import weakref
 
 MY_VERSION = float(sys.version[:3])
 
-
-# import pytau
 
 def make_timers_parent():
     """
