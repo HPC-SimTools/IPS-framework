@@ -394,7 +394,7 @@ def get_slurm_info():
 
     try:
         cmd = 'scontrol show hostname %s' % nodelist
-        sys_nodes = subprocess.check_output(cmd.split()).strip().split('\n')
+        sys_nodes = subprocess.check_output(cmd.split(), encoding='UTF-8').strip().split('\n')
         nodes.extend([(k, ppn) for k in sys_nodes])
         print('IPS SLURM_NODES = ', nodes)
     except Exception:
