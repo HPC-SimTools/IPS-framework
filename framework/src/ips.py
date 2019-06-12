@@ -53,12 +53,12 @@
 
 """
 import sys
+
+if sys.version[0] != 3:
+    print("IPS can is only compatible with Python 3.5 or higher")
+    sys.exit(1)
+
 import glob, fnmatch
-import os
-import socket
-import getopt
-import time
-import logging
 import optparse
 import multiprocessing
 import platformspec
@@ -74,7 +74,6 @@ from resourceManager import ResourceManager
 from dataManager import DataManager
 from componentRegistry import ComponentRegistry
 import socket
-import getopt
 from componentRegistry import ComponentID
 from ipsExceptions import BlockedMessageException
 from eventService import EventService
