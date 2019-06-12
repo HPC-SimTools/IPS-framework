@@ -99,6 +99,8 @@ class PortalBridge(Component):
         self.file_uid_cache = defaultdict(dict)
         self.counter = 0
         self.dump_freq = 10
+        self.min_dump_interval = 300 # Minimum time interval in Sec for HTML dump operation
+        self.last_dump_time = time.time()
         self.write_to_htmldir = True
 
     def init(self, timestamp=0.0):
@@ -237,7 +239,9 @@ class PortalBridge(Component):
         sim_data.json_monitor_file.write("%s\n" % buf)
 
         freq = self.dump_freq
-        if ((self.counter % freq == 0) or (event_data['eventtype'] == 'IPS_END')):
+        if (((self.counter % freq == 0) and (time.time() - self.last_dump_time > self.min_dump_interval))
+             or (event_data['eventtype'] == 'IPS_END')):
+            self.last_dump_time = time.time()
             html_filename = sim_data.monitor_file_name.replace('eventlog', 'html')
             html_page = convert_logdata_to_html(sim_data.bigbuf)
             open(html_filename, "w").writelines(html_page)

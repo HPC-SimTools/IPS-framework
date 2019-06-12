@@ -1356,7 +1356,7 @@ class ServicesProxy(object):
             for c in comps:
                 input_dir = old_conf[c]['INPUT_DIR']
                 input_files = old_conf[c]['INPUT_FILES']
-                print('---- Staging inputs for %s:%s' % (name, c))
+                #print('---- Staging inputs for %s:%s' % (name, c))
                 input_target_dir = os.path.join(os.getcwd(), c)
                 try:
                     os.mkdir(input_target_dir)
@@ -1436,7 +1436,7 @@ class ServicesProxy(object):
             outprefix = ''
         out_root = 'simulation_results'
 
-        output_dir = os.path.join(sim_root, out_root, \
+        output_dir = os.path.join(sim_root, out_root,
                                   str(timeStamp), 'components',
                                   self.full_comp_id)
         try:
@@ -1444,7 +1444,7 @@ class ServicesProxy(object):
                               keep_old=keep_old_files)
         except Exception as e:
             self._send_monitor_event('IPS_STAGE_OUTPUTS',
-                                     'Files = ' + str(file_list) + \
+                                     'Files = ' + str(file_list) +
                                      ' Exception raised : ' + str(e),
                                      ok='False')
             self.exception('Error in stage_nonPS_output_files()')
@@ -1456,7 +1456,7 @@ class ServicesProxy(object):
         try:
             os.makedirs(symlink_dir)
         except OSError as e:
-            if (e.errno != 17):
+            if e.errno != 17:
                 self.exception('Error creating directory %s : %s',
                                symlink_dir, e.strerror)
                 raise
@@ -1466,7 +1466,7 @@ class ServicesProxy(object):
         for f in all_files:
             real_file = os.path.join(output_dir, outprefix + f)
             tokens = f.rsplit('.', 1)
-            if (len(tokens) == 1):
+            if len(tokens) == 1:
                 newName = '_'.join([f, str(timeStamp)])
             else:
                 name = tokens[0]
