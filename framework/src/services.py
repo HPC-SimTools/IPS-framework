@@ -190,7 +190,7 @@ class ServicesProxy(object):
                 self.shared_nodes = False
             else:
                 self.fwk.exception("Bad 'NODE_ALLOCATION_MODE' value %s" % pn_compconf)
-                raise Exception ("Bad 'NODE_ALLOCATION_MODE' value %s")
+                raise Exception("Bad 'NODE_ALLOCATION_MODE' value %s")
         except:
             if self.sim_conf['NODE_ALLOCATION_MODE'] == 'SHARED':
                 self.shared_nodes = True
@@ -245,7 +245,7 @@ class ServicesProxy(object):
         response_list = []
         finish = False
         timeout = 0.01
-        while (not finish):
+        while not finish:
             try:
                 response = self.svc_response_q.get(block, timeout)
                 response_list.append(response)
@@ -267,11 +267,11 @@ class ServicesProxy(object):
         ``None``.
         """
         # print 'in _wait_msg_response'
-        if (msg_id in list(self.finished_calls.keys())):
+        if msg_id in list(self.finished_calls.keys()):
             response = self.finished_calls[msg_id]
             del self.finished_calls[msg_id]
             return response
-        elif (msg_id not in list(self.incomplete_calls.keys())):
+        elif msg_id not in list(self.incomplete_calls.keys()):
             self.error('Invalid call ID : %s ', str(msg_id))
             raise Exception('Invalid message request ID argument')
 
@@ -281,15 +281,15 @@ class ServicesProxy(object):
             responses = self._get_incoming_responses(block)
             for r in responses:
                 # time to die!
-                if (r.__class__ == messages.ExitMessage):
+                if r.__class__ == messages.ExitMessage:
                     self.debug('%s Exiting', str(self.component_ref.component_id))
                     self._cleanup()
-                    if (r.status == messages.Message.SUCCESS):
+                    if r.status == messages.Message.SUCCESS:
                         sys.exit(0)
                     else:
                         sys.exit(1)
                 # response to my message
-                elif (r.__class__ == messages.ServiceResponseMessage):
+                elif r.__class__ == messages.ServiceResponseMessage:
                     if (r.request_msg_id not in
                             list(self.incomplete_calls.keys())):
                         self.error('Mismatched service response msg_id %s',
@@ -309,10 +309,10 @@ class ServicesProxy(object):
                     raise Exception('Unexpected service response of type ' +
                                     r.__class__.__name__)
 
-            if (not block):
+            if not block:
                 keep_going = False
         # if this message corresponds to a finish invocation, return the response message
-        if (msg_id in list(self.finished_calls.keys())):
+        if msg_id in list(self.finished_calls.keys()):
             response = self.finished_calls[msg_id]
             del self.finished_calls[msg_id]
             #            dumpAll()
@@ -349,12 +349,12 @@ class ServicesProxy(object):
         self.debug('_get_service_response(%s)', str(msg_id))
         response = self._wait_msg_response(msg_id, block)
         self.debug('_get_service_response(%s), response = %s', str(msg_id), str(response))
-        if (response == None):
+        if response == None:
             return None
-        if (response.status == messages.Message.FAILURE):
+        if response.status == messages.Message.FAILURE:
             self.debug('###### Raising %s', str(response.args[0]))
             raise response.args[0]
-        if (len(response.args) > 1):
+        if len(response.args) > 1:
             return response.args
         else:
             return response.args[0]
@@ -485,11 +485,11 @@ class ServicesProxy(object):
                 self.exception('Caught exception in wait_call()')
                 caught_exceptions.append(e)
             else:
-                if (ret_val != None):
+                if ret_val is not None:
                     ret_map[call_id] = ret_val
         if len(caught_exceptions) > 0:
             self.error('Caught one or more exceptions in call to wait_call_list')
-            raise e
+            raise caught_exceptions[0]
         return ret_map
 
     def launch_task(self, nproc, working_dir, binary, *args, **keywords):
@@ -567,7 +567,7 @@ class ServicesProxy(object):
             whole_nodes = keywords['whole_nodes']
             # print ">>>> value of whole_nodes", whole_nodes
         except:
-            if self.shared_nodes == True:
+            if self.shared_nodes:
                 whole_nodes = False
             else:
                 whole_nodes = True
@@ -576,7 +576,7 @@ class ServicesProxy(object):
             whole_socks = keywords['whole_sockets']
             # print ">>>> value of whole_socks", whole_socks
         except:
-            if self.shared_nodes == True:
+            if self.shared_nodes:
                 whole_socks = False
             else:
                 whole_socks = True
@@ -600,7 +600,7 @@ class ServicesProxy(object):
             pass
 
         task_stdout = sys.stdout
-        if (log_filename):
+        if log_filename:
             try:
                 task_stdout = open(log_filename, 'w')
             except:
@@ -672,7 +672,7 @@ class ServicesProxy(object):
             pass
 
         task_stdout = sys.stdout
-        if (log_filename):
+        if log_filename:
             try:
                 task_stdout = open(log_filename, 'w')
             except:
@@ -724,14 +724,14 @@ class ServicesProxy(object):
             try:
                 wnodes = task.keywords['whole_nodes']
             except:
-                if self.shared_nodes == True:
+                if self.shared_nodes:
                     wnodes = False
                 else:
                     wnodes = True
             try:
                 wsocks = task.keywords['whole_sockets']
             except:
-                if self.shared_nodes == True:
+                if self.shared_nodes:
                     wsocks = False
                 else:
                     wsocks = True
@@ -765,7 +765,7 @@ class ServicesProxy(object):
                 pass
 
             task_stdout = sys.stdout
-            if (log_filename):
+            if log_filename:
                 try:
                     task_stdout = open(log_filename, 'w')
                 except:
@@ -823,7 +823,7 @@ class ServicesProxy(object):
         try:
             msg_id = self._invoke_service(self.fwk.component_id,
                                           'finish_task', task_id, task_retval)
-            retval = self._get_service_response(msg_id, block=True)
+            self._get_service_response(msg_id, block=True)
         except Exception as e:
             self.exception('Error finalizing task  %s', task_id)
             raise
@@ -853,7 +853,7 @@ class ServicesProxy(object):
             self.exception('Error: unrecognizable task_id = %s ', task_id)
             raise
         task_retval = process.poll()
-        if task_retval == None:
+        if task_retval is None:
             return None
         else:
             retval = self.wait_task(task_id)
@@ -874,9 +874,9 @@ class ServicesProxy(object):
             task_retval = process.wait()
         else:
             maxtime = start_time + timeout
-            while (time.time() < maxtime):
+            while time.time() < maxtime:
                 task_retval = process.poll()
-                if (task_retval == None):
+                if task_retval is None:
                     time.sleep(delay)
                 else:
                     break
@@ -958,7 +958,7 @@ class ServicesProxy(object):
             except KeyError:
                 self.exception('Error: unknown task id : %s', task_id)
                 raise
-        while (len(running_tasks) > 0):
+        while len(running_tasks) > 0:
             for task_id in task_id_list:
                 if task_id not in running_tasks:
                     continue
@@ -997,11 +997,11 @@ class ServicesProxy(object):
         the parameter cannot be changed or if there are problems setting the
         value.
         """
-        if (target_sim_name == None):
+        if target_sim_name is None:
             sim_name = self.sim_name
         else:
             sim_name = target_sim_name
-        if (param in list(self.sim_conf.keys())):
+        if param in list(self.sim_conf.keys()):
             raise Exception('Cannot dynamically alter simulation configuration parameter ' + param)
         try:
             msg_id = self._invoke_service(self.fwk.component_id,
@@ -1030,7 +1030,7 @@ class ServicesProxy(object):
         """
         Return the list of times as specified in the configuration file.
         """
-        if (self.time_loop != None):
+        if self.time_loop is not None:
             return self.time_loop
         sim_conf = self.sim_conf
         tlist = []
@@ -1121,7 +1121,7 @@ class ServicesProxy(object):
         """
 
         elapsed_time = self._get_elapsed_time()
-        if (Force):
+        if Force:
             return self._dispatch_checkpoint(time_stamp, comp_id_list, Protect)
         try:
             chkpt_conf = self.sim_conf['CHECKPOINT']
@@ -1132,7 +1132,7 @@ class ServicesProxy(object):
             self.exception('Error accessing CHECKPOINT section in config file')
             raise
 
-        if (num_chkpt == 0):
+        if num_chkpt == 0:
             return
 
         if (mode not in ['ALL', 'WALLTIME_REGULAR', 'WALLTIME_EXPLICIT',
@@ -1140,7 +1140,7 @@ class ServicesProxy(object):
             self.error('Invalid MODE = %s in checkpoint configuration', mode)
             raise Exception('Invalid MODE = %s in checkpoint configuration' % (mode))
 
-        if (mode == 'ALL'):
+        if mode == 'ALL':
             return self._dispatch_checkpoint(time_stamp, comp_id_list, Protect)
 
         if (mode == 'WALLTIME_REGULAR'):
@@ -1149,7 +1149,7 @@ class ServicesProxy(object):
                 return self._dispatch_checkpoint(time_stamp, comp_id_list, Protect)
             else:
                 return None
-        elif (mode == 'WALLTIME_EXPLICIT'):
+        elif mode == 'WALLTIME_EXPLICIT':
             try:
                 wt_values = chkpt_conf['WALLTIME_VALUES'].split()
             except AttributeError:
@@ -1161,17 +1161,17 @@ class ServicesProxy(object):
                         (self.last_ckpt_walltime - self.start_time < t)):
                     return self._dispatch_checkpoint(time_stamp, comp_id_list, Protect)
             return None
-        elif (mode == 'PHYSTIME_REGULAR'):
+        elif mode == 'PHYSTIME_REGULAR':
             pt_interval = float(chkpt_conf['PHYSTIME_INTERVAL'])
             pt_current = float(time_stamp)
             pt_start = self.time_loop[0]
-            if (self.last_ckpt_phystime == None):
+            if self.last_ckpt_phystime is None:
                 self.last_ckpt_phystime = pt_start
             if (pt_current - self.last_ckpt_phystime >= pt_interval):
                 return self._dispatch_checkpoint(time_stamp, comp_id_list, Protect)
             else:
                 return None
-        elif (mode == 'PHYSTIME_EXPLICIT'):
+        elif mode == 'PHYSTIME_EXPLICIT':
             # print ">>>>>>> chkpt_conf['PHYSTIME_VALUES'] = ", chkpt_conf['PHYSTIME_VALUES']
             try:
                 pt_values = chkpt_conf['PHYSTIME_VALUES'].split()
@@ -1181,8 +1181,7 @@ class ServicesProxy(object):
             # print ">>>>>>> pt_values = ", pt_values
             pt_current = float(time_stamp)
             for pt in pt_values:
-                if (pt_current >= pt and
-                        self.last_ckpt_phystime < pt):
+                if pt_current >= pt > self.last_ckpt_phystime:
                     return self._dispatch_checkpoint(time_stamp, comp_id_list, Protect)
             return None
         return None
@@ -1225,7 +1224,7 @@ class ServicesProxy(object):
         except KeyError:
             pass
         else:
-            if (Protect or (self.chkpt_counter % int(protect_freq) == 0)):
+            if Protect or (self.chkpt_counter % int(protect_freq) == 0):
                 self.protected_chkpts.append(timeStamp_str)
 
         if (os.path.isdir(base_dir)):
@@ -1239,7 +1238,7 @@ class ServicesProxy(object):
             #            self.debug('CHECKPOINT: purge_candidates = %s', str(purge_candidates))
             #            self.debug('CHECKPOINT: protected_chkpts = %s', str(self.protected_chkpts))
             #            self.debug('CHECKPOINT: ***********************')
-            while (len(purge_candidates) > num_chkpt):
+            while len(purge_candidates) > num_chkpt:
                 obsolete_chkpt = purge_candidates.pop(0)
                 chkpt_dir = os.path.join(base_dir, obsolete_chkpt)
                 try:
@@ -1264,7 +1263,7 @@ class ServicesProxy(object):
             ${SIM_ROOT}/work/$CLASS_${SUB_CLASS}_$NAME_<instance_num>
 
         """
-        if (self.workdir == ''):
+        if self.workdir == '':
             self.workdir = os.path.join(self.sim_conf['SIM_ROOT'], 'work',
                                         self.full_comp_id)
         return self.workdir
@@ -1309,7 +1308,7 @@ class ServicesProxy(object):
         elapsed_time = time.time() - start_time
         self._send_monitor_event(eventType='IPS_STAGE_INPUTS',
                                  comment='Elapsed time = %.3f Path = %s Files = %s' % \
-                                         (elapsed_time, os.path.abspath(inputDir), \
+                                         (elapsed_time, os.path.abspath(inputDir),
                                           str(input_file_list)))
 
         return
