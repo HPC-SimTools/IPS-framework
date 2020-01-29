@@ -21,7 +21,7 @@ class containerize:
 
         # Get the data which is in a configObj format
         if os.path.exists(containerName) and not overwrite:
-            print "Error: " + containerName + " exists."
+            print("Error: " + containerName + " exists.")
             return 0
 
         # There is only one key
@@ -35,8 +35,8 @@ class containerize:
 
         zip_file = zipfile.ZipFile(containerName, 'w')
         for zfile in filelist:
-            print dirToContain
-            print zfile
+            print(dirToContain)
+            print(zfile)
             fullzfile = os.path.join(dirToContain, zfile)
             zip_file.write(fullzfile)
         zip_file.close()
@@ -47,14 +47,14 @@ def getInputFilesFromIps(dirToContain, ipsFileName):
     if not os.path.exists(ipsFileName):
         os.chdir(dirToContain)
         if not os.path.exists(ipsFileName):
-            print "Cannot find IPS File."
+            print("Cannot find IPS File.")
     ipsConf = configobj.ConfigObj(ipsFileName, file_error=True)
     allCpFiles = []
     for component in ipsConf['PORTS']['NAMES']:
         compimp = ipsConf['PORTS'][component]['IMPLEMENTATION']
-        if ipsConf[compimp].has_key('INPUT_FILES'):
+        if 'INPUT_FILES' in ipsConf[compimp]:
             allCpFiles.append(ipsConf[compimp]['INPUT_FILES'])
-        if ipsConf[compimp].has_key('DATA_FILES'):
+        if 'DATA_FILES' in ipsConf[compimp]:
             allCpFiles.append(ipsConf[compimp]['DATA_FILES'])
     os.chdir(curdir)
     return allCpFiles
@@ -83,7 +83,7 @@ def main():
     else:
         dirToContain = args[0]
         if options.label == '':
-            print "Must specify a label"
+            print("Must specify a label")
             return
 
     # Set a filelist if option specify
