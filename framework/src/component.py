@@ -76,20 +76,6 @@ class Component(object):
         """
         #timer = pytau.profileTimer(self.component_id.__str__() + ".__run__", "", str(os.getpid()))
         #pytau.start(timer)
-        class Unbuffered(object):
-            def __init__(self, stream):
-                self.stream = stream
-
-            def write(self, data):
-                self.stream.write(data)
-                self.stream.flush()
-
-            def writelines(self, datas):
-                self.stream.writelines(datas)
-                self.stream.flush()
-
-            def __getattr__(self, attr):
-                return getattr(self.stream, attr)
 
         tmp = sys.exit
         sys.exit = self.__my_exit__
@@ -115,10 +101,9 @@ class Component(object):
                 #sys.stdout.close()
                 os.dup2(outf_fno, original_stdout_fd)
                 os.dup2(outf_fno, original_stderr_fd)
-                #sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 0)
-                #sys.stderr = os.fdopen(sys.stderr.fileno(), 'w', 0)
-                sys.stdout = Unbuffered(sys.stdout)
-                sys.stderr = Unbuffered(sys.stderr)
+                # Use line buffered for stderr/stdout redirected files
+                sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 1)
+                sys.stderr = os.fdopen(sys.stderr.fileno(), 'w', 1)
 
         # SIMYAN: reversed changes that took directory creation in work out of
         # a component's hands. Now this class creates the directory and changes
