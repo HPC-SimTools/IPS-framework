@@ -62,9 +62,9 @@ class framework():
         #------------------------------------
         try:
             opts, args = getopt.getopt(sys.argv[1:], 'r:m:c:l:s:vdfb', ['resource=','config=','mapfile=','log=','seed=','produce_viz', 'debug', 'failures_on', 'resubmit_on'])
-        except getopt.GetoptError, err:
+        except getopt.GetoptError as err:
             # print help information and exit:
-            print str(err) # will print something like "option -a not recognized"
+            print(str(err)) # will print something like "option -a not recognized"
             usage()
             sys.exit(2)
 
@@ -97,7 +97,7 @@ class framework():
                 elif o == '-b' or o == '--resubmit_on':
                     self.resubmit_on = True
         except:
-            print 'problems getting the command line args'
+            print('problems getting the command line args')
             raise
         self.my_rand = random.Random()
         try:
@@ -113,7 +113,7 @@ class framework():
         try:
             self.create_logfiles()
         except:
-            print "problems creating log files"
+            print("problems creating log files")
             raise
 
         #-----------------------------------------
@@ -123,7 +123,7 @@ class framework():
             self.RM = resource_mgr(self, self.resource_file)
             self.allocation_size = self.RM.nodes
         except:
-            print "problems initializing the resource manager"
+            print("problems initializing the resource manager")
             raise
 
         #-----------------------------------------
@@ -132,7 +132,7 @@ class framework():
         try:
             self.parse_config(self.config_files)
         except:
-            print "problems reading config file"
+            print("problems reading config file")
             raise
 
         #-----------------------------------------
@@ -141,7 +141,7 @@ class framework():
         try:
             self.setup_logfiles()
         except:
-            print "problems setting up sim, comp and log type maps"
+            print("problems setting up sim, comp and log type maps")
             raise
 
         #----------------------------------------
@@ -149,8 +149,8 @@ class framework():
         #----------------------------------------
         if self.debug:
             for s in self.simulations:
-                for c in s.my_comps.values():
-                    print c.name
+                for c in list(s.my_comps.values()):
+                    print(c.name)
 
         #----------------------------------------
         #   set up failures
@@ -165,9 +165,9 @@ class framework():
                     self.failure_times.append(self.generate_event())
             self.failure_times.sort()
             if self.debug:
-                print 'die die die times!!!'
-                print self.failure_times
-                print '------'
+                print('die die die times!!!')
+                print(self.failure_times)
+                print('------')
             self.next_fe = self.find_next_fe()
 
 
@@ -204,7 +204,7 @@ class framework():
             to_kill.state = "failed"
         else:
             if self.debug:
-                print 'failure killed an unoccupied node'
+                print('failure killed an unoccupied node')
         self.logEvent(None, None, 'node_failure', 'fault killed a node')
 
 
@@ -254,7 +254,7 @@ class framework():
         for s in self.simulations:
             self.sim_map.update({s.name:scount})
             self.comp_map.update({s.name + '_' + 'None':0})
-            for c in s.my_comps.values():
+            for c in list(s.my_comps.values()):
                 self.comp_map.update({s.name + '_' + c.name:ccount})
                 ccount = ccount + 1
             scount = scount + 1
@@ -280,16 +280,16 @@ class framework():
 
         allocated, total = self.RM.get_curr_usage()
         #print >> self.logFile, comment_symbol, 'The following data is associated with the run executed at', self.beginning_of_time
-        print >> self.rlogFile, comment_symbol, 'The following data is associated with the run executed at', self.beginning_of_time
+        print(comment_symbol, 'The following data is associated with the run executed at', self.beginning_of_time, file=self.rlogFile)
         #print >> self.logFile, comment_symbol, 'On host', os.uname()[1], 'with configuration files:' #self.config_file, self.resource_file
-        print >> self.rlogFile, comment_symbol, 'On host', os.uname()[1], 'with configuration files:' #self.config_file, self.resource_file
+        print(comment_symbol, 'On host', os.uname()[1], 'with configuration files:', file=self.rlogFile) #self.config_file, self.resource_file
         for c in self.config_files:
             #print >> self.logFile, comment_symbol, c
-            print >> self.rlogFile, comment_symbol, c
+            print(comment_symbol, c, file=self.rlogFile)
         #print >> self.logFile, comment_symbol, self.resource_file
-        print >> self.rlogFile, comment_symbol, self.resource_file
+        print(comment_symbol, self.resource_file, file=self.rlogFile)
         #print >> self.logFile, comment_symbol, '================================================================='
-        print >> self.rlogFile, comment_symbol, '================================================================='
+        print(comment_symbol, '=================================================================', file=self.rlogFile)
         self.logEvent(None, None, 'start_sim', "starting simulation")
 
     #-----------------------------------------------------------------------------------------------------
@@ -327,13 +327,13 @@ class framework():
         self.usage.add_stat(self.fwk_global_time, allocated, total, ltype)
         if s == 'None' and c == 'None':
             #print >> self.logFile, self.fwk_global_time, 0, 0, self.log_types[ltype], allocated, total, self.comment_symbol, msg
-            print >> self.rlogFile, self.fwk_global_time, 'fwk', '---' , ltype, percent, '%  ', allocated, total, self.comment_symbol, msg
+            print(self.fwk_global_time, 'fwk', '---' , ltype, percent, '%  ', allocated, total, self.comment_symbol, msg, file=self.rlogFile)
         elif c == 'None':
             #print >> self.logFile, self.fwk_global_time, self.sim_map[s], self.comp_map[s + '_' + c], self.log_types[ltype], percent, '%  ',allocated, total, self.comment_symbol, msg
-            print >> self.rlogFile, self.fwk_global_time, sim, '---', ltype, percent, '%  ',allocated, total, self.comment_symbol, msg
+            print(self.fwk_global_time, sim, '---', ltype, percent, '%  ',allocated, total, self.comment_symbol, msg, file=self.rlogFile)
         else:
             #print >> self.logFile, self.fwk_global_time, self.sim_map[s], self.comp_map[s + '_' + c], self.log_types[ltype], percent, '%  ', allocated, total, self.comment_symbol, msg
-            print >> self.rlogFile, self.fwk_global_time, sim, comp, ltype, percent, '%  ', allocated, total, self.comment_symbol, msg
+            print(self.fwk_global_time, sim, comp, ltype, percent, '%  ', allocated, total, self.comment_symbol, msg, file=self.rlogFile)
 
 
     def parse_config(self, conf_files):
@@ -343,13 +343,15 @@ class framework():
         for conf_file in conf_files:
             try:
                 config = ConfigObj(conf_file, file_error=True, interpolation='template')
-            except IOError, (ex):
-                print 'Error opening/finding config file %s' % conf_file
-                print 'ConfigObj error message: ', ex
+            except IOError as xxx_todo_changeme:
+                (ex) = xxx_todo_changeme
+                print('Error opening/finding config file %s' % conf_file)
+                print('ConfigObj error message: ', ex)
                 raise
-            except SyntaxError, (ex):
-                print 'Syntax problem in config file %s' % conf_file
-                print 'ConfigObj error message: ', ex
+            except SyntaxError as xxx_todo_changeme1:
+                (ex) = xxx_todo_changeme1
+                print('Syntax problem in config file %s' % conf_file)
+                print('ConfigObj error message: ', ex)
                 raise
 
             try:
@@ -360,7 +362,7 @@ class framework():
                     self.simulations.append(simulation(config[s], self, len(self.simulations)))
                 self.description = config['description']
             except:
-                print 'problem parsing simulations'
+                print('problem parsing simulations')
                 raise
 
     def go(self):
@@ -407,11 +409,11 @@ class framework():
                     pass
 
             if self.debug:
-                print 'to_run:', [(k.phase, k.name, k.ready_for_step) for k in to_run]
-                print 'running:', [(k.phase, k.name, k.ready_for_step) for k in running]
-                print 'active nodes:', self.RM.active
-                print 'total nodes:', self.RM.nodes
-                print
+                print('to_run:', [(k.phase, k.name, k.ready_for_step) for k in to_run])
+                print('running:', [(k.phase, k.name, k.ready_for_step) for k in running])
+                print('active nodes:', self.RM.active)
+                print('total nodes:', self.RM.nodes)
+                print()
             #--------------------------------------------
             # find update time
             #--------------------------------------------
@@ -434,7 +436,7 @@ class framework():
                     except:
                         # exceeded resubmit limit
                         if self.debug:
-                            print "exceeded resubmit limit?? look at log file %s" % self.rlfname
+                            print("exceeded resubmit limit?? look at log file %s" % self.rlfname)
                         self.status = 'Failed'
                         break
                     self.RM.resubmit()
@@ -472,7 +474,7 @@ class framework():
                 else:
                     self.fwk_global_time += min_update_time
                 if self.debug:
-                    print 'new time:', self.fwk_global_time
+                    print('new time:', self.fwk_global_time)
 
 
 
@@ -522,31 +524,31 @@ class framework():
                 #print s.completed_work, s.steps_todo
                 self.status = 'Failed'
             if self.debug:
-                print  "Simulation report for %s" % s.name
+                print("Simulation report for %s" % s.name)
                 if s.mode == "total_time":
-                    print  "Work completed:", s.completed_work, "(", float(s.completed_work)/self.fwk_global_time * 100,"%)"
+                    print("Work completed:", s.completed_work, "(", float(s.completed_work)/self.fwk_global_time * 100,"%)")
                 else:
-                    print  "Steps completed:", s.completed_work, "(", float(s.completed_work)/s.steps_todo * 100,"%)"
-                    print  "Total productive work time:", s.total_work_time, "(", float(s.total_work_time)/self.fwk_global_time * 100, "%)"
-                print  "Total checkpoint time:", s.total_ckpt_time, "(", float(s.total_ckpt_time)/self.fwk_global_time * 100,"%)"
-                print  "Total rework time:", s.total_rework_time, "(", float(s.total_rework_time)/self.fwk_global_time * 100,"%)"
-                print  "Total other overhead time:", s.total_overhead, "(", float(s.total_overhead)/self.fwk_global_time *100, "%)"
-                print  "Total restart time:", s.total_restart_time, "(", float(s.total_restart_time)/self.fwk_global_time * 100,"%)"
-                print  "Total resubmit time:", s.total_resubmit_time, "(", float(s.total_resubmit_time)/self.fwk_global_time * 100,"%)"
-                print  "Total launch delay time:", s.total_launch_delay, "(", float(s.total_launch_delay)/self.fwk_global_time * 100,"%)"
-                print  "Total waiting time:", s.total_waiting_time, "(", float(s.total_waiting_time)/self.fwk_global_time * 100,"%)"
-                print  "Total faults:", s.num_faults
-                print  "Total retries:", s.num_retries
-                print  "Total resubmissions:", s.resubmissions
-                print  "Number of waiting periods:", s.num_waiting
-                print  "Number of checkpoints:", s.num_ckpts
-                print  "Number of work segments:", s.num_work
-                print  "Number of rework segments:", s.num_rework
-                print  "Number of restart segments:", s.num_restarts
+                    print("Steps completed:", s.completed_work, "(", float(s.completed_work)/s.steps_todo * 100,"%)")
+                    print("Total productive work time:", s.total_work_time, "(", float(s.total_work_time)/self.fwk_global_time * 100, "%)")
+                print("Total checkpoint time:", s.total_ckpt_time, "(", float(s.total_ckpt_time)/self.fwk_global_time * 100,"%)")
+                print("Total rework time:", s.total_rework_time, "(", float(s.total_rework_time)/self.fwk_global_time * 100,"%)")
+                print("Total other overhead time:", s.total_overhead, "(", float(s.total_overhead)/self.fwk_global_time *100, "%)")
+                print("Total restart time:", s.total_restart_time, "(", float(s.total_restart_time)/self.fwk_global_time * 100,"%)")
+                print("Total resubmit time:", s.total_resubmit_time, "(", float(s.total_resubmit_time)/self.fwk_global_time * 100,"%)")
+                print("Total launch delay time:", s.total_launch_delay, "(", float(s.total_launch_delay)/self.fwk_global_time * 100,"%)")
+                print("Total waiting time:", s.total_waiting_time, "(", float(s.total_waiting_time)/self.fwk_global_time * 100,"%)")
+                print("Total faults:", s.num_faults)
+                print("Total retries:", s.num_retries)
+                print("Total resubmissions:", s.resubmissions)
+                print("Number of waiting periods:", s.num_waiting)
+                print("Number of checkpoints:", s.num_ckpts)
+                print("Number of work segments:", s.num_work)
+                print("Number of rework segments:", s.num_rework)
+                print("Number of restart segments:", s.num_restarts)
         # stats from failed sims
         for s in sims:
             if self.debug:
-                print ' killing simulation from rus because it did not finish'
+                print(' killing simulation from rus because it did not finish')
             s.kill()
             s.update_bookkeeping()
             #print 's still in sims'
@@ -565,28 +567,28 @@ class framework():
             nrestart += s.num_restarts
             nckpts += s.num_ckpts
             if self.debug:
-                print  "Simulation report for %s" % s.name
+                print("Simulation report for %s" % s.name)
                 if s.mode == 'total_time':
-                    print  "Work completed:", s.completed_work, "(", float(s.completed_work)/self.fwk_global_time * 100,"%)"
+                    print("Work completed:", s.completed_work, "(", float(s.completed_work)/self.fwk_global_time * 100,"%)")
                 else:
-                    print  "Steps completed:", s.completed_work, "(", float(s.completed_work)/s.steps_todo * 100,"%)"
-                    print  "Total productive work time:", s.total_work_time, "(", float(s.total_work_time)/self.fwk_global_time * 100, "%)"
-                print  "Total checkpoint time:", s.total_ckpt_time, "(", float(s.total_ckpt_time)/self.fwk_global_time * 100,"%)"
-                print  "Total rework time:", s.total_rework_time, "(", float(s.total_rework_time)/self.fwk_global_time * 100,"%)"
-                print  "Total restart time:", s.total_restart_time, "(", float(s.total_restart_time)/self.fwk_global_time * 100,"%)"
-                print  "Total other overhead time:", s.total_overhead, "(", float(s.total_overhead)/self.fwk_global_time *100, "%)"
-                print  "Total restart time:", s.total_restart_time, "(", float(s.total_restart_time)/self.fwk_global_time * 100,"%)"
-                print  "Total resubmit time:", s.total_resubmit_time, "(", float(s.total_resubmit_time)/self.fwk_global_time * 100,"%)"
-                print  "Total launch delay time:", s.total_launch_delay, "(", float(s.total_launch_delay)/self.fwk_global_time * 100,"%)"
-                print  "Total waiting time:", s.total_waiting_time, "(", float(s.total_waiting_time)/self.fwk_global_time * 100,"%)"
-                print  "Total faults:", s.num_faults
-                print  "Total retries:", s.num_retries
-                print  "Total resubmissions:", s.resubmissions
-                print  "Number of waiting periods:", s.num_waiting
-                print  "Number of checkpoints:", s.num_ckpts
-                print  "Number of work segments:", s.num_work
-                print  "Number of rework segments:", s.num_rework
-                print  "Number of restart segments:", s.num_restarts
+                    print("Steps completed:", s.completed_work, "(", float(s.completed_work)/s.steps_todo * 100,"%)")
+                    print("Total productive work time:", s.total_work_time, "(", float(s.total_work_time)/self.fwk_global_time * 100, "%)")
+                print("Total checkpoint time:", s.total_ckpt_time, "(", float(s.total_ckpt_time)/self.fwk_global_time * 100,"%)")
+                print("Total rework time:", s.total_rework_time, "(", float(s.total_rework_time)/self.fwk_global_time * 100,"%)")
+                print("Total restart time:", s.total_restart_time, "(", float(s.total_restart_time)/self.fwk_global_time * 100,"%)")
+                print("Total other overhead time:", s.total_overhead, "(", float(s.total_overhead)/self.fwk_global_time *100, "%)")
+                print("Total restart time:", s.total_restart_time, "(", float(s.total_restart_time)/self.fwk_global_time * 100,"%)")
+                print("Total resubmit time:", s.total_resubmit_time, "(", float(s.total_resubmit_time)/self.fwk_global_time * 100,"%)")
+                print("Total launch delay time:", s.total_launch_delay, "(", float(s.total_launch_delay)/self.fwk_global_time * 100,"%)")
+                print("Total waiting time:", s.total_waiting_time, "(", float(s.total_waiting_time)/self.fwk_global_time * 100,"%)")
+                print("Total faults:", s.num_faults)
+                print("Total retries:", s.num_retries)
+                print("Total resubmissions:", s.resubmissions)
+                print("Number of waiting periods:", s.num_waiting)
+                print("Number of checkpoints:", s.num_ckpts)
+                print("Number of work segments:", s.num_work)
+                print("Number of rework segments:", s.num_rework)
+                print("Number of restart segments:", s.num_restarts)
         if self.status == 'Failed':
             self.logEvent(None, None, 'failed_sim', 'ran out of nodes to service task requests')
         else:
@@ -602,18 +604,18 @@ class framework():
         efficiency = cpuhrs_used / cpuhrs_charged
         if self.debug:
             # print >> self.rlogFile,  the config file name, nodes, ppn, total time, CPU hours
-            print confs,  self.RM.nodes, 'nodes,', self.RM.ppn, 'ppn,' , self.fwk_global_time, 'seconds,', (self.RM.nodes * self.RM.ppn * self.fwk_global_time) / 3600.0, 'CPU hours, ', self.simulation_tsteps_completed, 'simulation timesteps completed'
+            print(confs,  self.RM.nodes, 'nodes,', self.RM.ppn, 'ppn,' , self.fwk_global_time, 'seconds,', (self.RM.nodes * self.RM.ppn * self.fwk_global_time) / 3600.0, 'CPU hours, ', self.simulation_tsteps_completed, 'simulation timesteps completed')
             if self.failures_on:
                 # not sure if we should use fwk_global_time for percent rework calculation
-                print >> self.rlogFile,  self.total_faults, 'failures,', self.total_rework, 'total rework,', 100 * (self.total_rework / float(self.fwk_global_time)), 'percent rework'
+                print(self.total_faults, 'failures,', self.total_rework, 'total rework,', 100 * (self.total_rework / float(self.fwk_global_time)), 'percent rework', file=self.rlogFile)
         #print self.fwk_global_time, cpuhrs_charged, cpuhrs_used, efficiency
 
         #----------------------------------
         #  output for experiment manager
         #----------------------------------
-        print self.status, self.myseed, self.fwk_global_time, self.allocation_size, cpuhrs_charged, cpuhrs_used,
-        print work_t, rework_t, ckpt_t, restart_t, launch_delay_t, resubmit_t, overhead_t,
-        print nckpts, self.node_failures, nfault, nrelaunch, nrestart, nresubmit
+        print(self.status, self.myseed, self.fwk_global_time, self.allocation_size, cpuhrs_charged, cpuhrs_used, end=' ')
+        print(work_t, rework_t, ckpt_t, restart_t, launch_delay_t, resubmit_t, overhead_t, end=' ')
+        print(nckpts, self.node_failures, nfault, nrelaunch, nrestart, nresubmit)
 
         if self.generate_viz:
             self.crunch()
@@ -649,7 +651,7 @@ class framework():
         fe_nu1 = list()
         fe_p1 = list()
 
-        for i in xrange(len(self.usage.times)):
+        for i in range(len(self.usage.times)):
             if self.usage.events[i] == 'failed_task':
                 fe_t.append(self.usage.times[i])
             elif self.usage.events[i] == 'node_failure':
@@ -660,7 +662,7 @@ class framework():
 
         if fe_t:
             j = 0
-            for k in xrange(len(fe_t1)):
+            for k in range(len(fe_t1)):
                 if fe_t[j] == fe_t1[k]:
                     fe_nt.append(fe_nt1[k])
                     fe_nu.append(fe_nu1[k])
@@ -670,8 +672,8 @@ class framework():
                         break
 
 
-        print 'fe_t', fe_t
-        print 'fe_nu', fe_nu
+        print('fe_t', fe_t)
+        print('fe_nu', fe_nu)
 
 
         plt.figure()
@@ -745,12 +747,12 @@ def usage():
     """
     Prints a message about the input parameters to the script.
     """
-    print "This script will simulate resource usage over time of a simulation."
-    print "Please use the following options:"
-    print "   -c, --config : file containing component information"
-    print "   -m, --mapfile : file containing valid states and an explanation of what they mean"
-    print "   -l, --log : log file location, default is log.<config file name>_<num procs>"
-    print "   -r, --resource : file containing resource info"
+    print("This script will simulate resource usage over time of a simulation.")
+    print("Please use the following options:")
+    print("   -c, --config : file containing component information")
+    print("   -m, --mapfile : file containing valid states and an explanation of what they mean")
+    print("   -l, --log : log file location, default is log.<config file name>_<num procs>")
+    print("   -r, --resource : file containing resource info")
 
 if __name__ == "__main__":
     my_fwk = framework()

@@ -35,11 +35,11 @@ class Component(object):
         self.config = config
         self.start_time=0.0
         self.sys_exit = None
-        for i in config.keys():
+        for i in list(config.keys()):
             try:
                 setattr(self, i, config[i])
-            except Exception, e:
-                print 'Error setting Component parameter : ', i, ' - ', e
+            except Exception as e:
+                print('Error setting Component parameter : ', i, ' - ', e)
                 #pytau.stop(timer)
                 raise
 
@@ -76,6 +76,7 @@ class Component(object):
         """
         #timer = pytau.profileTimer(self.component_id.__str__() + ".__run__", "", str(os.getpid()))
         #pytau.start(timer)
+
         tmp = sys.exit
         sys.exit = self.__my_exit__
         self.sys_exit = tmp
@@ -85,23 +86,24 @@ class Component(object):
             pass
         else:
             if str(redirect).strip() !='':
-                if ('OUT_REDIRECT_FNAME') not in self.services.sim_conf.keys():
+                if ('OUT_REDIRECT_FNAME') not in list(self.services.sim_conf.keys()):
                     fname = "%s.out" %(self.services.sim_conf['SIM_NAME'])
                     fname = os.path.join(self.services.sim_conf['PWD'], fname)
-                    print 'Redirecting stdout to ', fname
+                    print('Redirecting stdout to ', fname)
                 else:
                     fname = self.services.sim_conf['OUT_REDIRECT_FNAME']
                 original_stdout_fd = sys.stdout.fileno()
-                original_sterr_fd = sys.stderr.fileno()
+                original_stderr_fd = sys.stderr.fileno()
                 saved_stdout_fd = os.dup(original_stdout_fd)
-                saved_stderr_fd = os.dup(original_sterr_fd)
+                saved_stderr_fd = os.dup(original_stderr_fd)
                 outf = open(fname, "a")
                 outf_fno = outf.fileno()
                 #sys.stdout.close()
                 os.dup2(outf_fno, original_stdout_fd)
-                os.dup2(outf_fno, original_sterr_fd)
-                sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 0)
-                sys.stderr = os.fdopen(sys.stderr.fileno(), 'w', 0)
+                os.dup2(outf_fno, original_stderr_fd)
+                # Use line buffered for stderr/stdout redirected files
+                sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 1)
+                sys.stderr = os.fdopen(sys.stderr.fileno(), 'w', 1)
 
         # SIMYAN: reversed changes that took directory creation in work out of
         # a component's hands. Now this class creates the directory and changes
@@ -110,12 +112,13 @@ class Component(object):
 
         try:
             os.chdir(workdir)
-        except OSError, (errno, strerror):
+        except OSError :
             self.services.debug('Working directory %s does not exist - will attempt creation',
                                 workdir)
             try:
                 os.makedirs(workdir)
-            except OSError, (errno, strerror):
+            except OSError as oserr:
+                (errno, strerror) = oserr.args
                 self.services.exception('Error creating directory %s : %s' ,
                                         workdir, strerror)
                 #pytau.stop(timer)
@@ -143,14 +146,14 @@ class Component(object):
             formatted_args = ['%.3f' % (x) if isinstance(x, float)
                               else str(x) for x in args]
             if keywords:
-                formatted_args += [" %s=" % k + str(v) for (k, v) in keywords.iteritems()]
+                formatted_args += [" %s=" % k + str(v) for (k, v) in keywords.items()]
 
             self.services.debug('Calling method ' + method_name +
                                 "(" + ' ,'.join(formatted_args) + ")")
             try:
                 method = getattr(self, method_name)
                 retval = method(*args, **keywords)
-            except Exception, e:
+            except Exception as e:
                 self.services.exception('Uncaught Exception in component method.')
                 response_msg = MethodResultMessage(self.component_id,
                                                  sender_id,

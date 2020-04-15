@@ -20,15 +20,15 @@ import subprocess
 from time import gmtime, strftime
 
 def usage():
-    print "This script will run and process the results from executing an ensemble of RUS runs."
-    print "Please use the following options to specify what experiments to perform and graph:"
-    print "   -i, --interleave : number of simulations that execute at the same time."
-    print "   -p, --ppn : processes per node"
-    print "   -t, --trials : number of times to run each experiment"
-    print "   -n, --name : name of experiment to help with identification"
-    print "   -m, --minnodes : minimum number of nodes needed to run the sim(s)"
-    print "   -f, --cfile : path to config file to simulate"
-    print "   -j, --nodeinterval : number of nodes between allocation sizes to simulate"
+    print("This script will run and process the results from executing an ensemble of RUS runs.")
+    print("Please use the following options to specify what experiments to perform and graph:")
+    print("   -i, --interleave : number of simulations that execute at the same time.")
+    print("   -p, --ppn : processes per node")
+    print("   -t, --trials : number of times to run each experiment")
+    print("   -n, --name : name of experiment to help with identification")
+    print("   -m, --minnodes : minimum number of nodes needed to run the sim(s)")
+    print("   -f, --cfile : path to config file to simulate")
+    print("   -j, --nodeinterval : number of nodes between allocation sizes to simulate")
 
 
 
@@ -44,9 +44,9 @@ class experiment_suite():
         self.tag = 'hhh'
         try:
             opts, args = getopt.getopt(sys.argv[1:], 't:c:r:n:', ['trials=', 'config_list=', 'res_list=', 'name='])
-        except getopt.GetoptError, err:
+        except getopt.GetoptError as err:
             # print help information and exit:
-            print str(err) # will print something like "option -a not recognized"
+            print(str(err)) # will print something like "option -a not recognized"
             usage()
             sys.exit(2)
 
@@ -61,7 +61,7 @@ class experiment_suite():
                 elif o == '-n' or o == '--name':
                     self.tag = a
         except:
-            print 'problems getting command line arguments'
+            print('problems getting command line arguments')
             raise
 
         try:
@@ -74,7 +74,7 @@ class experiment_suite():
                 self.rfiles.append(r.strip())
             rf.close()
         except:
-            print 'problems with opening list files'
+            print('problems with opening list files')
             raise
 
     def set_up(self):
@@ -143,7 +143,7 @@ class experiment_suite():
                 try:
                     p = subprocess.Popen(e.launch_str, stdout=subprocess.PIPE, close_fds=True)
                     o = p.communicate()[0]
-                    print o
+                    print(o)
                     s, ms, t, c, chc, chu, w, r, p, rs, ld, rb, o, nc, n, nf, nrl, ns, nb = o.split()
                     if s == 'Success':
                         e.trials.ts[i].ts_set(True, t, c, w, r, p, rs, ld, rb, o, n, ns, nb, nf, nrl, nc)
@@ -151,8 +151,8 @@ class experiment_suite():
                         e.trials.ts[i].ts_set(False, t, c, w, r, p, rs, ld, rb, o, n, ns, nb, nf, nrl, nc)
                 except:
                     e.trials.ts[i].ts_set(False, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
-                    print 'launch str:', e.launch_str
-                    print 'problems with execution of %s using %s, trial %d' % (e.config, e.res, i)
+                    print('launch str:', e.launch_str)
+                    print('problems with execution of %s using %s, trial %d' % (e.config, e.res, i))
                     #raise
 
     def post_analysis(self):
@@ -161,18 +161,18 @@ class experiment_suite():
         """
         tm = strftime("%H.%M.%S", gmtime())
         dump = open('dump_plot_data' + tm, 'w')
-        print >> dump, "# this file contains the output from %d trials of the following resource and config files" % self.trials
-        print >> dump, "# ---------------------------------------- "
-        print >> dump, "# Config Files:"
+        print("# this file contains the output from %d trials of the following resource and config files" % self.trials, file=dump)
+        print("# ---------------------------------------- ", file=dump)
+        print("# Config Files:", file=dump)
         for c in self.cfiles:
-            print >> dump, '#', c
-        print >> dump, "# ---------------------------------------- "
-        print >> dump, "# Resource Files:"
+            print('#', c, file=dump)
+        print("# ---------------------------------------- ", file=dump)
+        print("# Resource Files:", file=dump)
         for r in self.rfiles:
-            print >> dump, '#', r
-        print >> dump, "# ---------------------------------------- "
-        print >> dump, '# success/failure | fault model | ft_strategy | total time | allocation size | work | rework | ckpt | restart | launch delay | resubmit | overhead | # node failures | # ckpts | # fault | # relaunch | # restart | # resubmit | % work | % rework | % ckpt | % overhead'
-        print >> dump, "# ---------------------------------------- "
+            print('#', r, file=dump)
+        print("# ---------------------------------------- ", file=dump)
+        print('# success/failure | fault model | ft_strategy | total time | allocation size | work | rework | ckpt | restart | launch delay | resubmit | overhead | # node failures | # ckpts | # fault | # relaunch | # restart | # resubmit | % work | % rework | % ckpt | % overhead', file=dump)
+        print("# ---------------------------------------- ", file=dump)
         for e in self.my_exps:
             e.trials.minmaxavg()
             e.print_to_file(dump)
@@ -475,16 +475,16 @@ class experiment():
             # success or failure
             #---------------------------------------
             if t.success:
-                print >> fhandle, 'Success ',
+                print('Success ', end=' ', file=fhandle)
             else:
-                print >> fhandle, 'Failed ',
+                print('Failed ', end=' ', file=fhandle)
             #---------------------------------------
             # the rest of the data
             #---------------------------------------
-            print >> fhandle, header, t.total_time, t.cores,
-            print >> fhandle, t.work_time, t.rework_time, t.ckpt_time, t.restart_time, t.launch_delay, t.resubmit_time, t.overhead_time,
-            print >> fhandle, t.num_node_failures, t.num_ckpts, t.num_faults, t.num_relaunch, t.num_restart, t.num_resubmit,
-            print >> fhandle, t.percent_work, t.percent_rework, t.percent_ckpt, t.percent_restart, t.percent_launch_delay, t.percent_resubmit, t.percent_overhead
+            print(header, t.total_time, t.cores, end=' ', file=fhandle)
+            print(t.work_time, t.rework_time, t.ckpt_time, t.restart_time, t.launch_delay, t.resubmit_time, t.overhead_time, end=' ', file=fhandle)
+            print(t.num_node_failures, t.num_ckpts, t.num_faults, t.num_relaunch, t.num_restart, t.num_resubmit, end=' ', file=fhandle)
+            print(t.percent_work, t.percent_rework, t.percent_ckpt, t.percent_restart, t.percent_launch_delay, t.percent_resubmit, t.percent_overhead, file=fhandle)
 
 if __name__ == "__main__":
     my_experiments = experiment_suite()

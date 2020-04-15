@@ -17,7 +17,7 @@ python gen_stddev.py -r <portal runid> -b <beginning of slice> -e <end of slice>
 """
 import sys
 import BeautifulSoup
-import urllib2
+import urllib.request, urllib.error, urllib.parse
 import getopt
 PLOT = True
 try:
@@ -33,8 +33,8 @@ end = -1
 def get_task_times():
     try:
         opts, args = getopt.getopt(sys.argv[1:], 'r:b:e:', ['run=', 'begin=', 'end='])
-    except getopt.GetoptError, err:
-        print 'problems with command line args'
+    except getopt.GetoptError as err:
+        print('problems with command line args')
         sys.exit(2)
 
     try:
@@ -46,18 +46,18 @@ def get_task_times():
             elif o == '-e' or o == '--end':
                 end = int(a)
             else:
-                print "you did not follow directions"
+                print("you did not follow directions")
                 sys.exit(2)
     except:
-        print "problems...."
+        print("problems....")
         sys.exit(2)
 
     task_time_map = {}
     all_phys_stamps = set()
     try:
-        page = urllib2.urlopen(url)
+        page = urllib.request.urlopen(url)
     except:
-        print 'Error retreiving URL ', url
+        print('Error retreiving URL ', url)
         raise
     parsed_page = BeautifulSoup.BeautifulSoup(page)
     events_table = parsed_page('table')[3]
@@ -65,7 +65,7 @@ def get_task_times():
     for event in events:
         fields = event('td')
         field_values = [field.contents[0].strip() for field in fields]
-        if (field_values[2] == u'IPS_TASK_END'):
+        if (field_values[2] == 'IPS_TASK_END'):
             #print ' '.join(field_values)
             comp_task = field_values[3]
             comment = field_values[-1]
@@ -81,29 +81,29 @@ def get_task_times():
             all_phys_stamps.add(phys_stamp)
 
 
-    print 'Phys_stamp',
-    for comp in task_time_map.keys():
-        print ',   ', comp,
-    print
+    print('Phys_stamp', end=' ')
+    for comp in list(task_time_map.keys()):
+        print(',   ', comp, end=' ')
+    print()
 
     for phys_stamp in sorted(all_phys_stamps, key = float):
-        print phys_stamp,
-        for comp_map in task_time_map.values():
+        print(phys_stamp, end=' ')
+        for comp_map in list(task_time_map.values()):
             #print comp_map
             try:
-                print ',   ', comp_map[phys_stamp],
+                print(',   ', comp_map[phys_stamp], end=' ')
             except KeyError:
-                print ',           ',
+                print(',           ', end=' ')
                 comp_map[phys_stamp] = 'Nan'
-        print
+        print()
     n_arrays = {}
-    for (comp_name, time_map) in task_time_map.items():
-        x = [float(k) for k in sorted(time_map.keys(), key = float)]
-        y = [float(time_map[k]) for k in sorted(time_map.keys(), key = float)]
-        n_arrays.update({comp_name:array([float(time_map[k]) for k in sorted(time_map.keys(), key = float)])})
-    for c,a in n_arrays.items():
-        print a[0], beg + end, len(a)
-        print "Comp:", c, "Mean:", a[beg:end].mean(), "Standard Dev:", a[beg:end].std()
+    for (comp_name, time_map) in list(task_time_map.items()):
+        x = [float(k) for k in sorted(list(time_map.keys()), key = float)]
+        y = [float(time_map[k]) for k in sorted(list(time_map.keys()), key = float)]
+        n_arrays.update({comp_name:array([float(time_map[k]) for k in sorted(list(time_map.keys()), key = float)])})
+    for c,a in list(n_arrays.items()):
+        print(a[0], beg + end, len(a))
+        print("Comp:", c, "Mean:", a[beg:end].mean(), "Standard Dev:", a[beg:end].std())
 
 
 if __name__ == '__main__':

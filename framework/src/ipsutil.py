@@ -92,9 +92,10 @@ def copyFiles(src_dir, src_file_list, target_dir, prefix='', keep_old = False):
         (head, tail) = os.path.split(os.path.abspath(target_file))
         try:
             os.makedirs(head)
-        except OSError, (errno, strerror):
+        except OSError as oserr:
+            (errno, strerror) = oserr.args
             if (errno != 17):
-                print 'Error creating directory %s : %s' % (head, strerror)
+                print('Error creating directory %s : %s' % (head, strerror))
                 raise
         try:
             #print 'trying to copy...'
@@ -112,9 +113,9 @@ def _ignore_exception(func):
     def new_func(*args, **kwargs):
         try:
             func(*args, **kwargs)
-        except Exception, e:
-            print "Ignoring exception %s in call to %s : %s" % \
-                  (e.__class__, func.__name__, e.args)
+        except Exception as e:
+            print("Ignoring exception %s in call to %s : %s" % \
+                  (e.__class__, func.__name__, e.args))
     return new_func
 
 # SIMYAN: added a utility method to write to the container file
@@ -151,8 +152,8 @@ def writeToContainer(ziphandle, src_dir, src_file_list):
             #print 'so it is None'
             zin = None
             zout = zipfile.ZipFile(ziphandle,'a')
-    except zipfile.BadZipfile, (ex):
-        print 'Found a bad container file, removing...'
+    except zipfile.BadZipfile :
+        print('Found a bad container file, removing...')
         os.remove(ziphandle)
         zin = None
         zout = zipfile.ZipFile(ziphandle,'a')

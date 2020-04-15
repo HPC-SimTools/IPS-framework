@@ -8,7 +8,7 @@ import sys
 import subprocess
 import os
 import BeautifulSoup
-import urllib2
+import urllib.request, urllib.error, urllib.parse
 import numpy as np
 import math
 
@@ -52,7 +52,7 @@ def animate_convergence(converge, max_slice, max_iteration, max_wall_time):
     for i in range(len(Y1)):
         Y1[i] = i
 
-    for ((iteration, slice), value) in sorted(converge.iteritems()):
+    for ((iteration, slice), value) in sorted(converge.items()):
 #        print iteration, slice, '%.3e' % (value)
         convergence[iteration, slice] = value
         convergence.mask[iteration, slice] = False
@@ -65,13 +65,13 @@ def animate_convergence(converge, max_slice, max_iteration, max_wall_time):
     # print slices
     # find minimum value not equal to zero
     value_min = 1000.0
-    for ((iteration, slice), value) in sorted(converge.iteritems()):
+    for ((iteration, slice), value) in sorted(converge.items()):
         if value > 0.0 and value < value_min:
             value_min = value
             #print 'min = ', value_min
 
     # set zeros to value min
-    for ((iteration, slice), value) in sorted(converge.iteritems()):
+    for ((iteration, slice), value) in sorted(converge.items()):
         if value < value_min:
             #print 'changed ', value
             convergence[iteration, slice] = value_min
@@ -91,7 +91,7 @@ def animate_convergence(converge, max_slice, max_iteration, max_wall_time):
 
     filename = 'plot_%09.3f.png' % (max_wall_time)
     plt.savefig(filename, dpi=100)
-    print 'Wrote file', filename
+    print('Wrote file', filename)
     plt.clf()
 
 
@@ -102,9 +102,9 @@ def get_task_times(url_list):
     anim_converge = {}
     for url in url_list:
         try:
-            page = urllib2.urlopen(url)
+            page = urllib.request.urlopen(url)
         except:
-            print 'Error retreiving URL ', url
+            print('Error retreiving URL ', url)
             raise
         parsed_page = BeautifulSoup.BeautifulSoup(page)
         events_table = parsed_page('table')[3]
@@ -121,13 +121,13 @@ def get_task_times(url_list):
             phys_stamp_portal = field_values[-2]
             event_num = field_values[1]
             wall_time = float(field_values[-3])
-            if (field_values[2] == u'IPS_LAUNCH_TASK' or field_values[2] == u'IPS_LAUNCH_TASK_POOL'):
+            if (field_values[2] == 'IPS_LAUNCH_TASK' or field_values[2] == 'IPS_LAUNCH_TASK_POOL'):
                 comment_lst = comment.split()
                 task_id = comment_lst[comment_lst.index('task_id')+ 2]
                 try:
                     tag = comment_lst[comment_lst.index('Tag')+ 2]
                 except ValueError :
-                    if field_values[2] == u'IPS_LAUNCH_TASK':
+                    if field_values[2] == 'IPS_LAUNCH_TASK':
                         try:
                             (phys_stamp, slice) = comment.split()[-1].split('.')
                         except ValueError:
@@ -145,12 +145,12 @@ def get_task_times(url_list):
                 if float(phys_stamp_portal) > 0.0:
                     phys_stamp = phys_stamp_portal
                 phys_stamp_map[task_id] = (phys_stamp, slice)
-            elif (field_values[2] == u'IPS_TASK_END'):
+            elif (field_values[2] == 'IPS_TASK_END'):
                 task_id = comment.split()[2]
                 (phys_stamp, slice) = phys_stamp_map[task_id]
                 #print ' '.join(field_values)
                 exec_time = comment.split()[-2]
-                print '%s.%s  %10s  %s' % (phys_stamp, slice, task_id, exec_time)
+                print('%s.%s  %10s  %s' % (phys_stamp, slice, task_id, exec_time))
                 try:
                     comp_task_map = task_time_map[comp_task]
                 except KeyError:
@@ -170,33 +170,33 @@ def get_task_times(url_list):
                 values.append(exec_time)
                 comp_task_map[phys_stamp] = (low, high, new_mean, values)
                 all_phys_stamps.add(phys_stamp)
-            elif (field_values[2] == u'converge_out'):
+            elif (field_values[2] == 'converge_out'):
                 (iteration, slice, value) = comment.split()
                 array_idx = int(iteration), int(slice)
                 converge[array_idx] = float(value)
                 anim_converge[int(event_num)] = (array_idx, wall_time)
 
-    print 'Phys_stamp',
-    for comp in task_time_map.keys():
+    print('Phys_stamp', end=' ')
+    for comp in list(task_time_map.keys()):
         for suffix in ['_count', '_low', '_high', '_mean']:
-            print ',   ', comp+suffix,
-    print
+            print(',   ', comp+suffix, end=' ')
+    print()
 
     for phys_stamp in sorted(all_phys_stamps, key = float):
-        print phys_stamp,
-        for comp_map in task_time_map.values():
+        print(phys_stamp, end=' ')
+        for comp_map in list(task_time_map.values()):
             #print comp_map
             try:
                 (low, high, mean, values) = comp_map[phys_stamp]
-                print ',   ', len(values), ',', low, ',', high, ',', mean,
+                print(',   ', len(values), ',', low, ',', high, ',', mean, end=' ')
             except KeyError:
-                print ',   ,    ,    ,     ,    ,'
-        print
+                print(',   ,    ,    ,     ,    ,')
+        print()
 
     if (len(converge) > 0):
         max_slice = -1
         max_iteration = -1
-        for (iteration, slice) in converge.keys():
+        for (iteration, slice) in list(converge.keys()):
             if iteration > max_iteration:
                 max_iteration = iteration
             if (slice > max_slice):
@@ -206,7 +206,7 @@ def get_task_times(url_list):
 
     converge_event_sorted = sorted(anim_converge.keys())
     interval = len(events) / NUM_FRAMES
-    last_event_lst = range(0, len(events), interval)
+    last_event_lst = list(range(0, len(events), interval))
     if last_event_lst[-1] != len(events):
         last_event_lst[-1] = len(events)
     event_idx = converge_event_sorted[0]
@@ -218,7 +218,7 @@ def get_task_times(url_list):
     fields = last_event('td')
     field_values = [field.contents[0].strip() for field in fields]
     total_wall_time = float(field_values[-3])
-    time_lst = range(0, int(total_wall_time+1), SIMSEC_PER_FRAME)
+    time_lst = list(range(0, int(total_wall_time+1), SIMSEC_PER_FRAME))
     last_frame_time = -1.0
     for event in events:
         fields = event('td')
@@ -270,12 +270,12 @@ def get_task_times(url_list):
 
 #os.spawnvp(os.P_WAIT, 'mencoder', command)
 
-    print "\n\nabout to execute:\n%s\n\n" % ' '.join(command)
+    print("\n\nabout to execute:\n%s\n\n" % ' '.join(command))
     subprocess.check_call(command)
 
-    print "\n\n The movie was written to 'output.avi'"
+    print("\n\n The movie was written to 'output.avi'")
 
-    print "\n\n You may want to delete *.png now.\n\n"
+    print("\n\n You may want to delete *.png now.\n\n")
 
 if __name__ == '__main__':
     get_task_times(sys.argv[1:])

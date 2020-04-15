@@ -37,4 +37,4 @@ for c in cmd:
     #print c
     p = subprocess.Popen(c)
     p.wait()
-    print 'retcode from "%s" = %d' % (c, p.returncode)
+    print('retcode from "%s" = %d' % (c, p.returncode))

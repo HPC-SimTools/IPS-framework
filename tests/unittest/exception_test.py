@@ -17,14 +17,14 @@ if __name__=="__main__":
     try:
         check_BRRE()
     #except BadResourceRequestException, e:
-    except Exception, e:
-        print 'BRRE with comma e, print e'
-        print e
-        print e.__str__()
+    except Exception as e:
+        print('BRRE with comma e, print e')
+        print(e)
+        print(e.__str__())
 
-    print '------------'
+    print('------------')
     try:
         check_IRE()
-    except Exception, e:
-        print 'IRE with comma e, print e'
-        print e
+    except Exception as e:
+        print('IRE with comma e, print e')
+        print(e)

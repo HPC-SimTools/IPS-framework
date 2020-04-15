@@ -101,7 +101,7 @@ class FTBBridge(Component):
             self.services.debug("FTB_Subscribe returned %d", ret)
 
             #TODO: Use FTB_SUCCESS instead of hard-coded value
-            if ret <> 0:
+            if ret != 0:
                 #TODO: Report specific error denoted by ret value instead of the general msg below
                 self.services.error("Unable to subscribe to FTB events.")
                 self.subscribe_handle = None
@@ -143,7 +143,7 @@ class FTBBridge(Component):
             self.services.debug("FTB_Unsubscribe returned %d", ret)
 
             #TODO: Use FTB_SUCCESS instead of hard-coded value
-            if ret <> 0:
+            if ret != 0:
                 #TODO: Report specific error denoted by ret value instead of the general msg below
                 self.services.error("Failed to unsubscribe from FTB events.")
 
@@ -152,7 +152,7 @@ class FTBBridge(Component):
             self.services.debug("FTB_Disconnect returned %d", ret)
 
             #TODO: Use FTB_SUCCESS instead of hard-coded value
-            if ret <> 0:
+            if ret != 0:
                 #TODO: Report specific error denoted by ret value instead of the general msg below
                 self.services.error("Failed to disconnect from the FTB.")
 

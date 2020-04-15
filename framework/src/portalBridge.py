@@ -5,9 +5,9 @@ import re
 
 import datetime
 from component import Component
-import sys, urllib, os
+import sys, urllib.request, urllib.parse, urllib.error, os
 from subprocess import Popen, PIPE
-import urllib2
+import urllib.request, urllib.error, urllib.parse
 import time
 import ipsutil
 import inspect
@@ -19,6 +19,7 @@ from convert_log_function import *
 import json
 
 ENABLE_MPO = False
+
 
 def configure_mpo():
     global mpo_cert, mpo_api, mpo
@@ -98,8 +99,9 @@ class PortalBridge(Component):
         self.file_uid_cache = defaultdict(dict)
         self.counter = 0
         self.dump_freq = 10
+        self.min_dump_interval = 300 # Minimum time interval in Sec for HTML dump operation
+        self.last_dump_time = time.time()
         self.write_to_htmldir = True
-
 
     def init(self, timestamp=0.0):
         """
@@ -117,7 +119,7 @@ class PortalBridge(Component):
         self.host = self.services.get_config_param('HOST')
         self.services.subscribe('_IPS_MONITOR', "process_event")
         try:
-            freq = int(self.services.get_config_param("HTML_DUMP_FREQ", silent = True))
+            freq = int(self.services.get_config_param("HTML_DUMP_FREQ", silent=True))
         except Exception as e:
             pass
         else:
@@ -136,7 +138,7 @@ class PortalBridge(Component):
                 self.mpo.debug = False
                 self.mpo.filter = 'json'
             except Exception as e:
-                print "#################", e
+                print("#################", e)
                 pass
         return
 
@@ -149,14 +151,13 @@ class PortalBridge(Component):
             time.sleep(0.5)
 
     def finalize(self, timestamp=0.0):
-        for sim_name in self.sim_map.keys():
+        for sim_name in list(self.sim_map.keys()):
             sim_data = self.sim_map[sim_name]
             try:
                 sim_data.monitor_file.close()
                 sim_data.json_monitor_file.close()
             except Exception as e:
                 pass
-
 
     def get_elapsed_time(self):
         """
@@ -202,7 +203,7 @@ class PortalBridge(Component):
 
         self.send_event(sim_data, portal_data)
         sim_data.counter += 1
-        self.counter +=1
+        self.counter += 1
 
         if (portal_data['eventtype'] == 'IPS_END'):
             del self.sim_map[sim_name]
@@ -222,7 +223,7 @@ class PortalBridge(Component):
         """
         timestamp = ipsutil.getTimeString()
         buf = '%8d %s ' % (sim_data.counter, timestamp)
-        for (k, v) in event_data.iteritems():
+        for (k, v) in event_data.items():
             if (len(str(v).strip()) == 0):
                 continue
             if (' ' in str(v)):
@@ -230,7 +231,7 @@ class PortalBridge(Component):
             else:
                 buf += '%s=%s ' % (k, str(v))
         buf += '\n'
-        sim_data.monitor_file.write(buf)
+        sim_data.monitor_file.write(bytes(buf, encoding='UTF-8'))
         sim_data.bigbuf += buf
 
         # json.dump(event_data, sim_data.json_monitor_file, indent=3);
@@ -238,10 +239,12 @@ class PortalBridge(Component):
         sim_data.json_monitor_file.write("%s\n" % buf)
 
         freq = self.dump_freq
-        if ((self.counter % freq == 0) or (event_data['eventtype'] == 'IPS_END')):
+        if (((self.counter % freq == 0) and (time.time() - self.last_dump_time > self.min_dump_interval))
+             or (event_data['eventtype'] == 'IPS_END')):
+            self.last_dump_time = time.time()
             html_filename = sim_data.monitor_file_name.replace('eventlog', 'html')
             html_page = convert_logdata_to_html(sim_data.bigbuf)
-            open(html_filename,"w").writelines(html_page)
+            open(html_filename, "w").writelines(html_page)
             if self.write_to_htmldir:
                 try:
                     html_dir = self.services.get_config_param("USER_W3_DIR", silent=True)
@@ -249,7 +252,7 @@ class PortalBridge(Component):
                     self.services.warning("Missing USER_W3_DIR configuration - disabling web-visible logging")
                     self.write_to_htmldir = False
                     pass
-                #print "Missing USER_W3_DIR configuration"
+                # print "Missing USER_W3_DIR configuration"
                 else:
                     if html_dir.strip() == '':
                         self.write_to_htmldir = False
@@ -262,7 +265,7 @@ class PortalBridge(Component):
                             self.write_to_htmldir = False
         #        self.services.debug('Wrote to monitor file : %s', buf)
         if (self.portal_url):
-            webmsg = urllib.urlencode(event_data)
+            webmsg = urllib.parse.urlencode(event_data).encode("utf-8")
             try:
                 if (self.first_event):  # First time, launch sendPost.py daemon
                     cmd = os.path.join(sys.path[0], 'sendPost.py')
@@ -276,7 +279,7 @@ class PortalBridge(Component):
                 #                self.services.debug('Wrote event to sendPost.py buffer : %s',
                 #                                    str(event_data))
                 self.childProcess.stdin.flush()
-            except Exception, e:
+            except Exception as e:
                 self.services.exception('Error transmitting event number %6d to %s : %s', \
                                         sim_data.counter, self.portal_url, str(e))
         if (sim_data.mpo_wid):
@@ -312,7 +315,7 @@ class PortalBridge(Component):
             try:
                 checksum = md5(file)
             except:
-                print("checksum could not find file:", file)
+                print(("checksum could not find file:", file))
                 raise
 
             is_checksum = self.mpo.search('metadata', params={'key': 'ips_checksum', 'value': checksum})
@@ -320,32 +323,32 @@ class PortalBridge(Component):
             # if checksum exists, use first dataobject that has it
             # api search results are sorted by time
             # Note, check this with eqdsk dataobject in test-api
-            print '%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%'
-            #print (is_checksum)
-            print len(is_checksum), file, parent
-            print '%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%'
+            print('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%')
+            # print (is_checksum)
+            print(len(is_checksum), file, parent)
+            print('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%')
 
             if len(is_checksum) > 0:
-                #print (len(is_checksum))
+                # print (len(is_checksum))
                 # uid is chosen to be first occurrence
                 # parent_uid is uid of object metadata is attached to.
                 file_uid = is_checksum[0]['parent_uid']
 
                 # Create dataobject reference by uid in the workflow
                 dataobject = self.mpo.add(workflow, parent, uid=file_uid, name=shortname, desc=longdesc)
-                print 'Existing dataobject : id = ', file_uid
+                print('Existing dataobject : id = ', file_uid)
                 self.mpo.meta(dataobject['uid'], 'ips_checksum', checksum)
                 # add filename metadata the dataobject reference
                 filepathname_mpo = self.mpo.meta(dataobject['uid'], 'ips_filename', file)
             else:
-                print('file', file)
+                print(('file', file))
                 file_uri = file
                 # Create new dataobject by uri and insert reference in to workflow
                 dataobject = self.mpo.add(workflow, parent, uri=file_uri, name=shortname, desc=longdesc)
                 # add checksum metadata to original data object
                 # add function currently only returns uri field, so fetch full record
                 full_dataobject = self.mpo.search('dataobject/' + dataobject['uid'])[0]
-                print 'New data object', full_dataobject['do_uid']
+                print('New data object', full_dataobject['do_uid'])
                 # add checksum so dataobject and also
                 checksum_mpo = self.mpo.meta(full_dataobject['do_uid'], 'ips_checksum', checksum)
                 self.mpo.meta(dataobject['uid'], 'ips_filename', file)
@@ -368,7 +371,7 @@ class PortalBridge(Component):
                 f_uid = cached_hash_dict[hash]
             except KeyError:
                 pass
-            return (None, hash)    #(f_uid, hash)
+            return (None, hash)  # (f_uid, hash)
 
         recordable_events = ['IPS_CALL_BEGIN', 'IPS_STAGE_INPUTS', 'IPS_STAGE_OUTPUTS', 'IPS_CALL_END']
         recordable_mpo_activities = ['IPS_CALL_BEGIN']
@@ -408,12 +411,12 @@ class PortalBridge(Component):
                     mpo_data_obj = mpo_add_file(sim_data.mpo_wid,
                                                 sim_data.mpo_wid['uid'],
                                                 os.path.join(path, file_name),
-                                                shortname = file_name,
-                                                longdesc = "An input file")
+                                                shortname=file_name,
+                                                longdesc="An input file")
                     inp_objs.append(mpo_data_obj['uid'])
-                    #print "### File = %s  mpo_data_obj['uid'] = %s" % \
+                    # print "### File = %s  mpo_data_obj['uid'] = %s" % \
                     #      (file_name, mpo_data_obj['uid'])
-                    #if not f_uid:
+                    # if not f_uid:
                     #    self.file_hash_cache[file_name][f_hash] = mpo_data_obj['uid']
 
             if event_type == 'IPS_STAGE_INPUTS' and not inp_objs:
@@ -421,7 +424,7 @@ class PortalBridge(Component):
 
             count = self.mpo_name_counter[sim_data.sim_name + event_data['code']]
             if event_type == 'IPS_CALL_BEGIN':
-                target =  event_data['comment'].split()[-1]
+                target = event_data['comment'].split()[-1]
                 step_name = "%s %d" % (target, count)
             else:
                 step_name = "{0:s} {1:s} {2:d}" \
@@ -461,18 +464,18 @@ class PortalBridge(Component):
                     """
                     mpo_data_obj = mpo_add_file(sim_data.mpo_wid,
                                                 activity['uid'],
-                                                #sim_data.mpo_wid['uid'],
+                                                # sim_data.mpo_wid['uid'],
                                                 os.path.join(path, file_name),
-                                                shortname = file_name,
-                                                longdesc = "An output file")
-                    #print self.file_hash
-                    #print "### File = %s  f_uid = %s  mpo_data_obj['uid'] = %s" % \
+                                                shortname=file_name,
+                                                longdesc="An output file")
+                    # print self.file_hash
+                    # print "### File = %s  f_uid = %s  mpo_data_obj['uid'] = %s" % \
                     #      (file_name, f_uid, mpo_data_obj['uid'])
-                    #if not f_uid:
+                    # if not f_uid:
                     #    self.file_hash_cache[file_name][f_hash] = mpo_data_obj['uid']
 
         except Exception as e:
-            print "*************", e
+            print("*************", e)
         else:
             if event_type in recordable_mpo_activities:
                 sim_data.mpo_steps.append(activity['uid'])
@@ -488,17 +491,17 @@ class PortalBridge(Component):
         sim_data.sim_name = sim_name
         sim_data.sim_root = sim_root
 
-        #sim_data.portal_runid = str(uuid.uuid4())
+        # sim_data.portal_runid = str(uuid.uuid4())
         d = datetime.datetime.now()
-        date_str = "%s.%03d" % (d.strftime("%Y-%m-%dT%H:%M:%S"), int(d.microsecond/1000))
+        date_str = "%s.%03d" % (d.strftime("%Y-%m-%dT%H:%M:%S"), int(d.microsecond / 1000))
         sim_data.portal_runid = "_".join([self.host, self.USER, date_str])
         if (self.runid_url != None):
             self.services.debug('PORTAL_RUNID_URL = %s', str(self.runid_url))
             try:
                 #               raise urllib2.URLError('TEXT')
-                f = urllib2.urlopen(self.runid_url, None, 10)
+                f = urllib.request.urlopen(self.runid_url, None, 10)
                 sim_data.portal_runid = f.read().strip()
-            except (urllib2.URLError), e:
+            except (urllib.error.URLError) as e:
                 self.services.error('Error obtaining runID from service at %s : %s' % \
                                     (self.runid_url, str(e)))
                 self.services.error('Using a datetime instead')
@@ -510,21 +513,23 @@ class PortalBridge(Component):
             return
 
         if sim_data.sim_root.strip() == '.':
-            sim_data.sim_root=os.environ['IPS_INITIAL_CWD']
+            sim_data.sim_root = os.environ['IPS_INITIAL_CWD']
         sim_log_dir = os.path.join(sim_data.sim_root, 'simulation_log')
         try:
             os.makedirs(sim_log_dir)
-        except OSError, (errno, strerror):
+        except OSError as oserr:
+            (errno, strerror) = oserr.args
             if (errno != 17):
                 self.services.exception('Error creating Simulation Log directory %s : %d %s' % \
                                         (sim_log_dir, errno, strerror))
                 raise
 
         sim_data.monitor_file_name = os.path.join(sim_log_dir,
-                                        sim_data.sim_name + '_' + sim_data.portal_runid + '.eventlog')
+                                                  sim_data.sim_name + '_' + sim_data.portal_runid + '.eventlog')
         try:
-            sim_data.monitor_file = open(sim_data.monitor_file_name, 'w', 0)
-        except IOError, (errno, strerror):
+            sim_data.monitor_file = open(sim_data.monitor_file_name, 'wb', 0)
+        except IOError as oserr:
+            (errno, strerror) = oserr.args
             self.services.error("Error opening file %s: error(%s): %s" % \
                                 (sim_data.monitor_file_name, errno, strerror))
             self.services.error('Using /dev/null instead')
@@ -537,10 +542,10 @@ class PortalBridge(Component):
                 sim_data.mpo_wid = self.mpo.init(name="SWIM Workflow " + os.environ["USER"],
                                                  desc=sim_data.sim_name,
                                                  wtype="SWIM")
-                print "sim_data.mpo_wid = ", sim_data.mpo_wid
+                print("sim_data.mpo_wid = ", sim_data.mpo_wid)
             except Exception as e:
-                print e
-                print "sim_data.mpo_wid = ", sim_data.mpo_wid
+                print(e)
+                print("sim_data.mpo_wid = ", sim_data.mpo_wid)
                 sim_data.mpo_wid = None
                 pass
             else:

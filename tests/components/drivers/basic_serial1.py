@@ -40,7 +40,7 @@ class basic_serial1(Component):
 
         # should we do something different here?????  a try block?
         if(w1 == None or w2 == None or w3 == None):
-            print 'Error accessing physics components'
+            print('Error accessing physics components')
             raise Exception('Error accessing physics components')
 
         # ssf - get timeloop for simulation
@@ -54,7 +54,7 @@ class basic_serial1(Component):
 
         # ssf - iterate through the timeloop
         for t in tlist_str:
-            print 'Current time = ', t
+            print('Current time = ', t)
 
             # ssf - call step for each component
             services.call(w1,'step', t)
@@ -72,7 +72,7 @@ class basic_serial1(Component):
         return
 
     def process_event(self, topicName, theEvent):
-        print "Driver: processed ", (topicName, str(theEvent))
+        print("Driver: processed ", (topicName, str(theEvent)))
 
     def terminate(self, status):
         self.services.log('Really Calling terminate()')

@@ -1,19 +1,20 @@
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 # Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
-#-------------------------------------------------------------------------------
-import os,sys
+# -------------------------------------------------------------------------------
+import os, sys
 from component import Component
 from configobj import ConfigObj
 from multiprocessing.connection import Listener
 import select
 import time
 
+
 class Driver(Component):
 
     def __init__(self, services, config):
         Component.__init__(self, services, config)
         self.done = False
-        self.events_received=[]
+        self.events_received = []
         self.socket_address = ''
         self.log_file = None
         self.config_file = None
@@ -41,16 +42,14 @@ class Driver(Component):
         self.socket_address = os.environ['IPS_DAKOTA_SOCKET_ADDRESS']
         self.config_file = os.environ['IPS_DAKOTA_config']
 
-        override={}
+        override = {}
         """
         Master Config file
         """
         # parse file
         try:
-            self.old_master_conf=ConfigObj(self.config_file, interpolation='template', file_error=True)
-        except IOError, (ex):
-            raise
-        except SyntaxError, (ex):
+            self.old_master_conf = ConfigObj(self.config_file, interpolation='template', file_error=True)
+        except (IOError, SyntaxError) :
             raise
         self.sim_root = services.get_config_param('SIM_ROOT')
         self.sim_name = services.get_config_param('SIM_NAME')
@@ -59,16 +58,18 @@ class Driver(Component):
 
         sim_config_files = []
         idx = 0
-        print '%s  About to Create Listener %s' % (time.strftime("%b %d %Y %H:%M:%S", time.localtime()), str(self.socket_address))
+        print('%s  About to Create Listener %s' % (
+            time.strftime("%b %d %Y %H:%M:%S", time.localtime()), str(self.socket_address)))
         sys.stdout.flush()
         listener = Listener(str(self.socket_address), 'AF_UNIX')
         self.services.warning('Created listener %s', str(self.socket_address))
-        print '%s  Created Listener %s' % (time.strftime("%b %d %Y %H:%M:%S", time.localtime()), str(self.socket_address)), str(listener)
+        print('%s  Created Listener %s' % (
+            time.strftime("%b %d %Y %H:%M:%S", time.localtime()), str(self.socket_address)), str(listener))
         sys.stdout.flush()
         sim_cache = {}
         sock_fileno = listener._listener._socket.fileno()
         time_out = 0.5
-        #last_conn_time = -1
+        # last_conn_time = -1
         last_simend_time = time.time()
         first_sim = True
 
@@ -76,7 +77,7 @@ class Driver(Component):
         failed_connections = 0
         while True:
             (ready_r, ready_w, ready_x) = select.select([sock_fileno], [], [], time_out)
-            self.events_received=[]
+            self.events_received = []
             self.services.process_events()
             for event in self.events_received:
                 event_type = event['eventtype']
@@ -103,12 +104,13 @@ class Driver(Component):
                     continue
 
             conn = listener.accept()
-            #print '%s Accepted a new connection: ' % (time.strftime("%b %d %Y %H:%M:%S", time.localtime())), str (conn), dir(conn)
+            # print '%s Accepted a new connection: ' % (time.strftime("%b %d %Y %H:%M:%S", time.localtime())), str (conn), dir(conn)
 
             try:
                 msg = conn.recv()
             except Exception as inst:
-                print '%s EXCEPTION in conn.recv(): failed connections = ' % (time.strftime("%b %d %Y %H:%M:%S", time.localtime())), type(inst), str(inst)
+                print('%s EXCEPTION in conn.recv(): failed connections = ' % (
+                    time.strftime("%b %d %Y %H:%M:%S", time.localtime())), type(inst), str(inst))
                 if (failed_connections > 5):
                     raise
                 else:
@@ -121,16 +123,16 @@ class Driver(Component):
             except TypeError:
                 pass
             else:
-                response = {'SIMSTATUS':'ACK'}
+                response = {'SIMSTATUS': 'ACK'}
                 conn.send(response)
                 conn.close()
                 if status == 'START':
                     continue
                 else:
-                    print '%s ' % (time.strftime("%b %d %Y %H:%M:%S", time.localtime())),
-                    print 'Received status = '+status+', returning from dakota_bridge.'
+                    print('%s ' % (time.strftime("%b %d %Y %H:%M:%S", time.localtime())), end=' ')
+                    print('Received status = ' + status + ', returning from dakota_bridge.')
                     break
-            instance_id =  '%s_%04d' % (dakota_runid, idx)
+            instance_id = '%s_%04d' % (dakota_runid, idx)
             file_name = os.path.join(self.sim_root, 'simulation_%s.conf' % (instance_id))
 
             self.old_master_conf.filename = file_name
@@ -138,16 +140,17 @@ class Driver(Component):
             self.old_master_conf['SIM_NAME'] = self.sim_name + '_%s' % (instance_id)
             self.old_master_conf['LOG_FILE'] = self.sim_logfile + '_%s' % (instance_id)
             self.old_master_conf['OUT_REDIRECT'] = 'TRUE'
-            fname = "%s.out" %(self.old_master_conf['SIM_NAME'])
+            fname = "%s.out" % (self.old_master_conf['SIM_NAME'])
             fname = os.path.join(self.sim_root, fname)
             self.old_master_conf['OUT_REDIRECT_FNAME'] = fname
-            print 'Redirecting stdout for %s to %s ' % (self.old_master_conf['SIM_NAME'], fname)
+            print('Redirecting stdout for %s to %s ' % (self.old_master_conf['SIM_NAME'], fname))
             try:
                 os.makedirs(self.old_master_conf['SIM_ROOT'])
-            except OSError, (errno, strerror):
+            except OSError as oserr:
+                (errno, strerror) = oserr.args
                 if (errno != 17):
-                    print 'Error creating Simulation directory %s : %d %s' % \
-                            (self.old_master_conf['SIM_ROOT'], errno, strerror)
+                    print('Error creating Simulation directory %s : %d %s' % \
+                          (self.old_master_conf['SIM_ROOT'], errno, strerror))
                     raise
             if first_sim:
                 summary_file = open(os.path.join(self.sim_root, 'SIMULATION_LIST.%s' % (dakota_runid)), 'a', 1)
@@ -155,7 +158,7 @@ class Driver(Component):
             param_file = os.path.join(self.old_master_conf['SIM_ROOT'], 'parameters.conf')
             param_string = ''
             summary_string = 'simulation_%s    ' % (instance_id)
-            title_string =  'SIMULATION    '
+            title_string = 'SIMULATION    '
             for (comp, param, val) in msg:
                 if comp == '*':
                     self.old_master_conf[param] = val
@@ -163,15 +166,15 @@ class Driver(Component):
                     comp_conf = self.old_master_conf[comp]
                     comp_conf[param] = val
                 param_string += '%s  %s  %s\n' % (comp, param, val)
-                title_string += '%s:%s    '% (comp, param)
+                title_string += '%s:%s    ' % (comp, param)
                 summary_string += '%s    ' % (val)
             if first_sim:
-                summary_file.write("%s\n" %(title_string))
+                summary_file.write("%s\n" % (title_string))
                 first_sim = False
             summary_file.write('%s\n' % (summary_string))
             summary_file.flush()
             self.old_master_conf.write()
-            open(param_file,'w').write(param_string)
+            open(param_file, 'w').write(param_string)
             sim_config_files.append(file_name)
             sim_cache[self.old_master_conf['SIM_NAME']] = (self.old_master_conf['SIM_ROOT'], conn)
             self.services.create_simulation(file_name, override)
@@ -182,7 +185,7 @@ class Driver(Component):
             summary_file.close()
         return
 
-    def finalize(self, timestamp = 0):
+    def finalize(self, timestamp=0):
         # Driver finalize - nothing to be done
         pass
 

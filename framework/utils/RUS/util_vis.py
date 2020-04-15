@@ -7,7 +7,7 @@ import sys
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        print 'Format: util_viz.py <sim_log_file> [--save fmt]'
+        print('Format: util_viz.py <sim_log_file> [--save fmt]')
         sys.exit(1)
     fname = sys.argv[1]
     comp_names = []
@@ -20,12 +20,12 @@ if __name__ == "__main__":
         try:
             event, comment = event_text.rstrip().rsplit('#')
         except ValueError:
-            print event_text,  event_text.rstrip().rsplit('#')
+            print(event_text,  event_text.rstrip().rsplit('#'))
             continue
         try:
             (wall_time_s, sim, comp, state, util, d1, d2, d3) = event.split()
         except ValueError:
-            print event.split()
+            print(event.split())
         wall_time = float(wall_time_s)
         if (state == 'start_sim'):
             total_procs = int(d3) * 4
@@ -72,7 +72,7 @@ if __name__ == "__main__":
         for (what, comp, nproc) in event_list:
             comp_data = plot_data[comp]
             if (what == 'start'):
-                if (wall_time - 0.0001 not in comp_data.keys()):
+                if (wall_time - 0.0001 not in list(comp_data.keys())):
                     comp_data[wall_time - 0.0003] = cur_util[comp]
                     comp_data[wall_time - 0.0002] = cur_util[comp]
                     comp_data[wall_time - 0.0001] = cur_util[comp]
@@ -85,7 +85,7 @@ if __name__ == "__main__":
                 except:
                     pass
             elif (what == 'end'):
-                if (wall_time - 0.0001 not in comp_data.keys()):
+                if (wall_time - 0.0001 not in list(comp_data.keys())):
                     comp_data[wall_time - 0.0003] = cur_util[comp]
                     comp_data[wall_time - 0.0002] = 0
                     comp_data[wall_time - 0.0001] = 0
@@ -99,7 +99,7 @@ if __name__ == "__main__":
 
         for comp in comp_names_copy:
             comp_data = plot_data[comp]
-            if (wall_time - 0.0001 not in comp_data.keys()):
+            if (wall_time - 0.0001 not in list(comp_data.keys())):
                 comp_data[wall_time - 0.0003] = cur_util[comp]
                 comp_data[wall_time - 0.0002] = cur_util[comp]
                 comp_data[wall_time - 0.0001] = cur_util[comp]
@@ -108,19 +108,19 @@ if __name__ == "__main__":
     all_times = sorted(all_plot_times)
     comp_names_sorted = sorted(plot_data.keys())
     active_sims = {}
-    print '%-15s' % ('Wall Time'),
+    print('%-15s' % ('Wall Time'), end=' ')
     for comp in comp_names_sorted:
-        print '%-10s' % (comp),
-    print'%-10s' % ('Num_sims')
+        print('%-10s' % (comp), end=' ')
+    print('%-10s' % ('Num_sims'))
 
     for wall_time in all_times:
-        print '%-15.4f' % wall_time,
+        print('%-15.4f' % wall_time, end=' ')
         num_sims = 0
         for comp in comp_names_sorted:
             comp_data = plot_data[comp]
-            print '%-10d' % (comp_data[wall_time]),
+            print('%-10d' % (comp_data[wall_time]), end=' ')
             num_sims += comp_data[wall_time] /task_procs[comp]
-        print '%-10d' %  num_sims
+        print('%-10d' %  num_sims)
         active_sims[wall_time] = num_sims
 
     x = np.array(all_times)

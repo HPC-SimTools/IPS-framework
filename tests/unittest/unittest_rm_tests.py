@@ -44,7 +44,7 @@ class faux_fwk(object):
         try:
             self.current_logger.debug(*args)
         except:
-            print 'error in Framework.debug', args
+            print('error in Framework.debug', args)
             raise
 
 
@@ -71,7 +71,7 @@ class rmTestCase(unittest.TestCase):
         new_ppn = 4
         self.test_rm.addNodes(nodes_to_add, new_ppn)
         for n in nodes_to_add:
-            self.assert_(n in self.test_rm.availNodes,
+            self.assertTrue(n in self.test_rm.availNodes,
                             'unable to add node' + str(n))
         # add existing nodes
         # ... not sure how to test that it does not add duplicates
@@ -85,22 +85,22 @@ class rmTestCase(unittest.TestCase):
 
         # set existing node to UP
         self.test_rm.setNodeState(my_existing_node, 'UP')
-        self.assert_(self.test_rm.nodeTable[my_existing_node]['status'] == 'UP')
+        self.assertTrue(self.test_rm.nodeTable[my_existing_node]['status'] == 'UP')
 
         # set existing node to DOWN
         self.test_rm.setNodeState(my_existing_node, 'DOWN')
-        self.assert_(my_existing_node not in self.test_rm.nodeTable.keys())
+        self.assertTrue(my_existing_node not in list(self.test_rm.nodeTable.keys()))
 
         # set non-existing node to DOWN
         self.assertRaises(NonexistentResourceException, self.test_rm.setNodeState, my_nonexistent_node, 'DOWN')
 
         # set non-existing node to UP
         self.test_rm.setNodeState(my_nonexistent_node, 'UP')
-        self.assert_(self.test_rm.nodeTable[my_nonexistent_node]['status'] == 'UP')
+        self.assertTrue(self.test_rm.nodeTable[my_nonexistent_node]['status'] == 'UP')
 
         # set allocated node to UP
         self.test_rm.setNodeState(my_allocated_node, 'UP')
-        self.assert_(self.test_rm.nodeTable[my_allocated_node]['status'] == 'UP')
+        self.assertTrue(self.test_rm.nodeTable[my_allocated_node]['status'] == 'UP')
 
         # set allocated node to DOWN
         self.assertRaises(AllocatedNodeDownException, self.test_rm.setNodeState, my_allocated_node, 'DOWN')
@@ -108,14 +108,14 @@ class rmTestCase(unittest.TestCase):
     def test_allocate_node(self):
         # grab valid allocation
         tid1 = 639473
-        self.assert_(self.test_rm.get_allocation('test_comp', 5, tid1))
+        self.assertTrue(self.test_rm.get_allocation('test_comp', 5, tid1))
 
         # grab valid allocation that does not work at the moment
         tid2 = 639474
         self.assertRaises(InsufficientResourcesException, self.test_rm.get_allocation, 'test_comp', 6, tid2)
 
         # release valid allocation
-        self.assert_(self.test_rm.release_allocation(tid1))
+        self.assertTrue(self.test_rm.release_allocation(tid1))
 
         # grab invalid allocation
         self.assertRaises(BadResourceRequestException, self.test_rm.get_allocation, 'test_comp', 20, 3049753)

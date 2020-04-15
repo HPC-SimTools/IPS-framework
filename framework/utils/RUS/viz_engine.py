@@ -172,11 +172,11 @@ class trial:
 
 
     def print_me(self, f):
-        print >> f, '   Total time (hrs)   %.2f | Cost (CPU hours)  %.2f | Node Failures  %.2f | Faults  %.2f' % (self.total_time / 3600, self.cost / 3600, self.node_failures, self.fault_n)
-        print >> f, '           |  work  |  rework  |  ckpt  |  restart  |  relaunch  |  resubmit  |  overhead '
-        print >> f, '   time    |  %.2f |  %.2f |  %.2f |  %.2f |  %.2f |  %.2f  |  %.2f' % (self.work_t / 3600, self.rework_t / 3600, self.ckpt_t / 3600, self.restart_t / 3600 , self.launch_delay_t / 3600,  self.resubmit_t / 3600, self.overhead_t / 3600 )
-        print >> f, '   percent |  %.2f |  %.2f |  %.2f |  %.2f |  %.2f |  %.2f  |  %.2f' % ( self.work_p, self.rework_p, self.ckpt_p, self.restart_p, self.launch_delay_p, self.resubmit_p, self.overhead_p )
-        print >> f, '   number  |   ---  |   ---   |  %.2f  |  %.2f  |  %.2f  |  %.2f  |  ---  ' % (self.ckpt_n, self.restart_n, self.relaunch_n, self.resubmit_n)
+        print('   Total time (hrs)   %.2f | Cost (CPU hours)  %.2f | Node Failures  %.2f | Faults  %.2f' % (self.total_time / 3600, self.cost / 3600, self.node_failures, self.fault_n), file=f)
+        print('           |  work  |  rework  |  ckpt  |  restart  |  relaunch  |  resubmit  |  overhead ', file=f)
+        print('   time    |  %.2f |  %.2f |  %.2f |  %.2f |  %.2f |  %.2f  |  %.2f' % (self.work_t / 3600, self.rework_t / 3600, self.ckpt_t / 3600, self.restart_t / 3600 , self.launch_delay_t / 3600,  self.resubmit_t / 3600, self.overhead_t / 3600 ), file=f)
+        print('   percent |  %.2f |  %.2f |  %.2f |  %.2f |  %.2f |  %.2f  |  %.2f' % ( self.work_p, self.rework_p, self.ckpt_p, self.restart_p, self.launch_delay_p, self.resubmit_p, self.overhead_p ), file=f)
+        print('   number  |   ---  |   ---   |  %.2f  |  %.2f  |  %.2f  |  %.2f  |  ---  ' % (self.ckpt_n, self.restart_n, self.relaunch_n, self.resubmit_n), file=f)
 
 
 
@@ -253,7 +253,7 @@ def produce_stats():
     # - generate data
     #------------------------------------------
     #print >> outfile, '\n\nBreakdown by ft strategy (sorted by time)'
-    for k,v in modes.items():
+    for k,v in list(modes.items()):
         succeeded.update({k:0})
         failed.update({k:0})
         v['savg'] = trial(0)
@@ -297,7 +297,7 @@ def produce_stats():
     avg_rsn = {}
     avg_rbn = {}
     # break down by allocation size
-    for k,v in nodes.items():
+    for k,v in list(nodes.items()):
         succeeded.update({k:0})
         failed.update({k:0})
         s = []
@@ -353,8 +353,8 @@ def produce_stats():
     #------------------------------------------
     # - chart prep
     #------------------------------------------
-    print >> outfile, "\t\t| % successful | cost of success | total time | work time | rework time | ckpt time | restart time | launch delay | resubmit time | overhead time | resubmissions"
-    print >> outfile, "========================================================================================================================================================"
+    print("\t\t| % successful | cost of success | total time | work time | rework time | ckpt time | restart time | launch delay | resubmit time | overhead time | resubmissions", file=outfile)
+    print("========================================================================================================================================================", file=outfile)
 
     tt = {258:{}, 261:{}, 268:{}, 281:{}}
     wt = {258:{}, 261:{}, 268:{}, 281:{}}
@@ -382,7 +382,7 @@ def produce_stats():
     work_cost = 2170 * 1024 * 1000  # cost in seconds of work time
 
     for d in [tt, wt, rwt, ct, rst, rlt, rbt, ot, ns, nsb, cos, tt0, wt0, rwt0, ct0, rst0, rlt0, rbt0, ot0, ns0, cos0]:
-        for k2,v in d.items():
+        for k2,v in list(d.items()):
             for k in key_order:
                 v.update({k:0})
 
@@ -435,87 +435,87 @@ def produce_stats():
                 rbt0[k2][k] = (rbt0[k2][k] / ns0[k2][k]) / 3600
                 ot0[k2][k] = (ot0[k2][k] / ns0[k2][k]) / 3600
 
-            print >> outfile, k, '(%d)' % k2, '\t|%13.2f' % ((ns[k2][k] / 100.0) * 100),
-            print >> outfile, '|%18.2f' % cos[k2][k],
-            print >> outfile, '|%11.2f' % tt[k2][k],
-            print >> outfile, '|%10.2f' % wt[k2][k],
-            print >> outfile, '|%12.2f' % rwt[k2][k],
-            print >> outfile, '|%10.2f' % ct[k2][k],
-            print >> outfile, '|%13.2f' % rst[k2][k],
-            print >> outfile, '|%13.2f' % rlt[k2][k],
-            print >> outfile, '|%14.2f' % rbt[k2][k],
-            print >> outfile, '|%11.2f' % ot[k2][k],
-            print >> outfile, '|%11.4f' % nsb[k2][k]
+            print(k, '(%d)' % k2, '\t|%13.2f' % ((ns[k2][k] / 100.0) * 100), end=' ', file=outfile)
+            print('|%18.2f' % cos[k2][k], end=' ', file=outfile)
+            print('|%11.2f' % tt[k2][k], end=' ', file=outfile)
+            print('|%10.2f' % wt[k2][k], end=' ', file=outfile)
+            print('|%12.2f' % rwt[k2][k], end=' ', file=outfile)
+            print('|%10.2f' % ct[k2][k], end=' ', file=outfile)
+            print('|%13.2f' % rst[k2][k], end=' ', file=outfile)
+            print('|%13.2f' % rlt[k2][k], end=' ', file=outfile)
+            print('|%14.2f' % rbt[k2][k], end=' ', file=outfile)
+            print('|%11.2f' % ot[k2][k], end=' ', file=outfile)
+            print('|%11.4f' % nsb[k2][k], file=outfile)
             #print >> outfile, ' '
-            print >> outfile, k, '(%d)' % k2, '\t|%13.2f' % ((ns0[k2][k] / 100.0) * 100),
-            print >> outfile, '|%18.2f' % cos0[k2][k],
-            print >> outfile, '|%11.2f' % tt0[k2][k],
-            print >> outfile, '|%10.2f' % wt0[k2][k],
-            print >> outfile, '|%12.2f' % rwt0[k2][k],
-            print >> outfile, '|%10.2f' % ct0[k2][k],
-            print >> outfile, '|%13.2f' % rst0[k2][k],
-            print >> outfile, '|%13.2f' % rlt0[k2][k],
-            print >> outfile, '|%14.2f' % rbt0[k2][k],
-            print >> outfile, '|%11.2f' % ot0[k2][k],
-            print >> outfile, '|%11.4f' % 0
+            print(k, '(%d)' % k2, '\t|%13.2f' % ((ns0[k2][k] / 100.0) * 100), end=' ', file=outfile)
+            print('|%18.2f' % cos0[k2][k], end=' ', file=outfile)
+            print('|%11.2f' % tt0[k2][k], end=' ', file=outfile)
+            print('|%10.2f' % wt0[k2][k], end=' ', file=outfile)
+            print('|%12.2f' % rwt0[k2][k], end=' ', file=outfile)
+            print('|%10.2f' % ct0[k2][k], end=' ', file=outfile)
+            print('|%13.2f' % rst0[k2][k], end=' ', file=outfile)
+            print('|%13.2f' % rlt0[k2][k], end=' ', file=outfile)
+            print('|%14.2f' % rbt0[k2][k], end=' ', file=outfile)
+            print('|%11.2f' % ot0[k2][k], end=' ', file=outfile)
+            print('|%11.4f' % 0, file=outfile)
 
-        print >> outfile, "-------------------------------------------------------------------------------------------------------------------------------------------------------------"
+        print("-------------------------------------------------------------------------------------------------------------------------------------------------------------", file=outfile)
 
     #------------------------------------------
     # - summarize by allocation size
     #------------------------------------------
-    print >> outfile, '\nAllocation size summary'
-    print >> outfile, 'Nodes | Success / Failures | Avg Time | Avg Cost | Avg Failures | Avg Faults | % Work | Avg relaunch | Avg Restart | Avg Resubmit'
-    for k,v in sorted(avg_tt.items(), key = lambda m: m[0]):
-        print >> outfile, k, ':  ', succeeded[k], '/', failed[k],
-        print >> outfile, '  |  %.2f -- %.2f' % (avg_tt[k][0] / 3600, avg_tt[k][1] / 3600),
-        print >> outfile, '  |  %.2f -- %.2f' % (avg_cost[k][0] / 3600, avg_cost[k][1] / 3600),
-        print >> outfile, '  |  %.2f -- %.2f' % avg_nf[k],
-        print >> outfile, '  |  %.2f -- %.2f' % avg_fn[k],
-        print >> outfile, '  |  %.2f -- %.2f' % avg_wp[k],
-        print >> outfile, '  |  %.2f -- %.2f' % avg_rln[k],
-        print >> outfile, '  |  %.2f -- %.2f' % avg_rsn[k],
-        print >> outfile, '  |  %.2f -- %.2f' % avg_rbn[k]
+    print('\nAllocation size summary', file=outfile)
+    print('Nodes | Success / Failures | Avg Time | Avg Cost | Avg Failures | Avg Faults | % Work | Avg relaunch | Avg Restart | Avg Resubmit', file=outfile)
+    for k,v in sorted(list(avg_tt.items()), key = lambda m: m[0]):
+        print(k, ':  ', succeeded[k], '/', failed[k], end=' ', file=outfile)
+        print('  |  %.2f -- %.2f' % (avg_tt[k][0] / 3600, avg_tt[k][1] / 3600), end=' ', file=outfile)
+        print('  |  %.2f -- %.2f' % (avg_cost[k][0] / 3600, avg_cost[k][1] / 3600), end=' ', file=outfile)
+        print('  |  %.2f -- %.2f' % avg_nf[k], end=' ', file=outfile)
+        print('  |  %.2f -- %.2f' % avg_fn[k], end=' ', file=outfile)
+        print('  |  %.2f -- %.2f' % avg_wp[k], end=' ', file=outfile)
+        print('  |  %.2f -- %.2f' % avg_rln[k], end=' ', file=outfile)
+        print('  |  %.2f -- %.2f' % avg_rsn[k], end=' ', file=outfile)
+        print('  |  %.2f -- %.2f' % avg_rbn[k], file=outfile)
 
 
 
     #------------------------------------------
     # - summarize by policy
     #------------------------------------------
-    print >> outfile, '\nFT Policy summary'
+    print('\nFT Policy summary', file=outfile)
     for k,v in sorted (modes.items()):
-        print >> outfile, k, ':  ', succeeded[k], '/', failed[k],
-        print >> outfile, '  |  %.2f -- %.2f' % (v['savg'].total_time / 3600, v['favg'].total_time / 3600),
-        print >> outfile, '  |  %.2f -- %.2f' % (v['savg'].cost / 3600, v['favg'].cost / 3600),
-        print >> outfile, '  |  %.2f -- %.2f' % (v['savg'].node_failures, v['favg'].node_failures),
-        print >> outfile, '  |  %.2f -- %.2f' % (v['savg'].fault_n, v['favg'].fault_n),
-        print >> outfile, '  |  %.2f -- %.2f' % (v['savg'].work_p, v['favg'].work_p),
-        print >> outfile, '  |  %.2f -- %.2f' % (v['savg'].relaunch_n, v['favg'].relaunch_n),
-        print >> outfile, '  |  %.2f -- %.2f' % (v['savg'].restart_n, v['favg'].restart_n),
-        print >> outfile, '  |  %.2f -- %.2f' % (v['savg'].resubmit_n, v['favg'].resubmit_n)
+        print(k, ':  ', succeeded[k], '/', failed[k], end=' ', file=outfile)
+        print('  |  %.2f -- %.2f' % (v['savg'].total_time / 3600, v['favg'].total_time / 3600), end=' ', file=outfile)
+        print('  |  %.2f -- %.2f' % (v['savg'].cost / 3600, v['favg'].cost / 3600), end=' ', file=outfile)
+        print('  |  %.2f -- %.2f' % (v['savg'].node_failures, v['favg'].node_failures), end=' ', file=outfile)
+        print('  |  %.2f -- %.2f' % (v['savg'].fault_n, v['favg'].fault_n), end=' ', file=outfile)
+        print('  |  %.2f -- %.2f' % (v['savg'].work_p, v['favg'].work_p), end=' ', file=outfile)
+        print('  |  %.2f -- %.2f' % (v['savg'].relaunch_n, v['favg'].relaunch_n), end=' ', file=outfile)
+        print('  |  %.2f -- %.2f' % (v['savg'].restart_n, v['favg'].restart_n), end=' ', file=outfile)
+        print('  |  %.2f -- %.2f' % (v['savg'].resubmit_n, v['favg'].resubmit_n), file=outfile)
 
     #------------------------------------------
     # - policy details
     #------------------------------------------
-    print >> outfile, '\nFT Policy Details'
-    for k,v in modes.items():
-        print >> outfile, '\n------\nPolicy: %s -- succeeded %d / failed %d' % (policy[k], succeeded[k], failed[k])
-        print >> outfile, ' Successful Average:'
+    print('\nFT Policy Details', file=outfile)
+    for k,v in list(modes.items()):
+        print('\n------\nPolicy: %s -- succeeded %d / failed %d' % (policy[k], succeeded[k], failed[k]), file=outfile)
+        print(' Successful Average:', file=outfile)
         v['savg'].print_me(outfile)
-        print >> outfile, ' Successful Maximum:'
+        print(' Successful Maximum:', file=outfile)
         v['smax'].print_me(outfile)
-        print >> outfile, ' Successful Minimum:'
+        print(' Successful Minimum:', file=outfile)
         v['smin'].print_me(outfile)
-        print >> outfile, ' Successful Stddev:'
+        print(' Successful Stddev:', file=outfile)
         v['sstddev'].print_me(outfile)
 
-        print >> outfile, '\n Failed Average:'
+        print('\n Failed Average:', file=outfile)
         v['favg'].print_me(outfile)
-        print >> outfile, ' Failed Maximum:'
+        print(' Failed Maximum:', file=outfile)
         v['fmax'].print_me(outfile)
-        print >> outfile, ' Failed Minimum:'
+        print(' Failed Minimum:', file=outfile)
         v['fmin'].print_me(outfile)
-        print >> outfile, ' Failed Stddev:'
+        print(' Failed Stddev:', file=outfile)
         v['fstddev'].print_me(outfile)
 
     outfile.close()
@@ -593,11 +593,11 @@ def produce_stats():
     width = 4.0
     # none, restart, trncr, simcr39, simcr19, simcr10, simcr5, simcr2, trwcr39, trwcr19, trwcr10, trwcr5, trwcr2
     new_ind = [1, 6, 11, 16, 20, 24, 28, 32, 37, 41, 45, 49, 53]
-    print new_ind
-    print all_tt
+    print(new_ind)
+    print(all_tt)
     da_bars = []
     my_colors = ['k', 'y', 'b', 'g', 'g', 'g', 'g', 'g', 'm', 'm', 'm', 'm', 'm']
-    for i in xrange(len(all_tt)):
+    for i in range(len(all_tt)):
         da_bars.append(plt.bar(new_ind[i], all_tt[i], width, color = my_colors[i]))
     #p8 = plt.bar(new_ind, all_tt, width, color='b')
     plt.ylabel('Time in Hours')

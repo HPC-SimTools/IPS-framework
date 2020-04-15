@@ -21,7 +21,7 @@ def catch_and_go(func_to_decorate):
         except Exception as e:
             #print '#################', object.__class__.__name__, func_to_decorate.__name__
             object.services.exception ("Exception in call to %s:%s" % (object.__class__.__name__, func_to_decorate.__name__))
-            print e
+            print(e)
             # object.services.exception("Caught exception during component pre-initialization")
 #            raise
     return new_func
@@ -39,7 +39,7 @@ class runspaceInitComponent(Component):
         :py:class:`component.Component` object.
         """
         Component.__init__(self, services, config)
-        print 'Created %s' % (self.__class__)
+        print('Created %s' % (self.__class__))
 
 
     @catch_and_go
@@ -48,7 +48,7 @@ class runspaceInitComponent(Component):
         Creates base directory, copies IPS and FacetsComposer input files.
         """
 
-        print 'runspaceInitComponent.init() called'
+        print('runspaceInitComponent.init() called')
 
         services = self.services
 
@@ -59,7 +59,7 @@ class runspaceInitComponent(Component):
 
         try:
             os.chdir(self.cwd)
-        except OSError, (errno, strerror):
+        except OSError:
             self.services.debug('Working directory %s does not exist - this is impossibile',
                               self.cwd)
             raise
@@ -71,10 +71,11 @@ class runspaceInitComponent(Component):
         # try making the simulation root directory
         try:
             os.makedirs(self.simRootDir)
-        except OSError, (errno, strerror):
+        except OSError as oserr:
+            (errno, strerror) = oserr.args
             if (errno != 17):
                 self.services.exception('Error creating directory %s : %s' ,
-                                        workdir, strerror)
+                                        self.simRootDir, strerror)
 
         self.config_files = services.fwk.config_file_list
         self.platform_file = services.fwk.platform_file_name
@@ -112,7 +113,7 @@ class runspaceInitComponent(Component):
         #Remove existing container file in case we are restarting an old simulation in the same directory
         try:
             os.remove(self.container_file)
-        except OSError , e:
+        except OSError as e:
             if e.errno != 2:
                 raise
 
@@ -120,7 +121,7 @@ class runspaceInitComponent(Component):
         ipsutil.writeToContainer(self.container_file, self.plat_file_loc, self.platform_file)
 
         # for each component_id in the list of components
-        for sim_name, comp_list in sim_comps.items():
+        for sim_name, comp_list in list(sim_comps.items()):
             for comp_id in comp_list:
                 registry = services.fwk.comp_registry
                 comp_conf = registry.getEntry(comp_id).component_ref.config
@@ -165,7 +166,7 @@ class runspaceInitComponent(Component):
         """
         Placeholder for future validation step of runspace management.
         """
-        print 'runspaceInitComponent.validate() called'
+        print('runspaceInitComponent.validate() called')
         return
 
     @catch_and_go
@@ -174,7 +175,7 @@ class runspaceInitComponent(Component):
         Copies individual subcomponent input files into working subdirectories.
         """
 
-        print 'runspaceInitComponent.step() called'
+        print('runspaceInitComponent.step() called')
 
         services = self.services
 
@@ -187,13 +188,14 @@ class runspaceInitComponent(Component):
         # make the simulation_setup directory for scripts
         try:
             os.makedirs(simulation_setup)
-        except OSError, (errno, strerror):
+        except OSError as oserr:
+            (errno, strerror) = oserr.args
             if (errno != 17):
                 self.services.exception('Error creating directory %s : %s' ,
-                        workdir, strerror)
+                        simulation_setup, strerror)
 
         # for each simulation component
-        for sim_name, comp_list in sim_comps.items():
+        for sim_name, comp_list in list(sim_comps.items()):
             # for each component_id in the list of components
             for comp_id in comp_list:
                 # build the work directory name
@@ -211,7 +213,8 @@ class runspaceInitComponent(Component):
                 # make the working directory
                 try:
                     os.makedirs(workdir)
-                except OSError, (errno, strerror):
+                except OSError as oserr:
+                    (errno, strerror) = oserr.args
                     if (errno != 17):
                         self.services.exception('Error creating directory %s : %s' ,
                                                 workdir, strerror)
@@ -224,16 +227,16 @@ class runspaceInitComponent(Component):
                                   comp_conf['INPUT_FILES'],
                                   workdir)
                 except Exception:
-                    print 'Error copying input files for initialization'
+                    print('Error copying input files for initialization')
                     raise
 
 
 
                 # This is a bit tricky because we want to look either in the same
                 # place as the input files or the data_tree root
-                if comp_conf.has_key('DATA_FILES'):
+                if 'DATA_FILES' in comp_conf:
                     filesCopied=False
-                    if comp_conf.has_key('DATA_TREE_ROOT'):
+                    if 'DATA_TREE_ROOT' in comp_conf:
                         dtrdir=os.path.abspath(comp_conf['DATA_TREE_ROOT'])
                         if os.path.exists(os.path.join(dtrdir,comp_conf['DATA_FILES'][0])):
                             ipsutil.copyFiles(dtrdir,os.path.basename(comp_conf['DATA_FILES']),
@@ -261,7 +264,8 @@ class runspaceInitComponent(Component):
             # create the working directory for this component
             try:
                 os.makedirs(workdir)
-            except OSError, (errno, strerror):
+            except OSError as oserr:
+                (errno, strerror) = oserr.args
                 if (errno != 17):
                     self.services.exception('Error creating directory %s : %s' ,
                                             workdir, strerror)
@@ -276,7 +280,7 @@ class runspaceInitComponent(Component):
         """
         Placeholder
         """
-        print 'runspaceInitComponent.checkpoint() called'
+        print('runspaceInitComponent.checkpoint() called')
 
         # save restart files
         # services = self.services
@@ -289,7 +293,7 @@ class runspaceInitComponent(Component):
         """
         Writes final log_file and resource_usage file to the container and closes
         """
-        print 'runspaceInitComponent.finalize() called'
+        print('runspaceInitComponent.finalize() called')
 
 #       print self.main_log_file
 #       print self.simRootDir

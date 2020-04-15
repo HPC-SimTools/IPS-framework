@@ -31,13 +31,13 @@ def get_status(checklist_file):
         elif conf['RUN'] == 'NOT_DONE':
             ips_status['RUN'] = False
 
-    except IOError, ioe:
-        print 'Checklist config file "%s" could not be found, continuing without.' % checklist_file
-    except SyntaxError, (ex):
-        print 'Error parsing config file: %s' % checklist_file
+    except IOError as ioe:
+        print('Checklist config file "%s" could not be found, continuing without.' % checklist_file)
+    except SyntaxError:
+        print('Error parsing config file: %s' % checklist_file)
         raise
-    except Exception, e:
-        print 'encountered exception during fwk.run() checklist configuration'
+    except Exception as e:
+        print('encountered exception during fwk.run() checklist configuration')
     finally:
         f = open(checklist_file, 'w')
         conf = ConfigObj(checklist_file, interpolation = 'template', file_error = True)
@@ -54,15 +54,15 @@ def update(checklist_file,ips_status):
 
     try:
         conf = ConfigObj(checklist_file, interpolation = 'template', file_error = True)
-    except IOError, ioe:
+    except IOError as ioe:
         #SEK: Remove because for the create_runspace it is not there?
         #print 'Checklist config file "%s" could not be found, continuing without.' % checklist_file
         return '', ips_status
-    except SyntaxError, (ex):
+    except SyntaxError :
         errmsg='Error parsing config file: ' + checklist_file
         return errmsg, ips_status
-    except Exception, e:
-        print e
+    except Exception as e:
+        print(e)
         return 'encountered exception during fwk.run() checklist status', ips_status
     # Make it general to be able to take fullpath or relative path
     for step in ['CREATE_RUNSPACE','RUN_SETUP','RUN']:
@@ -70,7 +70,7 @@ def update(checklist_file,ips_status):
             conf[step] = 'DONE'
         else:
             conf[step] = 'NOT_DONE'
-        print step + ' = ' + conf[step]
+        print(step + ' = ' + conf[step])
     conf.write()
 
     return

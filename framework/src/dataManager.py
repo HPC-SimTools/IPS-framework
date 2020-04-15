@@ -67,7 +67,7 @@ class DataManager(object):
         target_dir = msg.args[2]
         try:
             ipsutil.copyFiles(source_dir, state_files, target_dir)
-        except Exception, e:
+        except Exception as e:
             self.fwk.exception('Error staging plasma state files to directory %s',
                                target_dir)
             raise
@@ -89,7 +89,7 @@ class DataManager(object):
         target_dir = msg.args[2]
         try:
             ipsutil.copyFiles(source_dir, state_files, target_dir)
-        except Exception, e:
+        except Exception as e:
             self.fwk.exception( 'Error updating state files from directory %s',
                                 source_dir)
             raise
@@ -140,7 +140,7 @@ class DataManager(object):
             return retval
         try:
             ipsutil.copyFiles(plasma_work_dir, current_plasma_state, component_work_dir)
-        except Exception, e:
+        except Exception as e:
             self.fwk.exception( 'Error refreshing local copy of current plasma state file in directory %s',
                                 component_work_dir)
             raise

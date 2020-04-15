@@ -77,7 +77,7 @@ class TopicManager(object):
         event list in accordance with the policy that listeners receive only those
         events that are published _after_ they have registered.
         """
-        if not self.listenerDirectory.has_key(listenerid):
+        if listenerid not in self.listenerDirectory:
             self.listenerDirectory[listenerid] = len(self.eventList)
             debug.output("TopicManager.registerListener")
             self.printEventsAndListeners()
@@ -102,7 +102,7 @@ class TopicManager(object):
         """
         if oldestPendingEvent > 0:
             del self.eventList[:oldestPendingEvent]
-            for listenerid in self.listenerDirectory.keys():
+            for listenerid in list(self.listenerDirectory.keys()):
                 self.listenerDirectory[listenerid] -= oldestPendingEvent
 
 
@@ -161,11 +161,11 @@ if __name__ == "__main__":
     em.registerListener(1)
     em.registerListener(2)
 
-    print "-----"
+    print("-----")
     el = em.getEventListForListener(1)
     for theEvent in el:
-        print "1:" + str(theEvent)
-    print "-----\n"
+        print("1:" + str(theEvent))
+    print("-----\n")
 
     h0 = {}
     h0[0] = 0
@@ -179,18 +179,18 @@ if __name__ == "__main__":
     b1["one"] = "one"
     em.sendEvent(Event(h1,b1))
 
-    print "-----"
+    print("-----")
     el = em.getEventListForListener(1)
     for theEvent in el:
-        print "1:" + str(theEvent)
-    print "-----\n"
+        print("1:" + str(theEvent))
+    print("-----\n")
 
     em.unregisterListener(1)
 
-    print "-----"
+    print("-----")
     el = em.getEventListForListener(2)
     for theEvent in el:
-        print "2:" + str(theEvent)
-    print "-----\n"
+        print("2:" + str(theEvent))
+    print("-----\n")
 
     em.unregisterListener(2)

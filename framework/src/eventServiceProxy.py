@@ -61,8 +61,8 @@ class EventServiceFwkProxy(EventServiceProxy):
 
     def processEvents(self,subscriberid):
         eventList = self.event_service.processEvents(subscriberid)
-        for listenerid in eventList.keys():
-            for topicName in eventList[listenerid].keys():
+        for listenerid in list(eventList.keys()):
+            for topicName in list(eventList[listenerid].keys()):
                 for theEvent in eventList[listenerid][topicName]:
                     self.listenerDirectory[listenerid].processEvent(topicName,theEvent)
 
@@ -86,11 +86,11 @@ class EventServiceFwkProxy(EventServiceProxy):
             self._removeEventListener(listenerid)
 
     def _addEventListener(self,listenerid,refListener):
-        if not self.listenerDirectory.has_key(listenerid):
+        if listenerid not in self.listenerDirectory:
             self.listenerDirectory[listenerid] = refListener
 
     def _removeEventListener(self,listenerid):
-        if self.listenerDirectory.has_key(listenerid):
+        if listenerid in self.listenerDirectory:
             del self.listenerDirectory[listenerid]
 
     #TODO: To be deleted#
@@ -135,8 +135,8 @@ class EventServiceCmpProxy(EventServiceProxy):
         msg_id = self.service_proxy._invoke_service(self.service_proxy.fwk.component_id,
                                 'processEvents', subscriberid)
         eventList = self.service_proxy._get_service_response(msg_id, True)
-        for listenerid in eventList.keys():
-            for topicName in eventList[listenerid].keys():
+        for listenerid in list(eventList.keys()):
+            for topicName in list(eventList[listenerid].keys()):
                 for theEvent in eventList[listenerid][topicName]:
                     self.listenerDirectory[listenerid].processEvent(topicName,theEvent)
 
@@ -170,11 +170,11 @@ class EventServiceCmpProxy(EventServiceProxy):
             self._removeEventListener(listenerid)
 
     def _addEventListener(self,listenerid,refListener):
-        if not self.listenerDirectory.has_key(listenerid):
+        if listenerid not in self.listenerDirectory:
             self.listenerDirectory[listenerid] = refListener
 
     def _removeEventListener(self,listenerid):
-        if self.listenerDirectory.has_key(listenerid):
+        if listenerid in self.listenerDirectory:
             del self.listenerDirectory[listenerid]
 
     #TODO: To be deleted#

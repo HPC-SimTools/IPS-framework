@@ -50,13 +50,15 @@ class resource_mgr():
         #=======================================================================
         try:
             resources = ConfigObj(res_file, file_error=True, interpolation='template')
-        except IOError, (ex):
-            print 'Error opening/finding resource file %s' % res_file
-            print 'ConfigObj error message: ', ex
+        except IOError as xxx_todo_changeme:
+            (ex) = xxx_todo_changeme
+            print('Error opening/finding resource file %s' % res_file)
+            print('ConfigObj error message: ', ex)
             raise
-        except SyntaxError, (ex):
-            print 'Syntax problem in resource file %s' % res_file
-            print 'ConfigObj error message: ', ex
+        except SyntaxError as xxx_todo_changeme1:
+            (ex) = xxx_todo_changeme1
+            print('Syntax problem in resource file %s' % res_file)
+            print('ConfigObj error message: ', ex)
             raise
         #print resources
 
@@ -73,7 +75,7 @@ class resource_mgr():
             self.available.update({'nodes':self.nodes})
             self.allocated.update({'nodes':0})
         except:
-            print "problems populating resource information into data structures"
+            print("problems populating resource information into data structures")
             raise
 
         try:
@@ -85,7 +87,7 @@ class resource_mgr():
             self.fwk.distribution = resources['distribution']
             #print self.fwk.distribution
         except:
-            print 'no dist specified'
+            print('no dist specified')
             self.fwk.distribution = ''
 
         if self.fwk.distribution == 'weibull':
@@ -99,9 +101,9 @@ class resource_mgr():
         Simulate a new batch allocation by resetting the node count and availability.
         """
         if self.allocated['nodes'] > 0:
-            print "!!!!!!!!!!!!!! some nodes occupied when it is time to resubmit"
+            print("!!!!!!!!!!!!!! some nodes occupied when it is time to resubmit")
             for c, n in self.active:
-                print c.name, n
+                print(c.name, n)
         self.nodes = self.fwk.allocation_size
         self.available['nodes'] = self.nodes
         self.allocated['nodes'] = 0
@@ -131,11 +133,11 @@ class resource_mgr():
         removes a node from the allocation and returns the task that must die
         """
         if not self.fwk.failures_on:
-            print "tried to make stuff fail :("
+            print("tried to make stuff fail :(")
             return -1
         task_to_die = self.get_failed_task()
         if self.fwk.debug and task_to_die:
-            print "task to die:", task_to_die.name
+            print("task to die:", task_to_die.name)
         if task_to_die:
             #===================================================================
             # # there is a task using the node
@@ -172,11 +174,11 @@ class resource_mgr():
             return item
 
         except:
-            print 'problem getting failed task'
-            print self.nodes
-            print self.allocated['nodes']
-            print self.available['nodes']
-            print 'more info in', self.fwk.rlfname
+            print('problem getting failed task')
+            print(self.nodes)
+            print(self.allocated['nodes'])
+            print(self.available['nodes'])
+            print('more info in', self.fwk.rlfname)
             raise
 
     def release_allocation(self, comp, nodes, failed=False):
@@ -189,7 +191,7 @@ class resource_mgr():
         self.available['nodes'] = self.available['nodes'] + nodes
         self.allocated['nodes'] = self.allocated['nodes'] - nodes
         if self.available['nodes'] < 0:
-            print 'impossible situation!!! negative available nodes'
+            print('impossible situation!!! negative available nodes')
             raise
 
 

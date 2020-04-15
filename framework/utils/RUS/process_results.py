@@ -24,18 +24,18 @@ def shift_values(fname):
     c2 = []
     for i in range(len(lines)):
         x = lines[i].split()
-        print x
+        print(x)
         c1.append(int(x[0]))
         c2.append(float(x[1]))
 
-    print c1
+    print(c1)
 
     for i in range(len(lines) - 1):
         c1[i] = c1[i+1]
 
     f = open("rwfile." + experiment, 'w')
     for i in range(len(c1)):
-        print >> f, c1[i], c2[i]
+        print(c1[i], c2[i], file=f)
 
     f.close()
 
@@ -49,5 +49,5 @@ if __name__ == "__main__":
             matplotlib.pyplot.plotfile(arg,(0,1),  newfig = True)
             #subprocess.call(["rm", "rwfile."+experiment])
         except:
-            print "problem processing data for %s" % arg
+            print("problem processing data for %s" % arg)
             raise

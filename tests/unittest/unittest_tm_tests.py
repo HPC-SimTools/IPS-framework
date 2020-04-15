@@ -52,7 +52,7 @@ class faux_fwk(object):
         try:
             self.current_logger.debug(*args)
         except:
-            print 'error in Framework.debug', args
+            print('error in Framework.debug', args)
             raise
 
 
@@ -138,11 +138,11 @@ class tmTestCase(unittest.TestCase):
                                                        'step', None)              # method, args
         try:
             call_id = test_tm.init_call(init_call_msg)
-        except Exception, e:
+        except Exception as e:
             self.fail(e.__str__())
         #print call_id
         #print self.test_tm.outstanding_calls
-        print test_tm.comp_registry.my_comps['compA'].qsize()
+        print(test_tm.comp_registry.my_comps['compA'].qsize())
         self.assertTrue(test_tm.outstanding_calls[call_id] == ('driver', None))
         self.assertTrue(test_tm.comp_registry.my_comps['compA'].qsize() == 1)
 
@@ -169,19 +169,19 @@ class tmTestCase(unittest.TestCase):
                                                        'step', 'sleep(0)')              # method, args
         try:
             call_id = test_tm.init_call(init_call_msg)
-        except Exception, e:
-            print e
+        except Exception as e:
+            print(e)
             self.fail()
         #print call_id
         #print self.test_tm.outstanding_calls
-        print test_tm.comp_registry.my_comps['compA'].qsize()
+        print(test_tm.comp_registry.my_comps['compA'].qsize())
         self.assertTrue(test_tm.outstanding_calls[call_id] == ('driver', None))
         self.assertTrue(test_tm.comp_registry.my_comps['compA'].qsize() == 1)
 
         # simulate component actions and task launch
         m = test_tm.comp_registry.my_comps['compA'].get()
         # invoke message contains: fwk compID (sender), callee ID (recvr), method, args
-        print m
+        print(m)
         #----------------------------------------
         #   call completed and successful
         #----------------------------------------
@@ -206,13 +206,13 @@ class tmTestCase(unittest.TestCase):
                                                            call_id,
                                                            messages.Message.SUCCESS,
                                                            5)
-        print 'made messages'
+        print('made messages')
         test_tm.finished_calls[call_id] = ('driver', response_success)
-        print ccas_msg_blocking.args
+        print(ccas_msg_blocking.args)
         try:
             retval = test_tm.wait_call(ccas_msg_blocking)
-        except Exception, e:
-            print e
+        except Exception as e:
+            print(e)
             self.fail()
 
         #----------------------------------------
@@ -221,8 +221,8 @@ class tmTestCase(unittest.TestCase):
         test_tm.finished_calls[call_id] = ('driver', response_failure)
         try:
             retval = test_tm.wait_call(ccas_msg_blocking)
-        except Exception, e:
-            print e
+        except Exception as e:
+            print(e)
             # make sure the proper exception was thrown
             #self.fail()
 
@@ -233,8 +233,8 @@ class tmTestCase(unittest.TestCase):
         test_tm.finished_calls[call_id] = ('driver', None)
         try:
             retval = test_tm.wait_call(ccas_msg_blocking)
-        except Exception, e:
-            print e
+        except Exception as e:
+            print(e)
             # make sure the proper exception was thrown
             #self.fail()
 
@@ -244,8 +244,8 @@ class tmTestCase(unittest.TestCase):
         test_tm.finished_calls[call_id] = ('driver', None)
         try:
             retval = test_tm.wait_call(ccas_msg_nonblocking)
-        except Exception, e:
-            print e
+        except Exception as e:
+            print(e)
             # make sure the proper exception was thrown
             #self.fail()
 

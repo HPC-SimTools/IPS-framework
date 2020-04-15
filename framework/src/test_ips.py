@@ -17,7 +17,7 @@ import unittest
 from ips import Framework
 
 def printUsageMessage():
-    print 'Usage: ips [--create-runspace | --run-setup | --run]+ --simulation=SIM_FILE_NAME --platform=PLATFORM_FILE_NAME --log=LOG_FILE_NAME [--debug | --ftb]'
+    print('Usage: ips [--create-runspace | --run-setup | --run]+ --simulation=SIM_FILE_NAME --platform=PLATFORM_FILE_NAME --log=LOG_FILE_NAME [--debug | --ftb]')
 
 class testIPS(unittest.TestCase):
     def test_main(self, argv=None):
@@ -37,7 +37,7 @@ class testIPS(unittest.TestCase):
                                         "simulation=", "platform=", "log=",
                                         "nodes=", "ppn=",
                                         "debug", "verbose", "ftb"])
-        except getopt.error, msg:
+        except getopt.error as msg:
             self.fail('Invalid command line arguments'+ msg)
             #print 'Invalid command line arguments', msg
             #printUsageMessage()
@@ -49,15 +49,15 @@ class testIPS(unittest.TestCase):
                 log_file_name = value
                 try:
                     log_file = open(os.path.abspath(log_file_name), 'w')
-                except Exception, e:
+                except Exception as e:
                     self.fail('Error writing to log file ' + log_file_name + '\n' + str(e))
                     #print 'Error writing to log file ' , log_file_name
                     #print str(e)
                     #raise
             elif (arg == '--platform'):
                 platform_filename = value
-        self.failIf(len(cfgFile_list) == 0, 'Empty cfgFile_list')
-        self.failIf( platform_filename =='', 'No platform config file listed')
+        self.assertFalse(len(cfgFile_list) == 0, 'Empty cfgFile_list')
+        self.assertFalse( platform_filename =='', 'No platform config file listed')
 
 
         # create framework with config file
@@ -71,7 +71,7 @@ class testIPS(unittest.TestCase):
 # ----- end main -----
 
 if __name__ == "__main__":
-    print "Starting IPS"
+    print("Starting IPS")
     sys.stdout.flush()
     args = '--simulation=sim.conf --simulation=sim2.conf --platform=jaguar.conf'
     argv = args.split(' ')

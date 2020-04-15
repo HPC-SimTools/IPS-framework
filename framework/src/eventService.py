@@ -60,7 +60,7 @@ class EventService(object):
     def _print_stats(self):
         if self.fwk:
             self.fwk.debug(":::::::::TOPIC-WISE EVENT STATS:::::::::")
-            for topicName in self.topicDirectory.keys():
+            for topicName in list(self.topicDirectory.keys()):
                 self.fwk.debug("%s = %s", topicName,self.topicDirectory[topicName].getEventStats())
             self.fwk.debug("::::::::::::::::::::::::::::::::::::::::")
 
@@ -74,14 +74,14 @@ class EventService(object):
 
     def getTopic(self,topicName):
         """ Add an entry to the topicDirectory for a new topic. """
-        if not self.topicDirectory.has_key(topicName):
+        if topicName not in self.topicDirectory:
             debug.output("getTopic %s" %topicName)
             self.topicDirectory[topicName] = TopicManager()
         return Topic(topicName)
 
 
     def existsTopic(self,topicName):
-        return self.topicDirectory.has_key(topicName)
+        return topicName in self.topicDirectory
 
     """""""""PublisherEventService methods end here"""""""""
 
@@ -105,7 +105,7 @@ class EventService(object):
     """
     def unregisterSubscriber(self,subscriberid):
         listenerList = []
-        if self.subscriberDirectory.has_key(subscriberid):
+        if subscriberid in self.subscriberDirectory:
             debug.output("\n\n------Subscriber is unregistering",subscriberid)
 
             """
@@ -113,8 +113,8 @@ class EventService(object):
             first unregistering a listener from all subscribed topics and then
             deleting it from the listenerDirectory.
             """
-            for subscriptionName in self.subscriberDirectory[subscriberid].keys():
-                for listenerKey in self.subscriberDirectory[subscriberid][subscriptionName].keys():
+            for subscriptionName in list(self.subscriberDirectory[subscriberid].keys()):
+                for listenerKey in list(self.subscriberDirectory[subscriberid][subscriptionName].keys()):
                     listenerid = self.subscriberDirectory[subscriberid][subscriptionName][listenerKey]
                     debug.output("Unregistering listener on listenerKey %s, subscription %s"
                                  %(listenerKey,subscriptionName),listenerid,subscriberid)
@@ -133,7 +133,7 @@ class EventService(object):
 
 
     def getSubscription(self,subscriberid,subscriptionName):
-        if self.subscriberDirectory.has_key(subscriberid):
+        if subscriberid in self.subscriberDirectory:
             """
             We do not allow for the possibility that a subscriptionName may mean more
             than one topic name. May need to be changed in future for greater
@@ -142,7 +142,7 @@ class EventService(object):
             """
             self.getTopic(subscriptionName)
 
-            if not self.subscriberDirectory[subscriberid].has_key(subscriptionName):
+            if subscriptionName not in self.subscriberDirectory[subscriberid]:
                 self.subscriberDirectory[subscriberid][subscriptionName] = {}
                 debug.output("Subscriber subscribed to %s" %subscriptionName,subscriberid)
 
@@ -173,12 +173,12 @@ class EventService(object):
     """
     def processEvents(self,subscriberid):
         eventList = {}
-        if self.subscriberDirectory.has_key(subscriberid):
-            for subscriptionName in self.subscriberDirectory[subscriberid].keys():
-                for listenerKey in self.subscriberDirectory[subscriberid][subscriptionName].keys():
+        if subscriberid in self.subscriberDirectory:
+            for subscriptionName in list(self.subscriberDirectory[subscriberid].keys()):
+                for listenerKey in list(self.subscriberDirectory[subscriberid][subscriptionName].keys()):
                     listenerid = self.subscriberDirectory[subscriberid][subscriptionName][listenerKey]
                     """ This check is required to allow the _same_ listener to handle different topics. """
-                    if not eventList.has_key(listenerid):
+                    if listenerid not in eventList:
                         eventList[listenerid] = {}
                     topicList = self._mapListenerKeytoTopicList(subscriptionName,listenerKey)
                     for topicName in topicList:
@@ -196,7 +196,7 @@ class EventService(object):
     sendEvent adds an event to the topic's TopicManager object.
     """
     def sendEvent(self,topicName,eventName,eventBody):
-        if self.topicDirectory.has_key(topicName):
+        if topicName in self.topicDirectory:
             eventHeader = {}
             eventHeader[eventName] = eventName
             theEvent = Event(eventHeader,eventBody)
@@ -226,15 +226,15 @@ class EventService(object):
     record, the TopicManager for the associated topic, and the listenerDirectory.
     """
     def registerEventListener(self,subscriberid,subscriptionName,listenerKey,listenerid):
-        if self.subscriberDirectory.has_key(subscriberid):
-            if self.subscriberDirectory[subscriberid].has_key(subscriptionName):
+        if subscriberid in self.subscriberDirectory:
+            if subscriptionName in self.subscriberDirectory[subscriberid]:
                 """
                 We do not allow for the possibility that a subscriptionName may mean
                 more than one topic name. May need to be changed in future for greater
                 flexibility.
                 """
                 if subscriptionName == listenerKey:
-                    if not self.subscriberDirectory[subscriberid][subscriptionName].has_key(listenerKey):
+                    if listenerKey not in self.subscriberDirectory[subscriberid][subscriptionName]:
                         debug.output("Registering listener on listenerKey %s, subscription %s"
                                      %(listenerKey,subscriptionName),listenerid,subscriberid)
                         topicList = self._mapListenerKeytoTopicList(subscriptionName,listenerKey)
@@ -262,9 +262,9 @@ class EventService(object):
     """
     def unregisterEventListener(self,subscriberid,subscriptionName,listenerKey):
         listenerid = -1
-        if self.subscriberDirectory.has_key(subscriberid):
-            if self.subscriberDirectory[subscriberid].has_key(subscriptionName):
-                if self.subscriberDirectory[subscriberid][subscriptionName].has_key(listenerKey):
+        if subscriberid in self.subscriberDirectory:
+            if subscriptionName in self.subscriberDirectory[subscriberid]:
+                if listenerKey in self.subscriberDirectory[subscriberid][subscriptionName]:
                     listenerid = self.subscriberDirectory[subscriberid][subscriptionName][listenerKey]
                     debug.output("Unregistering listener on listenerKey %s, subscription %s"
                                  %(listenerKey,subscriptionName),listenerid,subscriberid)
@@ -293,11 +293,11 @@ class EventService(object):
     """
     def removeSubscription(self,subscriberid,subscriptionName):
         listenerList = []
-        if self.subscriberDirectory.has_key(subscriberid):
-            if self.subscriberDirectory[subscriberid].has_key(subscriptionName):
+        if subscriberid in self.subscriberDirectory:
+            if subscriptionName in self.subscriberDirectory[subscriberid]:
                 debug.output("\n\n------Subscriber's subscription to %s is being removed"
                              %subscriptionName,subscriberid)
-                for listenerKey in self.subscriberDirectory[subscriberid][subscriptionName].keys():
+                for listenerKey in list(self.subscriberDirectory[subscriberid][subscriptionName].keys()):
                     listenerid = self.subscriberDirectory[subscriberid][subscriptionName][listenerKey]
                     debug.output("Unregistering listener on listenerKey %s, subscription %s"
                                  %(listenerKey,subscriptionName),listenerid,subscriberid)

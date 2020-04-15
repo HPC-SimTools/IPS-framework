@@ -81,7 +81,7 @@ class overhead():
             self.runtime = int(info_dict['runtime'])
         except:
             if self.fwk.debug:
-                print 'no runtime for overhead %s' % self.name
+                print('no runtime for overhead %s' % self.name)
         try:
             self.stddev = int(info_dict['stddev'])
         except:
