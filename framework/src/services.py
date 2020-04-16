@@ -1269,51 +1269,6 @@ class ServicesProxy(object):
         return self.workdir
 
     # DM stageInput
-    def stage_input_files_old(self, input_file_list):
-        """
-        Copy component input files to the component working directory
-        (as obtained via a call to :py:meth:`ServicesProxy.get_working_dir`). Input files
-        are assumed to be originally located in the directory variable
-        *INPUT_DIR* in the component configuration section.
-        """
-        start_time = time.time()
-        workdir = self.get_working_dir()
-        conf = self.component_ref.config
-        inputDir = conf['INPUT_DIR']
-        ipsutil.copyFiles(inputDir, input_file_list, workdir)
-
-        # Copy input files into a central place in the output tree
-        simroot = self.sim_conf['SIM_ROOT']
-        try:
-            outprefix = self.sim_conf['OUTPUT_PREFIX']
-        except KeyError as e:
-            outprefix = ''
-
-        targetdir = os.path.join(simroot, 'simulation_setup',
-                                 self.full_comp_id)
-        try:
-            # print 'inputDir =', inputDir
-            # print 'input_file_list =', input_file_list
-            # print 'targetdir =', targetdir
-            # print 'outprefix =', outprefix
-
-            ipsutil.copyFiles(inputDir, input_file_list, targetdir, outprefix)
-        except Exception as e:
-            self._send_monitor_event('IPS_STAGE_INPUTS',
-                                     'Files = ' + str(input_file_list) + \
-                                     ' Exception raised : ' + str(e),
-                                     ok='False')
-            self.exception('Error in stage_input_files')
-            raise e
-        elapsed_time = time.time() - start_time
-        self._send_monitor_event(eventType='IPS_STAGE_INPUTS',
-                                 comment='Elapsed time = %.3f Path = %s Files = %s' % \
-                                         (elapsed_time, os.path.abspath(inputDir),
-                                          str(input_file_list)))
-
-        return
-
-    # DM stageInput
     def stage_input_files(self, input_file_list):
         """
         Copy component input files to the component working directory
@@ -2539,40 +2494,6 @@ class TaskPool(object):
                 continue
             else:
                 return submit_count
-        if block:
-            self._wait_active_tasks()
-        return submit_count
-
-    def submit_tasks_old(self, block=True):
-        """
-        .. deprecated :: Experimental Use :py:meth:`TaskPool.submit_tasks`
-        """
-        submit_count = 0
-        while True:
-            try:
-                (task_name, task) = self.queued_tasks.popitem()
-            except KeyError:
-                if (len(self.blocked_tasks) == 0):
-                    break
-                else:
-                    self.queued_tasks = self.blocked_tasks
-                    self.blocked_tasks = {}
-                    if (block):
-                        self._wait_any_task()
-                        continue
-                    else:
-                        return submit_count
-
-            self.services.debug('Attempting to launch task %s', task_name)
-            # (nproc, working_dir, binary, args, keywords) = task_data
-            try:
-                task_id = self.services.launch_task(task.nproc, task.working_dir, task.binary,
-                                                    *task.args, **task.keywords)
-            except ipsExceptions.InsufficientResourcesException:
-                self.blocked_tasks[task_name] = task
-            else:
-                self.active_tasks[task_id] = task
-                submit_count += 1
         if block:
             self._wait_active_tasks()
         return submit_count
