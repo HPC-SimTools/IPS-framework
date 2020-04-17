@@ -102,6 +102,7 @@ class PortalBridge(Component):
         self.min_dump_interval = 300 # Minimum time interval in Sec for HTML dump operation
         self.last_dump_time = time.time()
         self.write_to_htmldir = True
+        self.html_dir = ""
 
     def init(self, timestamp=0.0):
         """
@@ -139,7 +140,26 @@ class PortalBridge(Component):
                 self.mpo.filter = 'json'
             except Exception as e:
                 print("#################", e)
-                pass
+
+        try:
+            self.html_dir = self.services.get_config_param("USER_W3_DIR", silent=True)
+        except Exception:
+            self.services.warning("Missing USER_W3_DIR configuration - disabling web-visible logging")
+            self.write_to_htmldir = False
+        # print "Missing USER_W3_DIR configuration"
+        else:
+            if html_dir.strip() == '':
+                self.services.warning("Empty USER_W3_DIR configuration - disabling web-visible logging")
+                self.write_to_htmldir = False
+            else:
+                try:
+                    os.mkdir(self.html_dir)
+                except FileExistsError:
+                    pass
+                except Exception:
+                    self.services.warning("Unable to create HTML directory - disabling web-visible logging")
+                    self.write_to_htmldir = False
+
         return
 
     def step(self, timestamp=0.0):
@@ -240,29 +260,18 @@ class PortalBridge(Component):
 
         freq = self.dump_freq
         if (((self.counter % freq == 0) and (time.time() - self.last_dump_time > self.min_dump_interval))
-             or (event_data['eventtype'] == 'IPS_END')):
+                or (event_data['eventtype'] == 'IPS_END')):
             self.last_dump_time = time.time()
             html_filename = sim_data.monitor_file_name.replace('eventlog', 'html')
             html_page = convert_logdata_to_html(sim_data.bigbuf)
             open(html_filename, "w").writelines(html_page)
             if self.write_to_htmldir:
+                html_file = os.path.join(self.html_dir, os.path.basename(html_filename))
                 try:
-                    html_dir = self.services.get_config_param("USER_W3_DIR", silent=True)
+                    open(html_file, "w").writelines(html_page)
                 except Exception:
-                    self.services.warning("Missing USER_W3_DIR configuration - disabling web-visible logging")
+                    self.services.exception("Error writing html file into USER_W3_DIR directory")
                     self.write_to_htmldir = False
-                    pass
-                # print "Missing USER_W3_DIR configuration"
-                else:
-                    if html_dir.strip() == '':
-                        self.write_to_htmldir = False
-                    else:
-                        html_file = os.path.join(html_dir, os.path.basename(html_filename))
-                        try:
-                            open(html_file, "w").writelines(html_page)
-                        except Exception:
-                            self.services.exception("Error writing html file into USER_W3_DIR directory")
-                            self.write_to_htmldir = False
         #        self.services.debug('Wrote to monitor file : %s', buf)
         if (self.portal_url):
             webmsg = urllib.parse.urlencode(event_data).encode("utf-8")
