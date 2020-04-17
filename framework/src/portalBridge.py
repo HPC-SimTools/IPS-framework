@@ -148,7 +148,7 @@ class PortalBridge(Component):
             self.write_to_htmldir = False
         # print "Missing USER_W3_DIR configuration"
         else:
-            if html_dir.strip() == '':
+            if self.html_dir.strip() == '':
                 self.services.warning("Empty USER_W3_DIR configuration - disabling web-visible logging")
                 self.write_to_htmldir = False
             else:
