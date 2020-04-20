@@ -104,7 +104,7 @@ class PortalBridge(Component):
         self.write_to_htmldir = True
         self.html_dir = ""
 
-    def init(self, timestamp=0.0):
+    def init(self, timestamp=0.0, **keywords):
         """
         Try to connect to the portal, subscribe to *_IPS_MONITOR* events and
         register callback :py:meth:`.process_event`.
@@ -162,7 +162,7 @@ class PortalBridge(Component):
 
         return
 
-    def step(self, timestamp=0.0):
+    def step(self, timestamp=0.0, **keywords):
         """
         Poll for events.
         """
@@ -170,7 +170,7 @@ class PortalBridge(Component):
             self.services.process_events()
             time.sleep(0.5)
 
-    def finalize(self, timestamp=0.0):
+    def finalize(self, timestamp=0.0, **keywords):
         for sim_name in list(self.sim_map.keys()):
             sim_data = self.sim_map[sim_name]
             try:
