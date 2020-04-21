@@ -1894,34 +1894,41 @@ class ServicesProxy(object):
                                  (elapsed_time, ' '.join(files)))
         return
 
-    def merge_current_plasma_state(self, partial_state_file, logfile=None):
+    def merge_current_state(self, partial_state_file, logfile=None, merge_binary=None):
         """
         Merge partial plasma state with global state.  Partial plasma state
         contains only the values that the component contributes to the
         simulation.  Raise exceptions on bad merge.  Optional *logfile* will
-        capture ``stdout`` from merge.
+        capture ``stdout`` from merge. Optional *merge_binary* specifies path
+        to executable code to do the merge (default value : "update_state")
         """
         state_dir = self.get_config_param('STATE_WORK_DIR')
         current_plasma_state = self.get_config_param('CURRENT_STATE')
-        workdir = self.get_working_dir()
-        if (os.path.isabs(partial_state_file)):
+        work_dir = self.get_working_dir()
+        if os.path.isabs(partial_state_file):
             update_file = partial_state_file
         else:
-            update_file = os.path.join(workdir, partial_state_file)
+            update_file = os.path.join(work_dir, partial_state_file)
+
         source_plasma_file = os.path.join(state_dir, current_plasma_state)
+        bin_name = merge_binary if merge_binary else "update_state"
+        full_path_binary = ipsutil.which(bin_name)
+        if not full_path_binary:
+            self.error("Missing executable %s in PATH" % bin_name)
+            raise FileNotFoundError("Missing executable file %s in PATH" % bin_name)
         try:
             msg_id = self._invoke_service(self.fwk.component_id,
                                           'merge_current_plasma_state', update_file,
-                                          source_plasma_file, logfile)
-            retval = self._get_service_response(msg_id, block=True)
+                                          source_plasma_file, logfile, full_path_binary)
+            ret_val = self._get_service_response(msg_id, block=True)
         except Exception as e:
-            print('Error merging plasma state files', str(e))
+            print('Error merging state files', str(e))
             self._send_monitor_event('IPS_MERGE_PLASMA_STATE',
                                      ' Exception raised : ' + str(e),
                                      ok='False')
             self.exception('Error merging plasma state file ' + partial_state_file)
             raise
-        if (retval == 0):
+        if ret_val == 0:
             self._send_monitor_event('IPS_MERGE_PLASMA_STATE',
                                      'Success')
             return
@@ -1933,6 +1940,13 @@ class ServicesProxy(object):
                        partial_state_file, current_plasma_state)
             raise Exception('Error merging update %s into current plasma state file %s' %
                             (partial_state_file, current_plasma_state))
+    def merge_current_plasma_state(self, partial_state_file, logfile=None, merge_binary=None):
+        """
+        Deprecated : Use merge_surrent_state()
+        """
+        self.warning('merge_current_plasma_state() deprecated - will be removed in a future release')
+        self.warning('use merge_current_state() instead')
+        return self.merge_current_state(partial_state_file, logfile, merge_binary)
 
     def updatePlasmaState(self):
         """
