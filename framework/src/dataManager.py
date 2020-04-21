@@ -110,10 +110,8 @@ class DataManager(object):
         partial_state_file = msg.args[0]
         target_state_file = msg.args[1]
         log_file = msg.args[2]
+        update_state = msg.args[3]
 
-        #fwk_bin_path = sys.path[0]
-        #update_state = os.path.join(fwk_bin_path, 'update_state')
-        update_state = 'update_state'
         plasma_work_dir = os.path.dirname(target_state_file)
         component_work_dir = os.path.dirname(partial_state_file)
         current_plasma_state = os.path.basename(target_state_file)
