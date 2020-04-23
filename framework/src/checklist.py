@@ -70,7 +70,7 @@ def update(checklist_file,ips_status):
             conf[step] = 'DONE'
         else:
             conf[step] = 'NOT_DONE'
-        print(step + ' = ' + conf[step])
+        #print(step + ' = ' + conf[step])
     conf.write()
 
     return

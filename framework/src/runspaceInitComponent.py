@@ -39,7 +39,7 @@ class runspaceInitComponent(Component):
         :py:class:`component.Component` object.
         """
         Component.__init__(self, services, config)
-        print('Created %s' % (self.__class__))
+        #print('Created %s' % (self.__class__))
 
 
     @catch_and_go
@@ -48,7 +48,7 @@ class runspaceInitComponent(Component):
         Creates base directory, copies IPS and FacetsComposer input files.
         """
 
-        print('runspaceInitComponent.init() called')
+        #print('runspaceInitComponent.init() called')
 
         services = self.services
 
@@ -166,7 +166,7 @@ class runspaceInitComponent(Component):
         """
         Placeholder for future validation step of runspace management.
         """
-        print('runspaceInitComponent.validate() called')
+        #print('runspaceInitComponent.validate() called')
         return
 
     @catch_and_go
@@ -175,7 +175,7 @@ class runspaceInitComponent(Component):
         Copies individual subcomponent input files into working subdirectories.
         """
 
-        print('runspaceInitComponent.step() called')
+        #print('runspaceInitComponent.step() called')
 
         services = self.services
 
@@ -280,7 +280,7 @@ class runspaceInitComponent(Component):
         """
         Placeholder
         """
-        print('runspaceInitComponent.checkpoint() called')
+        #print('runspaceInitComponent.checkpoint() called')
 
         # save restart files
         # services = self.services
@@ -293,7 +293,7 @@ class runspaceInitComponent(Component):
         """
         Writes final log_file and resource_usage file to the container and closes
         """
-        print('runspaceInitComponent.finalize() called')
+        #print('runspaceInitComponent.finalize() called')
 
 #       print self.main_log_file
 #       print self.simRootDir

@@ -14,20 +14,20 @@ from ipsExceptions import InvalidResourceSettingsException
 
 def get_qstat_jobinfo():
     """
-    Use ``qstat -f $PBS_JOBID`` to get the number of nodes and ppn of the 
+    Use ``qstat -f $PBS_JOBID`` to get the number of nodes and ppn of the
     allocation.  Typically works on PBS systems.
     """
     try:
         job_id = os.environ['PBS_JOBID']
     except:
         raise
-    
+
     shell_host=None
     try:
         shell_host = os.environ['HOST']
     except:
         pass
-    
+
 
     command = 'qstat -f %s' % (job_id)
     p = subprocess.Popen(command.split(),stdout=subprocess.PIPE)
@@ -50,18 +50,18 @@ def get_qstat_jobinfo():
                         ppn = int(line.split('=')[-1])
                     else:
                         ppn = 8
-            
+
             host_out = ''
             for i in range(start_line, end_line+1):
                 host_out += out[i]
-            
+
             host_string = host_out.strip().replace(' \n', '').split('=')[1]
             node_list = [t .strip() for t in host_string.split('+')]
             num_nodes = len(node_list)
             return num_nodes, ppn, True, node_list
         else:
             width = [l.strip() for l in out if 'Resource_List.mppwidth' in l]
-            mpp_npp = [l.strip() for l in out if 'Resource_List.mppnppn' in l]    
+            mpp_npp = [l.strip() for l in out if 'Resource_List.mppnppn' in l]
             num_procs  = int(width[0].split('=')[1])
             if len(mpp_npp) > 0:
                 ppn = int(mpp_npp[0].split('=')[1])
@@ -73,7 +73,7 @@ def get_qstat_jobinfo():
 def get_qstat_jobinfo2():
     """
     A second way to use ``qstat -f $PBS_JOBID`` to get the number
-    of nodes and ppn of the 
+    of nodes and ppn of the
     allocation.  Typically works on PBS systems.
     """
     try:
@@ -115,7 +115,7 @@ def get_qstat_jobinfo2():
         #print ndata
         ppn = max([len(p[1]) for p in ndata])
         #width = [l.strip() for l in out if 'Resource_List.mppwidth' in l]
-        #mpp_npp = [l.strip() for l in out if 'Resource_List.mppnppn' in l]    
+        #mpp_npp = [l.strip() for l in out if 'Resource_List.mppnppn' in l]
         #num_procs  = int(width[0].split('=')[1])
         #if len(mpp_npp) > 0:
         #    ppn = int(mpp_npp[0].split('=')[1])
@@ -155,11 +155,11 @@ def get_checkjob_info():
             elif x == '' and start > 0 and end == 0:
                 end = k
                 #print ' end = ', end
-                #print lines[start:end]	
+                #print lines[start:end]
             if x.find("Total Requested Tasks:") > -1:
                 a,b = x.split(":")
                 b = b.strip()
-                tot_procs = int(b) 
+                tot_procs = int(b)
         #print "total procs", tot_procs
         for line in lines[start:end+1]:
             #print '@@@@@@@', line
@@ -228,7 +228,7 @@ def get_checkjob_info():
                 else:
                     #this is a single node id
                     nodes.append(r)
-            ndata = [(n, p) for n in nodes]              
+            ndata = [(n, p) for n in nodes]
         except Exception as e:
             print('problem parsing - large format')
             raise e
@@ -240,17 +240,17 @@ def get_checkjob_info():
         print('len(nodes) = %d  p = %d  tot_procs = %d' % (len(nodes), int(p), tot_procs))
         print("something wrong with parsing - node count*cores does not match task count")
         raise Exception("something wrong with parsing - node count*cores does not match task count")
-    print(nodes, int(p), mixed_nodes, ndata)
+    #print(nodes, int(p), mixed_nodes, ndata)
     return nodes, int(p), mixed_nodes, ndata
 #    return nodes, int(p)
 
 
 def get_checkjob_info_old():
     """
-    Use ``checkjob $PBS_JOBID`` to get the node names and core counts of 
+    Use ``checkjob $PBS_JOBID`` to get the node names and core counts of
     allocation.  Typically works in a Cray environment.
 
-    .. note:: Two formats for outputing resource information.  
+    .. note:: Two formats for outputing resource information.
 
                1. [node_id:tasks_per_node]+
                2. ([comma separated list of node_ids and node_id ranges]*tasks_per_node)+
@@ -261,7 +261,7 @@ def get_checkjob_info_old():
     cmd = "checkjob $PBS_JOBID"
     tot_procs = 0
     data_lines = []
-    
+
     try:
         job_id = os.environ['PBS_JOBID']
     except:
@@ -327,7 +327,7 @@ def get_checkjob_info_old():
                 ppn = int(ppn)
                 if max_p < ppn:
                     if max_p > 0:
-                        mixed_nodes = True                        
+                        mixed_nodes = True
                     max_p = ppn
                 nids = nids.strip("[]")
                 ranges = nids.split(",")
@@ -350,7 +350,7 @@ def get_checkjob_info_old():
                 p = int(p)
                 if max_p < p:
                     if max_p > 0:
-                        mixed_nodes = True                        
+                        mixed_nodes = True
                     max_p = p
                 #ndata.append((frmt_str % int(m), p))
                 ndata.append((m, p))
@@ -362,7 +362,7 @@ def get_checkjob_info_old():
 
 def get_slurm_info():
     """
-    Access environment variables set by Slurm to get the node names, 
+    Access environment variables set by Slurm to get the node names,
     tasks per node and number of processes.
 
       ``SLURM_NODELIST``
@@ -439,7 +439,7 @@ def get_slurm_info():
         #print nodes[-1][1]
         nodes[-1][1] = nproc % max_p
 
-    return len(nodes), max_p, mixed_nodes, nodes 
+    return len(nodes), max_p, mixed_nodes, nodes
 
 def get_pbs_info():
     """
@@ -492,7 +492,7 @@ def manual_detection(services):
                 ppn = cpn
             num_nodes = 1
         tot_procs = num_nodes * ppn
-                        
+
     for n in range(num_nodes):
         listOfNodes.append(("dummynode%d" % n, ppn))
     if tot_procs < num_nodes * (ppn - 1):
@@ -505,20 +505,20 @@ def manual_detection(services):
 
 def get_topo(services):
     """
-    Uses `hwloc <http://www.open-mpi.org/projects/hwloc/>`_ library calls in C 
+    Uses `hwloc <http://www.open-mpi.org/projects/hwloc/>`_ library calls in C
     program ``topo_disco`` to detect the topology of a node in the allocation.
     Return the number of sockets and the number of cores.
 
     .. note:: Not available on all platforms.
     """
     print("***in get_topo")
-    # TODO: change launch_str to use mpirun and command line flags from 
+    # TODO: change launch_str to use mpirun and command line flags from
     # platform config.
     script = services.get_platform_parameter('HWLOC_DETECT_SCRIPT')
     print(script)
     launch_str = 'mpirun -n 1 -bind-to-core %s' % script
-    p = subprocess.Popen(launch_str, shell=True, 
-                         stdout=subprocess.PIPE, 
+    p = subprocess.Popen(launch_str, shell=True,
+                         stdout=subprocess.PIPE,
                          stderr=subprocess.STDOUT)
     p.wait()
     if p.returncode == 0:
@@ -531,9 +531,9 @@ def get_topo(services):
 
 def getResourceList(services, host, ftb, partial_nodes=False):
     """
-    Using the host information, the resources are detected.  Return list of 
-    (<node name>, <processes per node>), cores per node, sockets per node, 
-    processes per node, and ``True`` if the node names are accurate, ``False`` 
+    Using the host information, the resources are detected.  Return list of
+    (<node name>, <processes per node>), cores per node, sockets per node,
+    processes per node, and ``True`` if the node names are accurate, ``False``
     otherwise.
     """
     listOfNodes = []
@@ -601,7 +601,7 @@ def getResourceList(services, host, ftb, partial_nodes=False):
                             num_nodes, ppn, mixed_nodes, listOfNodes = manual_detection()
                             accurateNodes = False
                         except:
-                            print("*** NO DETECTION MECHANISM WORKS ***") 
+                            print("*** NO DETECTION MECHANISM WORKS ***")
                             raise
     # detect topology
     cpn = int(services.get_platform_parameter('CORES_PER_NODE'))
@@ -620,10 +620,10 @@ def getResourceList(services, host, ftb, partial_nodes=False):
         raise InvalidResourceSettingsException("spn > cpn", spn, cpn)
     elif cpn % spn != 0:
         raise InvalidResourceSettingsException("spn not divisible by cpn", spn, cpn)
-    
-        
+
+
     """
-    ### AGS: SC09 demo code, also useful for debugging FT capabilities. 
+    ### AGS: SC09 demo code, also useful for debugging FT capabilities.
     if not accurateNodes:
         for i in range(1, num_nodes+1):
             listOfNodes.append(i)
@@ -637,7 +637,7 @@ def getResourceList(services, host, ftb, partial_nodes=False):
     #if cpn < ppn:
     #    cpn = ppn
     # return list of node names
-    print(listOfNodes, cpn, spn, ppn, accurateNodes)
-    return listOfNodes, cpn, spn, ppn, accurateNodes 
+    #print(listOfNodes, cpn, spn, ppn, accurateNodes)
+    return listOfNodes, cpn, spn, ppn, accurateNodes
 
 

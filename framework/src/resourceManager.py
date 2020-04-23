@@ -263,7 +263,7 @@ class ResourceManager(object):
         tot_cores = 0
         for n, p in listOfNodes:
             if n not in self.nodes:
-                print(n, self.sockets_per_node, self.cores_per_node,)
+                #print(n, self.sockets_per_node, self.cores_per_node,)
                 self.nodes.update({n:Node(n, self.sockets_per_node,
                                           self.cores_per_node, p)})
                 self.num_nodes += 1
