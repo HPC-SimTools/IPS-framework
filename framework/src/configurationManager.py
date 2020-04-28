@@ -204,6 +204,9 @@ class ConfigurationManager(object):
             host = self.platform_conf['HOST']
         except KeyError:
             self.platform_conf['HOST'] = socket.gethostname()
+        else:
+            if not host:
+                self.platform_conf['HOST'] = socket.gethostname()
 
         """
         optional platform values are obtained and read here
