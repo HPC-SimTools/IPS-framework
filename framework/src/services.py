@@ -2440,11 +2440,11 @@ class TaskPool(object):
     except ImportError:
         pass
     else:
-        scheduler = None
+        dask_scheduler = None
         dask_worker = None
-        scheduler = shutil.which("dask-scheduler")
+        dask_scheduler = shutil.which("dask-scheduler")
         dask_worker = shutil.which("dask-worker")
-        if not scheduler or not dask_worker:
+        if not dask_scheduler or not dask_worker:
             dask = None
             distributed = None
 
@@ -2462,6 +2462,7 @@ class TaskPool(object):
         self.dask_tlist = None
         self.dask_file_name = None
         self.dask_client = None
+        self.dask_launch_count = 0
 
     def _wait_any_task(self, block=True):
         """
@@ -2527,9 +2528,11 @@ class TaskPool(object):
         return
 
     def submit_dask_tasks(self, block=True, nodes=1):
-        self.dask_file_name = os.path.join(os.getcwd(), f".{self.name}_dask_shed.json")
-        self.dask_shed_pid = subprocess.Popen([self.scheduler,
-                          "--scheduler-file", self.dask_file_name]).pid
+        self.dask_file_name = os.path.join(os.getcwd(),
+                                           f".{self.name}_dask_shed_{self.dask_launch_count}.json")
+        self.dask_launch_count += 1
+        self.dask_shed_pid = subprocess.Popen([self.dask_scheduler, "--no-dashboard",
+                          "--scheduler-file", self.dask_file_name, "--port", "0"]).pid
 
         self.dask_workers_pid = subprocess.Popen(["/usr/bin/mpirun", "-n", "1",
                                                   "-x", "PYTHONPATH",
@@ -2576,10 +2579,12 @@ class TaskPool(object):
         return submit_count
 
     def get_dask_finished_tasks_status(self):
+        import signal
         result = self.dask.compute(self.dask_tlist)
         print(result)
         self.dask_client.shutdown()
         os.remove(self.dask_file_name)
+        os.kill(self.dask_workers_pid, signal.SIGKILL)  # Force immediate shutdown of workers
         return dict(result[0])
 
     def get_finished_tasks_status(self):
