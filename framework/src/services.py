@@ -25,16 +25,29 @@ import tempfile
 
 MY_VERSION = float(sys.version[:3])
 
-
 def launch(binary, task_name, working_dir, *args, **keywords):
-#    import dask
-#    import dask.distributed
     from dask.distributed import get_worker
+    from time import asctime
+    import sys
     os.chdir(working_dir)
     myid = get_worker()
-    print(f"{task_name} running {binary} on {myid} in {working_dir}", args, keywords)
-    ret_val = subprocess.call([binary, str(args[0])])
-    print(f"{task_name} Done on {myid}")
+    task_stdout = sys.stdout
+    try:
+        log_filename = keywords["logfile"]
+    except KeyError:
+        pass
+    else:
+        task_stdout = open(log_filename, "w")
+
+    cmd = f"{binary} {' '.join(map(str, args))}"
+    print(f"{asctime()} {task_name} running {cmd} on {myid} in {working_dir}", args, keywords)
+    cmd_lst = cmd.split()
+    process = subprocess.Popen(cmd_lst, stdout=task_stdout,
+                               stderr=subprocess.STDOUT,
+                               cwd=working_dir)
+    ret_val = process.wait()
+    #ret_val = subprocess.call(cmd_lst,stdout=task_stdout, stderr=subprocess.STDOUT)
+    print(f"{asctime()} {task_name} Done on {myid}")
     return task_name, ret_val
 
 def make_timers_parent():
@@ -2321,7 +2334,7 @@ class ServicesProxy(object):
         """
         task_pool = self.task_pools[task_pool_name]
         return task_pool.add_task(task_name, nproc, working_dir, binary,
-                                  *args, **keywords)
+                                  *args, keywords=keywords)
 
     def submit_tasks(self, task_pool_name, block=True):
         """
@@ -2458,11 +2471,10 @@ class TaskPool(object):
         self.blocked_tasks = {}
         self.serial_pool = True
         self.dask_sched_pid = None
-        self.dask_workers_pid = None
+        self.dask_workers_tid = None
         self.futures = None
         self.dask_file_name = None
         self.dask_client = None
-        self.dask_launch_count = 0
 
     def _wait_any_task(self, block=True):
         """
@@ -2521,30 +2533,33 @@ class TaskPool(object):
 
         if task_name in self.queued_tasks:
             raise Exception('Duplicate task name %s in task pool' % task_name)
-        keywords['block'] = False
+
+        keywords['keywords']['block'] = False
+
+        print(f"{keywords}")
 
         self.serial_pool = self.serial_pool and (nproc == 1)
-        self.queued_tasks[task_name] = Task(task_name, nproc, working_dir, binary_fullpath, *args, **keywords)
+        self.queued_tasks[task_name] = Task(task_name, nproc, working_dir, binary_fullpath, *args,
+                                            **keywords["keywords"])
         return
 
     def submit_dask_tasks(self, block=True, nodes=1):
+        services: ServicesProxy = self.services
         self.dask_file_name = os.path.join(os.getcwd(),
-                                           f".{self.name}_dask_shed_{self.dask_launch_count}.json")
-        self.dask_launch_count += 1
+                                           f".{self.name}_dask_shed_{time.time()}.json")
         self.dask_sched_pid = subprocess.Popen([self.dask_scheduler, "--no-dashboard",
                           "--scheduler-file", self.dask_file_name, "--port", "0"]).pid
 
-        self.dask_workers_pid = subprocess.Popen(["/usr/bin/mpirun", "-n", "1",
-                                                  "-x", "PYTHONPATH",
-                                                  self.dask_worker,
-                                                  "--scheduler-file", self.dask_file_name
-                                                  ]).pid
+        if services.get_config_param("MPIRUN") == "eval":
+            nodes = 1
+        self.dask_workers_tid = services.launch_task(nodes, os.getcwd(),
+                                                     self.dask_worker,
+                                                     "--scheduler-file",
+                                                     self.dask_file_name,
+                                                     task_ppn=1)
+
         self.dask_client = self.dask.distributed.Client(scheduler_file=self.dask_file_name)
         launch.__module__ = "__main__"
-#        self.dask_tlist = [self.dask.delayed(launch)(v.binary, k, v.working_dir, *v.args, v.keywords)
-#                           for k, v in self.queued_tasks.items()]
-#        self.dask_tlist = [self.dask_client.submit(launch, v.binary, k, v.working_dir, *v.args, v.keywords)
-#                           for k, v in self.queued_tasks.items()]
         self.futures = []
         for k, v in self.queued_tasks.items():
             try:
@@ -2561,7 +2576,7 @@ class TaskPool(object):
                                                         k,
                                                         v.working_dir,
                                                         *v.args,
-                                                        v.keywords))
+                                                        **v.keywords))
         self.active_tasks = self.queued_tasks
         self.queued_tasks = {}
         return len(self.futures)
@@ -2606,6 +2621,7 @@ class TaskPool(object):
         os.remove(self.dask_file_name)
         self.finished_tasks = self.active_tasks
         self.active_tasks = {}
+        self.services.wait_task(self.dask_workers_tid)
         return dict(result)
 
     def get_finished_tasks_status(self):
