@@ -2600,13 +2600,10 @@ class TaskPool(object):
         return submit_count
 
     def get_dask_finished_tasks_status(self):
-        import signal
         result = self.dask_client.gather(self.futures)
         self.dask_client.shutdown()
         self.dask_client.close()
         os.remove(self.dask_file_name)
-        #os.kill(self.dask_workers_pid, signal.SIGKILL)  # Force immediate shutdown of workers
-        #os.kill(self.dask_sched_pid, signal.SIGKILL)  # Force immediate shutdown of workers
         self.finished_tasks = self.active_tasks
         self.active_tasks = {}
         return dict(result)
@@ -2619,7 +2616,7 @@ class TaskPool(object):
         if self.dask_pool:
             return self.get_dask_finished_tasks_status()
         if len(self.active_tasks) + len(self.finished_tasks) == 0:
-            raise Exception('No more active tasks in task pool %s' % (self.name))
+            raise Exception('No more active tasks in task pool %s' % self.name)
 
         exit_status = {}
         self._wait_any_task()
@@ -2632,9 +2629,13 @@ class TaskPool(object):
         """
         Kill all active tasks, clear all queued, blocked and finished tasks.
         """
-        if (len(self.active_tasks) > 0):
-            for task_id in list(self.active_tasks.keys()):
-                self.services.kill_task(task_id)
+        if len(self.active_tasks) > 0:
+            if self.dask_pool:
+                _ = [f.cancel() for f in self.futures]
+                self.futures = []
+            else:
+                for task_id in list(self.active_tasks.keys()):
+                    self.services.kill_task(task_id)
         self.queued_tasks = {}
         self.blocked_tasks = {}
         self.active_tasks = {}
