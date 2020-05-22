@@ -381,6 +381,7 @@ class TaskManager(object):
                     cmd = ' '.join([mpicmd,
                                 nproc_flag, str(nproc),
                                 ppn_flag, str(ppn)])
+                cmd = f"{cmd} -x PYTHONPATH"   #Propagate PYTHONPATH to compute nodes
                 if accurateNodes:
                      cmd = ' '.join([cmd, host_select, nodes])
             elif version == 'SGI':
