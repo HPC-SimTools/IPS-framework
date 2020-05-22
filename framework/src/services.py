@@ -2457,9 +2457,9 @@ class TaskPool(object):
         self.queued_tasks = {}
         self.blocked_tasks = {}
         self.serial_pool = True
-        self.dask_shed_pid = None
+        self.dask_sched_pid = None
         self.dask_workers_pid = None
-        self.dask_tlist = None
+        self.futures = None
         self.dask_file_name = None
         self.dask_client = None
         self.dask_launch_count = 0
@@ -2531,7 +2531,7 @@ class TaskPool(object):
         self.dask_file_name = os.path.join(os.getcwd(),
                                            f".{self.name}_dask_shed_{self.dask_launch_count}.json")
         self.dask_launch_count += 1
-        self.dask_shed_pid = subprocess.Popen([self.dask_scheduler, "--no-dashboard",
+        self.dask_sched_pid = subprocess.Popen([self.dask_scheduler, "--no-dashboard",
                           "--scheduler-file", self.dask_file_name, "--port", "0"]).pid
 
         self.dask_workers_pid = subprocess.Popen(["/usr/bin/mpirun", "-n", "1",
@@ -2541,9 +2541,30 @@ class TaskPool(object):
                                                   ]).pid
         self.dask_client = self.dask.distributed.Client(scheduler_file=self.dask_file_name)
         launch.__module__ = "__main__"
-        self.dask_tlist = [self.dask.delayed(launch)(v.binary, k, v.working_dir, *v.args, v.keywords)
-                           for k, v in self.queued_tasks.items()]
-        return len(self.dask_tlist)
+#        self.dask_tlist = [self.dask.delayed(launch)(v.binary, k, v.working_dir, *v.args, v.keywords)
+#                           for k, v in self.queued_tasks.items()]
+#        self.dask_tlist = [self.dask_client.submit(launch, v.binary, k, v.working_dir, *v.args, v.keywords)
+#                           for k, v in self.queued_tasks.items()]
+        self.futures = []
+        for k, v in self.queued_tasks.items():
+            try:
+                log_filename = v.keywords["logfile"]
+            except KeyError:
+                pass
+            else:
+                if not os.path.isabs(log_filename):
+                    full_path = os.path.join(os.getcwd(), log_filename)
+                    v.keywords["logfile"] = full_path
+
+            self.futures.append(self.dask_client.submit(launch,
+                                                        v.binary,
+                                                        k,
+                                                        v.working_dir,
+                                                        *v.args,
+                                                        v.keywords))
+        self.active_tasks = self.queued_tasks
+        self.queued_tasks = {}
+        return len(self.futures)
 
     def submit_tasks(self, block=True, nodes=None):
         """
@@ -2580,12 +2601,15 @@ class TaskPool(object):
 
     def get_dask_finished_tasks_status(self):
         import signal
-        result = self.dask.compute(self.dask_tlist)
-        print(result)
+        result = self.dask_client.gather(self.futures)
         self.dask_client.shutdown()
+        self.dask_client.close()
         os.remove(self.dask_file_name)
-        os.kill(self.dask_workers_pid, signal.SIGKILL)  # Force immediate shutdown of workers
-        return dict(result[0])
+        #os.kill(self.dask_workers_pid, signal.SIGKILL)  # Force immediate shutdown of workers
+        #os.kill(self.dask_sched_pid, signal.SIGKILL)  # Force immediate shutdown of workers
+        self.finished_tasks = self.active_tasks
+        self.active_tasks = {}
+        return dict(result)
 
     def get_finished_tasks_status(self):
         """
