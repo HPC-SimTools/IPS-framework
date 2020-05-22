@@ -21,9 +21,21 @@ import glob
 import ipsExceptions
 import ipsTiming
 import weakref
+import tempfile
 
 MY_VERSION = float(sys.version[:3])
 
+
+def launch(binary, task_name, working_dir, *args, **keywords):
+#    import dask
+#    import dask.distributed
+    from dask.distributed import get_worker
+    os.chdir(working_dir)
+    myid = get_worker()
+    print(f"{task_name} running {binary} on {myid} in {working_dir}", args, keywords)
+    ret_val = subprocess.call([binary, str(args[0])])
+    print(f"{task_name} Done on {myid}")
+    return task_name, ret_val
 
 def make_timers_parent():
     """
@@ -491,6 +503,7 @@ class ServicesProxy(object):
             self.error('Caught one or more exceptions in call to wait_call_list')
             raise caught_exceptions[0]
         return ret_map
+    
 
     def launch_task(self, nproc, working_dir, binary, *args, **keywords):
         """
@@ -1311,7 +1324,7 @@ class ServicesProxy(object):
             for c in comps:
                 input_dir = old_conf[c]['INPUT_DIR']
                 input_files = old_conf[c]['INPUT_FILES']
-                #print('---- Staging inputs for %s:%s' % (name, c))
+                # print('---- Staging inputs for %s:%s' % (name, c))
                 input_target_dir = os.path.join(os.getcwd(), c)
                 try:
                     os.mkdir(input_target_dir)
@@ -1940,6 +1953,7 @@ class ServicesProxy(object):
                        partial_state_file, current_plasma_state)
             raise Exception('Error merging update %s into current plasma state file %s' %
                             (partial_state_file, current_plasma_state))
+
     def merge_current_plasma_state(self, partial_state_file, logfile=None, merge_binary=None):
         """
         Deprecated : Use merge_surrent_state()
@@ -2302,7 +2316,8 @@ class ServicesProxy(object):
     def add_task(self, task_pool_name, task_name, nproc, working_dir,
                  binary, *args, **keywords):
         """
-        Add task *task_name* to task pool *task_pool_name*.  Remaining arguments are the same as in :py:meth:`ServicesProxy.launch_task`.
+        Add task *task_name* to task pool *task_pool_name*.  Remaining arguments are the same as
+        in :py:meth:`ServicesProxy.launch_task`.
         """
         task_pool = self.task_pools[task_pool_name]
         return task_pool.add_task(task_name, nproc, working_dir, binary,
@@ -2310,11 +2325,14 @@ class ServicesProxy(object):
 
     def submit_tasks(self, task_pool_name, block=True):
         """
-        Launch all unfinished tasks in task pool *task_pool_name*.  If *block* is ``True``, return when all tasks have been launched.  If *block* is ``False``, return when all tasks that can be launched immediately have been launched.  Return number of tasks submitted.
+        Launch all unfinished tasks in task pool *task_pool_name*.  If *block* is ``True``,
+        return when all tasks have been launched.  If *block* is ``False``, return when all
+        tasks that can be launched immediately have been launched.  Return number of tasks
+        submitted.
         """
         start_time = time.time()
-        self._send_monitor_event('IPS_TASK_POOL_BEGIN', 'task_pool = %s ' % (task_pool_name))
-        task_pool = self.task_pools[task_pool_name]
+        self._send_monitor_event('IPS_TASK_POOL_BEGIN', 'task_pool = %s ' % task_pool_name)
+        task_pool: TaskPool = self.task_pools[task_pool_name]
         retval = task_pool.submit_tasks(block)
         self._send_monitor_event('IPS_TASK_POOL_END', 'task_pool = %s  elapsed time = %.2f S' %
                                  (task_pool_name, time.time() - start_time))
@@ -2413,14 +2431,37 @@ class TaskPool(object):
     """
     Class to contain and manage a pool of tasks.
     """
+    dask = None
+    distributed = None
+    try:
+        dask: dask = __import__("dask")
+        distributed: dask.distributed = __import__("dask.distributed",
+                                                  fromlist=[None])
+    except ImportError:
+        pass
+    else:
+        scheduler = None
+        dask_worker = None
+        scheduler = shutil.which("dask-scheduler")
+        dask_worker = shutil.which("dask-worker")
+        if not scheduler or not dask_worker:
+            dask = None
+            distributed = None
 
     def __init__(self, name, services):
+        self.dask_pool = False
         self.name = name
         self.services = services
         self.active_tasks = {}
         self.finished_tasks = {}
         self.queued_tasks = {}
         self.blocked_tasks = {}
+        self.serial_pool = True
+        self.dask_shed_pid = None
+        self.dask_workers_pid = None
+        self.dask_tlist = None
+        self.dask_file_name = None
+        self.dask_client = None
 
     def _wait_any_task(self, block=True):
         """
@@ -2438,7 +2479,7 @@ class TaskPool(object):
         while not done:
             for task_id in list(self.active_tasks.keys()):
                 exit_status = self.services.wait_task_nonblocking(task_id)
-                if (exit_status != None):
+                if exit_status is not None:
                     task = self.active_tasks.pop(task_id)
                     task.exit_status = exit_status
                     self.finished_tasks[task.name] = task
@@ -2477,14 +2518,31 @@ class TaskPool(object):
         else:
             self.services.binary_fullpath_cache[binary] = binary_fullpath
 
-        if (task_name in self.queued_tasks):
-            raise Exception('Duplicate task name %s in task pool' % (task_name))
+        if task_name in self.queued_tasks:
+            raise Exception('Duplicate task name %s in task pool' % task_name)
         keywords['block'] = False
 
+        self.serial_pool = self.serial_pool and (nproc == 1)
         self.queued_tasks[task_name] = Task(task_name, nproc, working_dir, binary_fullpath, *args, **keywords)
         return
 
-    def submit_tasks(self, block=True):
+    def submit_dask_tasks(self, block=True, nodes=1):
+        self.dask_file_name = os.path.join(os.getcwd(), f".{self.name}_dask_shed.json")
+        self.dask_shed_pid = subprocess.Popen([self.scheduler,
+                          "--scheduler-file", self.dask_file_name]).pid
+
+        self.dask_workers_pid = subprocess.Popen(["/usr/bin/mpirun", "-n", "1",
+                                                  "-x", "PYTHONPATH",
+                                                  self.dask_worker,
+                                                  "--scheduler-file", self.dask_file_name
+                                                  ]).pid
+        self.dask_client = self.dask.distributed.Client(scheduler_file=self.dask_file_name)
+        launch.__module__ = "__main__"
+        self.dask_tlist = [self.dask.delayed(launch)(v.binary, k, v.working_dir, *v.args, v.keywords)
+                           for k, v in self.queued_tasks.items()]
+        return len(self.dask_tlist)
+
+    def submit_tasks(self, block=True, nodes=None):
         """
         Launch tasks in *queued_tasks*.  Finished tasks are handled before
         launching new ones.  If *block* is ``True``, the number of tasks
@@ -2492,18 +2550,23 @@ class TaskPool(object):
         completed.  If *block* is ``False`` the number of tasks that can
         immediately be launched is returned.
         """
+
+        if TaskPool.dask and self.serial_pool:
+            self.dask_pool = True
+            return self.submit_dask_tasks(block, nodes)
+
         submit_count = 0
         # Make sure any finished tasks are handled before attempting to submit
         # new ones
         self._wait_any_task(block=False)
         while True:
-            if (len(self.queued_tasks) == 0):
+            if len(self.queued_tasks) == 0:
                 break
             active_tasks = self.services.launch_task_pool(self.name)
             for task_name, task_id in active_tasks.items():
                 self.active_tasks[task_id] = self.queued_tasks.pop(task_name)
                 submit_count += 1
-            if (block):
+            if block:
                 self._wait_any_task()
                 continue
             else:
@@ -2512,12 +2575,21 @@ class TaskPool(object):
             self._wait_active_tasks()
         return submit_count
 
+    def get_dask_finished_tasks_status(self):
+        result = self.dask.compute(self.dask_tlist)
+        print(result)
+        self.dask_client.shutdown()
+        os.remove(self.dask_file_name)
+        return dict(result[0])
+
     def get_finished_tasks_status(self):
         """
         Return a dictionary of exit status values for all tasks that have
         finished since the last time finished tasks were polled.
         """
-        if (len(self.active_tasks) + len(self.finished_tasks) == 0):
+        if self.dask_pool:
+            return self.get_dask_finished_tasks_status()
+        if len(self.active_tasks) + len(self.finished_tasks) == 0:
             raise Exception('No more active tasks in task pool %s' % (self.name))
 
         exit_status = {}
