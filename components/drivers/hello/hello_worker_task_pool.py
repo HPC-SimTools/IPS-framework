@@ -20,23 +20,26 @@ class HelloWorker(Component):
 
     def step(self, timeStamp=0.0):
         random.seed(1)
+        SIZE=10
         print('Hello from HelloWorker')
-        duration = random.random_integers(1, high=20, size=100)
+        duration = random.random_integers(1, high=20, size=SIZE)
         tasks = {}
-        bin = '/bin/sleep'
+        bin = self.CODE
         cwd = self.services.get_working_dir()
         pool = self.services.create_task_pool('pool')
-        for i in range(100):
-            self.services.add_task('pool', 'task_'+str(i), 1, cwd, bin, duration[i])
+        for i in range(SIZE):
+            self.services.add_task('pool', 'task_'+str(i), 1,
+                                   cwd, bin, duration[i],
+                                   logfile=f"task_{i}.log")
         ret_val = self.services.submit_tasks('pool')
         print('ret_val = ', ret_val)
         exit_status = self.services.get_finished_tasks('pool')
         print(exit_status)
 
         print("====== Non Blocking ")
-        for i in range(100):
+        for i in range(SIZE):
             self.services.add_task('pool', 'Nonblock_task_'+str(i), 1, cwd, bin, duration[i])
-        total_tasks = 100
+        total_tasks = SIZE
         active_tasks = self.services.submit_tasks('pool', block=False)
         finished_tasks = 0
         while (finished_tasks <  total_tasks) :
