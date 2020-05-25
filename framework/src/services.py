@@ -21,9 +21,9 @@ import glob
 import ipsExceptions
 import ipsTiming
 import weakref
-import tempfile
 
 MY_VERSION = float(sys.version[:3])
+
 
 def launch(binary, task_name, working_dir, *args, **keywords):
     from dask.distributed import get_worker
@@ -46,7 +46,6 @@ def launch(binary, task_name, working_dir, *args, **keywords):
                                stderr=subprocess.STDOUT,
                                cwd=working_dir)
     ret_val = process.wait()
-    #ret_val = subprocess.call(cmd_lst,stdout=task_stdout, stderr=subprocess.STDOUT)
     print(f"{asctime()} {task_name} Done on {myid}")
     return task_name, ret_val
 
