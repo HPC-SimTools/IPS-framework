@@ -30,7 +30,7 @@ def launch(binary, task_name, working_dir, *args, **keywords):
     from time import asctime
     import sys
     os.chdir(working_dir)
-    myid = get_worker()
+    #myid = get_worker()
     task_stdout = sys.stdout
     try:
         log_filename = keywords["logfile"]
@@ -2535,8 +2535,6 @@ class TaskPool(object):
 
         keywords['keywords']['block'] = False
 
-        print(f"{keywords}")
-
         self.serial_pool = self.serial_pool and (nproc == 1)
         self.queued_tasks[task_name] = Task(task_name, nproc, working_dir, binary_fullpath, *args,
                                             **keywords["keywords"])
@@ -2552,10 +2550,12 @@ class TaskPool(object):
         if services.get_config_param("MPIRUN") == "eval":
             nodes = 1
         nodes = 1 if nodes is None else nodes
+        nthreads = services.get_config_param("PROCS_PER_NODE")
         self.dask_workers_tid = services.launch_task(nodes, os.getcwd(),
                                                      self.dask_worker,
                                                      "--scheduler-file",
                                                      self.dask_file_name,
+                                                     "--nthread", str(nthreads),
                                                      task_ppn=1)
 
         self.dask_client = self.dask.distributed.Client(scheduler_file=self.dask_file_name)
