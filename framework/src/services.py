@@ -2555,7 +2555,7 @@ class TaskPool(object):
                                                      self.dask_worker,
                                                      "--scheduler-file",
                                                      self.dask_file_name,
-                                                     "--nthread", str(nthreads),
+                                                     "--nthreads", str(nthreads),
                                                      task_ppn=1)
 
         self.dask_client = self.dask.distributed.Client(scheduler_file=self.dask_file_name)
