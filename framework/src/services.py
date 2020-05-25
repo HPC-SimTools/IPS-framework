@@ -40,13 +40,13 @@ def launch(binary, task_name, working_dir, *args, **keywords):
         task_stdout = open(log_filename, "w")
 
     cmd = f"{binary} {' '.join(map(str, args))}"
-    print(f"{asctime()} {task_name} running {cmd} on {myid} in {working_dir}", args, keywords)
+    #print(f"{asctime()} {task_name} running {cmd} on {myid} in {working_dir}", args, keywords)
     cmd_lst = cmd.split()
     process = subprocess.Popen(cmd_lst, stdout=task_stdout,
                                stderr=subprocess.STDOUT,
                                cwd=working_dir)
     ret_val = process.wait()
-    print(f"{asctime()} {task_name} Done on {myid}")
+    #print(f"{asctime()} {task_name} Done on {myid}")
     return task_name, ret_val
 
 def make_timers_parent():
