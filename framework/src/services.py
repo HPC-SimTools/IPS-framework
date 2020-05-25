@@ -2551,6 +2551,7 @@ class TaskPool(object):
 
         if services.get_config_param("MPIRUN") == "eval":
             nodes = 1
+        nodes = 1 if nodes is None else nodes
         self.dask_workers_tid = services.launch_task(nodes, os.getcwd(),
                                                      self.dask_worker,
                                                      "--scheduler-file",
@@ -2617,7 +2618,10 @@ class TaskPool(object):
         result = self.dask_client.gather(self.futures)
         self.dask_client.shutdown()
         self.dask_client.close()
-        os.remove(self.dask_file_name)
+        try:
+            os.remove(self.dask_file_name)
+        except FileNotFoundError:
+            pass
         self.finished_tasks = self.active_tasks
         self.active_tasks = {}
         self.services.wait_task(self.dask_workers_tid)
