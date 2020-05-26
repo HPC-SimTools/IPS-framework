@@ -2591,6 +2591,7 @@ class TaskPool(object):
         immediately be launched is returned.
         """
 
+        print(f"block = {block}  use_dask={use_dask} dask_nodes={dask_nodes}")
         if TaskPool.dask and self.serial_pool and use_dask:
             self.dask_pool = True
             return self.submit_dask_tasks(block, dask_nodes)
@@ -2623,9 +2624,13 @@ class TaskPool(object):
             os.remove(self.dask_file_name)
         except FileNotFoundError:
             pass
-        self.finished_tasks = self.active_tasks
+        self.finished_tasks = {}
         self.active_tasks = {}
         self.services.wait_task(self.dask_workers_tid)
+        self.dask_file_name=None
+        self.dask_workers_tid=None
+        self.dask_sched_pid=None
+        self.dask_pool = False
         return dict(result)
 
     def get_finished_tasks_status(self):
