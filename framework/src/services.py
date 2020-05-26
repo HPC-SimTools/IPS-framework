@@ -2335,7 +2335,7 @@ class ServicesProxy(object):
         return task_pool.add_task(task_name, nproc, working_dir, binary,
                                   *args, keywords=keywords)
 
-    def submit_tasks(self, task_pool_name, block=True):
+    def submit_tasks(self, task_pool_name, block=True, use_dask=False, dask_nodes=1):
         """
         Launch all unfinished tasks in task pool *task_pool_name*.  If *block* is ``True``,
         return when all tasks have been launched.  If *block* is ``False``, return when all
@@ -2345,7 +2345,7 @@ class ServicesProxy(object):
         start_time = time.time()
         self._send_monitor_event('IPS_TASK_POOL_BEGIN', 'task_pool = %s ' % task_pool_name)
         task_pool: TaskPool = self.task_pools[task_pool_name]
-        retval = task_pool.submit_tasks(block)
+        retval = task_pool.submit_tasks(block, use_dask, dask_nodes)
         self._send_monitor_event('IPS_TASK_POOL_END', 'task_pool = %s  elapsed time = %.2f S' %
                                  (task_pool_name, time.time() - start_time))
         return retval
@@ -2680,6 +2680,6 @@ class Task(object):
         self.nproc = int(nproc)
         self.working_dir = working_dir
         self.binary = binary
-        self.args = args
+        self.args = [str(a) for a in args] if args else args
         self.keywords = keywords
         self.exit_status = None
