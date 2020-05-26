@@ -24,7 +24,11 @@ class HelloWorker(Component):
         print('Hello from HelloWorker')
         duration = random.random_integers(1, high=20, size=SIZE)
         tasks = {}
-        bin = self.CODE
+        bin="/bin/sleep"
+        try:
+            bin = self.CODE
+        except Exception:
+            pass
         cwd = self.services.get_working_dir()
         pool = self.services.create_task_pool('pool')
         for i in range(SIZE):
