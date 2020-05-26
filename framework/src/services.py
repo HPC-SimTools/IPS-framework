@@ -2582,7 +2582,7 @@ class TaskPool(object):
         self.queued_tasks = {}
         return len(self.futures)
 
-    def submit_tasks(self, block=True, nodes=None):
+    def submit_tasks(self, block=True, use_dask=False, dask_nodes=1):
         """
         Launch tasks in *queued_tasks*.  Finished tasks are handled before
         launching new ones.  If *block* is ``True``, the number of tasks
@@ -2591,9 +2591,9 @@ class TaskPool(object):
         immediately be launched is returned.
         """
 
-        if TaskPool.dask and self.serial_pool:
+        if TaskPool.dask and self.serial_pool and use_dask:
             self.dask_pool = True
-            return self.submit_dask_tasks(block, nodes)
+            return self.submit_dask_tasks(block, dask_nodes)
 
         submit_count = 0
         # Make sure any finished tasks are handled before attempting to submit
