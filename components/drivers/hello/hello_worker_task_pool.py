@@ -38,7 +38,7 @@ class HelloWorker(Component):
                                    cwd, bin, str(duration[i]),
                                    logfile=f"task_{i}.log",
                                    task_env=task_env)
-        ret_val = self.services.submit_tasks('pool', use_dask=True, dask_nodes=1)
+        ret_val = self.services.submit_tasks('pool', use_dask=True, dask_nodes=1, dask_ppn=10)
         print('ret_val = ', ret_val)
         exit_status = self.services.get_finished_tasks('pool')
         print(exit_status)
