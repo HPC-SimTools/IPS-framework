@@ -38,6 +38,13 @@ def launch(binary, task_name, working_dir, *args, **keywords):
         pass
     else:
         task_stdout = open(log_filename, "w")
+    env = {}
+    try:
+        env = keywords["task_env"]
+    except Exception:
+        pass
+    for k, v in env.items():
+        os.environ[str(k)] = str(v)
 
     cmd = f"{binary} {' '.join(map(str, args))}"
     #print(f"{asctime()} {task_name} running {cmd} on {myid} in {working_dir}", args, keywords)
@@ -47,6 +54,9 @@ def launch(binary, task_name, working_dir, *args, **keywords):
                                cwd=working_dir)
     ret_val = process.wait()
     #print(f"{asctime()} {task_name} Done on {myid}")
+    for k, v in env.items():
+        del os.environ[str(k)]
+
     return task_name, ret_val
 
 def make_timers_parent():
