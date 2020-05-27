@@ -2540,7 +2540,7 @@ class TaskPool(object):
                                             **keywords["keywords"])
         return
 
-    def submit_dask_tasks(self, block=True, nodes=1):
+    def submit_dask_tasks(self, block=True, nodes=1, dask_ppn=None):
         services: ServicesProxy = self.services
         self.dask_file_name = os.path.join(os.getcwd(),
                                            f".{self.name}_dask_shed_{time.time()}.json")
@@ -2550,7 +2550,7 @@ class TaskPool(object):
         if services.get_config_param("MPIRUN") == "eval":
             nodes = 1
         nodes = 1 if nodes is None else nodes
-        nthreads = services.get_config_param("PROCS_PER_NODE")
+        nthreads = dask_ppn if dask_ppn else services.get_config_param("PROCS_PER_NODE")
         self.dask_workers_tid = services.launch_task(nodes, os.getcwd(),
                                                      self.dask_worker,
                                                      "--scheduler-file",
@@ -2582,7 +2582,7 @@ class TaskPool(object):
         self.queued_tasks = {}
         return len(self.futures)
 
-    def submit_tasks(self, block=True, use_dask=False, dask_nodes=1):
+    def submit_tasks(self, block=True, use_dask=False, dask_nodes=1, dask_ppn=None):
         """
         Launch tasks in *queued_tasks*.  Finished tasks are handled before
         launching new ones.  If *block* is ``True``, the number of tasks
@@ -2593,7 +2593,7 @@ class TaskPool(object):
 
         if TaskPool.dask and self.serial_pool and use_dask:
             self.dask_pool = True
-            return self.submit_dask_tasks(block, dask_nodes)
+            return self.submit_dask_tasks(block, dask_nodes, dask_ppn)
 
         submit_count = 0
         # Make sure any finished tasks are handled before attempting to submit
