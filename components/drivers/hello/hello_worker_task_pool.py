@@ -32,9 +32,12 @@ class HelloWorker(Component):
         cwd = self.services.get_working_dir()
         pool = self.services.create_task_pool('pool')
         for i in range(SIZE):
+            task_env = {}
+            task_env["FOO"] = f"task_{i}_FOO"
             self.services.add_task('pool', 'task_'+str(i), 1,
                                    cwd, bin, str(duration[i]),
-                                   logfile=f"task_{i}.log")
+                                   logfile=f"task_{i}.log",
+                                   task_env=task_env)
         ret_val = self.services.submit_tasks('pool', use_dask=True, dask_nodes=1)
         print('ret_val = ', ret_val)
         exit_status = self.services.get_finished_tasks('pool')

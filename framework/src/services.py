@@ -38,25 +38,23 @@ def launch(binary, task_name, working_dir, *args, **keywords):
         pass
     else:
         task_stdout = open(log_filename, "w")
-    env = {}
+    task_env = {}
     try:
-        env = keywords["task_env"]
+        task_env = keywords["task_env"]
     except Exception:
         pass
-    for k, v in env.items():
-        os.environ[str(k)] = str(v)
+    new_env = os.environ.copy()
+    new_env.update(task_env)
 
     cmd = f"{binary} {' '.join(map(str, args))}"
     #print(f"{asctime()} {task_name} running {cmd} on {myid} in {working_dir}", args, keywords)
     cmd_lst = cmd.split()
     process = subprocess.Popen(cmd_lst, stdout=task_stdout,
                                stderr=subprocess.STDOUT,
-                               cwd=working_dir)
+                               cwd=working_dir,
+                               env=new_env)
     ret_val = process.wait()
     #print(f"{asctime()} {task_name} Done on {myid}")
-    for k, v in env.items():
-        del os.environ[str(k)]
-
     return task_name, ret_val
 
 def make_timers_parent():
