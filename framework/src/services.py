@@ -2577,25 +2577,26 @@ class TaskPool(object):
                                             **keywords["keywords"])
         return
 
-    def submit_dask_tasks(self, block=True, nodes=1, dask_ppn=None):
+    def submit_dask_tasks(self, block=True, dask_nodes=1, dask_ppn=None):
         services: ServicesProxy = self.services
         self.dask_file_name = os.path.join(os.getcwd(),
                                            f".{self.name}_dask_shed_{time.time()}.json")
         self.dask_sched_pid = subprocess.Popen([self.dask_scheduler, "--no-dashboard",
                           "--scheduler-file", self.dask_file_name, "--port", "0"]).pid
 
+        dask_nodes = 1 if dask_nodes is None else dask_nodes
         if services.get_config_param("MPIRUN") == "eval":
-            nodes = 1
-        nodes = 1 if nodes is None else nodes
+            dask_nodes = 1
+
         nthreads = dask_ppn if dask_ppn else services.get_config_param("PROCS_PER_NODE")
-        self.dask_workers_tid = services.launch_task(nodes, os.getcwd(),
+        self.dask_workers_tid = services.launch_task(dask_nodes, os.getcwd(),
                                                      self.dask_worker,
                                                      "--scheduler-file",
                                                      self.dask_file_name,
-                                                     "--nprocs", 1 ,
+                                                     "--nprocs", 1,
                                                      "--nthreads", nthreads,
                                                      "--no-dashboard",
-                                                     "--preload", self.services.dask_preload ,
+                                                     "--preload", self.services.dask_preload,
                                                      task_ppn=1)
 
         self.dask_client = self.dask.distributed.Client(scheduler_file=self.dask_file_name)
