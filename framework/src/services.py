@@ -21,6 +21,8 @@ import glob
 import ipsExceptions
 import ipsTiming
 import weakref
+import component
+import inspect
 
 MY_VERSION = float(sys.version[:3])
 
@@ -30,7 +32,7 @@ def launch(binary, task_name, working_dir, *args, **keywords):
     from time import asctime
     import sys
     os.chdir(working_dir)
-    #myid = get_worker()
+    myid = get_worker()
     task_stdout = sys.stdout
     try:
         log_filename = keywords["logfile"]
@@ -46,15 +48,20 @@ def launch(binary, task_name, working_dir, *args, **keywords):
     new_env = os.environ.copy()
     new_env.update(task_env)
 
-    cmd = f"{binary} {' '.join(map(str, args))}"
-    #print(f"{asctime()} {task_name} running {cmd} on {myid} in {working_dir}", args, keywords)
-    cmd_lst = cmd.split()
-    process = subprocess.Popen(cmd_lst, stdout=task_stdout,
+    ret_val = None
+    if isinstance(binary, str):
+        cmd = f"{binary} {' '.join(map(str, args))}"
+        #print(f"{asctime()} {task_name} running {cmd} on {myid} in {working_dir}", args, keywords)
+        cmd_lst = cmd.split()
+        process = subprocess.Popen(cmd_lst, stdout=task_stdout,
                                stderr=subprocess.STDOUT,
                                cwd=working_dir,
                                env=new_env)
-    ret_val = process.wait()
-    #print(f"{asctime()} {task_name} Done on {myid}")
+        ret_val = process.wait()
+        #print(f"{asctime()} {task_name} : {args} Done on {myid}")
+    else:
+        ret_val = binary(*args)
+
     return task_name, ret_val
 
 def make_timers_parent():
@@ -162,6 +169,8 @@ class ServicesProxy(object):
         self.subflow_count = 0
         self.sub_flows = {}
         self.binary_fullpath_cache = {}
+        self.dask_preload = "dask_preload.py"
+
         try:
             if os.environ['IPS_TIMING'] == '1':
                 self.profile = True
@@ -242,6 +251,22 @@ class ServicesProxy(object):
                 chkpts = glob.glob(os.path.join(self.sim_conf['RESTART_ROOT'], 'restart', '*'))
                 base_dir = sorted(chkpts, key=lambda d: float(os.path.basename(d)))[-1]
                 self.sim_conf['RESTART_TIME'] = os.path.basename(base_dir)
+
+        # Get path to IPS modules and PYTHONPATH
+        pypath = [os.path.dirname(inspect.getabsfile(component))]
+        try:
+            pypath.extend(os.environ["PYTHONPATH"].split(":"))
+        except KeyError:
+            pass
+
+        preload_txt = "import sys;"
+        for d in pypath:
+            preload_txt += f"sys.path.insert(0,'{d}');"
+
+        # print(pypath)
+        # print(preload_txt)
+        self.dask_preload = os.path.join(os.getcwd(), self.dask_preload)
+        open(self.dask_preload, "w").write(preload_txt)
 
     def _init_event_service(self):
         """
@@ -564,6 +589,7 @@ class ServicesProxy(object):
         .. note :: This is a nonblocking function, users must use a version of :py:meth:`ServicesProxy.wait_task` to get result.
 
         """
+        args = [str(a) for a in args]
         tokens = binary.split()
         if len(tokens) > 1:
             binary = tokens[0]
@@ -2382,7 +2408,7 @@ class ServicesProxy(object):
             self.exception("Duplicate sub flow name")
             raise Exception("Duplicate sub flow name")
 
-        print("Creating worflow using ", config_file)
+        #print("Creating worflow using ", config_file)
         self.subflow_count += 1
         try:
             sub_conf_new = ConfigObj(infile=config_file, interpolation='template', file_error=True)
@@ -2524,23 +2550,26 @@ class TaskPool(object):
         Create :py:obj:`Task` object and add to *queued_tasks* of the task
         pool.  Raise exception if task name already exists in task pool.
         """
-        tokens = binary.split()
-        if len(tokens) > 1:
-            binary = tokens[0]
-            args = tuple(tokens[1:]) + args
-        try:
-            binary_fullpath = self.services.binary_fullpath_cache[binary]
-        except KeyError:
-            binary_fullpath = ipsutil.which(binary)
-        if not binary_fullpath:
-            self.services.error("Program %s is not in path or is not executable" % binary)
-            raise Exception("Program %s is not in path or is not executable" % binary)
-        else:
-            self.services.binary_fullpath_cache[binary] = binary_fullpath
-
         if task_name in self.queued_tasks:
             raise Exception('Duplicate task name %s in task pool' % task_name)
 
+        binary_fullpath = binary
+        if isinstance(binary, str):
+            tokens = binary.split()
+            if len(tokens) > 1:
+                binary = tokens[0]
+                args = tuple(tokens[1:]) + args
+            try:
+                binary_fullpath = self.services.binary_fullpath_cache[binary]
+            except KeyError:
+                binary_fullpath = ipsutil.which(binary)
+            if not binary_fullpath:
+                self.services.error("Program %s is not in path or is not executable" % binary)
+                raise Exception("Program %s is not in path or is not executable" % binary)
+            else:
+                self.services.binary_fullpath_cache[binary] = binary_fullpath
+
+        # print("####", binary_fullpath, args)
         keywords['keywords']['block'] = False
 
         self.serial_pool = self.serial_pool and (nproc == 1)
@@ -2563,14 +2592,17 @@ class TaskPool(object):
                                                      self.dask_worker,
                                                      "--scheduler-file",
                                                      self.dask_file_name,
-                                                     "--nthreads", str(nthreads),
+                                                     "--nprocs", 1 ,
+                                                     "--nthreads", nthreads,
                                                      "--no-dashboard",
+                                                     "--preload", self.services.dask_preload ,
                                                      task_ppn=1)
 
         self.dask_client = self.dask.distributed.Client(scheduler_file=self.dask_file_name)
         launch.__module__ = "__main__"
         self.futures = []
         for k, v in self.queued_tasks.items():
+            #print(k,v, v.binary, v.args)
             try:
                 log_filename = v.keywords["logfile"]
             except KeyError:
@@ -2627,6 +2659,7 @@ class TaskPool(object):
         result = self.dask_client.gather(self.futures)
         self.dask_client.shutdown()
         self.dask_client.close()
+        time.sleep(1)
         self.finished_tasks = {}
         self.active_tasks = {}
         self.services.wait_task(self.dask_workers_tid)
@@ -2634,7 +2667,7 @@ class TaskPool(object):
         self.dask_workers_tid = None
         self.dask_sched_pid = None
         self.dask_pool = False
-        self.serial_pool = False
+        self.serial_pool = True
         return dict(result)
 
     def get_finished_tasks_status(self):
