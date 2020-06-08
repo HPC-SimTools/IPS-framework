@@ -6,6 +6,7 @@ import sys
 import os
 import ipsTiming
 import weakref
+from copy import copy
 
 try:
     if os.environ['IPS_TIMING'] == '1':
@@ -44,6 +45,16 @@ class Component(object):
                 raise
 
         #pytau.stop(timer)
+
+    def __copy__(self):
+        cls = self.__class__
+        result = cls.__new__(cls)
+        for k, v in self.__dict__.items():
+            if k in ["invocation_q", "sys_exit", "services"]:
+                setattr(result, k, None)
+            else:
+                setattr(result, k, copy(v))
+        return result
 
     def __initialize__(self, component_id, invocation_q, start_time=0.0):
         """
