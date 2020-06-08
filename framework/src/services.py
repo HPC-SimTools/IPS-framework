@@ -1630,7 +1630,7 @@ class ServicesProxy(object):
                     return_dict[sim_name] = output_files
         return return_dict
 
-    def stage_output_files(self, timeStamp, file_list, keep_old_files=True):
+    def stage_output_files(self, timeStamp, file_list, keep_old_files=True, save_plasma_state=True):
         """
         Copy associated component output files (from the working directory)
         to the component simulation results directory. Output files
@@ -1692,16 +1692,16 @@ class ServicesProxy(object):
                                plasma_dir, e.errno, e.strerror)
                 raise
 
-        try:
-            state_files = conf['STATE_FILES'].split()
-        except KeyError:
-            state_files = self.get_config_param('STATE_FILES').split()
-
         all_plasma_files = []
-        for plasma_file in state_files:
-            globbed_files = glob.glob(plasma_file)
-            if (len(globbed_files) > 0):
-                all_plasma_files += globbed_files
+        if save_plasma_state:
+            try:
+                state_files = conf['STATE_FILES'].split()
+            except KeyError:
+                state_files = self.get_config_param('STATE_FILES').split()
+            for plasma_file in state_files:
+                globbed_files = glob.glob(plasma_file)
+                if (len(globbed_files) > 0):
+                    all_plasma_files += globbed_files
 
         for f in all_plasma_files:
             if not os.path.isfile(f):
@@ -1739,7 +1739,7 @@ class ServicesProxy(object):
         try:
             os.makedirs(symlink_dir)
         except OSError as e:
-            if (e.errno != 17):
+            if e.errno != 17:
                 self.exception('Error creating directory %s : %s',
                                symlink_dir, e.strerror)
                 raise
@@ -1749,7 +1749,7 @@ class ServicesProxy(object):
         for f in all_files:
             real_file = os.path.join(output_dir, outprefix + f)
             tokens = f.rsplit('.', 1)
-            if (len(tokens) == 1):
+            if len(tokens) == 1:
                 newName = '_'.join([f, str(timeStamp)])
             else:
                 name = tokens[0]
