@@ -589,7 +589,7 @@ class ServicesProxy(object):
         .. note :: This is a nonblocking function, users must use a version of :py:meth:`ServicesProxy.wait_task` to get result.
 
         """
-        args = [str(a) for a in args]
+        args = tuple(str(a) for a in args)
         tokens = binary.split()
         if len(tokens) > 1:
             binary = tokens[0]
