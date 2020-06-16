@@ -1242,7 +1242,5 @@ def main(argv=None):
 if __name__ == "__main__":
     print("Starting IPS")
     sys.stdout.flush()
-    # Set a process group to propagate signals to all subprocesses
-    os.setsid()
     os.environ['IPS_INITIAL_CWD'] = os.getcwd()
     sys.exit(main())

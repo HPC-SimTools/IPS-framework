@@ -23,6 +23,7 @@ import ipsTiming
 import weakref
 import component
 import inspect
+import signal
 
 MY_VERSION = float(sys.version[:3])
 
@@ -48,16 +49,38 @@ def launch(binary, task_name, working_dir, *args, **keywords):
     new_env = os.environ.copy()
     new_env.update(task_env)
 
+    timeout = 1.e9
+    try:
+        timeout = float(keywords["timeout"])
+    except Exception:
+        pass
+
+    print(f"Task {task_name} timeout = {timeout}")
+
     ret_val = None
     if isinstance(binary, str):
         cmd = f"{binary} {' '.join(map(str, args))}"
         #print(f"{asctime()} {task_name} running {cmd} on {myid} in {working_dir}", args, keywords)
         cmd_lst = cmd.split()
         process = subprocess.Popen(cmd_lst, stdout=task_stdout,
-                               stderr=subprocess.STDOUT,
-                               cwd=working_dir,
-                               env=new_env)
-        ret_val = process.wait()
+                                   stderr=subprocess.STDOUT,
+                                   cwd=working_dir,
+                                   preexec_fn=os.setsid,
+                                   env=new_env)
+        start = time.time()
+        while time.time() - start < timeout:
+            print(f"Task {task_name} going to sleep")
+            time.sleep(1.0)
+            print(f"Task {task_name} Woke up")
+            ret_val = process.poll()
+            if ret_val is None:
+                continue
+            else:
+                break
+        else:               # Time out for process execution
+            print(f"Task {task_name} timed out after {timeout} Seconds")
+            os.killpg(process.pid, signal.SIGKILL)
+            ret_val = -1
         #print(f"{asctime()} {task_name} : {args} Done on {myid}")
     else:
         ret_val = binary(*args)
@@ -658,6 +681,12 @@ class ServicesProxy(object):
         except KeyError:
             pass
 
+        timeout = 1.e9
+        try:
+            timeout = keywords["timeout"]
+        except KeyError:
+            pass
+
         task_stdout = sys.stdout
         if log_filename:
             try:
@@ -691,7 +720,7 @@ class ServicesProxy(object):
 
         # FIXME: process Monitoring Command : ps --no-headers -o pid,state pid1  pid2 pid3 ...
 
-        self.task_map[task_id] = (process, time.time())
+        self.task_map[task_id] = (process, time.time(), timeout)
         return task_id  # process.pid
 
     def launch_task_resilient(self, nproc, working_dir, binary, *args, **keywords):
@@ -823,6 +852,12 @@ class ServicesProxy(object):
             except KeyError:
                 pass
 
+            timeout = 1.e9
+            try:
+                timeout = task.keywords["timeout"]
+            except KeyError:
+                pass
+
             task_stdout = sys.stdout
             if log_filename:
                 try:
@@ -851,7 +886,7 @@ class ServicesProxy(object):
                                      'task_id = %s , Tag = %s , nproc = %d , Target = %s , task_name = %s' % \
                                      (str(task_id), str(tag), int(task.nproc), command, task_name))
 
-            self.task_map[task_id] = (process, time.time())
+            self.task_map[task_id] = (process, time.time(), timeout)
             active_tasks[task_name] = task_id
         return active_tasks
 
@@ -860,7 +895,7 @@ class ServicesProxy(object):
         Kill launched task *task_id*.  Return if successful.  Raises exceptions if the task or process cannot be found or killed successfully.
         """
         try:
-            process, start_time = self.task_map[task_id]
+            process, start_time, timeout = self.task_map[task_id]
             # TODO: process and start_time will have to be accessed as shown
             #      below if this task can be relaunched to support FT...
             # process, start_time = self.task_map[task_id][0], self.task_map[task_id][1]
@@ -904,7 +939,7 @@ class ServicesProxy(object):
         Check the status of task *task_id*.  If it has finished, the return value is populated with the actual value, otherwise ``None`` is returned.  A *KeyError* exception may be raised if the task is not found.
         """
         try:
-            process, start_time = self.task_map[task_id]
+            process, start_time, timeout = self.task_map[task_id]
             # TODO: process and start_time will have to be accessed as shown
             #      below if this task can be relaunched to support FT...
             # process, start_time = self.task_map[task_id][0], self.task_map[task_id][1]
@@ -913,7 +948,13 @@ class ServicesProxy(object):
             raise
         task_retval = process.poll()
         if task_retval is None:
-            return None
+            if start_time + timeout < time.time():
+                self.kill_task(task_id)
+                self._send_monitor_event('IPS_TASK_END', 'task_id = %s  TIMEOUT elapsed time = %.2f S' %
+                                         (str(task_id), time.time() - start_time))
+                return -1
+            else:
+                return None
         else:
             retval = self.wait_task(task_id)
             return retval
@@ -924,7 +965,7 @@ class ServicesProxy(object):
         """
         # print "in wait task"
         try:
-            process, start_time = self.task_map[task_id]
+            process, start_time, task_timeout = self.task_map[task_id]
         except KeyError as e:
             self.exception('Error: unrecognizable task_id = %s ', str(task_id))
             raise
