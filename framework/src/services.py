@@ -41,6 +41,18 @@ def launch(binary, task_name, working_dir, *args, **keywords):
         pass
     else:
         task_stdout = open(log_filename, "w")
+
+    task_stderr = subprocess.STDOUT
+    try:
+        err_filename = keywords["errfile"]
+    except KeyError:
+        pass
+    else:
+        try:
+            task_stderr = open(err_filename, "w")
+        except Exception:
+            pass
+
     task_env = {}
     try:
         task_env = keywords["task_env"]
@@ -63,7 +75,7 @@ def launch(binary, task_name, working_dir, *args, **keywords):
         #print(f"{asctime()} {task_name} running {cmd} on {myid} in {working_dir}", args, keywords)
         cmd_lst = cmd.split()
         process = subprocess.Popen(cmd_lst, stdout=task_stdout,
-                                   stderr=subprocess.STDOUT,
+                                   stderr=task_stderr,
                                    cwd=working_dir,
                                    preexec_fn=os.setsid,
                                    env=new_env)
@@ -694,6 +706,17 @@ class ServicesProxy(object):
             except:
                 self.exception('Error opening log file %s : using stdout', log_filename)
 
+        task_stderr = subprocess.STDOUT
+        try:
+            err_filename = keywords['errfile']
+        except KeyError:
+            pass
+        else:
+            try:
+                task_stderr = open(err_filename, 'w')
+            except Exception:
+                self.exception('Error opening stderr file %s : using stderr', err_filename)
+
         cmd_lst = command.split(' ')
         if not cmd_lst[-1]:
             # Kill the last argument in the command list if it is the empty string
@@ -705,12 +728,12 @@ class ServicesProxy(object):
                 new_env = os.environ
                 new_env.update(env_update)
                 process = subprocess.Popen(cmd_lst, stdout=task_stdout,
-                                           stderr=subprocess.STDOUT,
+                                           stderr=task_stderr,
                                            cwd=working_dir,
                                            env=new_env)
             else:
                 process = subprocess.Popen(cmd_lst, stdout=task_stdout,
-                                           stderr=subprocess.STDOUT,
+                                           stderr=task_stderr,
                                            cwd=working_dir)
         except Exception as e:
             self.exception('Error executing command : %s', command)
@@ -865,6 +888,17 @@ class ServicesProxy(object):
                 except:
                     self.exception('Error opening log file %s : using stdout', log_filename)
 
+            task_stderr = subprocess.STDOUT
+            try:
+                err_filename = task.keywords['errfile']
+            except KeyError:
+                pass
+            else:
+                try:
+                    task_stderr = open(err_filename, 'w')
+                except Exception:
+                    self.exception('Error opening stderr file %s : using stderr', err_filename)
+
             cmd_lst = command.split(' ')
             try:
                 self.debug('Launching command : %s', command)
@@ -872,12 +906,12 @@ class ServicesProxy(object):
                     new_env = os.environ
                     new_env.update(env_update)
                     process = subprocess.Popen(cmd_lst, stdout=task_stdout,
-                                               stderr=subprocess.STDOUT,
+                                               stderr=task_stderr,
                                                cwd=task.working_dir,
                                                env=new_env)
                 else:
                     process = subprocess.Popen(cmd_lst, stdout=task_stdout,
-                                               stderr=subprocess.STDOUT,
+                                               stderr=task_stderr,
                                                cwd=task.working_dir)
             except Exception as e:
                 self.exception('Error executing task %s - command : %s', task_name, command)
