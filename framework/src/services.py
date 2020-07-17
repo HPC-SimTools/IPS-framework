@@ -1944,16 +1944,19 @@ class ServicesProxy(object):
         self.warning('use stage_state() instead')
         return self.stage_state()
 
-    def stage_state(self):
+    def stage_state(self, state_files=None):
         """
         Copy current state to work directory.
         """
         start_time = time.time()
         conf = self.component_ref.config
-        try:
-            files = conf['STATE_FILES'].split()
-        except KeyError:
-            files = self.get_config_param('STATE_FILES').split()
+        if state_files:
+            files = state_files
+        else:
+            try:
+                files = conf['STATE_FILES'].split()
+            except KeyError:
+                files = self.get_config_param('STATE_FILES').split()
 
         state_dir = self.get_config_param('STATE_WORK_DIR')
         workdir = self.get_working_dir()
