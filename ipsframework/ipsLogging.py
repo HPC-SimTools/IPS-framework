@@ -3,7 +3,6 @@ This file implements several objects that customize logging in the IPS.
 """
 
 import logging
-import atexit
 import sys
 import pickle
 import logging.handlers
@@ -15,7 +14,6 @@ import socket
 import os, os.path
 import queue
 import errno
-import threading
 import time
 
 def list_fds():

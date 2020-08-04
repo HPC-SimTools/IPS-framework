@@ -1,10 +1,9 @@
 #-------------------------------------------------------------------------------
 # Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
 #-------------------------------------------------------------------------------
-from messages import Message, MethodResultMessage
+from .messages import Message, MethodResultMessage
 import sys
 import os
-import ipsTiming
 import weakref
 from copy import copy
 

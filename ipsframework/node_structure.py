@@ -6,10 +6,6 @@ Node structures for RM are implemented here for convenience.
 """
 
 # local version
-import os
-import sys
-from math import ceil
-
 class Node:
     """
     Models a node in the allocation.

@@ -2,22 +2,16 @@
 # Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
 #-------------------------------------------------------------------------------
 # local version
-import sys
 import os
-import re
-import string
 import time
 from math import ceil
-from socket import gethostname
-from ipsExceptions import InsufficientResourcesException, \
+from .ipsExceptions import InsufficientResourcesException, \
      BadResourceRequestException, \
-     NonexistentResourceException, \
      AllocatedNodeDownException, \
-     ReleaseMismatchException, \
      ResourceRequestMismatchException
-from ips_es_spec import eventManager
-from resourceHelper import getResourceList
-from node_structure import Node
+from .ips_es_spec import eventManager
+from .resourceHelper import getResourceList
+from .node_structure import Node
 # import things to use event service
 #from event_service_spec import PublisherEventService,SubscriberEventService,EventListener,Topic,EventServiceException
 

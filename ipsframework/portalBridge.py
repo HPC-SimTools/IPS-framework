@@ -4,18 +4,18 @@
 import re
 
 import datetime
-from component import Component
+from ipsframework.component import Component
 import sys, urllib.request, urllib.parse, urllib.error, os
 from subprocess import Popen, PIPE
 import urllib.request, urllib.error, urllib.parse
 import time
-import ipsutil
+from ipsframework import ipsutil
 import inspect
 from collections import defaultdict
 import hashlib
 import glob
 import itertools
-from convert_log_function import *
+from ipsframework.convert_log_function import convert_logdata_to_html
 import json
 
 ENABLE_MPO = False

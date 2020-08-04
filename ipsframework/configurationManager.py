@@ -6,17 +6,15 @@ import os
 import sys
 import importlib
 import inspect
-from services import ServicesProxy
-from componentRegistry import ComponentID, ComponentRegistry
+from .services import ServicesProxy
+from .componentRegistry import ComponentID, ComponentRegistry
 import tempfile
-import ipsLogging
+from . import ipsLogging
 import logging
 import socket
 
 my_version = float(sys.version[:3])
 from multiprocessing import Queue, Process
-from ipsTiming import create_timer, start, stop, TauWrap
-import ipsutil
 
 
 class ConfigurationManager(object):
@@ -113,7 +111,6 @@ class ConfigurationManager(object):
         self.platform_conf = {}
         # SIMYAN: breaking up the keywords a little bit
         self.compset_list = compset_list
-        loc_keys = ['IPS_ROOT']  # ,'PORTAL_URL','RUNID_URL']
         loc_keys = []
         mach_keys = ['MPIRUN', 'NODE_DETECTION', 'CORES_PER_NODE', 'SOCKETS_PER_NODE', 'NODE_ALLOCATION_MODE']
         prov_keys = ['HOST']
@@ -652,9 +649,6 @@ class ConfigurationManager(object):
             if 'BIN_DIR' not in comp_conf:
                 if 'BIN_DIR' in sim_conf:
                     comp_conf['BIN_DIR'] = sim_conf['BIN_DIR']
-                else:
-                    comp_conf['BIN_DIR'] = os.path.join(sim_conf['IPS_ROOT'], 'bin')
-            #                    comp_conf['BIN_DIR']=sim_data.conf_file_dir
             if 'BIN_PATH' not in comp_conf:
                 if 'BIN_PATH' in sim_conf:
                     comp_conf['BIN_PATH'] = sim_conf['BIN_PATH']

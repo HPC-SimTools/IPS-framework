@@ -1,15 +1,9 @@
 #-------------------------------------------------------------------------------
 # Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
 #-------------------------------------------------------------------------------
-import sys
 import os
-import subprocess
-import getopt
-import shutil
-import string
-import ipsutil
-import time
-from component import Component
+from ipsframework.component import Component
+from ipsframework import ipsutil
 
 def catch_and_go(func_to_decorate):
     def new_func(*original_args, **original_kwargs):

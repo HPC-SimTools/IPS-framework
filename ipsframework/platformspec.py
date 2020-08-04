@@ -3,7 +3,7 @@
 #-------------------------------------------------------------------------------
 import os
 import sys
-from messages import Message
+from .messages import Message
 
 def get_share_and_platform(platform_file_name,ipsPathName):
     if (platform_file_name):

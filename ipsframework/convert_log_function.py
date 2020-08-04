@@ -2,9 +2,7 @@
 # -------------------------------------------------------------------------------
 # Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
 # -------------------------------------------------------------------------------
-import sys
-import os
-import HTML
+from ipsframework.utils import HTML
 
 
 def parse_log_line(l):

@@ -1,23 +1,16 @@
 #-------------------------------------------------------------------------------
 # Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
 #-------------------------------------------------------------------------------
-import sys
 import os
-import subprocess
-import string
-import time
-import configurationManager
-import messages
-import math
-from ipsExceptions import BlockedMessageException,  \
+from . import messages, configurationManager
+from .ipsExceptions import BlockedMessageException,  \
                           IncompleteCallException,  \
                           InsufficientResourcesException, \
                           BadResourceRequestException, \
                           AllocatedNodeDownException, \
                           ResourceRequestMismatchException
-import shutil
 from math import ceil
-from ipsutil import which
+from .ipsutil import which
 
 # from event_service_spec import PublisherEventService,SubscriberEventService,EventListener,Topic,EventServiceException
 

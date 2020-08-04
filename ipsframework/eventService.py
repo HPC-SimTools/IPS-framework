@@ -346,6 +346,6 @@ class EventService(object):
     """""""""Methods internal to the event service end here"""""""""
 
 
-from debug import debug
-from cca_es_spec import EventServiceException,Event,Topic,Subscription
-from topicManager import TopicManager
+from .debug import debug
+from .cca_es_spec import EventServiceException,Event,Topic
+from .topicManager import TopicManager

@@ -5,8 +5,8 @@
 Experimental timing of the IPS using TAU
 """
 
-import os, sys
-import time
+import os
+import sys
 import inspect
 if (sys.version_info > (2, 6)):
     from types import MethodType

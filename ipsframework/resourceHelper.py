@@ -5,12 +5,10 @@ of the resource manager will allow us to test it independent
 of the IPS.
 """
 
-import sys
 import os
-import shutil
 import subprocess
 from math import ceil
-from ipsExceptions import InvalidResourceSettingsException
+from .ipsExceptions import InvalidResourceSettingsException
 
 def get_qstat_jobinfo():
     """

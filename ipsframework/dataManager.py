@@ -3,9 +3,7 @@
 #-------------------------------------------------------------------------------
 import sys
 import os
-import shutil
-import ipsExceptions
-import ipsutil
+from . import ipsutil
 import subprocess
 
 # import things to use event service

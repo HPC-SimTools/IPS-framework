@@ -1,9 +1,7 @@
 #-------------------------------------------------------------------------------
 # Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
 #-------------------------------------------------------------------------------
-import os
 from configobj import ConfigObj
-import ipsutil
 
 
 def get_status(checklist_file):

@@ -17,8 +17,8 @@ count of pending events exceeding which triggers an event cleanup to remove
 events that outlive a 'timeToLive' parameter.
 """
 
-from cca_es_spec import EventServiceException,Event
-from debug import debug
+from .cca_es_spec import EventServiceException,Event
+from .debug import debug
 
 
 class TopicManager(object):

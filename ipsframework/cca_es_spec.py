@@ -125,6 +125,6 @@ def initialize_event_service(service):
         _proxy = EventServiceCmpProxy(service)
 
 
-from eventService import EventService
-from eventServiceProxy import EventServiceFwkProxy, EventServiceCmpProxy
+from .eventService import EventService
+from .eventServiceProxy import EventServiceFwkProxy, EventServiceCmpProxy
 from copy import deepcopy

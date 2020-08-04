@@ -1,9 +1,8 @@
 #-------------------------------------------------------------------------------
 # Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
 #-------------------------------------------------------------------------------
-from component import Component
+from .component import Component
 from ctypes import *
-from time import sleep
 
 
 """

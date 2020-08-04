@@ -58,32 +58,29 @@ if sys.version[0] != '3':
     print("IPS can is only compatible with Python 3.5 or higher")
     sys.exit(1)
 
-import glob, fnmatch
+import glob
+import fnmatch
 import optparse
 import multiprocessing
-import platformspec
+from . import platformspec, ipsutil, ipsTiming, checklist
 import shutil
-import ipsutil
 import zipfile
 import inspect
-from messages import Message, ServiceRequestMessage, \
+from .messages import Message, ServiceRequestMessage, \
                     ServiceResponseMessage, MethodInvokeMessage
-from configurationManager import ConfigurationManager
-from taskManager import TaskManager
-from resourceManager import ResourceManager
-from dataManager import DataManager
-from componentRegistry import ComponentRegistry
+from .configurationManager import ConfigurationManager
+from .taskManager import TaskManager
+from .resourceManager import ResourceManager
+from .dataManager import DataManager
+from .componentRegistry import ComponentRegistry, ComponentID
 import socket
-from componentRegistry import ComponentID
-from ipsExceptions import BlockedMessageException
-from eventService import EventService
-from cca_es_spec import initialize_event_service
+from .ipsExceptions import BlockedMessageException
+from .eventService import EventService
+from .cca_es_spec import initialize_event_service
 import logging
-from ips_es_spec import eventManager
+from .ips_es_spec import eventManager
 import os
-import ipsTiming
 import time
-import checklist
 from configobj import ConfigObj
 #from ipsTiming import *
 
