@@ -20,8 +20,7 @@ import sys, os
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 sys.path.insert(0, os.path.abspath('.'))
-sys.path.insert(0, os.path.abspath('../framework/src'))
-sys.path.insert(0, os.path.abspath('../framework/util/RUS'))
+sys.path.insert(0, os.path.abspath('../ipsframework'))
 # -- General configuration -----------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
@@ -29,7 +28,7 @@ sys.path.insert(0, os.path.abspath('../framework/util/RUS'))
 
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
-extensions = ['sphinx.ext.autodoc', 'sphinx.ext.todo', 'sphinx.ext.coverage', 'sphinx.ext.pngmath']
+extensions = ['sphinx.ext.autodoc', 'sphinx.ext.todo', 'sphinx.ext.coverage', 'sphinx.ext.imgmath']
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['customizations/templates']
@@ -127,7 +126,7 @@ html_theme = 'default'
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ['customizations']
+# html_static_path = ['customizations']
 
 # If not '', a 'Last updated on:' timestamp is inserted at every page bottom,
 # using the given strftime format.
@@ -201,7 +200,7 @@ latex_documents = [
 latex_show_pagerefs = False
 
 # If true, show URL addresses after external links.
-latex_show_urls = False
+latex_show_urls = 'no'
 
 # Additional stuff for the LaTeX preamble.
 latex_preamble = r'''

@@ -215,6 +215,7 @@ class ResourceManager(object):
         """
         Print current RM status to the reporting_file ("resource_usage")
         Entries consist of:
+
          - time in seconds since beginning of time (__init__ of RM)
          - # cores that are available
          - # cores that are allocated

@@ -1,6 +1,6 @@
-==================================
+===================================
 The Configuration Files - Explained
-==================================
+===================================
 
 This section will detail the different sections and fields of the
 configuration file and how they relate to a simulation.  The
@@ -306,7 +306,7 @@ such that it looks like a seamless simulation.
         number of processes per node (ppn) for the framework 
 	[#manual_alloc_ppn]_.
 **Platform Configuration Override Section**
-It is possible for the configuration file to override entries in the platform configuration file.  It is rare and users should use caution when overriding these values.  See :doc:`Platform Configuration File - Explained<platform>` for details on these values.
+        It is possible for the configuration file to override entries in the platform configuration file.  It is rare and users should use caution when overriding these values.  See :doc:`Platform Configuration File - Explained<platform>` for details on these values.
 
 **Plasma State Section**
 
