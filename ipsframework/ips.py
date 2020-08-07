@@ -81,7 +81,7 @@ import logging
 from .ips_es_spec import eventManager
 import os
 import time
-from configobj import ConfigObj
+from .configobj import ConfigObj
 #from ipsTiming import *
 
 def make_timers():

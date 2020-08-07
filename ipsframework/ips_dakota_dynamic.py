@@ -8,7 +8,7 @@ import sys
 import getopt
 import platformspec
 import inspect
-from configobj import ConfigObj
+from .configobj import ConfigObj
 import subprocess
 import tempfile
 import re

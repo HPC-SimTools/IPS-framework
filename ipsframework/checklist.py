@@ -1,7 +1,7 @@
 #-------------------------------------------------------------------------------
 # Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
 #-------------------------------------------------------------------------------
-from configobj import ConfigObj
+from .configobj import ConfigObj
 
 
 def get_status(checklist_file):

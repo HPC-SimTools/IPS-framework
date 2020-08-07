@@ -3,7 +3,7 @@
 # Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
 #-------------------------------------------------------------------------------
 import sys
-from configobj import ConfigObj
+from .configobj import ConfigObj
 import getopt
 import os
 

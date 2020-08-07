@@ -3,7 +3,7 @@
 # -------------------------------------------------------------------------------
 import os, sys
 from component import Component
-from configobj import ConfigObj
+from .configobj import ConfigObj
 from multiprocessing.connection import Listener
 import select
 import time

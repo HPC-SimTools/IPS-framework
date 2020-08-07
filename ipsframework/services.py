@@ -14,7 +14,7 @@ from .ips_es_spec import eventManager
 import logging
 import logging.handlers
 import signal
-from configobj import ConfigObj
+from .configobj import ConfigObj
 import glob
 import weakref
 import inspect
