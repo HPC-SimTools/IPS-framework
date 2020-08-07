@@ -3,7 +3,7 @@ Code Listings
 
 IPS
 ---
-.. automodule:: ips
+.. automodule:: ipsframework.ips
 
 Framework
 ---------
@@ -14,58 +14,58 @@ Framework
 
 Data Manager
 ------------
-.. automodule:: dataManager
+.. automodule:: ipsframework.dataManager
    :members:
    :undoc-members:
 
 Task Manager
 ------------
-.. automodule:: taskManager
+.. automodule:: ipsframework.taskManager
    :members:
    :undoc-members:
    :exclude-members: launch_task_resilient, wait_task_resilient
 
 Resource Manager
 ----------------
-.. automodule:: resourceManager
+.. automodule:: ipsframework.resourceManager
    :members:
    :undoc-members:
 
 ----------------------------------
 
-.. autoclass:: node_structure.Node
+.. autoclass:: ipsframework.node_structure.Node
    :members:
    :undoc-members:
 
-.. autoclass:: node_structure.Socket
+.. autoclass:: ipsframework.node_structure.Socket
    :members:
    :undoc-members:
 
-.. autoclass:: node_structure.Core
+.. autoclass:: ipsframework.node_structure.Core
    :members:
    :undoc-members:
 
 ----------------------------------
 
-.. automodule:: resourceHelper
+.. automodule:: ipsframework.resourceHelper
    :members:
    :undoc-members:
 
 Component
 ---------
-.. automodule:: component
+.. automodule:: ipsframework.component
    :members:
    :undoc-members:
 
 Configuration Manager
 ---------------------
-.. automodule:: configurationManager
+.. automodule:: ipsframework.configurationManager
    :members:
    :undoc-members:
 
 Services
 --------
-.. automodule:: services
+.. automodule:: ipsframework.services
 
 .. autoclass:: ServicesProxy
    :members:
@@ -85,35 +85,35 @@ Other Utilities
 IPS Exceptions
 ^^^^^^^^^^^^^^
 
-.. automodule:: ipsExceptions
+.. automodule:: ipsframework.ipsExceptions
    :members:
    :undoc-members:
 
 IPS Utilities
 ^^^^^^^^^^^^^
 
-.. automodule:: ipsutil
+.. automodule:: ipsframework.ipsutil
    :members:
    :undoc-members:
 
-.. automodule:: messages
+.. automodule:: ipsframework.messages
    :members:
    :undoc-members:
 
-.. automodule:: sendPost
+.. automodule:: ipsframework.sendPost
    :members:
    :undoc-members:
 
 Framework Components
 --------------------
 
-.. automodule:: portalBridge
+.. automodule:: ipsframework.portalBridge
    :members:
    :undoc-members:
 
 ----------------------------------
 
-.. automodule:: runspaceInitComponent
+.. automodule:: ipsframework.runspaceInitComponent
    :members:
    :undoc-members:
 

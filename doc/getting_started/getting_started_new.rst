@@ -28,7 +28,7 @@ For more inf
 The portal is a web interface for monitoring IPS runs and requires only
 a connection to the internet and a web browser.  Advanced features on
 the portal require an OpenID account backed by ORNL's XCAMS.
-Information on getting an XCAMS backed OpenID can be found on the SWIM_
+Information on getting an XCAMS backed OpenID can be found on the _SWIM
 website.  There are also visualization utilities that can be accessed
 that require Elvis_ or PCMF (see below).
 
@@ -59,8 +59,6 @@ Other Utilities
 
 
 ***Plus*** anything that the components or underlying codes that you are using need (e.g., MPI, math libraries, compilers).  For the example in this tutorial, all packages that are needed are already available on the target machines and the shell configuration script sets up your environment to use them.
-
-.. [#] For Python 2.5, an external package - processing_ - is used by the framework, however it was incorporated into Python 2.6 and higher as the multiprocessing_ module.  Each package allows Python to spawn, manage and communicate between multiple processes, a key capability that allows the IPS to achieve multiple levels of parallelism. 
 
 .. _Sphinx: http://sphinx.pocoo.org/
 .. _Matplotlib: http://matplotlib.sourceforge.net/
@@ -122,8 +120,10 @@ repo and configure directly.  To obtain the rep::
       https://ice.txcorp.com/svnrepos/code/simyan/trunk ips
 
 #. Assuming your dependencies are installed in /usr/local or /contrib,
-   you can configure the file in a build subdirectory::
-  
+   you can configure the file in a build subdirectory
+
+::
+
   mkdir build
   cd build
   cmake \
@@ -141,8 +141,10 @@ repo and configure directly.  To obtain the rep::
     $PWD/..
 
 # After configuring, to build IPS, the documentation, and run the tests
-respectively::
-  
+respectively
+
+::
+
   make
   make docs
   make test
