@@ -13,3 +13,7 @@ Integrated Plasma Simulator (IPS) Framework
 > ips.py --simulation=SIMULATION --platform=PLATFORM_FILENAME
 
 > ips.py --help
+
+# To run the tests (requires pytest)
+
+> python3 setup.py test
