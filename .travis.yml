@@ -4,8 +4,9 @@ python:
   - "3.7"
   - "3.8"
 install:
-  - pip install pytest-runner pytest-cov
+  - pip install pytest-runner pytest-cov flake8
   - python setup.py develop
 script:
   - ips.py --help
+  - flake8
   - python setup.py test --addopts --cov
