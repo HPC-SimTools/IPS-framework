@@ -49,7 +49,7 @@ class Driver(Component):
         # parse file
         try:
             self.old_master_conf = ConfigObj(self.config_file, interpolation='template', file_error=True)
-        except (IOError, SyntaxError) :
+        except (IOError, SyntaxError):
             raise
         self.sim_root = services.get_config_param('SIM_ROOT')
         self.sim_name = services.get_config_param('SIM_NAME')
@@ -149,7 +149,7 @@ class Driver(Component):
             except OSError as oserr:
                 (errno, strerror) = oserr.args
                 if (errno != 17):
-                    print('Error creating Simulation directory %s : %d %s' % \
+                    print('Error creating Simulation directory %s : %d %s' %
                           (self.old_master_conf['SIM_ROOT'], errno, strerror))
                     raise
             if first_sim:

@@ -1,12 +1,12 @@
 #! /usr/bin/env python
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 # Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 
 import sys
 import BeautifulSoup
 import urllib.request, urllib.error, urllib.parse
-from  math import floor, ceil
+from math import floor, ceil
 
 PLOT = True
 PLOT_MULTIPLE_INSTANCES = False   # Separate concurrent instances of the same component
@@ -16,27 +16,28 @@ try:
 except:
     PLOT = False
 
+
 def plot_exec_time(plot_data, used_procs, used_proc_map, task_procs):
     import numpy as np
     figure()
-    x = [float(k) for k in sorted(list(plot_data.keys()), key = float)]
-    y = np.array([plot_data[k] for k in sorted(list(plot_data.keys()), key = float)])
-    #plot(x, y)
-    vlines(x, [0], y, colors = 'b')
+    x = [float(k) for k in sorted(list(plot_data.keys()), key=float)]
+    y = np.array([plot_data[k] for k in sorted(list(plot_data.keys()), key=float)])
+    # plot(x, y)
+    vlines(x, [0], y, colors='b')
 #    l = legend()
     xlabel('Wall Time')
     ylabel('Serial Execution Time')
     title('Serial Execution Periods for IPS Simulation')
     grid(True)
     figure()
-    sorted_proc_times = sorted(list(used_procs.keys()), key = float)
+    sorted_proc_times = sorted(list(used_procs.keys()), key=float)
     x = [float(k) for k in sorted_proc_times]
     y = [used_procs[k] for k in sorted_proc_times]
     plot(x, y)
     area = 0.0
     for k in range(len(sorted_proc_times) - 1):
         area += used_procs[sorted_proc_times[k]] * \
-            (float(sorted_proc_times[k+1]) - float(sorted_proc_times[k]))
+            (float(sorted_proc_times[k + 1]) - float(sorted_proc_times[k]))
     average_util = area / (float(sorted_proc_times[-1]) - float(sorted_proc_times[0]))
 #    l = legend()
     xlabel('Wall Time')
@@ -55,29 +56,27 @@ def plot_exec_time(plot_data, used_procs, used_proc_map, task_procs):
         start_point = end_point
     print('===========================')
 
-    values = [all_util[k] for k in sorted(list(all_util.keys()), key = float)]
+    values = [all_util[k] for k in sorted(list(all_util.keys()), key=float)]
     window = 3600
     moving_sum = sum(values[0:window])
-    moving_ave = {window/2:moving_sum/float(window)}
-    for index in range (window/2 + 1, len(values) - window/2):
-#        print index, index-window/2
-        index_in = index+int(floor(window/2))
-        index_out = index-int(floor(window/2)) - 1
-#        print index_in, values[index_in], index_out, values[index_out]
+    moving_ave = {window / 2: moving_sum / float(window)}
+    for index in range(window / 2 + 1, len(values) - window / 2):
+        index_in = index + int(floor(window / 2))
+        index_out = index - int(floor(window / 2)) - 1
         moving_sum += (values[index_in] - values[index_out])
-        moving_ave[index] = moving_sum /float(window)
+        moving_ave[index] = moving_sum / float(window)
 
-    #for k in sorted(moving_ave.keys(), key = float):
+    # for k in sorted(moving_ave.keys(), key = float):
     #    print k, moving_ave[k]
 
-    x2 = [float(k) for k in sorted(list(moving_ave.keys()), key = float)]
-    y2 = [moving_ave[k] for k in sorted(list(moving_ave.keys()), key = float)]
-    plot_label = '%.1fH Moving Ave.' % (float(window/3600.))
-    #plot(x2, y2, linewidth=2, label = plot_label)
+    x2 = [float(k) for k in sorted(list(moving_ave.keys()), key=float)]
+    y2 = [moving_ave[k] for k in sorted(list(moving_ave.keys()), key=float)]
+    plot_label = '%.1fH Moving Ave.' % (float(window / 3600.))
+    # plot(x2, y2, linewidth=2, label = plot_label)
 
     grid(True)
     plot([sorted_proc_times[0], sorted_proc_times[-1]], [average_util, average_util],
-         linewidth=2, label= 'Average')
+         linewidth=2, label='Average')
     l = plt.legend()
 
     fig = figure()
@@ -124,24 +123,22 @@ def plot_exec_time(plot_data, used_procs, used_proc_map, task_procs):
                 y_inc_array = np.array(y_inc)
                 y_plot = y_inc + y_sum
                 if(i == 1):
-    #                print 'First ', comp
-                    ax1.plot(x, y_plot, label = comp, markeredgecolor='c',
-                             markerfacecolor=comp_color[comp], color = 'k', linewidth=0.5)
+                    ax1.plot(x, y_plot, label=comp, markeredgecolor='c',
+                             markerfacecolor=comp_color[comp], color='k', linewidth=0.5)
                 else:
-    #                print 'Next i = ', i, comp
                     ax1.plot(x, y_plot, markeredgecolor='c',
-                             markerfacecolor=comp_color[comp], color = 'k', linewidth=0.5)
-                plt.fill_between(x, y_plot, y_plot_old, color = comp_color[comp], alpha = 0.5)
+                             markerfacecolor=comp_color[comp], color='k', linewidth=0.5)
+                plt.fill_between(x, y_plot, y_plot_old, color=comp_color[comp], alpha=0.5)
                 y_plot_old = y_plot
         else:
             y_plot = y[comp] + y_sum
-            ax1.plot(x, y_plot, label = comp, markeredgecolor='c',
-                          markerfacecolor=comp_color[comp], color = 'k', linewidth=0.5)
-            plt.fill_between(x, y_plot, y_plot_old, color = comp_color[comp], alpha = 0.5)
+            ax1.plot(x, y_plot, label=comp, markeredgecolor='c',
+                     markerfacecolor=comp_color[comp], color='k', linewidth=0.5)
+            plt.fill_between(x, y_plot, y_plot_old, color=comp_color[comp], alpha=0.5)
 
         y_sum = y_plot
-    lgd = ax1.legend(numpoints = 2, handletextpad = -1, ncol = 3, loc = 'upper center', fancybox = False,
-                     mode = None) # , prop = {'size':10})
+    lgd = ax1.legend(numpoints=2, handletextpad=-1, ncol=3, loc='upper center', fancybox=False,
+                     mode=None)  # , prop = {'size':10})
     lines = lgd.get_lines()
     lgd_texts = lgd.get_texts()
     for i in range(len(lines)):
@@ -185,7 +182,7 @@ def get_task_times(url_list):
             fields = event('td')
             field_values = [field.contents[0].strip() for field in fields]
             if (field_values[2] == 'IPS_TASK_END'):
-                #print ' '.join(field_values)
+                # print ' '.join(field_values)
                 comment = field_values[-1]
                 comp = field_values[3]
                 if comp not in all_comp_names:
@@ -200,10 +197,10 @@ def get_task_times(url_list):
                 try:
                     new_task = task_map[task_id]
                 except KeyError:
-                    new_task = Task(task_id = task_id,
-                                    end_time = float(wall_time),
-                                    phys_time = float(phys_stamp),
-                                    comp_name = comp)
+                    new_task = Task(task_id=task_id,
+                                    end_time=float(wall_time),
+                                    phys_time=float(phys_stamp),
+                                    comp_name=comp)
                     task_map[task_id] = new_task
                 else:
                     new_task.end_time = float(wall_time)
@@ -211,7 +208,7 @@ def get_task_times(url_list):
                     task_end_map[wall_time].append(task_id)
                 except:
                     task_end_map[wall_time] = [task_id]
-                #print phys_stamp, comp_task, exec_time
+                # print phys_stamp, comp_task, exec_time
             elif (field_values[2] in ['IPS_LAUNCH_TASK_POOL', 'IPS_LAUNCH_TASK']):
                 comment = field_values[-1]
                 comp = field_values[3]
@@ -224,21 +221,21 @@ def get_task_times(url_list):
                 print(comment_fields)
                 if 'mpiexec' in comment_fields:
                     dash_n_idx = comment_fields.index('-n')
-                    nproc = int(comment_fields[dash_n_idx + 1 ])
+                    nproc = int(comment_fields[dash_n_idx + 1])
                 else:
                     try:
                         aprun = comment_fields.index('aprun')
-                        nproc = int(comment_fields[aprun + 2 ])
+                        nproc = int(comment_fields[aprun + 2])
                     except:
                         raise
                 try:
                     new_task = task_map[task_id]
                 except KeyError:
-                    new_task = Task(task_id = task_id,
-                                    nproc = nproc,
-                                    start_time = float(wall_time),
-                                    phys_time = float(phys_stamp),
-                                    comp_name = comp)
+                    new_task = Task(task_id=task_id,
+                                    nproc=nproc,
+                                    start_time=float(wall_time),
+                                    phys_time=float(phys_stamp),
+                                    comp_name=comp)
                     task_map[task_id] = new_task
                 else:
                     new_task.nproc = nproc
@@ -258,15 +255,15 @@ def get_task_times(url_list):
                 all_task_times.append((wall_time, 'IPS_START'))
                 active_tasks[wall_time] = 0
 
-    all_task_times = sorted(all_task_times, key = lambda x: float(x[0]))
+    all_task_times = sorted(all_task_times, key=lambda x: float(x[0]))
 
     print('wall_time, nproc_started')
-    for wall_time in sorted(list(task_start_map.keys()), key = float):
+    for wall_time in sorted(list(task_start_map.keys()), key=float):
         tid_list = task_start_map[wall_time]
         print(wall_time, [task_map[tid].nproc for tid in tid_list])
     print('======================================================')
     print('wall_time, nproc_ended')
-    for wall_time in sorted(list(task_end_map.keys()), key = float):
+    for wall_time in sorted(list(task_end_map.keys()), key=float):
         tid_list = task_end_map[wall_time]
         print(wall_time, [task_map[tid].nproc for tid in tid_list])
     print('======================================================')
@@ -281,12 +278,12 @@ def get_task_times(url_list):
 
     while True:
         try:
-            (event_time, event) =  all_task_times.pop(0)
+            (event_time, event) = all_task_times.pop(0)
         except IndexError:
             break
         if (event == 'START'):
             tid = task_start_map[event_time].pop(0)
-            prior_walltime = '%f'  % (float(event_time) - 0.00001)
+            prior_walltime = '%f' % (float(event_time) - 0.00001)
             active_tasks[prior_walltime] = active_tasks_count
             used_procs[prior_walltime] = current_used_procs
             task = task_map[tid]
@@ -315,7 +312,7 @@ def get_task_times(url_list):
                 used_proc_per_comp[float(event_time) - 0.00001] = cur_util_map[other_comp]
 
         elif (event == 'END'):
-            prior_walltime = '%f'  % (float(event_time) - 0.00001)
+            prior_walltime = '%f' % (float(event_time) - 0.00001)
             active_tasks[prior_walltime] = active_tasks_count
             used_procs[prior_walltime] = current_used_procs
             tid = task_end_map[event_time].pop(0)
@@ -325,7 +322,7 @@ def get_task_times(url_list):
 
             comp_name = task.comp_name
             used_proc_per_comp = used_proc_map[comp_name]
-            if  float(event_time) - 0.00001 not in list(used_proc_per_comp.keys()):
+            if float(event_time) - 0.00001 not in list(used_proc_per_comp.keys()):
                 if (PLOT_END_EDGE):
                     used_proc_per_comp[float(event_time) - 0.00003] = cur_util_map[comp_name]
                     used_proc_per_comp[float(event_time) - 0.00002] = 0
@@ -357,7 +354,7 @@ def get_task_times(url_list):
 
     print('======================================================')
     print('   Task ID,     Start time,     End time')
-    for tid in sorted(list(task_map.keys()), key = lambda x: float(x.split('|')[1])):
+    for tid in sorted(list(task_map.keys()), key=lambda x: float(x.split('|')[1])):
         task = task_map[tid]
         print('%10s  %10s  %10s' % (tid.split('|')[1], str(task.start_time), str(task.end_time)))
 
@@ -367,32 +364,33 @@ def get_task_times(url_list):
     print('Serial Times')
     print('    Start      Stop      Interval')
 
-    sorted_walltime = sorted(list(active_tasks.keys()), key = float)
+    sorted_walltime = sorted(list(active_tasks.keys()), key=float)
     for i in range(len(sorted_walltime)):
         if active_tasks[sorted_walltime[i]] == 0:
             try:
                 index = sorted_walltime[i]
-                interval = float(sorted_walltime[i+1]) - float(sorted_walltime[i])
+                interval = float(sorted_walltime[i + 1]) - float(sorted_walltime[i])
                 if (interval > 0.1):
                     serial_times[index] = interval
-                    print('%12.3f %12.3f %12.3f' % \
-                    (float(sorted_walltime[i]),
-                     float(sorted_walltime[i+1]), interval))
+                    print('%12.3f %12.3f %12.3f' %
+                          (float(sorted_walltime[i]),
+                           float(sorted_walltime[i + 1]), interval))
             except IndexError:
                 pass
-                #index += 1
+                # index += 1
 
     if (PLOT):
         plot_exec_time(serial_times, used_procs, used_proc_map, task_procs)
 
+
 class Task(object):
     def __init__(self,
-                 task_id = None,
-                 nproc = -1,
-                 start_time = -1.0,
-                 end_time = -1.0,
-                 phys_time = -1.0,
-                 comp_name = ''):
+                 task_id=None,
+                 nproc=-1,
+                 start_time=-1.0,
+                 end_time=-1.0,
+                 phys_time=-1.0,
+                 comp_name=''):
         self.task_id = task_id
         self.nproc = nproc
         self.start_time = start_time
@@ -401,6 +399,7 @@ class Task(object):
         self.comp_name = comp_name
 
     pass
+
 
 if __name__ == '__main__':
     get_task_times(sys.argv[1:])

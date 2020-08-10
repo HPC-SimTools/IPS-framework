@@ -1,7 +1,7 @@
 #! /usr/bin/env python
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 # Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 # -*- coding: utf-8 -*-
 
 import sys
@@ -26,31 +26,30 @@ PLOT_ALL_CHANGES = False
 
 def format(x, pos=None):
     if x % 2 == 0:
-        return '%d' % (x/2)
+        return '%d' % (x / 2)
     else:
         return ''
 
+
 def plot_task_data(end_time_map, max_slice, max_iteration, max_wall_time):
 
-#    print end_time_map, max_slice, max_iteration, max_wall_time
     f = plt.figure(4)
     plt.ylabel('Slice')
     plt.xlabel('Iteration')
     plt.title('%.3f Sec.' % (max_wall_time))
-    #print max_iteration, max_slice
+    # print max_iteration, max_slice
 
     num_components = len(end_time_map)
-    iterations = np.linspace(1, max_iteration*num_components, max_iteration*num_components)
+    iterations = np.linspace(1, max_iteration * num_components, max_iteration * num_components)
     slices = np.linspace(1, max_slice, max_slice)
 
-    plt.xlim(0, max_iteration*num_components)
+    plt.xlim(0, max_iteration * num_components)
     plt.ylim(0, max_slice)
 
-
-    #print iterations, slices
+    # print iterations, slices
 #    print [len(iterations), len(slices), len(iterations), len(slices)]
     convergence = np.ma.array(np.zeros([len(iterations), len(slices)]),
-                        mask = np.ones((len(iterations), len(slices))))
+                              mask=np.ones((len(iterations), len(slices))))
     X = np.ma.array(np.zeros([len(iterations) + 1, len(slices) + 1]))
     Y = np.ma.array(np.zeros([len(iterations) + 1, len(slices) + 1]))
 
@@ -58,14 +57,13 @@ def plot_task_data(end_time_map, max_slice, max_iteration, max_wall_time):
     for i in range(len(comp_names)):
         offset = (1.0 / num_components) * i
         end_map = end_time_map[comp_names[i]]
-        #print end_map
+        # print end_map
         for ((iteration, slice), value) in sorted(end_map.items()):
-    #        print iteration, slice, '%.3e' % (value)
             iter_idx = num_components * iteration + i
             convergence[iter_idx, slice] = value
             convergence.mask[iter_idx, slice] = False
             X[iter_idx, slice] = X[iter_idx, slice + 1] = iter_idx - 1.0
-            Y[iter_idx, slice] = Y[iter_idx + 1 , slice] = slice - 0.5
+            Y[iter_idx, slice] = Y[iter_idx + 1, slice] = slice - 0.5
             Y[iter_idx, slice + 1] = Y[iter_idx + 1, slice + 1] = slice + 0.5
             X[iter_idx + 1, slice] = X[iter_idx + 1, slice + 1] = iter_idx
 
@@ -78,13 +76,12 @@ def plot_task_data(end_time_map, max_slice, max_iteration, max_wall_time):
         # set zeros to value min
         for ((iteration, slice), value) in sorted(end_map.items()):
             if value < value_min:
-                #print 'changed ', value
+                # print 'changed ', value
                 convergence[iter_idx, slice] = value_min
-                #print ' to ', value_min
+                # print ' to ', value_min
     fig = plt.figure()
     ax = fig.add_subplot(111)
     try:
-#        p = plt.pcolor(X.transpose(), Y.transpose(), convergence.transpose(), norm = LogNorm())
         p = ax.pcolor(X.transpose(), Y.transpose(), convergence.transpose())
     except ValueError:
         p = ax.plot((0), (0))
@@ -95,7 +92,7 @@ def plot_task_data(end_time_map, max_slice, max_iteration, max_wall_time):
         ax.set_ylabel('Slice')
         ax.xaxis.set_major_formatter(plt.FuncFormatter(format))
         xmajorLocator = FixedLocator(list(range(2 * max_iteration + 1)), 5)
-        ax.xaxis.set_major_locator( xmajorLocator )
+        ax.xaxis.set_major_locator(xmajorLocator)
 
     filename = 'plot_%09.3f.png' % (max_wall_time)
     plt.savefig(filename, dpi=100)
@@ -123,7 +120,7 @@ def get_task_times(url):
         field_values = [field.contents[0].strip() for field in fields]
         phys_stamp = field_values[-2]
         if (field_values[2] == 'IPS_TASK_END'):
-            #print ' '.join(field_values)
+            # print ' '.join(field_values)
             comment = field_values[-1]
             comp = field_values[3]
             if comp not in all_comp_names:
@@ -134,10 +131,10 @@ def get_task_times(url):
             try:
                 new_task = task_map[task_id]
             except KeyError:
-                new_task = Task(task_id = task_id,
-                                end_time = float(wall_time),
-                                phys_time = float(phys_stamp),
-                                comp_name = comp)
+                new_task = Task(task_id=task_id,
+                                end_time=float(wall_time),
+                                phys_time=float(phys_stamp),
+                                comp_name=comp)
                 task_map[task_id] = new_task
             else:
                 new_task.end_time = float(wall_time)
@@ -146,10 +143,10 @@ def get_task_times(url):
             comp = field_values[3]
             wall_time = field_values[-3]
             comment_fields = comment.split()
-            task_id = comment_fields[comment_fields.index('task_id')+ 2]
+            task_id = comment_fields[comment_fields.index('task_id') + 2]
             try:
-                tag = comment_fields[comment_fields.index('Tag')+ 2]
-            except ValueError :
+                tag = comment_fields[comment_fields.index('Tag') + 2]
+            except ValueError:
                 if field_values[2] == 'IPS_LAUNCH_TASK':
                     try:
                         (iter, slice) = [int(v) for v in comment.split()[-1].split('.')]
@@ -170,23 +167,23 @@ def get_task_times(url):
 
             if 'mpiexec' in comment_fields:
                 dash_n_idx = comment_fields.index('-n')
-                nproc = int(comment_fields[dash_n_idx + 1 ])
+                nproc = int(comment_fields[dash_n_idx + 1])
             else:
                 try:
                     aprun = comment_fields.index('aprun')
-                    nproc = int(comment_fields[aprun + 2 ])
+                    nproc = int(comment_fields[aprun + 2])
                 except:
                     raise
             try:
                 new_task = task_map[task_id]
             except KeyError:
-                new_task = Task(task_id = task_id,
-                                nproc = nproc,
-                                start_time = float(wall_time),
-                                phys_time = float(phys_stamp),
-                                comp_name = comp,
-                                iteration = iter,
-                                slice = slice)
+                new_task = Task(task_id=task_id,
+                                nproc=nproc,
+                                start_time=float(wall_time),
+                                phys_time=float(phys_stamp),
+                                comp_name=comp,
+                                iteration=iter,
+                                slice=slice)
                 task_map[task_id] = new_task
             else:
                 new_task.nproc = nproc
@@ -219,7 +216,7 @@ def get_task_times(url):
         update_plot = False
         value = None
         if (field_values[2] == 'IPS_TASK_END'):
-            #print ' '.join(field_values)
+            # print ' '.join(field_values)
             task_id = comment_fields[comment_fields.index('task_id') + 2]
             task = task_map[task_id]
             slice = task.slice
@@ -227,9 +224,9 @@ def get_task_times(url):
             task_life = task_life_map[comp]
             value = float(list(task_life_map.keys()).index(comp)) + 1.0
             update_plot = True
-            #print '###', iteration, slice, task_id, task_life[iteration, slice]
+            # print '###', iteration, slice, task_id, task_life[iteration, slice]
         elif (field_values[2] in ['IPS_LAUNCH_TASK_POOL', 'IPS_LAUNCH_TASK']):
-            task_id = comment_fields[comment_fields.index('task_id')+ 2]
+            task_id = comment_fields[comment_fields.index('task_id') + 2]
             task = task_map[task_id]
             slice = task.slice
             iteration = task.iteration
@@ -240,7 +237,7 @@ def get_task_times(url):
         if wall_time > max_wall_time:
             max_wall_time = wall_time
 
-        if wall_time - last_frame_time > SIMSEC_PER_FRAME :
+        if wall_time - last_frame_time > SIMSEC_PER_FRAME:
             for ptime in np.arange(last_frame_time + SIMSEC_PER_FRAME, wall_time, SIMSEC_PER_FRAME):
                 plot_task_data(task_life_map, max_slice, max_iteration, ptime)
                 last_frame_time = ptime
@@ -253,7 +250,7 @@ def get_task_times(url):
                 last_frame_time = wall_time
                 first_plot = False
 
-    #Plot Final state
+    # Plot Final state
     plot_task_data(task_life_map, max_slice, max_iteration, wall_time)
 
 #        if (update_plot):
@@ -273,19 +270,19 @@ def get_task_times(url):
 #
 
     command = ('mencoder',
-           'mf://*.png',
-           '-mf',
-           'type=png:w=800:h=600:fps=%d' % (FPS),
-           '-ovc',
-           'lavc',
-           '-lavcopts',
-           'vcodec=mpeg4',
-           '-oac',
-           'copy',
-           '-o',
-           'output.avi')
+               'mf://*.png',
+               '-mf',
+               'type=png:w=800:h=600:fps=%d' % (FPS),
+               '-ovc',
+               'lavc',
+               '-lavcopts',
+               'vcodec=mpeg4',
+               '-oac',
+               'copy',
+               '-o',
+               'output.avi')
 
-#os.spawnvp(os.P_WAIT, 'mencoder', command)
+# os.spawnvp(os.P_WAIT, 'mencoder', command)
 
     print("\n\nabout to execute:\n%s\n\n" % ' '.join(command))
     subprocess.check_call(command)
@@ -297,14 +294,14 @@ def get_task_times(url):
 
 class Task(object):
     def __init__(self,
-                 task_id = None,
-                 nproc = -1,
-                 start_time = -1.0,
-                 end_time = -1.0,
-                 phys_time = -1.0,
-                 comp_name = '',
-                 iteration = 0,
-                 slice = 0):
+                 task_id=None,
+                 nproc=-1,
+                 start_time=-1.0,
+                 end_time=-1.0,
+                 phys_time=-1.0,
+                 comp_name='',
+                 iteration=0,
+                 slice=0):
         self.task_id = task_id
         self.nproc = nproc
         self.start_time = start_time

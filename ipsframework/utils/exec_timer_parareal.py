@@ -1,7 +1,7 @@
 #! /usr/bin/env python
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 # Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 # -*- coding: utf-8 -*-
 
 import sys
@@ -15,8 +15,6 @@ try:
     import matplotlib.pyplot as plt
     from matplotlib.colors import LogNorm
     from matplotlib.contour import ContourSet
-
-    #from pylab import *
 except:
     PLOT = False
 
@@ -32,17 +30,17 @@ def plot_exec_time(task_time_map, converge, energy):
     min_count = 1000
     max_count = -1
     for (comp_name, time_map) in list(task_time_map.items()):
-        x = [float(k) for k in sorted(list(time_map.keys()), key = float)]
+        x = [float(k) for k in sorted(list(time_map.keys()), key=float)]
         y_low = []
         y_high = []
         y_mean = []
         y_error = []
         count = []
-        for k in sorted(list(time_map.keys()), key = float):
+        for k in sorted(list(time_map.keys()), key=float):
             y_mean.append(time_map[k][2])
             y_low.append(y_mean[-1] - time_map[k][0])
             y_high.append(time_map[k][1] - y_mean[-1])
-            #y_error.append((time_map[k][0], time_map[k][1]))
+            # y_error.append((time_map[k][0], time_map[k][1]))
             count.append(len(time_map[k][3]))
 
         y_error = [y_low, y_high]
@@ -52,9 +50,9 @@ def plot_exec_time(task_time_map, converge, energy):
         y_error = np.array(y_error) / norm
         str_norm = '%2.1f' % norm
         my_label = comp_name + ' mean ' + str_norm + ' s'
-        time_plot.errorbar(x, y_mean, yerr = y_error, marker = cur_marker,
-                           capsize=4, elinewidth =2, label = my_label)
-        count_plot.plot(x, count, label = comp_name, marker=cur_marker)
+        time_plot.errorbar(x, y_mean, yerr=y_error, marker=cur_marker,
+                           capsize=4, elinewidth=2, label=my_label)
+        count_plot.plot(x, count, label=comp_name, marker=cur_marker)
         min_count = min([min_count, min(count)])
         max_count = max([max_count, max(count)])
     plt.figure(1)
@@ -62,23 +60,23 @@ def plot_exec_time(task_time_map, converge, energy):
     xticks = np.linspace(0, max(x), 5)
     xticks_str = ['%d' % (t) for t in xticks]
 #    plt.xticks([int(f) for f in x])
-    #print xticks, xticks_str
-    #plt.xticks(xticks, xticks_str)
+    # print xticks, xticks_str
+    # plt.xticks(xticks, xticks_str)
     plt.xlabel('Iteration')
     plt.ylabel('Normalized Task execution Time')
     plt.title('Execution Time Summary')
     plt.grid(True)
     plt.figure(2)
     l = plt.legend()
-    #plt.xticks([int(f) for f in x])
-    #plt.xticks(xticks, xticks_str)
-    #print xticks_str
-    #yticks = range(min_count - 1, max_count + 1)
-    #plt.yticks(yticks)
-    #yticks = np.linspace(min_count - 1, max_count + 1, 5)
-    #yticks_str =['%d' % (t) for t in yticks]
-    #plt.yticks(yticks, yticks_str)
-    #print yticks_str
+    # plt.xticks([int(f) for f in x])
+    # plt.xticks(xticks, xticks_str)
+    # print xticks_str
+    # yticks = range(min_count - 1, max_count + 1)
+    # plt.yticks(yticks)
+    # yticks = np.linspace(min_count - 1, max_count + 1, 5)
+    # yticks_str =['%d' % (t) for t in yticks]
+    # plt.yticks(yticks, yticks_str)
+    # print yticks_str
     plt.xlabel('Iteration')
     plt.ylabel('Task Count')
     plt.title('Parareal Tasks Count')
@@ -95,13 +93,13 @@ def plot_exec_time(task_time_map, converge, energy):
                 max_slice = slice
         max_slice += 1
         max_iteration += 1
-        #print max_iteration, max_slice
+        # print max_iteration, max_slice
         iterations = np.linspace(1, max_iteration, max_iteration)
         slices = np.linspace(1, max_slice, max_slice)
-        #print iterations, slices
+        # print iterations, slices
         print([len(iterations), len(slices), len(iterations), len(slices)])
         convergence = np.ma.array(np.zeros([len(iterations), len(slices)]),
-                            mask = np.ones((len(iterations), len(slices))))
+                                  mask=np.ones((len(iterations), len(slices))))
         X = np.ma.array(np.zeros([len(iterations) + 1, len(slices) + 1]))
         Y = np.ma.array(np.zeros([len(iterations) + 1, len(slices) + 1]))
         X1 = np.zeros(len(iterations) + 1)
@@ -112,20 +110,18 @@ def plot_exec_time(task_time_map, converge, energy):
         for i in range(len(Y1)):
             Y1[i] = i
 
-
-
         for ((iteration, slice), value) in sorted(converge.items()):
             print(iteration, slice, '%.3e' % (value))
             convergence[iteration, slice] = value
             convergence.mask[iteration, slice] = False
             X[iteration, slice] = X[iteration, slice + 1] = iteration - 0.5
-            Y[iteration, slice] = Y[iteration + 1 , slice] = slice - 0.5
-            #X[iteration, slice + 1] = iteration - 0.5
+            Y[iteration, slice] = Y[iteration + 1, slice] = slice - 0.5
+            # X[iteration, slice + 1] = iteration - 0.5
             Y[iteration, slice + 1] = Y[iteration + 1, slice + 1] = slice + 0.5
             X[iteration + 1, slice] = X[iteration + 1, slice + 1] = iteration + 0.5
-            #Y[iteration + 1 , slice] = slice - 0.5
-            #X[iteration + 1, slice + 1] = iteration + 0.5
-            #Y[iteration + 1, slice + 1] = slice + 0.5
+            # Y[iteration + 1 , slice] = slice - 0.5
+            # X[iteration + 1, slice + 1] = iteration + 0.5
+            # Y[iteration + 1, slice + 1] = slice + 0.5
 
         # print iterations
         # print slices
@@ -135,29 +131,29 @@ def plot_exec_time(task_time_map, converge, energy):
 
             if value > 0.0 and value < value_min:
                 value_min = value
-                #print 'min = ', value_min
+                # print 'min = ', value_min
 
         # set zeros to value min
         for ((iteration, slice), value) in sorted(converge.items()):
             if value < value_min:
-                #print 'changed ', value
+                # print 'changed ', value
                 convergence[iteration, slice] = value_min
-                #print ' to ', value_min
-        #print convergence
+                # print ' to ', value_min
+        # print convergence
         plt.ylabel('Slice')
         plt.xlabel('Iteration')
         plt.title('Slice Convergence Error')
-       #plt.xticks([int(s) for s in slices])
-        #plt.yticks([int(i) for i in iterations])
-        #print 'min of converge = ', convergence.min()
-        #print 'converge = ', convergence
+        # plt.xticks([int(s) for s in slices])
+        # plt.yticks([int(i) for i in iterations])
+        # print 'min of converge = ', convergence.min()
+        # print 'converge = ', convergence
         p = plt.pcolor(X.transpose(), Y.transpose(), convergence.transpose(),
-                norm = LogNorm())
+                       norm=LogNorm())
         tol_level = [1.5e-6]
-        #CS = plt.contour(X1, Y1, Z1, levels = tol_level)
+        # CS = plt.contour(X1, Y1, Z1, levels = tol_level)
 
         cb = plt.colorbar(spacing='proportional', format='%.1e')
-        #cb.add_line(CS)
+        # cb.add_line(CS)
         cb.ax.set_ylabel('Error')
 
     if energy:
@@ -207,10 +203,10 @@ def get_task_times(url_list):
             phys_stamp_portal = field_values[-2]
             if (field_values[2] == 'IPS_LAUNCH_TASK' or field_values[2] == 'IPS_LAUNCH_TASK_POOL'):
                 comment_lst = comment.split()
-                task_id = comment_lst[comment_lst.index('task_id')+ 2]
+                task_id = comment_lst[comment_lst.index('task_id') + 2]
                 try:
-                    tag = comment_lst[comment_lst.index('Tag')+ 2]
-                except ValueError :
+                    tag = comment_lst[comment_lst.index('Tag') + 2]
+                except ValueError:
                     if field_values[2] == 'IPS_LAUNCH_TASK':
                         try:
                             (phys_stamp, slice) = comment.split()[-1].split('.')
@@ -224,15 +220,15 @@ def get_task_times(url_list):
                 else:
                     (phys_stamp, slice) = tag.split('.')
 
-                #(phys_stamp, slice) = identifier.split('.')
-                #print phys_stamp, identifier, comment.split()[-2]
+                # (phys_stamp, slice) = identifier.split('.')
+                # print phys_stamp, identifier, comment.split()[-2]
                 if float(phys_stamp_portal) > 0.0:
                     phys_stamp = phys_stamp_portal
                 phys_stamp_map[task_id] = (phys_stamp, slice)
             elif (field_values[2] == 'IPS_TASK_END'):
                 task_id = comment.split()[2]
                 (phys_stamp, slice) = phys_stamp_map[task_id]
-                #print ' '.join(field_values)
+                # print ' '.join(field_values)
                 exec_time = comment.split()[-2]
                 print('%s.%s  %10s  %s' % (phys_stamp, slice, task_id, exec_time))
                 try:
@@ -261,7 +257,7 @@ def get_task_times(url_list):
                 conv_error = float(entries[2])
                 try:
                     energy_value = float(entries[3])
-                except IndexError :
+                except IndexError:
                     energy_value = 0.0
                 converge[iteration, slice] = conv_error
                 energy[iteration, slice] = energy_value
@@ -270,13 +266,13 @@ def get_task_times(url_list):
     print('Phys_stamp', end=' ')
     for comp in list(task_time_map.keys()):
         for suffix in ['_count', '_low', '_high', '_mean']:
-            print(',   ', comp+suffix, end=' ')
+            print(',   ', comp + suffix, end=' ')
     print()
 
-    for phys_stamp in sorted(all_phys_stamps, key = float):
+    for phys_stamp in sorted(all_phys_stamps, key=float):
         print(phys_stamp, end=' ')
         for comp_map in list(task_time_map.values()):
-            #print comp_map
+            # print comp_map
             try:
                 (low, high, mean, values) = comp_map[phys_stamp]
                 print(',   ', len(values), ',', low, ',', high, ',', mean, end=' ')
@@ -289,6 +285,7 @@ def get_task_times(url_list):
             plot_exec_time(task_time_map, converge, energy)
         else:
             plot_exec_time(task_time_map, converge, None)
+
 
 if __name__ == '__main__':
     get_task_times(sys.argv[1:])

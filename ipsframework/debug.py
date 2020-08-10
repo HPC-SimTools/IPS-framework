@@ -1,6 +1,6 @@
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 # Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 """
 This file writes debug messages to 'debug.out' file if the environment
 variable 'IPSES_DEBUG' is defined.
@@ -8,14 +8,14 @@ variable 'IPSES_DEBUG' is defined.
 
 import os
 
+
 class Debug(object):
     def __init__(self):
         self.file = None
         if 'IPSES_DEBUG' in os.environ:
-            self.file = open('debug.out','w')
+            self.file = open('debug.out', 'w')
 
-
-    def output(self,s,id1=0,id2=0):
+    def output(self, s, id1=0, id2=0):
         if self.file:
             tmp = ''
             if id1 != 0:
@@ -27,8 +27,7 @@ class Debug(object):
 
             self.file.write(s + tmp + '\n')
 
-
-    def msg(self,s1,ret=99,s2=''):
+    def msg(self, s1, ret=99, s2=''):
         if self.file:
             if s2 == '':
                 if ret != 99:
@@ -41,9 +40,9 @@ class Debug(object):
                 else:
                     self.file.write(s1 + ' ' + s2 + '\n')
 
-
     def __del__(self):
         if self.file:
             self.file.close()
+
 
 debug = Debug()

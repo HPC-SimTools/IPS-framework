@@ -1,18 +1,18 @@
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 # Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 from .configobj import ConfigObj
 
 
 def get_status(checklist_file):
-    ips_status={}
+    ips_status = {}
     ips_status['CREATE_RUNSPACE'] = False
     ips_status['RUN_SETUP'] = False
     ips_status['RUN'] = False
 
     try:
-        f = open(checklist_file,'r')
-        conf = ConfigObj(checklist_file, interpolation = 'template', file_error = True)
+        f = open(checklist_file, 'r')
+        conf = ConfigObj(checklist_file, interpolation='template', file_error=True)
 
         if conf['CREATE_RUNSPACE'] == 'DONE':
             ips_status['CREATE_RUNSPACE'] = True
@@ -38,7 +38,7 @@ def get_status(checklist_file):
         print('encountered exception during fwk.run() checklist configuration')
     finally:
         f = open(checklist_file, 'w')
-        conf = ConfigObj(checklist_file, interpolation = 'template', file_error = True)
+        conf = ConfigObj(checklist_file, interpolation='template', file_error=True)
         conf['CREATE_RUNSPACE'] = False
         conf['RUN_SETUP'] = False
         conf['RUN'] = False
@@ -47,28 +47,27 @@ def get_status(checklist_file):
     return ips_status
 
 
-
-def update(checklist_file,ips_status):
+def update(checklist_file, ips_status):
 
     try:
-        conf = ConfigObj(checklist_file, interpolation = 'template', file_error = True)
+        conf = ConfigObj(checklist_file, interpolation='template', file_error=True)
     except IOError as ioe:
-        #SEK: Remove because for the create_runspace it is not there?
-        #print 'Checklist config file "%s" could not be found, continuing without.' % checklist_file
+        # SEK: Remove because for the create_runspace it is not there?
+        # print 'Checklist config file "%s" could not be found, continuing without.' % checklist_file
         return '', ips_status
-    except SyntaxError :
-        errmsg='Error parsing config file: ' + checklist_file
+    except SyntaxError:
+        errmsg = 'Error parsing config file: ' + checklist_file
         return errmsg, ips_status
     except Exception as e:
         print(e)
         return 'encountered exception during fwk.run() checklist status', ips_status
     # Make it general to be able to take fullpath or relative path
-    for step in ['CREATE_RUNSPACE','RUN_SETUP','RUN']:
+    for step in ['CREATE_RUNSPACE', 'RUN_SETUP', 'RUN']:
         if ips_status[step]:
             conf[step] = 'DONE'
         else:
             conf[step] = 'NOT_DONE'
-        #print(step + ' = ' + conf[step])
+        # print(step + ' = ' + conf[step])
     conf.write()
 
     return

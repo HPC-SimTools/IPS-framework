@@ -1,6 +1,6 @@
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 # Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 """
 This file hosts the central event service and is not directly accessible to IPS.
 The cca_es_spec.py file provides a CCA-style event service interface to IPS,
@@ -8,9 +8,9 @@ with calls on the interface being routed here via the proxy. The CCA event
 interface is straightforwardly mapped onto matching methods in this file.
 """
 
+
 class EventService(object):
     def __init__(self, fwk=None):
-
         """
         The following two data structures are at the heart of the event service.
         The design and implementation of the event service becomes clear from
@@ -37,10 +37,10 @@ class EventService(object):
         """
 
         """ Singleton pattern """
-        #self.__dict__["topicDirectory"] = EventService.topicDirectory
-        #self.__dict__["subscriberDirectory"] = EventService.subscriberDirectory
-        #self.__dict__["numSubscribers"] = EventService.numSubscribers
-        #self.__dict__["numListeners"] = EventService.numListeners
+        # self.__dict__["topicDirectory"] = EventService.topicDirectory
+        # self.__dict__["subscriberDirectory"] = EventService.subscriberDirectory
+        # self.__dict__["numSubscribers"] = EventService.numSubscribers
+        # self.__dict__["numListeners"] = EventService.numListeners
 
         self.topicDirectory = {}
         self.subscriberDirectory = {}
@@ -48,43 +48,39 @@ class EventService(object):
         self.numListeners = 0
         self.fwk = fwk
         if fwk:
-            #TODO: Remove _processEvent
+            # TODO: Remove _processEvent
             service_methods = ['getTopic', 'existsTopic', 'registerSubscriber',
                                'unregisterSubscriber', 'getSubscription',
                                'processEvents', 'sendEvent', 'createListener',
                                'registerEventListener', 'unregisterEventListener',
                                'removeSubscription', '_processEvent']
             fwk.register_service_handler(service_methods,
-                                    getattr(self,'process_service_request'))
+                                         getattr(self, 'process_service_request'))
 
     def _print_stats(self):
         if self.fwk:
             self.fwk.debug(":::::::::TOPIC-WISE EVENT STATS:::::::::")
             for topicName in list(self.topicDirectory.keys()):
-                self.fwk.debug("%s = %s", topicName,self.topicDirectory[topicName].getEventStats())
+                self.fwk.debug("%s = %s", topicName, self.topicDirectory[topicName].getEventStats())
             self.fwk.debug("::::::::::::::::::::::::::::::::::::::::")
-
 
     def process_service_request(self, msg):
         method = getattr(self, msg.target_method)
         return method(*msg.args)
 
-
     """""""""PublisherEventService methods start here"""""""""
 
-    def getTopic(self,topicName):
+    def getTopic(self, topicName):
         """ Add an entry to the topicDirectory for a new topic. """
         if topicName not in self.topicDirectory:
-            debug.output("getTopic %s" %topicName)
+            debug.output("getTopic %s" % topicName)
             self.topicDirectory[topicName] = TopicManager()
         return Topic(topicName)
 
-
-    def existsTopic(self,topicName):
+    def existsTopic(self, topicName):
         return topicName in self.topicDirectory
 
     """""""""PublisherEventService methods end here"""""""""
-
 
     """""""""SubscriberEventService methods start here"""""""""
 
@@ -92,9 +88,8 @@ class EventService(object):
         self.numSubscribers += 1
         subscriberid = self.numSubscribers
         self.subscriberDirectory[subscriberid] = {}
-        debug.output("Subscriber registered",subscriberid)
+        debug.output("Subscriber registered", subscriberid)
         return subscriberid
-
 
     """
     unregisterSubscriber is called when a subscriber object is being deleted.
@@ -103,10 +98,11 @@ class EventService(object):
     topics on which the subscriber is registered. Finally the subscriber record
     in subscriberDirectory is purged.
     """
-    def unregisterSubscriber(self,subscriberid):
+
+    def unregisterSubscriber(self, subscriberid):
         listenerList = []
         if subscriberid in self.subscriberDirectory:
-            debug.output("\n\n------Subscriber is unregistering",subscriberid)
+            debug.output("\n\n------Subscriber is unregistering", subscriberid)
 
             """
             Step through all the listeners for the subscriber in turn,
@@ -117,22 +113,21 @@ class EventService(object):
                 for listenerKey in list(self.subscriberDirectory[subscriberid][subscriptionName].keys()):
                     listenerid = self.subscriberDirectory[subscriberid][subscriptionName][listenerKey]
                     debug.output("Unregistering listener on listenerKey %s, subscription %s"
-                                 %(listenerKey,subscriptionName),listenerid,subscriberid)
-                    topicList = self._mapListenerKeytoTopicList(subscriptionName,listenerKey)
+                                 % (listenerKey, subscriptionName), listenerid, subscriberid)
+                    topicList = self._mapListenerKeytoTopicList(subscriptionName, listenerKey)
                     for topicName in topicList:
                         self.topicDirectory[topicName].unregisterListener(listenerid)
                     debug.output("Listener on listenerKey %s, subscription %s unregistered"
-                                 %(listenerKey,subscriptionName),listenerid,subscriberid)
+                                 % (listenerKey, subscriptionName), listenerid, subscriberid)
                     listenerList.append(listenerid)
             """ Remove the subscriber entry in subscriberDirectory. """
             del self.subscriberDirectory[subscriberid]
-            debug.output("Subscriber unregistered",subscriberid)
+            debug.output("Subscriber unregistered", subscriberid)
         else:
             raise EventServiceException("Subscriber not recognized.")
         return listenerList
 
-
-    def getSubscription(self,subscriberid,subscriptionName):
+    def getSubscription(self, subscriberid, subscriptionName):
         if subscriberid in self.subscriberDirectory:
             """
             We do not allow for the possibility that a subscriptionName may mean more
@@ -144,7 +139,7 @@ class EventService(object):
 
             if subscriptionName not in self.subscriberDirectory[subscriberid]:
                 self.subscriberDirectory[subscriberid][subscriptionName] = {}
-                debug.output("Subscriber subscribed to %s" %subscriptionName,subscriberid)
+                debug.output("Subscriber subscribed to %s" % subscriptionName, subscriberid)
 
                 """
                   A Subscription object cannot be safely returned without screwing
@@ -156,7 +151,7 @@ class EventService(object):
                   result of a subscription becoming invalid even while the
                   component-side Subscription object is still in use.
                 """
-                #return Subscription(subscriberid,subscriptionName)
+                # return Subscription(subscriberid,subscriptionName)
             else:
                 """ Should we permit duplicate subscription requests? """
                 raise EventServiceException("Duplicate subscription request.")
@@ -164,14 +159,14 @@ class EventService(object):
             raise EventServiceException("Subscriber not recognized.")
         return None
 
-
     """
     A subscriber performs a processEvents to learn about events posted to its
     topics of interest. This requires traversing the complete subscriber record
     in subscriberDirectory, and doing a processEvent for every event sent since
     the last such call to topics on which the subscriber is registered.
     """
-    def processEvents(self,subscriberid):
+
+    def processEvents(self, subscriberid):
         eventList = {}
         if subscriberid in self.subscriberDirectory:
             for subscriptionName in list(self.subscriberDirectory[subscriberid].keys()):
@@ -180,7 +175,7 @@ class EventService(object):
                     """ This check is required to allow the _same_ listener to handle different topics. """
                     if listenerid not in eventList:
                         eventList[listenerid] = {}
-                    topicList = self._mapListenerKeytoTopicList(subscriptionName,listenerKey)
+                    topicList = self._mapListenerKeytoTopicList(subscriptionName, listenerKey)
                     for topicName in topicList:
                         eventList[listenerid][topicName] = self.topicDirectory[topicName].getEventListForListener(listenerid)
         else:
@@ -189,35 +184,33 @@ class EventService(object):
 
     """""""""SubscriberEventService methods end here"""""""""
 
-
     """""""""Topic methods start here"""""""""
 
     """
     sendEvent adds an event to the topic's TopicManager object.
     """
-    def sendEvent(self,topicName,eventName,eventBody):
+
+    def sendEvent(self, topicName, eventName, eventBody):
         if topicName in self.topicDirectory:
             eventHeader = {}
             eventHeader[eventName] = eventName
-            theEvent = Event(eventHeader,eventBody)
-            debug.output("Event %s sent to topic %s" %(theEvent,topicName))
+            theEvent = Event(eventHeader, eventBody)
+            debug.output("Event %s sent to topic %s" % (theEvent, topicName))
             self.topicDirectory[topicName].sendEvent(theEvent)
         else:
             raise EventServiceException("Topic not recognized.")
 
     """""""""Topic methods end here"""""""""
 
-
     """""""""EventListener methods start here"""""""""
 
     def createListener(self):
         self.numListeners += 1
         listenerid = self.numListeners
-        debug.output("Listener created",listenerid)
+        debug.output("Listener created", listenerid)
         return listenerid
 
     """""""""EventListener methods end here"""""""""
-
 
     """""""""Subscription methods start here"""""""""
 
@@ -225,7 +218,8 @@ class EventService(object):
     registerEventListener adds a listener to its subscriber's subscriberDirectory
     record, the TopicManager for the associated topic, and the listenerDirectory.
     """
-    def registerEventListener(self,subscriberid,subscriptionName,listenerKey,listenerid):
+
+    def registerEventListener(self, subscriberid, subscriptionName, listenerKey, listenerid):
         if subscriberid in self.subscriberDirectory:
             if subscriptionName in self.subscriberDirectory[subscriberid]:
                 """
@@ -236,8 +230,8 @@ class EventService(object):
                 if subscriptionName == listenerKey:
                     if listenerKey not in self.subscriberDirectory[subscriberid][subscriptionName]:
                         debug.output("Registering listener on listenerKey %s, subscription %s"
-                                     %(listenerKey,subscriptionName),listenerid,subscriberid)
-                        topicList = self._mapListenerKeytoTopicList(subscriptionName,listenerKey)
+                                     % (listenerKey, subscriptionName), listenerid, subscriberid)
+                        topicList = self._mapListenerKeytoTopicList(subscriptionName, listenerKey)
                         for topicName in topicList:
                             self.topicDirectory[topicName].registerListener(listenerid)
                         self.subscriberDirectory[subscriberid][subscriptionName][listenerKey] = listenerid
@@ -254,26 +248,26 @@ class EventService(object):
         else:
             raise EventServiceException("Subscriber not recognized.")
 
-
     """
     unregisterEventListener removes a listener from its subscriber's
     subscriberDirectory record, the TopicManager for the associated topic, and
     the listenerDirectory.
     """
-    def unregisterEventListener(self,subscriberid,subscriptionName,listenerKey):
+
+    def unregisterEventListener(self, subscriberid, subscriptionName, listenerKey):
         listenerid = -1
         if subscriberid in self.subscriberDirectory:
             if subscriptionName in self.subscriberDirectory[subscriberid]:
                 if listenerKey in self.subscriberDirectory[subscriberid][subscriptionName]:
                     listenerid = self.subscriberDirectory[subscriberid][subscriptionName][listenerKey]
                     debug.output("Unregistering listener on listenerKey %s, subscription %s"
-                                 %(listenerKey,subscriptionName),listenerid,subscriberid)
-                    topicList = self._mapListenerKeytoTopicList(subscriptionName,listenerKey)
+                                 % (listenerKey, subscriptionName), listenerid, subscriberid)
+                    topicList = self._mapListenerKeytoTopicList(subscriptionName, listenerKey)
                     for topicName in topicList:
                         self.topicDirectory[topicName].unregisterListener(listenerid)
                     del self.subscriberDirectory[subscriberid][subscriptionName][listenerKey]
                     debug.output("Listener on listenerKey %s, subscription %s unregistered"
-                                 %(listenerKey,subscriptionName),listenerid,subscriberid)
+                                 % (listenerKey, subscriptionName), listenerid, subscriberid)
                 else:
                     raise EventServiceException("Listener key not recognized.")
         return listenerid
@@ -284,32 +278,32 @@ class EventService(object):
         unregisterSubscriber/removeSubscription will clean up this listener also.
         """
 
-
     """
     removeSubscription is called when a subscription object is being deleted.
     It unregisters associated listeners from their respective TopicManagers and the
     listenerDirectory, and then removes its subscription information from the
     subscriber entry in subscriberDirectory.
     """
-    def removeSubscription(self,subscriberid,subscriptionName):
+
+    def removeSubscription(self, subscriberid, subscriptionName):
         listenerList = []
         if subscriberid in self.subscriberDirectory:
             if subscriptionName in self.subscriberDirectory[subscriberid]:
                 debug.output("\n\n------Subscriber's subscription to %s is being removed"
-                             %subscriptionName,subscriberid)
+                             % subscriptionName, subscriberid)
                 for listenerKey in list(self.subscriberDirectory[subscriberid][subscriptionName].keys()):
                     listenerid = self.subscriberDirectory[subscriberid][subscriptionName][listenerKey]
                     debug.output("Unregistering listener on listenerKey %s, subscription %s"
-                                 %(listenerKey,subscriptionName),listenerid,subscriberid)
-                    topicList = self._mapListenerKeytoTopicList(subscriptionName,listenerKey)
+                                 % (listenerKey, subscriptionName), listenerid, subscriberid)
+                    topicList = self._mapListenerKeytoTopicList(subscriptionName, listenerKey)
                     for topicName in topicList:
                         self.topicDirectory[topicName].unregisterListener(listenerid)
                     debug.output("Listener on listenerKey %s, subscription %s unregistered"
-                                 %(listenerKey,subscriptionName),listenerid,subscriberid)
+                                 % (listenerKey, subscriptionName), listenerid, subscriberid)
                     listenerList.append(listenerid)
                 del self.subscriberDirectory[subscriberid][subscriptionName]
                 debug.output("Subscriber's subscription to %s removed"
-                             %subscriptionName,subscriberid)
+                             % subscriptionName, subscriberid)
         return listenerList
         """
         Do not raise exception if subscriberid/subscriptionName turn out to be
@@ -320,7 +314,6 @@ class EventService(object):
 
     """""""""Subscription methods end here"""""""""
 
-
     """""""""Methods internal to the event service start here"""""""""
 
     """
@@ -328,24 +321,25 @@ class EventService(object):
     Currently this is not supported. Need a more rigorous design to allow
     wildcarding.
     """
-    def _mapListenerKeytoTopicList(self,subscriptionName,listenerKey):
+
+    def _mapListenerKeytoTopicList(self, subscriptionName, listenerKey):
         topicList = []
         topicList.append(listenerKey)
         return topicList
-
 
     """
     This is overridden by the listener's processEvent definition and is here
     to ease development.
     """
-    #To be deleted#
-    def _processEvent(self,listenerid,topicName,theEvent):
+    # To be deleted#
+
+    def _processEvent(self, listenerid, topicName, theEvent):
         debug.output("Listener has processed event %s sent to topic %s"
-                     %(theEvent,topicName),listenerid)
+                     % (theEvent, topicName), listenerid)
 
     """""""""Methods internal to the event service end here"""""""""
 
 
 from .debug import debug
-from .cca_es_spec import EventServiceException,Event,Topic
+from .cca_es_spec import EventServiceException, Event, Topic
 from .topicManager import TopicManager

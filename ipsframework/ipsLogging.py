@@ -16,6 +16,7 @@ import queue
 import errno
 import time
 
+
 def list_fds():
     """List process currently open FDs and their target """
     ret = {}
@@ -47,10 +48,11 @@ class IPSLogSocketHandler(logging.handlers.SocketHandler):
             self.my_socket = s
         return self.my_socket
 
+
 class myLogRecordStreamHandler(socketserver.StreamRequestHandler):
 
     def __init__(self, request, client_address, server, handler):
-        self.handler=handler
+        self.handler = handler
         socketserver.StreamRequestHandler.__init__(self,
                                                    request,
                                                    client_address,
@@ -63,7 +65,7 @@ class myLogRecordStreamHandler(socketserver.StreamRequestHandler):
         followed by the LogRecord in pickle format. Logs the record
         according to whatever policy is configured locally.
         """
-        try :
+        try:
             chunk = self.connection.recv(4)
             if len(chunk) < 4:
                 return
@@ -85,7 +87,7 @@ class myLogRecordStreamHandler(socketserver.StreamRequestHandler):
         logger = logging.getLogger(name)
         # Need to make sure we only have one handler, since the handler on the
         # sender side is packaged during pickling.
-        logger.handlers=[]
+        logger.handlers = []
         logger.addHandler(self.handler)
         # N.B. EVERY record gets logged. This is because Logger.handle
         # is normally called AFTER logger-level filtering. If you want
@@ -94,6 +96,7 @@ class myLogRecordStreamHandler(socketserver.StreamRequestHandler):
         logger.handle(record)
         logger.removeHandler(self.handler)
         return
+
 
 class LogRecordSocketReceiver(socketserver.ThreadingUnixStreamServer):
     """simple TCP socket-based logging receiver suitable for testing.
@@ -107,10 +110,11 @@ class LogRecordSocketReceiver(socketserver.ThreadingUnixStreamServer):
 
     def get_file_no(self):
         return self.socket.fileno()
- 
+
+
 class ipsLogger(object):
-    def __init__(self, dynamic_sim_queue = None):
-        self.log_map={}
+    def __init__(self, dynamic_sim_queue=None):
+        self.log_map = {}
         self.server_map = {}
         self.stdout_handler = logging.StreamHandler(sys.stdout)
         self.formatter = logging.Formatter("%(asctime)s %(name)-15s %(levelname)-8s %(message)s")
@@ -130,10 +134,10 @@ class ipsLogger(object):
                 except OSError as oserr:
                     (errno, strerror) = oserr.args
                     if (errno != 17):
-                        print('Error creating directory %s : %s-%s' % \
-                            (dir, errno, strerror))
+                        print('Error creating directory %s : %s-%s' %
+                              (dir, errno, strerror))
                         sys.exit(1)
-                log_handler = logging.FileHandler(log_file, mode = 'w')
+                log_handler = logging.FileHandler(log_file, mode='w')
 
 #        log_handler.setLevel(logging.DEBUG)
         log_handler.setFormatter(self.formatter)
@@ -149,18 +153,18 @@ class ipsLogger(object):
         time_out = 1.0
         while 1:
             read_set = list(self.log_map.keys())
-            #print 'read_set = ', read_set
-            #read_set = []
+            # print 'read_set = ', read_set
+            # read_set = []
             if read_set:
                 rd, wr, ex = select.select(read_set,
-                                       [], [],
-                                       time_out)
+                                           [], [],
+                                           time_out)
             else:
                 time.sleep(time_out)
                 rd = []
 
             if len(rd) > 0:
-                #print rd
+                # print rd
                 for fileno in rd:
                     (recvr, log_handler, log_pipe_name) = self.log_map[fileno]
                     recvr.handle_request()
@@ -171,16 +175,16 @@ class ipsLogger(object):
                 pass
             else:
                 tokens = msg.split()
-                if (tokens[0] == 'CREATE_SIM'): # Expecting Message: 'CREATE_SIM  log_pipe_name  log_file
+                if (tokens[0] == 'CREATE_SIM'):  # Expecting Message: 'CREATE_SIM  log_pipe_name  log_file
                     self.add_sim_log(tokens[1], tokens[2])
-                    #print list_fds()
-                    #print '*************************************************'
+                    # print list_fds()
+                    # print '*************************************************'
                 elif (tokens[0] == 'END_SIM'):  # Expecting Message 'END_SIM log_pipe_name'
                     log_pipe_name = tokens[1]
-                    #print list_fds()
-                    #print '#################################################'
-                    for fileno , (recvr, log_handler, f_name) in list(self.log_map.items()):
+                    # print list_fds()
+                    # print '#################################################'
+                    for fileno, (recvr, log_handler, f_name) in list(self.log_map.items()):
                         if f_name == log_pipe_name:
-                            #print 'CLOSED file ', fileno
+                            # print 'CLOSED file ', fileno
                             del recvr
                             del self.log_map[fileno]

@@ -1,9 +1,10 @@
 #!/usr/bin/env python
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 # Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 import sys
 import os
+
 
 def parse_log_line(l):
     tokens = l.split()
@@ -13,27 +14,27 @@ def parse_log_line(l):
     fields = ['event_num', 'event_time', 'comment', 'code', 'ok', 'portal_runid', 'eventtype', 'phystimestamp',
               'state', 'seqnum', 'walltime']
 
-    ret_fields = ['event_time', 'event_num', 'eventtype', 'code', 'state',  'walltime',
-                   'phystimestamp', 'comment']
+    ret_fields = ['event_time', 'event_num', 'eventtype', 'code', 'state', 'walltime',
+                  'phystimestamp', 'comment']
     start = {}
     end = {}
-    val_dict= {}
+    val_dict = {}
 
     val_dict['event_num'] = tokens[0]
     val_dict['event_time'] = tokens[1]
 
-    start[fields[2]] = l.find(fields[2]+'=') + len(fields[2]) + 1
-    end[fields[2]] = l.find(fields[3]+'=') - 1
-    val_dict[fields[2]] = l[start[fields[2]] : end[fields[2]]]
+    start[fields[2]] = l.find(fields[2] + '=') + len(fields[2]) + 1
+    end[fields[2]] = l.find(fields[3] + '=') - 1
+    val_dict[fields[2]] = l[start[fields[2]]: end[fields[2]]]
 
-    for i in range(3, len(fields)-1):
-        start[fields[i]] = end[fields[i-1]] + len(fields[i]) + 2
-        end[fields[i]] = l.find(fields[i+1]+'=', start[fields[i]]) - 1
-        val_dict[fields[i]] = l[start[fields[i]] : end[fields[i]]]
+    for i in range(3, len(fields) - 1):
+        start[fields[i]] = end[fields[i - 1]] + len(fields[i]) + 2
+        end[fields[i]] = l.find(fields[i + 1] + '=', start[fields[i]]) - 1
+        val_dict[fields[i]] = l[start[fields[i]]: end[fields[i]]]
 
     start['walltime'] = end['seqnum'] + 1 + len('walltime=')
     end['walltime'] = l.find('\r\n', start['walltime'])
-    val_dict['walltime'] = l[start['walltime'] : end['walltime']]
+    val_dict['walltime'] = l[start['walltime']: end['walltime']]
 
     ret_list = [val_dict[k].strip("'") for k in ret_fields]
 
@@ -63,7 +64,7 @@ def parse_log_line(l):
     tstamp = l[tstamp_start:tstamp_end]
 
     state_start = tstamp_end + 1 + len('state=')
-    state_end = l.find('seqnum=', state_start)  - 1
+    state_end = l.find('seqnum=', state_start) - 1
     state = l[state_start:state_end]
 
     seqnum_start = state_end + 1 + len('seqnum=')
@@ -74,7 +75,7 @@ def parse_log_line(l):
     walltime_end = l.find('\r\n', walltime_start)
     walltime = l[walltime_start:walltime_end]
 
-    #print ret_list
+    # print ret_list
 #    print event_num, e_time, code, ok, runid, event_type, tstamp, state, seqnum, walltime
 #    print [e_time, event_num, event_type, code, state, walltime, tstamp, comment]
 #    print val_dict
@@ -88,7 +89,7 @@ tokens = []
 for l in lines[1:-2]:
     if 'IPS_RESOURCE_ALLOC' not in l:
         tokens.append(parse_log_line(l))
-        #print tokens
+        # print tokens
 page = """<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd" >
 <head>
 <title>SWIM Monitor</title>
@@ -154,10 +155,10 @@ page = """<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http:/
 table_body = ''
 for token_line in tokens:
     table_body += '<tr>'
-    #print token_line
+    # print token_line
     for token in token_line:
         table_body += '<td> %s </td>' % (token)
     table_body += '</tr> \n\n'
 
-html_page = str(page).replace('@TABLE_BODY@',table_body)
+html_page = str(page).replace('@TABLE_BODY@', table_body)
 print(html_page)

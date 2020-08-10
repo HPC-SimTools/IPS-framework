@@ -1,6 +1,6 @@
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 # Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 import os
 import shutil
 import time
@@ -12,6 +12,7 @@ except Exception:
     pass
 
 remote_copy_fun = None
+
 
 def which(program, alt_paths=None):
     def is_exe(fpath):
@@ -36,7 +37,8 @@ def which(program, alt_paths=None):
 
     return None
 
-def copyFiles(src_dir, src_file_list, target_dir, prefix='', keep_old = False):
+
+def copyFiles(src_dir, src_file_list, target_dir, prefix='', keep_old=False):
     """
        Copy files in *src_file_list* from *src_dir* to *target_dir* with an
        optional prefix.  If *keep_old* is ``True``, existing files in
@@ -54,10 +56,10 @@ def copyFiles(src_dir, src_file_list, target_dir, prefix='', keep_old = False):
 
     try:
         file_list = src_file_list.split()
-    except AttributeError : # srcFileList is not a string
+    except AttributeError:  # srcFileList is not a string
         file_list = src_file_list
 
-    globbed_file_list=[]
+    globbed_file_list = []
     for src_file in file_list:
 
         if not target_dir == src_dir:
@@ -70,11 +72,11 @@ def copyFiles(src_dir, src_file_list, target_dir, prefix='', keep_old = False):
                 if (len(globbed_files) > 0):
                     globbed_file_list += globbed_files
                 else:
-                    raise Exception('No such file : %s' %(src_file_full))
+                    raise Exception('No such file : %s' % (src_file_full))
 
-    #------------------------------------------------------------------#
+    # ------------------------------------------------------------------#
     #  for each file in globbed_file_list, copy it from src_dir to target_dir #
-    #------------------------------------------------------------------#
+    # ------------------------------------------------------------------#
     for src_file in globbed_file_list:
         target = prefix + os.path.basename(src_file)
         target_file = os.path.join(target_dir, target)
@@ -84,7 +86,7 @@ def copyFiles(src_dir, src_file_list, target_dir, prefix='', keep_old = False):
         if (keep_old and os.path.isfile(target_file)):
             for i in range(1000):
                 new_name = target_file + '.' + str(i)
-                if  os.path.isfile(new_name):
+                if os.path.isfile(new_name):
                     continue
                 target_file = new_name
                 break
@@ -98,12 +100,13 @@ def copyFiles(src_dir, src_file_list, target_dir, prefix='', keep_old = False):
                 print('Error creating directory %s : %s' % (head, strerror))
                 raise
         try:
-            #print 'trying to copy...'
-            #print 'src_file =', src_file
-            #print 'target_file =', target_file
+            # print 'trying to copy...'
+            # print 'src_file =', src_file
+            # print 'target_file =', target_file
             shutil.copy(src_file, target_file)
         except:
             raise
+
 
 def _ignore_exception(func):
     ''' Ignore exception raised when calling a function, printing an error message
@@ -114,9 +117,10 @@ def _ignore_exception(func):
         try:
             func(*args, **kwargs)
         except Exception as e:
-            print("Ignoring exception %s in call to %s : %s" % \
+            print("Ignoring exception %s in call to %s : %s" %
                   (e.__class__, func.__name__, e.args))
     return new_func
+
 
 # SIMYAN: added a utility method to write to the container file
 @_ignore_exception
@@ -134,41 +138,42 @@ def writeToContainer(ziphandle, src_dir, src_file_list):
     """
     try:
         file_list = src_file_list.split()
-    except AttributeError : # srcFileList is not a string
+    except AttributeError:  # srcFileList is not a string
         file_list = src_file_list
 
     # The logic for directories in the current directory follows that of
     # not specifying a src directory at all
-    if src_dir==".": src_dir=""
+    if src_dir == ".":
+        src_dir = ""
 
-    #print 'src_file_list = ', src_file_list
-    #print 'ziphandle = ', ziphandle
-    #print 'os.path.exists(ziphandle) = ', os.path.exists(ziphandle)
+    # print 'src_file_list = ', src_file_list
+    # print 'ziphandle = ', ziphandle
+    # print 'os.path.exists(ziphandle) = ', os.path.exists(ziphandle)
     try:
         if os.path.exists(ziphandle):
-            zin = zipfile.ZipFile(ziphandle,'r')
-            zout = zipfile.ZipFile('temp.ctz','a')
+            zin = zipfile.ZipFile(ziphandle, 'r')
+            zout = zipfile.ZipFile('temp.ctz', 'a')
         else:
-            #print 'so it is None'
+            # print 'so it is None'
             zin = None
-            zout = zipfile.ZipFile(ziphandle,'a')
-    except zipfile.BadZipfile :
+            zout = zipfile.ZipFile(ziphandle, 'a')
+    except zipfile.BadZipfile:
         print('Found a bad container file, removing...')
         os.remove(ziphandle)
         zin = None
-        zout = zipfile.ZipFile(ziphandle,'a')
+        zout = zipfile.ZipFile(ziphandle, 'a')
 
-    curdir=os.path.curdir
+    curdir = os.path.curdir
     if src_dir:
         # Handle possible wildcards in input files.
         # Build and flatten list of lists using sum(l_of_l, [])
-        for sfile in sum([glob.glob(os.path.join(src_dir, p)) \
+        for sfile in sum([glob.glob(os.path.join(src_dir, p))
                           for p in file_list], []):
-            #sfile=os.path.join(src_dir,file)
+            # sfile=os.path.join(src_dir,file)
             if os.path.exists(sfile):
-                #print 'srcdir has'
-                #print 'sfile =', sfile
-                #print 'file =', file
+                # print 'srcdir has'
+                # print 'sfile =', sfile
+                # print 'file =', file
                 (head, tail) = os.path.split(os.path.abspath(sfile))
                 file = tail
                 if not os.path.exists(file):
@@ -178,17 +183,17 @@ def writeToContainer(ziphandle, src_dir, src_file_list):
                 else:
                     zout.write(file)
             else:
-                raise Exception('No such file : %s in directory %s'% (file, src_dir))
+                raise Exception('No such file : %s in directory %s' % (file, src_dir))
     else:
         for file in file_list:
             if os.path.exists(file):
                 # If it is a full path, copy it locally, write to zip, remove
                 if os.path.dirname(file):
-                    absfile=os.path.abspath(file)
+                    absfile = os.path.abspath(file)
                     (sdir, sfile) = os.path.split(absfile)
-                    #print 'srcdir has not'
-                    #print 'absfile =', absfile
-                    #print 'sfile =', sfile
+                    # print 'srcdir has not'
+                    # print 'absfile =', absfile
+                    # print 'sfile =', sfile
                     (head, tail) = os.path.split(os.path.abspath(sfile))
                     sfile = tail
                     if not os.path.exists(sfile):
@@ -202,21 +207,21 @@ def writeToContainer(ziphandle, src_dir, src_file_list):
             else:
                 raise Exception('No such file : %s', file)
 
-
-    #print 'zin is ', zin
+    # print 'zin is ', zin
     if zin:
         for item in zin.infolist():
             buffer = zin.read(item.filename)
-            #print 'item.filename = ', item.filename
-            #print 'zout.namelist() = ', zout.namelist()
-            #print 'item.filename in zout.namelist() = ', item.filename in zout.namelist()
+            # print 'item.filename = ', item.filename
+            # print 'zout.namelist() = ', zout.namelist()
+            # print 'item.filename in zout.namelist() = ', item.filename in zout.namelist()
             if not item.filename in zout.namelist():
                 zout.writestr(item, buffer)
 
         zin.close()
-        shutil.move('temp.ctz',ziphandle)
+        shutil.move('temp.ctz', ziphandle)
 
     zout.close()
+
 
 def getTimeString(timeArg=None):
     """
