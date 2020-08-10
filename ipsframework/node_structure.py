@@ -1,11 +1,13 @@
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 # Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 """
 Node structures for RM are implemented here for convenience.
 """
 
 # local version
+
+
 class Node:
     """
     Models a node in the allocation.
@@ -18,6 +20,7 @@ class Node:
       * *total_cores*: total number of cores that can be allocated on this node.
       * *status*: indicates if the node is 'UP' or 'DOWN'.  Currently not used, all nodes are considered functional..
     """
+
     def __init__(self, name, socks, cores, p):
         self.status = 'UP'
         self.name = name
@@ -55,7 +58,6 @@ class Node:
                     i = len(p)
                     c = len(p)
                 self.available.append(s)
-
 
     def print_sockets(self, fname=''):
         """
@@ -112,9 +114,9 @@ class Node:
                     if k >= procs:
                         break
         else:
-            #print "<3<3<3"
+            # print "<3<3<3"
             for sock in self.sockets:
-                #print procs - k
+                # print procs - k
                 if sock.avail_cores > procs - k:
                     slots.extend(sock.allocate(whole_sockets, tid, o,
                                                procs - k))
@@ -137,7 +139,6 @@ class Node:
 
         self.avail_cores -= k
         return k, slots
-
 
     def release(self, tid, o):
         """
@@ -162,6 +163,7 @@ class Node:
         self.avail_cores = ac
         return self.avail_cores - start
 
+
 class Socket:
     """
     Models a socket in a node.
@@ -176,6 +178,7 @@ class Socket:
       * *total_cores*: total number of cores that can be allocated on this
         socket.
     """
+
     def __init__(self, name, cps, coreids=[]):
         """
         s = number of sockets (per node)
@@ -251,7 +254,7 @@ class Socket:
                 if k == num_procs:
                     break
         self.avail_cores -= k
-        self.my_tasks.update({tid:(o, k, num_procs)})
+        self.my_tasks.update({tid: (o, k, num_procs)})
         return slots
 
     def release(self, tid):
@@ -277,6 +280,7 @@ class Socket:
         self.avail_cores += k
         return count
 
+
 class Core:
     """
     Models a core of a socket.
@@ -285,6 +289,7 @@ class Core:
       * *is_available*: boolean value indicating the availability of the core.
       * *task_id*, *owner*: identifiers of the task and component using the core.
     """
+
     def __init__(self, name):
         self.name = name
         self.is_available = True

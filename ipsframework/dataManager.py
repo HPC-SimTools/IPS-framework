@@ -1,6 +1,6 @@
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 # Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 import sys
 import os
 from . import ipsutil
@@ -8,6 +8,7 @@ import subprocess
 
 # import things to use event service
 # from event_service_spec import PublisherEventService,SubscriberEventService,EventListener,Topic,EventServiceException
+
 
 class DataManager(object):
     """
@@ -27,7 +28,7 @@ class DataManager(object):
         # create publisher event service object
         # self.publisherES = PublisherEventService()
         # get a topic to publish on
-        #self.myTopic = self.publisherES.getTopic("test")
+        # self.myTopic = self.publisherES.getTopic("test")
         self.myTopic = None
         self.outPrefix = ""
         self.simroot = ""
@@ -37,7 +38,7 @@ class DataManager(object):
                                 'update_state',
                                 'merge_current_plasma_state']
         self.fwk.register_service_handler(self.service_methods,
-                                  getattr(self,'process_service_request'))
+                                          getattr(self, 'process_service_request'))
 
     def process_service_request(self, msg):
         """
@@ -88,8 +89,8 @@ class DataManager(object):
         try:
             ipsutil.copyFiles(source_dir, state_files, target_dir)
         except Exception as e:
-            self.fwk.exception( 'Error updating state files from directory %s',
-                                source_dir)
+            self.fwk.exception('Error updating state files from directory %s',
+                               source_dir)
             raise
         return 0
 
@@ -121,23 +122,23 @@ class DataManager(object):
                 merge_stdout = open(log_fullpath, 'w')
             except:
                 self.fwk.exception('Error opening log file %s : using stdout',
-                               log_fullpath)
+                                   log_fullpath)
 
         try:
             retval = subprocess.call([update_state, '-input', target_state_file,
-                                  '-updates', partial_state_file],
-                                  stdout = merge_stdout,
-                                  stderr = subprocess.STDOUT)
+                                      '-updates', partial_state_file],
+                                     stdout=merge_stdout,
+                                     stderr=subprocess.STDOUT)
         except Exception:
-            self.fwk.exception( 'Error calling update_state - probably not found in $PATH')
+            self.fwk.exception('Error calling update_state - probably not found in $PATH')
             raise
-            
+
         if (retval != 0):
             return retval
         try:
             ipsutil.copyFiles(plasma_work_dir, current_plasma_state, component_work_dir)
         except Exception as e:
-            self.fwk.exception( 'Error refreshing local copy of current plasma state file in directory %s',
-                                component_work_dir)
+            self.fwk.exception('Error refreshing local copy of current plasma state file in directory %s',
+                               component_work_dir)
             raise
         return 0

@@ -1,6 +1,6 @@
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 # Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 """
 This file hosts the TopicManager class that manages the set of events and
 listeners for a given topic. For reasons of efficient storage and O(1)-time
@@ -17,12 +17,12 @@ count of pending events exceeding which triggers an event cleanup to remove
 events that outlive a 'timeToLive' parameter.
 """
 
-from .cca_es_spec import EventServiceException,Event
+from .cca_es_spec import EventServiceException, Event
 from .debug import debug
 
 
 class TopicManager(object):
-    def __init__(self,limitPendingEvents = 10):
+    def __init__(self, limitPendingEvents=10):
         """ eventList is the common listing of events posted to a topic. """
         self.eventList = []
 
@@ -48,11 +48,11 @@ class TopicManager(object):
         debug.output("TopicManager.__init__")
         self.printEventsAndListeners()
 
-
     """
     Append the event to the event list.
     """
-    def sendEvent(self,theEvent):
+
+    def sendEvent(self, theEvent):
         """
         A new event is appended to the end of the event list provided there is at
         least one registered listener. This is in accordance with the policy that
@@ -70,8 +70,7 @@ class TopicManager(object):
         debug.output("TopicManager.sendEvent")
         self.printEventsAndListeners()
 
-
-    def registerListener(self,listenerid):
+    def registerListener(self, listenerid):
         """
         For a new listener, the event list marker is initialized to the end of the
         event list in accordance with the policy that listeners receive only those
@@ -84,13 +83,13 @@ class TopicManager(object):
         else:
             raise EventServiceException("Event listener registered earlier.")
 
-
     """
     A listener activity like unregistering or processing triggers cleanup of
     events having no pending listeners, followed by resetting of list markers
     of all registered listeners.
     """
-    def cleanupEvents(self,listenerid):
+
+    def cleanupEvents(self, listenerid):
         self.listenerDirectory[listenerid] = len(self.eventList)
 
         """ First determine the oldest pending event. """
@@ -105,34 +104,34 @@ class TopicManager(object):
             for listenerid in list(self.listenerDirectory.keys()):
                 self.listenerDirectory[listenerid] -= oldestPendingEvent
 
-
     """
     A listener is unregistered by first performing an event cleanup, followed by
     deletion of the listener from listenerDirectory.
     """
-    def unregisterListener(self,listenerid):
+
+    def unregisterListener(self, listenerid):
         self.cleanupEvents(listenerid)
         del self.listenerDirectory[listenerid]
         debug.output("TopicManager.unregisterListener")
         self.printEventsAndListeners()
 
-
     """
     Returns events posted since the last fetch for a listener.
     """
-    def getEventListForListener(self,listenerid):
+
+    def getEventListForListener(self, listenerid):
         eventListForListener = []
         for theEvent in self.eventList[self.listenerDirectory[listenerid]:]:
-            eventListForListener.append(Event(theEvent.header,theEvent.body))
+            eventListForListener.append(Event(theEvent.header, theEvent.body))
         self.cleanupEvents(listenerid)
         debug.output("TopicManager.getEventListForListener")
         self.printEventsAndListeners()
         return eventListForListener
 
-
     """
     Print out the contents for debugging.
     """
+
     def printEventsAndListeners(self):
         string = ":::::::::\n" + "List of events:"
         i = 0
@@ -143,14 +142,14 @@ class TopicManager(object):
         sortedKeys = sorted(self.listenerDirectory.keys())
         for listenerid in sortedKeys:
             string = "event = " + str(self.listenerDirectory[listenerid])
-            debug.output(string,listenerid)
+            debug.output(string, listenerid)
         debug.output(":::::::::")
-
 
     """
     Gives a profile of events posted to this topic, currently just
     maxPendingEvents.
     """
+
     def getEventStats(self):
         return self.maxPendingEvents
 
@@ -171,13 +170,13 @@ if __name__ == "__main__":
     h0[0] = 0
     b0 = {}
     b0["zero"] = "zero"
-    em.sendEvent(Event(h0,b0))
+    em.sendEvent(Event(h0, b0))
 
     h1 = {}
     h1[1] = 1
     b1 = {}
     b1["one"] = "one"
-    em.sendEvent(Event(h1,b1))
+    em.sendEvent(Event(h1, b1))
 
     print("-----")
     el = em.getEventListForListener(1)

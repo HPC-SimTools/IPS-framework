@@ -174,13 +174,13 @@ class ConfigurationManager(object):
             self.platform_conf = ConfigObj(self.platform_file,
                                            interpolation='template',
                                            file_error=True)
-        except IOError :
+        except IOError:
             self.fwk.exception('Error opening config file: %s',
                                self.platform_file)
             # pytau.stop(self.timers['initialize'])
             # stop(self.timers['initialize'])
             raise
-        except SyntaxError :
+        except SyntaxError:
             self.fwk.exception('Error parsing config file: %s',
                                self.platform_file)
             # pytau.stop(self.timers['initialize'])
@@ -293,13 +293,14 @@ class ConfigurationManager(object):
         self.compset_conf = []
         if self.compset_list:
             for csfile in self.compset_list:
-                if local_debug: print(csfile)
+                if local_debug:
+                    print(csfile)
                 try:
                     csconf = ConfigObj(csfile, interpolation='template', file_error=True)
-                except IOError :
+                except IOError:
                     self.fwk.exception('Error opening config file: %s', csfile)
                     raise
-                except SyntaxError :
+                except SyntaxError:
                     self.fwk.exception('Error parsing config file: %s', csfile)
                     raise
                 # get mandatory values
@@ -348,7 +349,7 @@ class ConfigurationManager(object):
                     if key not in conf_keys:
                         conf[key] = self.platform_conf[key]
 
-            except IOError :
+            except IOError:
                 self.fwk.exception('Error opening config file %s: ', conf_file)
                 # pytau.stop(self.timers['initialize'])
                 # stop(self.timers['initialize'])
@@ -358,7 +359,7 @@ class ConfigurationManager(object):
                 # pytau.stop(self.timers['initialize'])
                 # stop(self.timers['initialize'])
                 raise
-            except Exception :
+            except Exception:
                 self.fwk.exception('Error(s) during parsing of supplied config file %s: ', conf_file)
                 raise
 
@@ -366,7 +367,7 @@ class ConfigurationManager(object):
                 sim_name = conf['SIM_NAME']
                 sim_root = conf['SIM_ROOT']
                 log_file = os.path.abspath(conf['LOG_FILE'])
-            except KeyError :
+            except KeyError:
                 self.fwk.exception('Missing required parameters SIM_NAME, SIM_ROOT or LOG_FILE\
  in configuration file %s', conf_file)
                 # pytau.stop(self.timers['initialize'])
@@ -503,7 +504,8 @@ class ConfigurationManager(object):
         use_portal = True
         if 'USE_PORTAL' in self.sim_map[self.fwk_sim_name].sim_conf:
             use_portal = self.sim_map[self.fwk_sim_name].sim_conf['USE_PORTAL']
-            if use_portal.lower() == "false": use_portal = False
+            if use_portal.lower() == "false":
+                use_portal = False
         if use_portal:
             portal_conf = {}
             portal_conf['CLASS'] = 'FWK'
@@ -882,7 +884,7 @@ class ConfigurationManager(object):
         except IOError:
             self.fwk.exception('Error opening config file %s: ', config_file)
             raise
-        except SyntaxError :
+        except SyntaxError:
             self.fwk.exception(' Error parsing config file %s: ', config_file)
             raise
         parent_sim_name = sim_name
@@ -908,7 +910,7 @@ class ConfigurationManager(object):
             sim_name = conf['SIM_NAME']
             sim_root = conf['SIM_ROOT']
             log_file = os.path.abspath(conf['LOG_FILE'])
-        except KeyError :
+        except KeyError:
             self.fwk.exception('Missing required parameters SIM_NAME, SIM_ROOT or LOG_FILE\
 in configuration file %s', config_file)
             raise

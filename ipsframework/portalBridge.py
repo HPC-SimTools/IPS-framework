@@ -99,7 +99,7 @@ class PortalBridge(Component):
         self.file_uid_cache = defaultdict(dict)
         self.counter = 0
         self.dump_freq = 10
-        self.min_dump_interval = 300 # Minimum time interval in Sec for HTML dump operation
+        self.min_dump_interval = 300  # Minimum time interval in Sec for HTML dump operation
         self.last_dump_time = time.time()
         self.write_to_htmldir = True
         self.html_dir = ""
@@ -255,12 +255,12 @@ class PortalBridge(Component):
         sim_data.bigbuf += buf
 
         # json.dump(event_data, sim_data.json_monitor_file, indent=3);
-        buf = json.dumps(event_data);
+        buf = json.dumps(event_data)
         sim_data.json_monitor_file.write("%s\n" % buf)
 
         freq = self.dump_freq
-        if (((self.counter % freq == 0) and (time.time() - self.last_dump_time > self.min_dump_interval))
-                or (event_data['eventtype'] == 'IPS_END')):
+        if (((self.counter % freq == 0) and (time.time() - self.last_dump_time > self.min_dump_interval)) or
+                (event_data['eventtype'] == 'IPS_END')):
             self.last_dump_time = time.time()
             html_filename = sim_data.monitor_file_name.replace('eventlog', 'html')
             html_page = convert_logdata_to_html(sim_data.bigbuf)
@@ -283,13 +283,13 @@ class PortalBridge(Component):
                                               stderr=PIPE, close_fds=True)
                     # self.childProcess = popen2.Popen3(cmd, bufsize=128)
                     self.first_event = False
-                self.childProcess.stdin.write('%s %s\n' % \
+                self.childProcess.stdin.write('%s %s\n' %
                                               (self.portal_url, webmsg))
                 #                self.services.debug('Wrote event to sendPost.py buffer : %s',
                 #                                    str(event_data))
                 self.childProcess.stdin.flush()
             except Exception as e:
-                self.services.exception('Error transmitting event number %6d to %s : %s', \
+                self.services.exception('Error transmitting event number %6d to %s : %s',
                                         sim_data.counter, self.portal_url, str(e))
         if (sim_data.mpo_wid):
             self.send_mpo_data(event_data, sim_data)
@@ -511,7 +511,7 @@ class PortalBridge(Component):
                 f = urllib.request.urlopen(self.runid_url, None, 10)
                 sim_data.portal_runid = f.read().strip()
             except (urllib.error.URLError) as e:
-                self.services.error('Error obtaining runID from service at %s : %s' % \
+                self.services.error('Error obtaining runID from service at %s : %s' %
                                     (self.runid_url, str(e)))
                 self.services.error('Using a datetime instead')
         try:
@@ -529,7 +529,7 @@ class PortalBridge(Component):
         except OSError as oserr:
             (errno, strerror) = oserr.args
             if (errno != 17):
-                self.services.exception('Error creating Simulation Log directory %s : %d %s' % \
+                self.services.exception('Error creating Simulation Log directory %s : %d %s' %
                                         (sim_log_dir, errno, strerror))
                 raise
 
@@ -539,7 +539,7 @@ class PortalBridge(Component):
             sim_data.monitor_file = open(sim_data.monitor_file_name, 'wb', 0)
         except IOError as oserr:
             (errno, strerror) = oserr.args
-            self.services.error("Error opening file %s: error(%s): %s" % \
+            self.services.error("Error opening file %s: error(%s): %s" %
                                 (sim_data.monitor_file_name, errno, strerror))
             self.services.error('Using /dev/null instead')
             sim_data.monitor_file = open('/dev/null', 'w')

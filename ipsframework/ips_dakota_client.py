@@ -34,7 +34,7 @@ class IPSDakotaClient(object):
         try:
             self.platform_conf = ConfigObj(self.platform_fname, interpolation='template',
                                            file_error=True)
-        except (IOError, SyntaxError) :
+        except (IOError, SyntaxError):
             raise
         """
         Master Config file
@@ -89,7 +89,7 @@ class IPSDakotaClient(object):
                 # print 'Connecting to dakota_bridge : ', str(sys.argv[1:])
                 conn = Client(str(server_address), 'AF_UNIX')
             except Exception as inst:
-                print('%s: %d Failed to connect to %s: %s' % \
+                print('%s: %d Failed to connect to %s: %s' %
                       (time.strftime("%b %d %Y %H:%M:%S", time.localtime()),
                        trials, server_address, str(sys.argv)))
                 sys.stdout.flush()

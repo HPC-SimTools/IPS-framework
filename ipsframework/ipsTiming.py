@@ -1,6 +1,6 @@
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 # Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 """
 Experimental timing of the IPS using TAU
 """
@@ -29,39 +29,42 @@ except KeyError:
 def create_timer(name, fnc, pid):
     try:
         if os.environ['IPS_TIMING'] == '1':
-            #import pytau
-            #print 'created a timer', name + '.' + fnc, ' - ', pid
+            # import pytau
+            # print 'created a timer', name + '.' + fnc, ' - ', pid
             return pytau.profileTimer(name + '.' + fnc, '', str(pid))
-        #else:
-            #print 'timing not on'
+        # else:
+            # print 'timing not on'
     except Exception as e:
-        #print "*********** NO TIMING *************"
-        #print e
+        # print "*********** NO TIMING *************"
+        # print e
         return None
 
-def start (timer):
+
+def start(timer):
     if timer != None:
-        #import pytau
+        # import pytau
         pytau.start(timer)
     else:
         pass
 
-def stop (timer):
+
+def stop(timer):
     if timer != None:
-        #import pytau
+        # import pytau
         pytau.stop(timer)
     else:
         pass
 
-def dumpAll (label = ""):
+
+def dumpAll(label=""):
     try:
-        if os.environ['IPS_TIMING'] =='1':
-            #import pytau
+        if os.environ['IPS_TIMING'] == '1':
+            # import pytau
             if label != "":
                 pytau.dbDump()
             else:
                 pytau.dbDump(label)
-        #else:
+        # else:
         #    print 'timing not on'
     except KeyError:
         pass
@@ -69,9 +72,11 @@ def dumpAll (label = ""):
         print('something happened during dump')
         raise
 
+
 class TauWrap(object):
     def __init__(self, timer):
         self.timer = timer
+
     def __call__(self, func):
         def wrapper(*arg, **keywords):
             start(self.timer)
@@ -87,12 +92,13 @@ class TauWrap(object):
                 return res
         return wrapper
 
+
 def weave_tau_timer(self, target):
 
     def wrapper(self, *args, **kwargs):
         timers_dict_name = '_tau_timers_' + str(id(self))
         try:
-            timer = getattr(self,timers_dict_name)[target.__name__]
+            timer = getattr(self, timers_dict_name)[target.__name__]
         except KeyError:
             print('weave_tau_timer: Key error : ', target.__name__)
             return target(self, *args, **kwargs)
@@ -108,11 +114,10 @@ def weave_tau_timer(self, target):
         return ret_val
     return wrapper
 
-def instrument_object_with_tau(obj_name, obj, exclude = None):
-#    print 'instrument_object_with_tau - 1', obj
+
+def instrument_object_with_tau(obj_name, obj, exclude=None):
     if not IPS_TIMING:
         return
-#    print 'instrument_object_with_tau - 2', obj
     if not exclude:
         my_exclude = []
     else:
@@ -129,9 +134,7 @@ def instrument_object_with_tau(obj_name, obj, exclude = None):
     except AttributeError:
         raw_method_dict = {}
         for name, value in obj.__class__.__dict__.items():
-#            print '###', name, value
             if (inspect.ismethod(getattr(obj, name))):
-#                print name, 'is a method'
                 raw_method_dict[name] = value
     pid = os.getpid()
     for name, value in obj.__class__.__dict__.items():
@@ -139,18 +142,14 @@ def instrument_object_with_tau(obj_name, obj, exclude = None):
             if (callable(value)):
                 timers_dict[name] = create_timer(obj_name, name, pid)
 
-#    print raw_method_dict
     for name, method in raw_method_dict.items():
-#        print obj, name, method
         if (name not in my_exclude):
-#            print 'weaving tau timer for ', obj, name
             wrapped_method = weave_tau_timer(obj, method)
             method_obj = MethodType(wrapped_method, obj, obj.__class__)
             setattr(obj, name, method_obj)
 
     setattr(obj, timers_dict_name, timers_dict)
     setattr(obj, raw_method_dict_name, raw_method_dict)
-#    print 'instrument_object_with_tau - 3', obj
     return
 
 

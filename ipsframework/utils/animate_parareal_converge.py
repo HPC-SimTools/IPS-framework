@@ -1,7 +1,7 @@
 #! /usr/bin/env python
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 # Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 # -*- coding: utf-8 -*-
 
 import sys
@@ -22,26 +22,25 @@ try:
     import matplotlib.pyplot as plt
     from matplotlib.colors import LogNorm
     from matplotlib.contour import ContourSet
-    #from pylab import *
 except:
     raise
 
+
 def animate_convergence(converge, max_slice, max_iteration, max_wall_time):
 
-#    print converge, max_slice, max_iteration, max_wall_time
     f = plt.figure(4)
     plt.ylabel('Slice')
     plt.xlabel('Iteration')
     plt.title('%.3f Sec.' % (max_wall_time))
     plt.xlim(0, max_iteration)
     plt.ylim(0, max_slice)
-    #print max_iteration, max_slice
+    # print max_iteration, max_slice
     iterations = np.linspace(1, max_iteration, max_iteration)
     slices = np.linspace(1, max_slice, max_slice)
-    #print iterations, slices
+    # print iterations, slices
 #    print [len(iterations), len(slices), len(iterations), len(slices)]
     convergence = np.ma.array(np.zeros([len(iterations), len(slices)]),
-                        mask = np.ones((len(iterations), len(slices))))
+                              mask=np.ones((len(iterations), len(slices))))
     X = np.ma.array(np.zeros([len(iterations) + 1, len(slices) + 1]))
     Y = np.ma.array(np.zeros([len(iterations) + 1, len(slices) + 1]))
     X1 = np.zeros(len(iterations) + 1)
@@ -53,11 +52,10 @@ def animate_convergence(converge, max_slice, max_iteration, max_wall_time):
         Y1[i] = i
 
     for ((iteration, slice), value) in sorted(converge.items()):
-#        print iteration, slice, '%.3e' % (value)
         convergence[iteration, slice] = value
         convergence.mask[iteration, slice] = False
         X[iteration, slice] = X[iteration, slice + 1] = iteration - 0.5
-        Y[iteration, slice] = Y[iteration + 1 , slice] = slice - 0.5
+        Y[iteration, slice] = Y[iteration + 1, slice] = slice - 0.5
         Y[iteration, slice + 1] = Y[iteration + 1, slice + 1] = slice + 0.5
         X[iteration + 1, slice] = X[iteration + 1, slice + 1] = iteration + 0.5
 
@@ -68,25 +66,25 @@ def animate_convergence(converge, max_slice, max_iteration, max_wall_time):
     for ((iteration, slice), value) in sorted(converge.items()):
         if value > 0.0 and value < value_min:
             value_min = value
-            #print 'min = ', value_min
+            # print 'min = ', value_min
 
     # set zeros to value min
     for ((iteration, slice), value) in sorted(converge.items()):
         if value < value_min:
-            #print 'changed ', value
+            # print 'changed ', value
             convergence[iteration, slice] = value_min
-            #print ' to ', value_min
+            # print ' to ', value_min
     try:
         p = plt.pcolor(X.transpose(), Y.transpose(), convergence.transpose(),
-                       norm = LogNorm())
+                       norm=LogNorm())
     except ValueError:
         p = plt.plot((0), (0))
     else:
         tol_level = [1.5e-6]
-        #CS = plt.contour(X1, Y1, Z1, levels = tol_level)
+        # CS = plt.contour(X1, Y1, Z1, levels = tol_level)
 
         cb = plt.colorbar(spacing='proportional', format='%.1e')
-        #cb.add_line(CS)
+        # cb.add_line(CS)
         cb.ax.set_ylabel('Error')
 
     filename = 'plot_%09.3f.png' % (max_wall_time)
@@ -123,10 +121,10 @@ def get_task_times(url_list):
             wall_time = float(field_values[-3])
             if (field_values[2] == 'IPS_LAUNCH_TASK' or field_values[2] == 'IPS_LAUNCH_TASK_POOL'):
                 comment_lst = comment.split()
-                task_id = comment_lst[comment_lst.index('task_id')+ 2]
+                task_id = comment_lst[comment_lst.index('task_id') + 2]
                 try:
-                    tag = comment_lst[comment_lst.index('Tag')+ 2]
-                except ValueError :
+                    tag = comment_lst[comment_lst.index('Tag') + 2]
+                except ValueError:
                     if field_values[2] == 'IPS_LAUNCH_TASK':
                         try:
                             (phys_stamp, slice) = comment.split()[-1].split('.')
@@ -140,15 +138,15 @@ def get_task_times(url_list):
                 else:
                     (phys_stamp, slice) = tag.split('.')
 
-                #(phys_stamp, slice) = identifier.split('.')
-                #print phys_stamp, identifier, comment.split()[-2]
+                # (phys_stamp, slice) = identifier.split('.')
+                # print phys_stamp, identifier, comment.split()[-2]
                 if float(phys_stamp_portal) > 0.0:
                     phys_stamp = phys_stamp_portal
                 phys_stamp_map[task_id] = (phys_stamp, slice)
             elif (field_values[2] == 'IPS_TASK_END'):
                 task_id = comment.split()[2]
                 (phys_stamp, slice) = phys_stamp_map[task_id]
-                #print ' '.join(field_values)
+                # print ' '.join(field_values)
                 exec_time = comment.split()[-2]
                 print('%s.%s  %10s  %s' % (phys_stamp, slice, task_id, exec_time))
                 try:
@@ -179,13 +177,13 @@ def get_task_times(url_list):
     print('Phys_stamp', end=' ')
     for comp in list(task_time_map.keys()):
         for suffix in ['_count', '_low', '_high', '_mean']:
-            print(',   ', comp+suffix, end=' ')
+            print(',   ', comp + suffix, end=' ')
     print()
 
-    for phys_stamp in sorted(all_phys_stamps, key = float):
+    for phys_stamp in sorted(all_phys_stamps, key=float):
         print(phys_stamp, end=' ')
         for comp_map in list(task_time_map.values()):
-            #print comp_map
+            # print comp_map
             try:
                 (low, high, mean, values) = comp_map[phys_stamp]
                 print(',   ', len(values), ',', low, ',', high, ',', mean, end=' ')
@@ -218,7 +216,7 @@ def get_task_times(url_list):
     fields = last_event('td')
     field_values = [field.contents[0].strip() for field in fields]
     total_wall_time = float(field_values[-3])
-    time_lst = list(range(0, int(total_wall_time+1), SIMSEC_PER_FRAME))
+    time_lst = list(range(0, int(total_wall_time + 1), SIMSEC_PER_FRAME))
     last_frame_time = -1.0
     for event in events:
         fields = event('td')
@@ -236,7 +234,7 @@ def get_task_times(url_list):
             max_wall_time = wall_time
 
         if wall_time >= time_lst[plot_idx]:
-            if  (wall_time - last_frame_time >= SIMSEC_PER_FRAME):
+            if (wall_time - last_frame_time >= SIMSEC_PER_FRAME):
                 animate_convergence(partial_converge, max_slice, max_iteration, max_wall_time)
                 plot_idx += 1
                 last_frame_time = wall_time
@@ -256,19 +254,19 @@ def get_task_times(url_list):
 #
 
     command = ('mencoder',
-           'mf://*.png',
-           '-mf',
-           'type=png:w=800:h=600:fps=%d' % (FPS),
-           '-ovc',
-           'lavc',
-           '-lavcopts',
-           'vcodec=mpeg4',
-           '-oac',
-           'copy',
-           '-o',
-           'output.avi')
+               'mf://*.png',
+               '-mf',
+               'type=png:w=800:h=600:fps=%d' % (FPS),
+               '-ovc',
+               'lavc',
+               '-lavcopts',
+               'vcodec=mpeg4',
+               '-oac',
+               'copy',
+               '-o',
+               'output.avi')
 
-#os.spawnvp(os.P_WAIT, 'mencoder', command)
+# os.spawnvp(os.P_WAIT, 'mencoder', command)
 
     print("\n\nabout to execute:\n%s\n\n" % ' '.join(command))
     subprocess.check_call(command)
@@ -276,6 +274,7 @@ def get_task_times(url_list):
     print("\n\n The movie was written to 'output.avi'")
 
     print("\n\n You may want to delete *.png now.\n\n")
+
 
 if __name__ == '__main__':
     get_task_times(sys.argv[1:])

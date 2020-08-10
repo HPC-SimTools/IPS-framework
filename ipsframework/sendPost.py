@@ -1,7 +1,7 @@
 #! /usr/bin/env python
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 # Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 
 import sys
 import urllib.request, urllib.error, urllib.parse
@@ -10,6 +10,7 @@ import time
 import traceback
 
 # timeout in seconds
+
 
 def sendEncodedMessage(url, msg):
     global msg_queue
@@ -20,12 +21,12 @@ def sendEncodedMessage(url, msg):
     while (trial < num_trials):
         try:
             f = urllib.request.urlopen(url, msg)
-        except (urllib.error.URLError) as e :
+        except (urllib.error.URLError) as e:
             trial += 1
             if trial > num_trials:
-                open('PORTAL.err', 'a').write('%s\n'% (msg))
+                open('PORTAL.err', 'a').write('%s\n' % (msg))
             else:
-                time.sleep(delay[trial-1])
+                time.sleep(delay[trial - 1])
         else:
             break
     try:
@@ -50,5 +51,5 @@ if __name__ == "__main__":
             msg = tokens[1]
             sendEncodedMessage(url, msg)
         except:
-            traceback.print_exc(file=error_f) 
+            traceback.print_exc(file=error_f)
     sys.exit(0)

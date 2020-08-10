@@ -1,14 +1,14 @@
 #! /usr/bin/env python
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 # Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 import sys
 from .configobj import ConfigObj
 import getopt
 import os
 
-script_template=\
-"""
+script_template =\
+    """
 #! /bin/bash
 
 #PBS -A @ACCOUNT@
@@ -31,13 +31,15 @@ fwk_logfile=@SIM_NAME@_${host}_${now}.log
 @IPS_PATH@  @CONFIG_FILES@ --platform=@PLATFORM_PATH@ --log=@SIM_ROOT@/${fwk_logfile} @DEBUG@ @FTB@
 """
 
+
 def printUsageMessage():
     print('Usage: create_batch_script.py --ips=PATH_TO_IPS [--config=CONFIG_FILE_NAME]+ \
 --platform=PLATFORM_FILE_NAME [--account=CHRGE_ACCOUNT] [--queue=BATCH_QUEUE] \
 [--walltime=ALLOCATION_TIME] [--nproc=NPROCESSES] [--debug] [--ftb] \
 [--output=BATCH_SCRIPT]')
 
-def create_script(ips_path,  cfgFile_list,  platform_file,
+
+def create_script(ips_path, cfgFile_list, platform_file,
                   debug, ftb, account='AAAA', queue='QQQQ',
                   nproc='NNNN', walltime='HH:MM:SS', out_file=sys.stdout):
     conf = []
@@ -45,7 +47,7 @@ def create_script(ips_path,  cfgFile_list,  platform_file,
     for cfg_file in cfgFile_list:
         try:
             cfg = ConfigObj(cfg_file, interpolation='template',
-                                 file_error=True)
+                            file_error=True)
         except IOError:
             print('Error opening config file: ', cfg_file)
             raise
@@ -53,13 +55,13 @@ def create_script(ips_path,  cfgFile_list,  platform_file,
             print('Error parsing config file: ', cfg_file)
             raise
         conf.append(cfg)
-        config_cmd_string += '--config='+ cfg_file+' '
+        config_cmd_string += '--config=' + cfg_file + ' '
     platform_path = os.path.abspath(platform_file)
     sim_name = conf[0]['SIM_NAME']
     sim_root = conf[0]['SIM_ROOT']
 
     plat = ConfigObj(platform_path, interpolation='template',
-                                 file_error=True)
+                     file_error=True)
     HOST = plat['HOST']
     try:
         os.makedirs(sim_root)
@@ -84,18 +86,18 @@ def create_script(ips_path,  cfgFile_list,  platform_file,
     bin_path = os.path.dirname(ips_path)
     ips_root = os.path.split(bin_path)[0]
 
-    script =  script_template.replace('@SIM_ROOT@',sim_root).\
-                              replace('@HOST@', HOST).\
-                              replace('@SIM_NAME@', sim_name).\
-                              replace('@IPS_PATH@', ips_path).\
-                              replace('@CONFIG_FILES@', config_cmd_string).\
-                              replace('@PLATFORM_PATH@', platform_path).\
-                              replace('@ACCOUNT@', account).\
-                              replace('@QUEUE@', queue).\
-                              replace('@WALLTIME@', walltime).\
-                              replace('@NPROC@', nproc).\
-                              replace('@IPS_ROOT@', ips_root).\
-                              replace('@host@', host)
+    script = script_template.replace('@SIM_ROOT@', sim_root).\
+        replace('@HOST@', HOST).\
+        replace('@SIM_NAME@', sim_name).\
+        replace('@IPS_PATH@', ips_path).\
+        replace('@CONFIG_FILES@', config_cmd_string).\
+        replace('@PLATFORM_PATH@', platform_path).\
+        replace('@ACCOUNT@', account).\
+        replace('@QUEUE@', queue).\
+        replace('@WALLTIME@', walltime).\
+        replace('@NPROC@', nproc).\
+        replace('@IPS_ROOT@', ips_root).\
+        replace('@host@', host)
     debug_string = ''
     if (debug):
         debug_string = '--debug'
@@ -106,6 +108,7 @@ def create_script(ips_path,  cfgFile_list,  platform_file,
         ftb_string = '--ftb'
     script = script.replace('@FTB@', ftb_string)
     out_file.write(script)
+
 
 def main(argv=None):
 
@@ -136,12 +139,12 @@ def main(argv=None):
         return 1
     debug = False
     ftb = False
-    ips_path=''
+    ips_path = ''
     account = 'AAAA'
-    queue='QQQQ'
-    nproc='NNNN'
-    walltime='HH:MM:SS'
-    out_file=sys.stdout
+    queue = 'QQQQ'
+    nproc = 'NNNN'
+    walltime = 'HH:MM:SS'
+    out_file = sys.stdout
     for arg, value in opts:
         if (arg == '--ips'):
             ips_path = value
@@ -162,15 +165,12 @@ def main(argv=None):
         elif (arg == '--walltime'):
             walltime = value
         elif (arg == '--output'):
-            out_file_name =value
-            out_file = open(out_file_name,'w')
+            out_file_name = value
+            out_file = open(out_file_name, 'w')
 
-    if (len(cfgFile_list) == 0 or
-        platform_filename =='' or
-        ips_path == ''):
+    if (len(cfgFile_list) == 0 or platform_filename == '' or ips_path == ''):
         printUsageMessage()
         return 1
-
 
     absCfgFile_list = [os.path.abspath(cfgFile) for cfgFile in cfgFile_list]
     platform_file = os.path.abspath(platform_filename)
@@ -189,6 +189,7 @@ def main(argv=None):
 #        os.chmod(out_file_name,'+x')
 
     return 0
+
 
 if __name__ == "__main__":
     sys.exit(main())

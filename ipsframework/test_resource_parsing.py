@@ -1,6 +1,6 @@
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 # Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 """
 utility to help test resource parsing functions from resourceHelper
 
@@ -27,6 +27,7 @@ def test_get_checkjob_info():
         print('get_checkjob_info does not work on this machine')
         raise
 
+
 def test_get_qstat_jobinfo():
     try:
         print('Testing get_qstat_jobinfo:')
@@ -37,6 +38,7 @@ def test_get_qstat_jobinfo():
     except:
         print('get_qstat_jobinfo does not work on this machine')
         raise
+
 
 def test_get_qstat_jobinfo2():
     try:
@@ -49,6 +51,7 @@ def test_get_qstat_jobinfo2():
         print('get_qstat_jobinfo2 does not work on this machine')
         raise
 
+
 def test_get_pbs_info():
     try:
         print('Testing get_pbs_info:')
@@ -60,6 +63,7 @@ def test_get_pbs_info():
     except:
         print('get_pbs_info does not work on this machine')
         raise
+
 
 def test_get_slurm_info():
     try:

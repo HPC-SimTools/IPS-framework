@@ -1,12 +1,15 @@
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 # Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 import sys
+
+
 class Singleton(object):
     def __new__(cls, *param, **keywords):
         if not '_the_instance' in cls.__dict__:
             cls._the_instance = object.__new__(cls)
         return cls._the_instance
+
 
 class ComponentID(object):
     """
@@ -15,7 +18,7 @@ class ComponentID(object):
     """
     delimiter = '@'
     seq_num = 0
-    all_ids ={}
+    all_ids = {}
 
     @staticmethod
     def deserialize(comp_id_string):
@@ -23,7 +26,7 @@ class ComponentID(object):
         Return the deserialized version of the component id.
         """
         tokens = comp_id_string.split(ComponentID.delimiter)
-        if (len(tokens) != 3) :
+        if (len(tokens) != 3):
             print('Invalid serialized component ID : ', comp_id_string)
             sys.exit(1)
         return ComponentID.all_ids[comp_id_string]
@@ -93,12 +96,14 @@ class ComponentID(object):
         """
         return self.seq_num
 
+
 class ComponentRegistry(Singleton):
 
     class RegistryEntry(object):
         """
         Container for queues and references associated with a component.
         """
+
         def __init__(self, svc_response_q, invocation_q, component_ref,
                      services, config):
             self.svc_response_q = svc_response_q
@@ -120,8 +125,8 @@ class ComponentRegistry(Singleton):
 #           comp_id = ComponentID.deserialize(i)
 #            if (comp_id.get_sim_name() == sim_name):
 #                ids.append(comp_id)
-        ids = [ ComponentID.deserialize(i) for i in list(self.registry.keys()) \
-               if ComponentID.deserialize(i).get_sim_name() == sim_name ]
+        ids = [ComponentID.deserialize(i) for i in list(self.registry.keys())
+               if ComponentID.deserialize(i).get_sim_name() == sim_name]
         return ids
 
     def addEntry(self, component_id, svc_response_q, invocation_q,
@@ -134,11 +139,11 @@ class ComponentRegistry(Singleton):
         key = component_id.get_serialization()
         value = self.RegistryEntry(svc_response_q, invocation_q,
                                    component_ref,
-                                   services, config )
+                                   services, config)
         try:
             self.registry[key] = value
         except KeyError as e:
-            print('Error creating component registery entry for ', key, \
+            print('Error creating component registery entry for ', key,
                   ' : ', str(e))
             raise e
         return
@@ -148,7 +153,7 @@ class ComponentRegistry(Singleton):
         try:
             del self.registry[key]
         except KeyError as e:
-            print('Error removing component registry entry for ', key, \
+            print('Error removing component registry entry for ', key,
                   ' : ', str(e))
             raise
         return

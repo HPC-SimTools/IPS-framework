@@ -1,21 +1,17 @@
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 # Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 # local version
 import os
 import time
 from math import ceil
 from .ipsExceptions import InsufficientResourcesException, \
-     BadResourceRequestException, \
-     AllocatedNodeDownException, \
-     ResourceRequestMismatchException
+    BadResourceRequestException, \
+    AllocatedNodeDownException, \
+    ResourceRequestMismatchException
 from .ips_es_spec import eventManager
 from .resourceHelper import getResourceList
 from .node_structure import Node
-# import things to use event service
-#from event_service_spec import PublisherEventService,SubscriberEventService,EventListener,Topic,EventServiceException
-
-#import resource helper code
 
 
 class ResourceManager(object):
@@ -25,6 +21,7 @@ class ResourceManager(object):
     the associated bookkeeping.
     """
     # RM init
+
     def __init__(self, fwk):
         """
         declaration of bookkeeping values
@@ -48,7 +45,7 @@ class ResourceManager(object):
         self.alloc_cores = 0
         self.avail_cores = 0
         self.processes = 0
-        self.active_tasks = {} # tid:(owner, cores, procs)
+        self.active_tasks = {}  # tid:(owner, cores, procs)
 
         # hardware node topology
         self.cores_per_node = 1
@@ -62,8 +59,9 @@ class ResourceManager(object):
         self.service_methods = ['get_allocation', 'release_allocation']
 
         self.fwk.register_service_handler(self.service_methods,
-                                  getattr(self,'process_service_request'))
+                                          getattr(self, 'process_service_request'))
     # RM initialize
+
     def initialize(self, dataMngr, taskMngr, configMngr, ftb,
                    cmd_nodes=0, cmd_ppn=0):
         """
@@ -88,21 +86,21 @@ class ResourceManager(object):
         self.node_alloc_mode = self.CM.get_platform_parameter('NODE_ALLOCATION_MODE')
 
         rfile_name = os.path.join(self.CM.sim_map[self.CM.fwk_sim_name].sim_root, "resource_usage")
-        #SIMYAN: try to safely make the directory...
+        # SIMYAN: try to safely make the directory...
         try:
             os.makedirs(self.CM.sim_map[self.CM.fwk_sim_name].sim_root)
         except OSError as oserr:
             (errno, strerror) = oserr.args
             if (errno != 17):
-                self.services.exception('Error creating directory %s : %s' ,
+                self.services.exception('Error creating directory %s : %s',
                                         self.CM.sim_map[self.CM.fwk_sim_name].sim_root, strerror)
                 raise
 
         self.reporting_file = open(rfile_name, "w")
 
-        #-------------------------------
+        # -------------------------------
         # check cmd line resource spec
-        #-------------------------------
+        # -------------------------------
         if cmd_nodes != 0 and cmd_ppn != 0:
             # use cmd resource specification
             self.host = "override_%s" % os.environ['HOST']
@@ -116,16 +114,16 @@ class ResourceManager(object):
                 listOfNodes.append(("dummy_node%d" % i, cmd_ppn))
         else:
             self.ppn = 0
-            #-------------------------------
+            # -------------------------------
             # get resource information
-            #-------------------------------
+            # -------------------------------
             self.host = self.CM.get_platform_parameter('HOST')
-            self.fwk.debug( 'RM: Host = %s', self.host)
+            self.fwk.debug('RM: Host = %s', self.host)
             try:
                 listOfNodes, self.cores_per_node, self.sockets_per_node,  \
                     self.max_ppn, self.accurateNodes = \
                     getResourceList(self.CM, self.host, self.FTB)
-                #print "SSSSSSSSSSSSSSSSSS", self.cores_per_node, self.sockets_per_node, self.max_ppn
+                # print "SSSSSSSSSSSSSSSSSS", self.cores_per_node, self.sockets_per_node, self.max_ppn
                 self.fwk.warning('RM: listOfNodes = %s', str(listOfNodes))
                 self.fwk.warning('RM: max_ppn = %d ', int(self.max_ppn))
                 if self.accurateNodes == True and not self.CM.get_platform_parameter('USE_ACCURATE_NODES'):
@@ -135,9 +133,9 @@ class ResourceManager(object):
                 print("can't get resource info")
                 raise
 
-            #-------------------------------
+            # -------------------------------
             # set ppn
-            #-------------------------------
+            # -------------------------------
             uppn_config = int(self.CM.get_platform_parameter('PROCS_PER_NODE'))
             if uppn_config == 0:
                 user_ppn = self.max_ppn
@@ -171,10 +169,10 @@ class ResourceManager(object):
                 # this stipulation doesn't make sense for explicitly named cores
                 pass
 
-            #-----------------------------------
+            # -----------------------------------
             # set cores/sockets per socket/node
-            #-----------------------------------
-            #print ">>>> CPN %d --- SPN %d" % (self.cores_per_node, self.sockets_per_node)
+            # -----------------------------------
+            # print ">>>> CPN %d --- SPN %d" % (self.cores_per_node, self.sockets_per_node)
             if (self.cores_per_node % self.sockets_per_node) == 0:
                 self.cores_per_socket = self.cores_per_node // self.sockets_per_node
             else:
@@ -182,18 +180,18 @@ class ResourceManager(object):
                 self.sockets_per_node = 1
                 self.cores_per_socket = self.cores_per_node
 
-        #-------------------------------
+        # -------------------------------
         # populate nodes
-        #-------------------------------
+        # -------------------------------
         self.fwk.warning('RM: %d nodes and %d processors per node' % (len(listOfNodes), self.ppn))
         self.total_cores = self.add_nodes(listOfNodes)
         self.avail_cores = self.total_cores
         self.begin_RM_report()
         if self.FTB:
-            #self.EM.publish('FTBEvents', 'RM reporting nodes', listOfNodes)  <-- Not needed anymore
+            # self.EM.publish('FTBEvents', 'RM reporting nodes', listOfNodes)  <-- Not needed anymore
             self.EM.subscribe('_IPS_NODE_STATUS', self.process_FTB_events)
             self.effected_task_list = []
-        #self.printRMState()
+        # self.printRMState()
 
     def process_service_request(self, msg):
         pass
@@ -211,7 +209,7 @@ class ResourceManager(object):
         print("#-----------------------------------------------------------------------------------------------------------", file=self.reporting_file)
         self.report_RM_status('initial state of resources')
 
-    def report_RM_status(self, notes = ""):
+    def report_RM_status(self, notes=""):
         """
         Print current RM status to the reporting_file ("resource_usage")
         Entries consist of:
@@ -238,7 +236,7 @@ class ResourceManager(object):
         Print the node tree to ``stdout``.
         """
         print("*** RM.nodeTable ***")
-        for n,i in list(self.nodes.items()):
+        for n, i in list(self.nodes.items()):
             print(n)
             i.print_sockets()
         print("=====================")
@@ -258,14 +256,14 @@ class ResourceManager(object):
         tot_cores = 0
         for n, p in listOfNodes:
             if n not in self.nodes:
-                #print(n, self.sockets_per_node, self.cores_per_node,)
-                self.nodes.update({n:Node(n, self.sockets_per_node,
-                                          self.cores_per_node, p)})
+                # print(n, self.sockets_per_node, self.cores_per_node,)
+                self.nodes.update({n: Node(n, self.sockets_per_node,
+                                           self.cores_per_node, p)})
                 self.num_nodes += 1
                 self.avail_nodes.append(n)
                 if isinstance(p, int):
                     tot_cores += p
-                else: # p is a list of core names
+                else:  # p is a list of core names
                     tot_cores += len(p)
         """
         ### AGS: SC09 demo code, also useful for debugging FT capabilities.
@@ -294,7 +292,8 @@ class ResourceManager(object):
 
           * *shared_nodes*: ``True``
           * *nodes*: list of node names
-          * *node_file_entries*: list of (node, corelist) tuples, where *corelist* is a list of core names.  Core names are integers from 0 to n-1 where n is the number of cores on a node.
+          * *node_file_entries*: list of (node, corelist) tuples, where *corelist* is a list of core names.
+             Core names are integers from 0 to n-1 where n is the number of cores on a node.
           * *ppn*: processes per node for launching the task
           * *max_ppn*: processes that can be launched
           * *accurateNodes*: ``True`` if *nodes* uses the actual names of the nodes, ``False`` otherwise.
@@ -352,7 +351,7 @@ class ResourceManager(object):
 
         if not allocation_possible:
             if nodes == "bad":
-                c = ceil(float(nproc)/ppn)
+                c = ceil(float(nproc) / ppn)
                 raise BadResourceRequestException(comp_id, task_id, c, c - len(self.avail_nodes))
             if nodes == "mismatch":
                 raise ResourceRequestMismatchException(comp_id, task_id,
@@ -360,9 +359,9 @@ class ResourceManager(object):
                                                        self.total_cores,
                                                        self.max_ppn)
             if nodes == "insufficient":
-                c = ceil(float(nproc)/ppn)
+                c = ceil(float(nproc) / ppn)
                 raise InsufficientResourcesException(comp_id, task_id,
-                                                 c, c - len(self.avail_nodes))
+                                                     c, c - len(self.avail_nodes))
         else:
             try:
                 self.processes += nproc
@@ -370,9 +369,9 @@ class ResourceManager(object):
                 alloc_procs = 0
                 node_file_entries = []
                 if whole_nodes:
-                    #-------------------------------
+                    # -------------------------------
                     # whole node allocation
-                    #-------------------------------
+                    # -------------------------------
                     for n in nodes:
                         procs, cores = self.nodes[n].allocate(whole_nodes,
                                                               whole_socks,
@@ -384,17 +383,17 @@ class ResourceManager(object):
                         k += procs
                     self.alloc_cores += k
                     self.avail_cores -= k
-                    self.active_tasks.update({task_id:(comp_id, nproc, k)})
+                    self.active_tasks.update({task_id: (comp_id, nproc, k)})
                 elif whole_socks:
-                    #-------------------------------
+                    # -------------------------------
                     # whole sock allocation
-                    #-------------------------------
+                    # -------------------------------
                     for n in nodes:
                         node = self.nodes[n]
                         if node.avail_cores > 0:
                             to_alloc = min([ppn, node.avail_cores,
-                                           nproc - alloc_procs])
-                            #print "&&&&& allocate task_id %d node %s %d cores" % (task_id, n, to_alloc)
+                                            nproc - alloc_procs])
+                            # print "&&&&& allocate task_id %d node %s %d cores" % (task_id, n, to_alloc)
                             procs, cores = node.allocate(whole_nodes,
                                                          whole_socks,
                                                          task_id, comp_id,
@@ -409,16 +408,16 @@ class ResourceManager(object):
 
                     self.alloc_cores += k
                     self.avail_cores -= k
-                    self.active_tasks.update({task_id:(comp_id, nproc, k)})
+                    self.active_tasks.update({task_id: (comp_id, nproc, k)})
                 else:
-                    #-------------------------------
+                    # -------------------------------
                     # single core allocation
-                    #-------------------------------
+                    # -------------------------------
                     for n in nodes:
                         node = self.nodes[n]
                         if node.avail_cores > 0:
                             to_alloc = min([ppn, node.avail_cores,
-                                           nproc - k])
+                                            nproc - k])
                             self.fwk.debug("allocate task_id %d node %s %d cores" % (task_id, n, to_alloc))
                             procs, cores = node.allocate(whole_nodes,
                                                          whole_socks,
@@ -433,7 +432,7 @@ class ResourceManager(object):
 
                     self.alloc_cores += k
                     self.avail_cores -= k
-                    self.active_tasks.update({task_id:(comp_id, nproc, k)})
+                    self.active_tasks.update({task_id: (comp_id, nproc, k)})
             except:
                 print("Available Nodes:")
                 for nm in self.avail_nodes:
@@ -548,7 +547,6 @@ class ResourceManager(object):
         else:
             return False, "mismatch"
 
-
     def check_core_cap(self, nproc, ppn):
         """
         Determine if it is currently possible to allocate *nproc* processes
@@ -558,7 +556,7 @@ class ResourceManager(object):
         is possible to eventually satisfy the request.  Exception raised if
         the request can never be fulfilled.
         """
-        #print "++++++++++++++++"
+        # print "++++++++++++++++"
         nodes = []
         k = 0
         try:
@@ -641,7 +639,7 @@ class ResourceManager(object):
         if self.FTB:
             if task_id in self.effected_task_list:
                 self.effected_task_list.remove(task_id)
-                raise AllocatedNodeDownException(str(down),task_id,owner)
+                raise AllocatedNodeDownException(str(down), task_id, owner)
 
         return True
 
@@ -730,12 +728,8 @@ class ResourceManager(object):
         # -------------------------------
         # populate event body
         eventBody = {}
-        eventBody.update({'event name':eventName, 'topic':'test', 'sender':'RM',
-                          'data':'A resource event has occured'})
+        eventBody.update({'event name': eventName, 'topic': 'test', 'sender': 'RM',
+                          'data': 'A resource event has occured'})
         eventBody.update(info)
         # send event on topic
         # self.myTopic.sendEvent(eventName, eventBody)
-
-
-#myRM = resourceManager()
-#myRM.initialize()

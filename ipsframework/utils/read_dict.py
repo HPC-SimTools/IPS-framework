@@ -1,7 +1,9 @@
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 # Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
-#-------------------------------------------------------------------------------
-def read_dict (conf_dict = {}, filename = "SWIM_config"):
+# -------------------------------------------------------------------------------
+
+
+def read_dict(conf_dict={}, filename="SWIM_config"):
     """
 
     Open and read a dictionary of key-value pairs from the file given by
@@ -18,7 +20,7 @@ def read_dict (conf_dict = {}, filename = "SWIM_config"):
             line = ""
     except:
         message = "Unable to open config file " + filename
-        publish_event(message, topic = FSP_log, action = "halt_run")
+        publish_event(message, topic=FSP_log, action="halt_run")
         print(message)
         raise IOError("Unable to open config file in read_dict")
 

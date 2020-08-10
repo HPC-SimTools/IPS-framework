@@ -1,6 +1,8 @@
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 # Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
+
+
 class Message(object):
     """
     Base class for all IPS messages. **Should not be used in actual
@@ -27,8 +29,9 @@ class Message(object):
             self.__class__.counter += 1
         return self.message_id
 
+
 class ServiceRequestMessage(Message):
-    """
+    r"""
     Message used by components to request the result of a service action by
     one of the IPS managers.
 
@@ -51,8 +54,9 @@ class ServiceRequestMessage(Message):
         self.message_id = self.get_message_id()
         return
 
+
 class ServiceResponseMessage(Message):
-    """
+    r"""
     Message used by managers to respond with the result of the service action
     to the calling component.
 
@@ -74,8 +78,9 @@ class ServiceResponseMessage(Message):
         self.message_id = self.get_message_id()
         return
 
+
 class MethodInvokeMessage(Message):
-    """
+    r"""
     Message used by components to invoke methods on other components.
 
       * *sender_id*: component id of the sender
@@ -97,8 +102,9 @@ class MethodInvokeMessage(Message):
         self.message_id = self.get_message_id()
         return
 
+
 class MethodResultMessage(Message):
-    """
+    r"""
     Message used to relay the return value after a method invocation.
 
       * *sender_id*: component id of the sender (callee)
@@ -119,8 +125,9 @@ class MethodResultMessage(Message):
         self.message_id = self.get_message_id()
         return
 
+
 class ExitMessage(Message):
-    """
+    r"""
     Message used to communicate the exit status of a component.
 
     * *sender_id*: component id that is telling the component to die (framework)

@@ -66,7 +66,7 @@ def launch(binary, task_name, working_dir, *args, **keywords):
     ret_val = None
     if isinstance(binary, str):
         cmd = f"{binary} {' '.join(map(str, args))}"
-        #print(f"{asctime()} {task_name} running {cmd} on {myid} in {working_dir}", args, keywords)
+        # print(f"{asctime()} {task_name} running {cmd} on {myid} in {working_dir}", args, keywords)
         cmd_lst = cmd.split()
         process = subprocess.Popen(cmd_lst, stdout=task_stdout,
                                    stderr=task_stderr,
@@ -87,11 +87,12 @@ def launch(binary, task_name, working_dir, *args, **keywords):
             print(f"Task {task_name} timed out after {timeout} Seconds")
             os.killpg(process.pid, signal.SIGKILL)
             ret_val = -1
-        #print(f"{asctime()} {task_name} : {args} Done on {myid}")
+        # print(f"{asctime()} {task_name} : {args} Done on {myid}")
     else:
         ret_val = binary(*args)
 
     return task_name, ret_val
+
 
 def make_timers_parent():
     """
@@ -407,7 +408,7 @@ class ServicesProxy(object):
         return None
 
     def _invoke_service(self, component_id, method_name, *args, **keywords):
-        """
+        r"""
         Create and place in the ``self.fwk_in_q`` a new
         :py:meth:`messages.ServiceRequestMessage` for service
         *method_name* with *\*args* arguments on behalf of component
@@ -500,7 +501,7 @@ class ServicesProxy(object):
         return self.get_port(port_name)
 
     def call_nonblocking(self, component_id, method_name, *args, **keywords):
-        """
+        r"""
         Invoke method *method_name* on component *component_id* with optional
         arguments *\*args*.  Return *call_id*.
         """
@@ -522,7 +523,7 @@ class ServicesProxy(object):
         return call_id
 
     def call(self, component_id, method_name, *args, **keywords):
-        """
+        r"""
         Invoke method *method_name* on component *component_id* with optional
         arguments *\*args*.  Return result from invoking the method.
         """
@@ -577,10 +578,9 @@ class ServicesProxy(object):
             self.error('Caught one or more exceptions in call to wait_call_list')
             raise caught_exceptions[0]
         return ret_map
-    
 
     def launch_task(self, nproc, working_dir, binary, *args, **keywords):
-        """
+        r"""
         Launch *binary* in *working_dir* on *nproc* processes.  *\*args* are
         any arguments to be passed to the binary on the command line.
         *\*\*keywords* are any keyword arguments used by the framework to
@@ -732,7 +732,7 @@ class ServicesProxy(object):
         except Exception as e:
             self.exception('Error executing command : %s', command)
             raise
-        self._send_monitor_event('IPS_LAUNCH_TASK', 'task_id = %s , Tag = %s , nproc = %d , Target = %s' % \
+        self._send_monitor_event('IPS_LAUNCH_TASK', 'task_id = %s , Tag = %s , nproc = %d , Target = %s' %
                                  (str(task_id), tag, int(nproc), command))
 
         # FIXME: process Monitoring Command : ps --no-headers -o pid,state pid1  pid2 pid3 ...
@@ -766,7 +766,7 @@ class ServicesProxy(object):
                                           block, wnodes, wsocks, *args)
             (task_id, command, env_update) = self._get_service_response(msg_id, block=True)
         except Exception as e:
-            self.exception('Error initiating task %s %s on %d nodes' % \
+            self.exception('Error initiating task %s %s on %d nodes' %
                            (binary, str(args), int(nproc)))
             raise
 
@@ -800,7 +800,7 @@ class ServicesProxy(object):
         except Exception as e:
             self.exception('Error executing command : %s', command)
             raise
-        self._send_monitor_event('IPS_LAUNCH_TASK', 'Target = ' + command + \
+        self._send_monitor_event('IPS_LAUNCH_TASK', 'Target = ' + command +
                                  ', task_id = ' + str(task_id))
 
         # FIXME: process Monitoring Command : ps --no-headers -o pid,state pid1
@@ -911,7 +911,7 @@ class ServicesProxy(object):
                 self.exception('Error executing task %s - command : %s', task_name, command)
                 raise
             self._send_monitor_event('IPS_LAUNCH_TASK_POOL',
-                                     'task_id = %s , Tag = %s , nproc = %d , Target = %s , task_name = %s' % \
+                                     'task_id = %s , Tag = %s , nproc = %d , Target = %s , task_name = %s' %
                                      (str(task_id), str(tag), int(task.nproc), command, task_name))
 
             self.task_map[task_id] = (process, time.time(), timeout)
@@ -963,8 +963,11 @@ class ServicesProxy(object):
         return
 
     def wait_task_nonblocking(self, task_id):
-        """
-        Check the status of task *task_id*.  If it has finished, the return value is populated with the actual value, otherwise ``None`` is returned.  A *KeyError* exception may be raised if the task is not found.
+        """Check the status of task *task_id*.  If it has finished, the
+        return value is populated with the actual value, otherwise
+        ``None`` is returned.  A *KeyError* exception may be raised if
+        the task is not found.
+
         """
         try:
             process, start_time, timeout = self.task_map[task_id]
@@ -988,8 +991,11 @@ class ServicesProxy(object):
             return retval
 
     def wait_task(self, task_id, timeout=-1, delay=1):
-        """
-        Check the status of task *task_id*.  Return the return value of the task when finished successfully.  Raise exceptions if the task is not found, or if there are problems finalizing the task.
+        """Check the status of task *task_id*.  Return the return value of
+        the task when finished successfully.  Raise exceptions if the
+        task is not found, or if there are problems finalizing the
+        task.
+
         """
         # print "in wait task"
         try:
@@ -1428,7 +1434,7 @@ class ServicesProxy(object):
             ipsutil.copyFiles(inputDir, input_file_list, targetdir, outprefix)
         except Exception as e:
             self._send_monitor_event('IPS_STAGE_INPUTS',
-                                     'Files = ' + str(input_file_list) + \
+                                     'Files = ' + str(input_file_list) +
                                      ' Exception raised : ' + str(e),
                                      ok='False')
             self.exception('Error in stage_input_files')
@@ -1457,8 +1463,8 @@ class ServicesProxy(object):
                     raise e
         elapsed_time = time.time() - start_time
         self._send_monitor_event(eventType='IPS_STAGE_INPUTS',
-                                 comment='Elapsed time = %.3f Path = %s Files = %s' % \
-                                         (elapsed_time, os.path.abspath(inputDir), \
+                                 comment='Elapsed time = %.3f Path = %s Files = %s' %
+                                         (elapsed_time, os.path.abspath(inputDir),
                                           str(input_file_list)))
 
         return
@@ -1497,7 +1503,7 @@ class ServicesProxy(object):
             ipsutil.copyFiles(dataDir, data_file_list, targetdir, outprefix)
         except Exception as e:
             self._send_monitor_event('IPS_STAGE_DATA',
-                                     'Files = ' + str(data_file_list) + \
+                                     'Files = ' + str(data_file_list) +
                                      ' Exception raised : ' + str(e),
                                      ok='False')
             self.exception('Error in stage_data_files')
@@ -1588,7 +1594,7 @@ class ServicesProxy(object):
             outprefix = ''
         out_root = 'simulation_results'
 
-        output_dir = os.path.join(sim_root, out_root, \
+        output_dir = os.path.join(sim_root, out_root,
                                   str(timeStamp), 'components',
                                   self.full_comp_id)
 
@@ -1605,7 +1611,7 @@ class ServicesProxy(object):
         except OSError as e:
             if (e.errno != 17):
                 self._send_monitor_event('IPS_STAGE_OUTPUTS',
-                                         'Files = ' + str(file_list) + \
+                                         'Files = ' + str(file_list) +
                                          ' Exception raised : ' + e.strerror,
                                          ok='False')
                 self.exception('Error creating directory %s : %d-%s',
@@ -1648,7 +1654,7 @@ class ServicesProxy(object):
                 self.exception('Error copying file: %s from %s to %s - %s',
                                f, workdir, target_name, str(why))
                 self._send_monitor_event('IPS_STAGE_OUTPUTS',
-                                         'Files = ' + str(file_list) + \
+                                         'Files = ' + str(file_list) +
                                          ' Exception raised : ' + str(why),
                                          ok='False')
                 raise
@@ -1687,7 +1693,7 @@ class ServicesProxy(object):
                 ipsutil.copyFiles(output_dir, output_files, self.get_working_dir(), keep_old=False)
             except Exception as e:
                 self._send_monitor_event('IPS_STAGE_SUBFLOW_OUTPUTS',
-                                         'Files = ' + str(output_files) + \
+                                         'Files = ' + str(output_files) +
                                          ' Exception raised : ' + str(e),
                                          ok='False')
                 self.exception('Error in stage_subflow_output_files() for subflow %s' % sim_name)
@@ -1724,7 +1730,7 @@ class ServicesProxy(object):
             outprefix = ''
         out_root = 'simulation_results'
 
-        output_dir = os.path.join(sim_root, out_root, \
+        output_dir = os.path.join(sim_root, out_root,
                                   str(timeStamp), 'components',
                                   self.full_comp_id)
         if (type(file_list).__name__ == 'str'):
@@ -1735,7 +1741,7 @@ class ServicesProxy(object):
                               keep_old=keep_old_files)
         except Exception as e:
             self._send_monitor_event('IPS_STAGE_OUTPUTS',
-                                     'Files = ' + str(file_list) + \
+                                     'Files = ' + str(file_list) +
                                      ' Exception raised : ' + str(e),
                                      ok='False')
             self.exception('Error in stage_output_files()')
@@ -1754,7 +1760,7 @@ class ServicesProxy(object):
         except OSError as e:
             if (e.errno != 17):
                 self._send_monitor_event('IPS_STAGE_OUTPUTS',
-                                         'Files = ' + str(file_list) + \
+                                         'Files = ' + str(file_list) +
                                          ' Exception raised : ' + e.strerror,
                                          ok='False')
                 self.exception('Error creating directory %s : %d-%s',
@@ -1797,7 +1803,7 @@ class ServicesProxy(object):
                 self.exception('Error copying file: %s from %s to %s - %s',
                                f, workdir, target_name, str(why))
                 self._send_monitor_event('IPS_STAGE_OUTPUTS',
-                                         'Files = ' + str(file_list) + \
+                                         'Files = ' + str(file_list) +
                                          ' Exception raised : ' + str(why),
                                          ok='False')
                 raise
@@ -1842,7 +1848,7 @@ class ServicesProxy(object):
 
         elapsed_time = time.time() - start_time
         self._send_monitor_event('IPS_STAGE_OUTPUTS',
-                                 'Elapsed time = %.3f Path = %s Files = %s' % \
+                                 'Elapsed time = %.3f Path = %s Files = %s' %
                                  (elapsed_time, output_dir, str(file_list)))
         return
 
@@ -1886,7 +1892,7 @@ class ServicesProxy(object):
             ipsutil.copyFiles(workdir, file_list, targetdir)
         except Exception as e:
             self._send_monitor_event('IPS_STAGE_RESTART',
-                                     'Files = ' + str(file_list) + \
+                                     'Files = ' + str(file_list) +
                                      ' Exception raised : ' + str(e),
                                      ok='False')
             self.exception('Error in stage_restart_files()')
@@ -1920,7 +1926,7 @@ class ServicesProxy(object):
             ipsutil.copyFiles(source_dir, file_list, work_dir)
         except Exception as e:
             self._send_monitor_event('IPS_GET_RESTART',
-                                     'Files = ' + str(file_list) + \
+                                     'Files = ' + str(file_list) +
                                      ' Exception raised : ' + str(e),
                                      ok='False')
             self.exception('Error in get_restart_files()')
@@ -1967,7 +1973,7 @@ class ServicesProxy(object):
             raise
         elapsed_time = time.time() - start_time
         self._send_monitor_event('IPS_STAGE_STATE',
-                                 'Elapsed time = %.3f  files = %s Success' % \
+                                 'Elapsed time = %.3f  files = %s Success' %
                                  (elapsed_time, ' '.join(files)))
         return
 
@@ -2021,7 +2027,7 @@ class ServicesProxy(object):
             raise
         elapsed_time = time.time() - start_time
         self._send_monitor_event('IPS_UPDATE_STATE',
-                                 'Elapsed time = %.3f   files = %s Success' % \
+                                 'Elapsed time = %.3f   files = %s Success' %
                                  (elapsed_time, ' '.join(files)))
         return
 
@@ -2280,7 +2286,7 @@ class ServicesProxy(object):
                 self.exception('Error copying replay file from %s to %s',
                                replay_file, target_name)
                 self._send_monitor_event('IPS_STAGE_REPLAY_PLASMA_STATE',
-                                         'Files = ' + str(replay_plasma_files) + \
+                                         'Files = ' + str(replay_plasma_files) +
                                          ' Exception raised : ',
                                          ok='False')
                 raise
@@ -2480,7 +2486,7 @@ class ServicesProxy(object):
             self.exception("Duplicate sub flow name")
             raise Exception("Duplicate sub flow name")
 
-        #print("Creating worflow using ", config_file)
+        # print("Creating worflow using ", config_file)
         self.subflow_count += 1
         try:
             sub_conf_new = ConfigObj(infile=config_file, interpolation='template', file_error=True)
@@ -2554,7 +2560,7 @@ class TaskPool(object):
     try:
         dask: dask = __import__("dask")
         distributed: dask.distributed = __import__("dask.distributed",
-                                                  fromlist=[None])
+                                                   fromlist=[None])
     except ImportError:
         pass
     else:
@@ -2654,7 +2660,7 @@ class TaskPool(object):
         self.dask_file_name = os.path.join(os.getcwd(),
                                            f".{self.name}_dask_shed_{time.time()}.json")
         self.dask_sched_pid = subprocess.Popen([self.dask_scheduler, "--no-dashboard",
-                          "--scheduler-file", self.dask_file_name, "--port", "0"]).pid
+                                                "--scheduler-file", self.dask_file_name, "--port", "0"]).pid
 
         dask_nodes = 1 if dask_nodes is None else dask_nodes
         if services.get_config_param("MPIRUN") == "eval":
@@ -2675,7 +2681,7 @@ class TaskPool(object):
         launch.__module__ = "__main__"
         self.futures = []
         for k, v in self.queued_tasks.items():
-            #print(k,v, v.binary, v.args)
+            # print(k,v, v.binary, v.args)
             try:
                 log_filename = v.keywords["logfile"]
             except KeyError:
@@ -2779,7 +2785,7 @@ class TaskPool(object):
 
 
 class Task(object):
-    """
+    r"""
     Container for task information:
 
     * *name*: task name

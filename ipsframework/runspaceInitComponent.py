@@ -1,20 +1,21 @@
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 # Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 import os
 from ipsframework.component import Component
 from ipsframework import ipsutil
+
 
 def catch_and_go(func_to_decorate):
     def new_func(*original_args, **original_kwargs):
         # print "Function has been decorated.  Congratulations."
         # Do whatever else you want here
-        object  = original_args[0]
+        object = original_args[0]
         try:
             func_to_decorate(*original_args, **original_kwargs)
         except Exception as e:
-            #print '#################', object.__class__.__name__, func_to_decorate.__name__
-            object.services.exception ("Exception in call to %s:%s" % (object.__class__.__name__, func_to_decorate.__name__))
+            # print '#################', object.__class__.__name__, func_to_decorate.__name__
+            object.services.exception("Exception in call to %s:%s" % (object.__class__.__name__, func_to_decorate.__name__))
             print(e)
             # object.services.exception("Caught exception during component pre-initialization")
 #            raise
@@ -33,8 +34,7 @@ class runspaceInitComponent(Component):
         :py:class:`component.Component` object.
         """
         Component.__init__(self, services, config)
-        #print('Created %s' % (self.__class__))
-
+        # print('Created %s' % (self.__class__))
 
     @catch_and_go
     def init(self, timeStamp):
@@ -42,25 +42,25 @@ class runspaceInitComponent(Component):
         Creates base directory, copies IPS and FacetsComposer input files.
         """
 
-        #print('runspaceInitComponent.init() called')
+        # print('runspaceInitComponent.init() called')
 
         services = self.services
 
         # get the simRootDir
         self.simRootDir = services.get_config_param('SIM_ROOT')
         self.cwd = self.config['OS_CWD']
-        #print 'cwd =', self.cwd
+        # print 'cwd =', self.cwd
 
         try:
             os.chdir(self.cwd)
         except OSError:
             self.services.debug('Working directory %s does not exist - this is impossibile',
-                              self.cwd)
+                                self.cwd)
             raise
 
         container_ext = services.get_config_param('CONTAINER_FILE_EXT')
         if not self.simRootDir.startswith("/"):
-            self.simRootDir=os.path.join(self.cwd, self.simRootDir)
+            self.simRootDir = os.path.join(self.cwd, self.simRootDir)
 
         # try making the simulation root directory
         try:
@@ -68,13 +68,13 @@ class runspaceInitComponent(Component):
         except OSError as oserr:
             (errno, strerror) = oserr.args
             if (errno != 17):
-                self.services.exception('Error creating directory %s : %s' ,
+                self.services.exception('Error creating directory %s : %s',
                                         self.simRootDir, strerror)
 
         self.config_files = services.fwk.config_file_list
         self.platform_file = services.fwk.platform_file_name
         self.main_log_file = services.get_config_param('LOG_FILE')
-        #DBG print 'log_file = ', self.main_log_file
+        # DBG print 'log_file = ', self.main_log_file
 
         # uncomment when implemented
         # self.fc_files = services.fwk.facets_composer_files
@@ -85,7 +85,7 @@ class runspaceInitComponent(Component):
         if not self.config_files[0].startswith("/"):
             self.conf_file_loc = self.cwd
         else:
-            (head,tail) = os.path.split(os.path.abspath(self.config_files[0]))
+            (head, tail) = os.path.split(os.path.abspath(self.config_files[0]))
             self.conf_file_loc = head
         if not self.platform_file.startswith("/"):
             self.plat_file_loc = self.cwd
@@ -93,18 +93,18 @@ class runspaceInitComponent(Component):
             (head, tail) = os.path.split(os.path.abspath(self.platform_file))
             self.plat_file_loc = head
 
-        #print 'conf_file_loc =', self.conf_file_loc
-        #print 'plat_file_loc =', self.plat_file_loc
+        # print 'conf_file_loc =', self.conf_file_loc
+        # print 'plat_file_loc =', self.plat_file_loc
         ipsutil.copyFiles(self.conf_file_loc, self.config_files, self.simRootDir)
         ipsutil.copyFiles(self.plat_file_loc, self.platform_file, self.simRootDir)
 
-        #sim_comps = services.fwk.config_manager.get_component_map()
+        # sim_comps = services.fwk.config_manager.get_component_map()
         sim_comps = services.fwk.config_manager.get_all_simulation_components_map()
         registry = services.fwk.comp_registry
         # Redoing the same container_file name calculation as in configuration manager because I
         # can't figure out where to put it such that I can get it where I need
         self.container_file = os.path.basename(services.get_config_param('SIM_ROOT')) + os.path.extsep + container_ext
-        #Remove existing container file in case we are restarting an old simulation in the same directory
+        # Remove existing container file in case we are restarting an old simulation in the same directory
         try:
             os.remove(self.container_file)
         except OSError as e:
@@ -120,7 +120,7 @@ class runspaceInitComponent(Component):
                 registry = services.fwk.comp_registry
                 comp_conf = registry.getEntry(comp_id).component_ref.config
                 if isinstance(comp_conf['INPUT_FILES'], list):
-                    comp_conf['INPUT_FILES']= ' '.join(comp_conf['INPUT_FILES'])
+                    comp_conf['INPUT_FILES'] = ' '.join(comp_conf['INPUT_FILES'])
                 file_list = comp_conf['INPUT_FILES'].split()
                 for file in file_list:
                     ipsutil.writeToContainer(self.container_file,
@@ -146,21 +146,20 @@ class runspaceInitComponent(Component):
 #       print 'curdir=', curdir
 #       print 'cwd=', os.getcwd()
 #       print 'cwd=', self.cwd
-        #os.chdir(curdir) # Get back to where you once belonged
+        # os.chdir(curdir) # Get back to where you once belonged
 
         # uncomment when implemented
-        #(head, tail) = os.path.split(os.path.abspath(self.fc_files))
-        #ipsutil.copyFiles(os.path.dirname(self.fc_files),
+        # (head, tail) = os.path.split(os.path.abspath(self.fc_files))
+        # ipsutil.copyFiles(os.path.dirname(self.fc_files),
         #                  os.path.basename(self.fc_files), simRootDir)
 
         return
-
 
     def validate(self, timestamp=0.0):
         """
         Placeholder for future validation step of runspace management.
         """
-        #print('runspaceInitComponent.validate() called')
+        # print('runspaceInitComponent.validate() called')
         return
 
     @catch_and_go
@@ -169,11 +168,11 @@ class runspaceInitComponent(Component):
         Copies individual subcomponent input files into working subdirectories.
         """
 
-        #print('runspaceInitComponent.step() called')
+        # print('runspaceInitComponent.step() called')
 
         services = self.services
 
-        #sim_comps = services.fwk.config_manager.get_component_map()
+        # sim_comps = services.fwk.config_manager.get_component_map()
         sim_comps = services.fwk.config_manager.get_all_simulation_components_map()
         registry = services.fwk.comp_registry
 
@@ -185,8 +184,8 @@ class runspaceInitComponent(Component):
         except OSError as oserr:
             (errno, strerror) = oserr.args
             if (errno != 17):
-                self.services.exception('Error creating directory %s : %s' ,
-                        simulation_setup, strerror)
+                self.services.exception('Error creating directory %s : %s',
+                                        simulation_setup, strerror)
 
         # for each simulation component
         for sim_name, comp_list in list(sim_comps.items()):
@@ -196,13 +195,13 @@ class runspaceInitComponent(Component):
                 comp_ref = registry.getEntry(comp_id).component_ref
                 comp_conf = registry.getEntry(comp_id).component_ref.config
                 full_comp_id = '_'.join([comp_conf['CLASS'], comp_conf['SUB_CLASS'],
-                                                  comp_conf['NAME'],
-                                                  str(comp_id.get_seq_num())])
+                                         comp_conf['NAME'],
+                                         str(comp_id.get_seq_num())])
 
                 # compose the workdir name
                 workdir = os.path.join(self.simRootDir, 'work', full_comp_id)
 
-                #print 'workdir = ', workdir
+                # print 'workdir = ', workdir
 
                 # make the working directory
                 try:
@@ -210,37 +209,34 @@ class runspaceInitComponent(Component):
                 except OSError as oserr:
                     (errno, strerror) = oserr.args
                     if (errno != 17):
-                        self.services.exception('Error creating directory %s : %s' ,
+                        self.services.exception('Error creating directory %s : %s',
                                                 workdir, strerror)
-                        #pytau.stop(timer)
+                        # pytau.stop(timer)
                         raise
 
                 # copy the input files into the working directory
                 try:
                     ipsutil.copyFiles(os.path.abspath(comp_conf['INPUT_DIR']),
-                                  comp_conf['INPUT_FILES'],
-                                  workdir)
+                                      comp_conf['INPUT_FILES'],
+                                      workdir)
                 except Exception:
                     print('Error copying input files for initialization')
                     raise
 
-
-
                 # This is a bit tricky because we want to look either in the same
                 # place as the input files or the data_tree root
                 if 'DATA_FILES' in comp_conf:
-                    filesCopied=False
+                    filesCopied = False
                     if 'DATA_TREE_ROOT' in comp_conf:
-                        dtrdir=os.path.abspath(comp_conf['DATA_TREE_ROOT'])
-                        if os.path.exists(os.path.join(dtrdir,comp_conf['DATA_FILES'][0])):
-                            ipsutil.copyFiles(dtrdir,os.path.basename(comp_conf['DATA_FILES']),
+                        dtrdir = os.path.abspath(comp_conf['DATA_TREE_ROOT'])
+                        if os.path.exists(os.path.join(dtrdir, comp_conf['DATA_FILES'][0])):
+                            ipsutil.copyFiles(dtrdir, os.path.basename(comp_conf['DATA_FILES']),
                                               workdir)
-                            filesCopied=True
+                            filesCopied = True
                     if not filesCopied:
                         ipsutil.copyFiles(os.path.abspath(comp_conf['INPUT_DIR']),
                                           os.path.basename(comp_conf['DATA_FILES']),
                                           workdir)
-
 
                 # copy the component's script to the simulation_setup directory
                 if os.path.isabs(comp_conf['SCRIPT']):
@@ -261,20 +257,19 @@ class runspaceInitComponent(Component):
             except OSError as oserr:
                 (errno, strerror) = oserr.args
                 if (errno != 17):
-                    self.services.exception('Error creating directory %s : %s' ,
+                    self.services.exception('Error creating directory %s : %s',
                                             workdir, strerror)
-                    #pytau.stop(timer)
+                    # pytau.stop(timer)
                     raise
 
-        #print 'FINISHED RUNSPACEINIT'
+        # print 'FINISHED RUNSPACEINIT'
         return
-
 
     def checkpoint(self, timestamp=0.0):
         """
         Placeholder
         """
-        #print('runspaceInitComponent.checkpoint() called')
+        # print('runspaceInitComponent.checkpoint() called')
 
         # save restart files
         # services = self.services
@@ -282,12 +277,11 @@ class runspaceInitComponent(Component):
 
         return
 
-
     def finalize(self, timestamp=0.0):
         """
         Writes final log_file and resource_usage file to the container and closes
         """
-        #print('runspaceInitComponent.finalize() called')
+        # print('runspaceInitComponent.finalize() called')
 
 #       print self.main_log_file
 #       print self.simRootDir
