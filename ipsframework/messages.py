@@ -3,7 +3,7 @@
 # -------------------------------------------------------------------------------
 
 
-class Message(object):
+class Message:
     """
     Base class for all IPS messages. **Should not be used in actual
     communication.**

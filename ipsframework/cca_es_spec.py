@@ -22,7 +22,7 @@ class EventServiceException(Exception):
         return self.value
 
 
-class PublisherEventService(object):
+class PublisherEventService:
     """
     Interface to topics for publishers.
     """
@@ -37,7 +37,7 @@ class PublisherEventService(object):
         return _proxy.existsTopic(topicName)
 
 
-class SubscriberEventService(object):
+class SubscriberEventService:
     def __init__(self):
         self.subscriberid = _proxy.registerSubscriber()
 
@@ -58,7 +58,7 @@ class SubscriberEventService(object):
         _proxy.unregisterSubscriber(self.subscriberid)
 
 
-class Event(object):
+class Event:
     def __init__(self, header={}, body={}):
         self.header = deepcopy(header)
         self.body = deepcopy(body)
@@ -73,7 +73,7 @@ class Event(object):
         return str(self.body)
 
 
-class EventListener(object):
+class EventListener:
     def __init__(self):
         self.listenerid = _proxy.createListener()
 
@@ -88,7 +88,7 @@ class EventListener(object):
         _proxy._processEvent(self.listenerid, topicName, theEvent)
 
 
-class Topic(object):
+class Topic:
     def __init__(self, topicName):
         self.topicName = topicName
 
@@ -99,7 +99,7 @@ class Topic(object):
         _proxy.sendEvent(self.topicName, eventName, eventBody)
 
 
-class Subscription(object):
+class Subscription:
     def __init__(self, subscriberid, subscriptionName):
         self.subscriberid = subscriberid
         self.subscriptionName = subscriptionName

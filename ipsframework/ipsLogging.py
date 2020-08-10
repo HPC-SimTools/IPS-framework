@@ -112,7 +112,7 @@ class LogRecordSocketReceiver(socketserver.ThreadingUnixStreamServer):
         return self.socket.fileno()
 
 
-class ipsLogger(object):
+class ipsLogger:
     def __init__(self, dynamic_sim_queue=None):
         self.log_map = {}
         self.server_map = {}

@@ -292,7 +292,7 @@ def get_task_times(url):
     print("\n\n You may want to delete *.png now.\n\n")
 
 
-class Task(object):
+class Task:
     def __init__(self,
                  task_id=None,
                  nproc=-1,

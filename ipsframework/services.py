@@ -143,7 +143,7 @@ def make_timers_child():
             'setMonitorURL': ipsTiming.create_timer("services", "setMonitorURL", pid)}
 
 
-class ServicesProxy(object):
+class ServicesProxy:
 
     def __init__(self, fwk, fwk_in_q, svc_response_q, sim_conf, log_pipe_name):
         """
@@ -2551,7 +2551,7 @@ class ServicesProxy(object):
         return (sim_name, init_comp, driver_comp)
 
 
-class TaskPool(object):
+class TaskPool:
     """
     Class to contain and manage a pool of tasks.
     """
@@ -2784,7 +2784,7 @@ class TaskPool(object):
         return
 
 
-class Task(object):
+class Task:
     r"""
     Container for task information:
 

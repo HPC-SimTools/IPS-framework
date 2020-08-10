@@ -3,7 +3,7 @@
 # -------------------------------------------------------------------------------
 
 
-class EventServiceProxy(object):
+class EventServiceProxy:
     def getTopic(self, topicName):
         pass
 

@@ -13,7 +13,7 @@ class myEventListener(EventListener):
         self.callback_method(topicName, theEvent)
 
 
-class eventManager(object):
+class eventManager:
     def __init__(self, obj_ref):
         self.obj_ref = obj_ref
         self.objcache = {}

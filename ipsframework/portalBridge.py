@@ -58,7 +58,7 @@ class PortalBridge(Component):
     Framework component to communicate with the `SWIM web portal <http://swim.gat.com:8080/monitor/>`_.
     """
 
-    class SimulationData(object):
+    class SimulationData:
         """
         Container for simulation data.
         """

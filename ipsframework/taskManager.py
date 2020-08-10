@@ -15,7 +15,7 @@ from .ipsutil import which
 # from event_service_spec import PublisherEventService,SubscriberEventService,EventListener,Topic,EventServiceException
 
 
-class TaskManager(object):
+class TaskManager:
     """
     The task manager is responsible for facilitating component method
     invocations, and the launching of tasks.

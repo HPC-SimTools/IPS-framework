@@ -383,7 +383,7 @@ def get_task_times(url_list):
         plot_exec_time(serial_times, used_procs, used_proc_map, task_procs)
 
 
-class Task(object):
+class Task:
     def __init__(self,
                  task_id=None,
                  nproc=-1,

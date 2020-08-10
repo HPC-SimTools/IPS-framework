@@ -10,7 +10,7 @@ import subprocess
 # from event_service_spec import PublisherEventService,SubscriberEventService,EventListener,Topic,EventServiceException
 
 
-class DataManager(object):
+class DataManager:
     """
     The data manager facilitates the movement and exchange of data files for
     the simulation.

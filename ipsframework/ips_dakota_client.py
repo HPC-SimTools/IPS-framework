@@ -12,7 +12,7 @@ from multiprocessing.connection import Client
 import time
 
 
-class IPSDakotaClient(object):
+class IPSDakotaClient:
     def __init__(self, config_file, log_file, platform_filename, debug, in_file, out_file):
         self.config_file = config_file
         self.platform_fname = platform_filename

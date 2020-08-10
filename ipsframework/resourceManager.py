@@ -14,7 +14,7 @@ from .resourceHelper import getResourceList
 from .node_structure import Node
 
 
-class ResourceManager(object):
+class ResourceManager:
     """
     The resource manager is responsible for detecting the resources allocated
     to the framework, allocating resources to task requests, and maintaining

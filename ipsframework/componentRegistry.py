@@ -4,14 +4,14 @@
 import sys
 
 
-class Singleton(object):
+class Singleton:
     def __new__(cls, *param, **keywords):
         if not '_the_instance' in cls.__dict__:
             cls._the_instance = object.__new__(cls)
         return cls._the_instance
 
 
-class ComponentID(object):
+class ComponentID:
     """
     Object to facilitate the creation, serialization and deserialization of
     component ids.
@@ -99,7 +99,7 @@ class ComponentID(object):
 
 class ComponentRegistry(Singleton):
 
-    class RegistryEntry(object):
+    class RegistryEntry:
         """
         Container for queues and references associated with a component.
         """
