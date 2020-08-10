@@ -9,7 +9,7 @@ variable 'IPSES_DEBUG' is defined.
 import os
 
 
-class Debug(object):
+class Debug:
     def __init__(self):
         self.file = None
         if 'IPSES_DEBUG' in os.environ:

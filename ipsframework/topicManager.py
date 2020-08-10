@@ -21,7 +21,7 @@ from .cca_es_spec import EventServiceException, Event
 from .debug import debug
 
 
-class TopicManager(object):
+class TopicManager:
     def __init__(self, limitPendingEvents=10):
         """ eventList is the common listing of events posted to a topic. """
         self.eventList = []

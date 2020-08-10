@@ -73,7 +73,7 @@ def dumpAll(label=""):
         raise
 
 
-class TauWrap(object):
+class TauWrap:
     def __init__(self, timer):
         self.timer = timer
 

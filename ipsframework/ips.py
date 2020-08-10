@@ -103,7 +103,7 @@ TIMERS = make_timers()
 """
 
 
-class Framework(object):
+class Framework:
     # @ipsTiming.TauWrap(TIMERS['__init__'])
     # SIMYAN: added options for creating runspace, run-setup, and running,
     # added compset_list for list of components to load config files for

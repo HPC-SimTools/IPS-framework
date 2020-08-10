@@ -18,7 +18,7 @@ except KeyError:
     pass
 
 
-class Component(object):
+class Component:
     """
     Base class for all IPS components.  Common set up, connection and
     invocation actions are implemented here.

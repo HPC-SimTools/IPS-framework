@@ -9,7 +9,7 @@ interface is straightforwardly mapped onto matching methods in this file.
 """
 
 
-class EventService(object):
+class EventService:
     def __init__(self, fwk=None):
         """
         The following two data structures are at the heart of the event service.

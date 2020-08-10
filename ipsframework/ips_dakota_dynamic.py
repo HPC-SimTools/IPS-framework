@@ -40,7 +40,7 @@ def which(program, alt_paths=None):
     return None
 
 
-class DakotaDynamic(object):
+class DakotaDynamic:
     def __init__(self, dakota_cfg, log_file, platform_filename, debug, ips_config_template, restart_file):
         self.dakota_cfg = dakota_cfg
         self.log_file = log_file

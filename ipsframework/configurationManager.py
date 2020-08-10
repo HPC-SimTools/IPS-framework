@@ -17,7 +17,7 @@ my_version = float(sys.version[:3])
 from multiprocessing import Queue, Process
 
 
-class ConfigurationManager(object):
+class ConfigurationManager:
     """
     The configuration manager is responsible for paring the simulation and
     platform configuration files, creating the framework and simulation
@@ -26,7 +26,7 @@ class ConfigurationManager(object):
     """
 
     # CM init
-    class SimulationData(object):
+    class SimulationData:
         """
         Structure to hold simulation data stored into the sim_map
         entry in the configurationManager class
@@ -83,7 +83,7 @@ class ConfigurationManager(object):
         self.log_file_list = None
         self.log_dynamic_sim_queue = Queue(0)
 
-        class Unbuffered(object):
+        class Unbuffered:
             def __init__(self, stream):
                 self.stream = stream
 
