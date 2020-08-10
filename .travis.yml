@@ -4,6 +4,8 @@ python:
   - "3.7"
   - "3.8"
 install:
-  - python setup.py install
+  - pip install pytest-runner pytest-cov
+  - python setup.py develop
 script:
   - ips.py --help
+  - python setup.py test --addopts --cov
