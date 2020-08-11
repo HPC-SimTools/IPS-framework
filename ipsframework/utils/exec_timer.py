@@ -11,7 +11,7 @@ import urllib.error
 import urllib.parse
 PLOT = True
 try:
-    from pylab import *
+    from pylab import figure, xlabel, ylabel, title, grid, plot, show, legend
 except:
     PLOT = False
 

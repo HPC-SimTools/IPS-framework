@@ -14,7 +14,7 @@ PLOT = True
 PLOT_MULTIPLE_INSTANCES = False   # Separate concurrent instances of the same component
 PLOT_END_EDGE = False             # Plot an edge whenever a task finishes
 try:
-    from pylab import *
+    from pylab import figure, vlines, xlabel, ylabel, title, grid, plot, plt, show
 except:
     PLOT = False
 
