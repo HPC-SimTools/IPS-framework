@@ -639,7 +639,7 @@ class ResourceManager:
         if self.FTB:
             if task_id in self.effected_task_list:
                 self.effected_task_list.remove(task_id)
-                raise AllocatedNodeDownException(str(down), task_id, owner)
+                raise AllocatedNodeDownException(str(down), task_id, owner)  # noqa: F821
 
         return True
 

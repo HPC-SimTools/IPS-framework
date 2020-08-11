@@ -2,7 +2,7 @@
 # Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
 # -------------------------------------------------------------------------------
 from .component import Component
-from ctypes import *
+from ctypes import Structure, c_char, c_uint, c_uint8, c_uint16, c_int, cdll, byref
 
 
 """
