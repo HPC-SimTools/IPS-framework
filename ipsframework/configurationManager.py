@@ -164,7 +164,7 @@ class ConfigurationManager:
         # Idiot checks
         if len(self.config_file_list) == 0:
             self.fwk.exception('Missing config file? Something is very wrong')
-            raise
+            raise ValueError('Missing config file? Something is very wrong')
 
         """
         Platform Configuration
@@ -239,7 +239,7 @@ class ConfigurationManager:
             node_alloc_mode = self.platform_conf['NODE_ALLOCATION_MODE'].upper()
             if node_alloc_mode not in ['EXCLUSIVE', 'SHARED']:
                 self.fwk.exception("bad value for NODE_ALLOCATION_MODE. expected 'EXCLUSIVE' or 'SHARED'.")
-                raise
+                raise ValueError("bad value for NODE_ALLOCATION_MODE. expected 'EXCLUSIVE' or 'SHARED'.")
         except:
             self.fwk.exception("missing value or bad type for NODE_ALLOCATION_MODE.  expected 'EXCLUSIVE' or 'SHARED'.")
             raise

@@ -90,10 +90,9 @@ class ResourceManager:
         try:
             os.makedirs(self.CM.sim_map[self.CM.fwk_sim_name].sim_root)
         except OSError as oserr:
-            (errno, strerror) = oserr.args
-            if (errno != 17):
-                self.services.exception('Error creating directory %s : %s',
-                                        self.CM.sim_map[self.CM.fwk_sim_name].sim_root, strerror)
+            if (oserr.errno != 17):
+                # self.services.exception('Error creating directory %s : %s',
+                #                       self.CM.sim_map[self.CM.fwk_sim_name].sim_root, oserr.strerror)
                 raise
 
         self.reporting_file = open(rfile_name, "w")
@@ -639,7 +638,7 @@ class ResourceManager:
         if self.FTB:
             if task_id in self.effected_task_list:
                 self.effected_task_list.remove(task_id)
-                raise AllocatedNodeDownException(str(down), task_id, owner)  # noqa: F821
+                raise AllocatedNodeDownException("down", task_id, "owner")
 
         return True
 

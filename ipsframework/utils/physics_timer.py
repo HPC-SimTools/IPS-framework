@@ -4,7 +4,7 @@
 # -------------------------------------------------------------------------------
 
 import sys
-import BeautifulSoup
+from . import BeautifulSoup
 import urllib.request
 import urllib.error
 import urllib.parse

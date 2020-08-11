@@ -43,8 +43,7 @@ class AllocatedNodeDownException(Exception):
         self.args = (identifier, tid, comp_id)
 
     def __str__(self):
-        return 'allocated node ', self.node, ' has been deemed unfit.  task ', \
-            self.tid, ' of component ', self.component, ' needs to be killed and restarted.'
+        return 'allocated node {} has been deemed unfit. task {} of component {} needs to be killed and restarted.'.format(self.node, self.tid, self.component)
 
 
 class NonexistentResourceException(Exception):

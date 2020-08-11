@@ -5,7 +5,7 @@ import sys
 import getopt
 import os
 import unittest
-from ips import Framework
+from ipsframework.ips import Framework
 
 
 def printUsageMessage():

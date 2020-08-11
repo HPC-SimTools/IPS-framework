@@ -16,7 +16,7 @@ To run:
 python gen_stddev.py -r <portal runid> -b <beginning of slice> -e <end of slice>
 """
 import sys
-import BeautifulSoup
+from . import BeautifulSoup
 import urllib.request
 import urllib.error
 import urllib.parse

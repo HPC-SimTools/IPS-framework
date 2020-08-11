@@ -11,7 +11,7 @@ try:
     if os.environ['IPS_TIMING'] == '1':
         try:
             import pytau
-        except:
+        except ImportError:
             raise
         IPS_TIMING = True
 except KeyError:

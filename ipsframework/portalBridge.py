@@ -144,7 +144,7 @@ class PortalBridge(Component):
                 self.mpo = mpo(api_url=mpo_api, cert=mpo_cert, debug=True)
                 self.mpo.debug = False
                 self.mpo.filter = 'json'
-            except Exception as e:
+            except NameError as e:
                 print("#################", e)
 
         try:
@@ -508,7 +508,7 @@ class PortalBridge(Component):
         # sim_data.portal_runid = str(uuid.uuid4())
         d = datetime.datetime.now()
         date_str = "%s.%03d" % (d.strftime("%Y-%m-%dT%H:%M:%S"), int(d.microsecond / 1000))
-        sim_data.portal_runid = "_".join([self.host, self.USER, date_str])
+        sim_data.portal_runid = "_".join([self.host, "USER", date_str])
         if (self.runid_url is not None):
             self.services.debug('PORTAL_RUNID_URL = %s', str(self.runid_url))
             try:
@@ -532,10 +532,9 @@ class PortalBridge(Component):
         try:
             os.makedirs(sim_log_dir)
         except OSError as oserr:
-            (errno, strerror) = oserr.args
-            if (errno != 17):
+            if (oserr.errno != 17):
                 self.services.exception('Error creating Simulation Log directory %s : %d %s' %
-                                        (sim_log_dir, errno, strerror))
+                                        (sim_log_dir, oserr.errno, oserr.strerror))
                 raise
 
         sim_data.monitor_file_name = os.path.join(sim_log_dir,
