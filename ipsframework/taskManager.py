@@ -68,7 +68,6 @@ class TaskManager:
         specified in *msg*.  Return method's return value.
         """
         self.fwk.debug('Task Manager received message: %s', str(msg.__dict__))
-        sim_name = msg.sender_id.get_sim_name()
         method = getattr(self, msg.target_method)
 #        retval = method(sim_name, *msg.args)
         retval = method(msg)
@@ -89,7 +88,7 @@ class TaskManager:
         self.node_alloc_mode = self.config_mgr.get_platform_parameter('NODE_ALLOCATION_MODE')
         try:
             self.task_launch_cmd = self.config_mgr.get_platform_parameter('MPIRUN')
-        except Exception as e:
+        except Exception:
             print('Error accessing platform parameter MPIRUN')
             raise
 
@@ -263,7 +262,7 @@ class TaskManager:
                 (nodelist, corelist, ppn, max_ppn, accurateNodes) = retval[1:]
             else:
                 (nodelist, ppn, max_ppn, accurateNodes) = retval[1:]
-        except InsufficientResourcesException as e:
+        except InsufficientResourcesException:
             if (block):
                 raise BlockedMessageException(init_task_msg, '***%s waiting for %d resources' %
                                               (caller_id, nproc))
@@ -277,7 +276,7 @@ class TaskManager:
             self.fwk.error("There has been a fatal error, %s requested too few processors per node to launch task %d (requested: procs = %d, ppn = %d)",
                            caller_id, e.task_id, e.nproc, e.ppn)
             raise
-        except Exception as e:
+        except Exception:
             raise
 
         # SIMYAN: moved up a few lines and ret_data, node_file added
@@ -579,7 +578,7 @@ class TaskManager:
                 else:
                     (nodelist, ppn, max_ppn, accurateNodes) = retval[1:]
 
-            except InsufficientResourcesException as e:
+            except InsufficientResourcesException:
                 continue
             except BadResourceRequestException as e:
                 self.fwk.error("There has been a fatal error, %s requested %d too many processors in task %d",
@@ -645,23 +644,22 @@ class TaskManager:
         1. *task_data*: return code of task
         """
         # print "in finish task"
-        caller_id = finish_task_msg.sender_id
         task_id = finish_task_msg.args[0]
         task_data = finish_task_msg.args[1]
-        try:  # For node selection file that could be deleted if need be
-            node_file = self.curr_task_table[task_id]['node_file']
-        except:
-            pass
+        # try:  # For node selection file that could be deleted if need be
+        #    node_file = self.curr_task_table[task_id]['node_file']
+        # except:
+        #    pass
         try:
             self.resource_mgr.release_allocation(task_id, task_data)
 #            self.curr_task_table[task_id]['status'] = 'finished'
 #            self.curr_task_table[task_id]['ret_data'] = task_data
             del self.curr_task_table[task_id]
             # os.remove('_gen_rf_' + str(task_id))
-        except AllocatedNodeDownException as e:
+        except AllocatedNodeDownException:
             del self.curr_task_table[task_id]
             return 1
-        except Exception as e:
+        except Exception:
             print('Error finishing task ', task_id)
             raise
 #        if node_file:

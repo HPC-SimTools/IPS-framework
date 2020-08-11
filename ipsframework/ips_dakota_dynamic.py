@@ -184,7 +184,7 @@ IPS_ROOT/bin or IPS_ROOT/framework/src')
             if comp == '':
                 continue
             try:
-                comp_conf = self.template_conf[comp]
+                self.template_conf[comp]
             except KeyError:
                 print('Error: missing component %s in IPS configuration file')
                 raise
@@ -202,7 +202,7 @@ IPS_ROOT/bin or IPS_ROOT/framework/src')
         for (k, v) in self.template_conf.items():
             if k not in list(self.master_conf.keys()):
                 try:
-                    dummy = list(v.keys())
+                    list(v.keys())
                 except:
                     self.master_conf[k] = v
 
@@ -308,7 +308,6 @@ def main(argv=None):
 
     ips_config_file = None
     platform_filename = ''
-    log_file = sys.stdout
     # parse command line arguments
     if argv is None:
         argv = sys.argv

@@ -278,7 +278,7 @@ class Framework:
                                              self.ftb,
                                              cmd_nodes,
                                              cmd_ppn)
-        except Exception as e:
+        except Exception:
             self.exception("Problem initializing managers")
             self.terminate_all_sims(status=Message.FAILURE)
             # stop(self.timers['__init__'])
@@ -326,7 +326,7 @@ class Framework:
         self.debug('Framework dispatching method: %s from %s', method_name, str(comp_id))
         try:
             handler = self.service_handler[method_name]
-        except KeyError as e:
+        except KeyError:
             self.exception("Unsupported method : %s", method_name)
             response_msg = ServiceResponseMessage(self.component_id,
                                                   comp_id,
@@ -527,7 +527,7 @@ class Framework:
             fwk_comps = self.config_manager.get_framework_components()
             sim_comps = self.config_manager.get_component_map()
             outstanding_sim_calls = {}
-        except Exception as e:
+        except Exception:
             self.exception('encountered exception during fwk.run() initialization')
             self.terminate_all_sims(status=Message.FAILURE)
             # stop(self.timers['run'])
@@ -629,8 +629,6 @@ class Framework:
                 else:
                     self.ips_status['RUN'] = False
 
-                errmsg = checklist.update(self.checklist_file, self.ips_status)
-
                 # SIMYAN: add each method call to the msg_list
                 for comp_id in comp_list:
                     for method in methods:
@@ -643,14 +641,12 @@ class Framework:
                     if msg_list:
                         outstanding_sim_calls[sim_name] = msg_list
 
-        except Exception as e:
+        except Exception:
             self.exception('encountered exception during fwk.run() genration of call messages')
             self.terminate_all_sims(status=Message.FAILURE)
             # stop(self.timers['run'])
             return False
 
-        call_id_list = []
-        call_queue_map = {}
         # send off first round of invocations...
         try:
             for sim_name, msg_list in list(outstanding_sim_calls.items()):
@@ -913,7 +909,7 @@ class Framework:
         time.sleep(1)
         try:
             self.config_manager.terminate(status)
-        except Exception as e:
+        except Exception:
             self.exception('exception encountered while cleaning up config_manager')
         # sys.exit(status)
         # stop(self.timers['terminate_sim'])
@@ -955,7 +951,6 @@ def extractIpsFile(containerFile, newSimName):
 
     zf = zipfile.ZipFile(containerFile, "r")
 
-    foundFile = ""
     # Assume that container file contains 1 ips file.
     oldIpsFile = fnmatch.filter(zf.namelist(), "*.ips")[0]
     ifile = zf.read(oldIpsFile)
@@ -1181,7 +1176,6 @@ def main(argv=None):
     if usedSim_name and not (usedSimulation or usedClone):
         cleaned_file_list = []
         for simname in simName_list:
-            new_file_name = os.path.join(simname, simname + ".ips")
             foundFile = ""
             for testFile in glob.glob(simname + "/*.ips"):
                 cfg_file = ConfigObj(testFile, interpolation='template')

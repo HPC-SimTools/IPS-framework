@@ -10,7 +10,6 @@ def get_share_and_platform(platform_file_name, ipsPathName):
     if (platform_file_name):
         return platform_file_name, ''
     else:
-        ipsDir = os.path.dirname(ipsPathName)
         ipsPDir0 = os.path.dirname(ipsPathName)
         ipsPDir1 = os.path.dirname(ipsPDir0)
         ipsPDir2 = os.path.dirname(ipsPDir1)

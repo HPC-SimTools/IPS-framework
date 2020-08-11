@@ -127,7 +127,6 @@ def get_qstat_jobinfo2():
 
 def get_checkjob_info():
     ndata = []
-    procs = 0
     nodes = []
     cmd = "checkjob $PBS_JOBID"
     p = 0
@@ -204,7 +203,6 @@ def get_checkjob_info():
         try:
             nodes_str = ""
             data = ""
-            procs_str = ""
             # put the whole thing on one line
             data = "".join(data_lines)
             # print "one line: ", data
@@ -257,13 +255,11 @@ def get_checkjob_info_old():
 
     """
     ndata = []
-    procs = 0
     cmd = "checkjob $PBS_JOBID"
-    tot_procs = 0
     data_lines = []
 
     try:
-        job_id = os.environ['PBS_JOBID']
+        os.environ['PBS_JOBID']
     except:
         print('problems getting job id')
         raise
@@ -297,7 +293,6 @@ def get_checkjob_info_old():
             if x.find("Total Requested Tasks:") > -1:
                 a, b = x.split(":")
                 b = b.strip()
-                tot_procs = int(b)
         for line in lines[start:end]:
             if line.strip() != "":
                 data_lines.append(line.strip())
@@ -467,7 +462,6 @@ def get_pbs_info():
         listOfNodes = [(k, v) for k, v in list(node_dict.items())]
         max_p = max(node_dict.values())
         mixed_nodes = (max_p != min(node_dict.values()))
-        accurateNodes = True
         return len(listOfNodes), max_p, mixed_nodes, listOfNodes
     except:
         try:
@@ -481,7 +475,6 @@ def manual_detection(services):
     """
     Use values listed in platform configuration file.
     """
-    mixed_nodes = False
     listOfNodes = []
     num_nodes = int(services.get_platform_parameter('NODES'))
     ppn = int(services.get_platform_parameter('PROCS_PER_NODE'))
@@ -500,7 +493,6 @@ def manual_detection(services):
         listOfNodes.append(("dummynode%d" % n, ppn))
     if tot_procs < num_nodes * (ppn - 1):
         # raise InvalidResourceSettingsException("total procs and nodes mismatch", tot_procs, num_nodes)
-        mixed_nodes = True
         n = listOfNodes[-1][0]
         listOfNodes[-1] = (n, tot_procs % ppn)
     return num_nodes, ppn, False, listOfNodes

@@ -23,7 +23,7 @@ def sendEncodedMessage(url, msg):
     while (trial < num_trials):
         try:
             f = urllib.request.urlopen(url, msg)
-        except (urllib.error.URLError) as e:
+        except (urllib.error.URLError):
             trial += 1
             if trial > num_trials:
                 open('PORTAL.err', 'a').write('%s\n' % (msg))

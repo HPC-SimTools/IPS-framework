@@ -11,7 +11,8 @@ def get_status(checklist_file):
     ips_status['RUN'] = False
 
     try:
-        f = open(checklist_file, 'r')
+        with open(checklist_file, 'r'):
+            pass
         conf = ConfigObj(checklist_file, interpolation='template', file_error=True)
 
         if conf['CREATE_RUNSPACE'] == 'DONE':
@@ -29,15 +30,17 @@ def get_status(checklist_file):
         elif conf['RUN'] == 'NOT_DONE':
             ips_status['RUN'] = False
 
-    except IOError as ioe:
+    except IOError:
         print('Checklist config file "%s" could not be found, continuing without.' % checklist_file)
     except SyntaxError:
         print('Error parsing config file: %s' % checklist_file)
         raise
-    except Exception as e:
+    except Exception:
         print('encountered exception during fwk.run() checklist configuration')
     finally:
-        f = open(checklist_file, 'w')
+        # create a new empty file
+        with open(checklist_file, 'w'):
+            pass
         conf = ConfigObj(checklist_file, interpolation='template', file_error=True)
         conf['CREATE_RUNSPACE'] = False
         conf['RUN_SETUP'] = False
@@ -51,7 +54,7 @@ def update(checklist_file, ips_status):
 
     try:
         conf = ConfigObj(checklist_file, interpolation='template', file_error=True)
-    except IOError as ioe:
+    except IOError:
         # SEK: Remove because for the create_runspace it is not there?
         # print 'Checklist config file "%s" could not be found, continuing without.' % checklist_file
         return '', ips_status

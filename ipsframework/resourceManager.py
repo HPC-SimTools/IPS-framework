@@ -129,7 +129,7 @@ class ResourceManager:
                 if self.accurateNodes is True and not self.CM.get_platform_parameter('USE_ACCURATE_NODES'):
                     self.accurateNodes = False
                     self.fwk.warning('RM: User set accurateNodes to False')
-            except Exception as e:
+            except Exception:
                 print("can't get resource info")
                 raise
 

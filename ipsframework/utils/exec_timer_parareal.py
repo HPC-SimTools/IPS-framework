@@ -22,10 +22,8 @@ except:
 def plot_exec_time(task_time_map, converge, energy):
     time_fig = plt.figure(1)
     count_fig = plt.figure(2)
-    converge_fig = plt.figure(3)
     time_plot = time_fig.add_subplot(111)
     count_plot = count_fig.add_subplot(111)
-    converge_plot = converge_fig.add_subplot(111)
     markers = ['s', '*', '+', 'o', '1', '2', '3', '4']
     min_count = 1000
     max_count = -1
@@ -56,9 +54,9 @@ def plot_exec_time(task_time_map, converge, energy):
         min_count = min([min_count, min(count)])
         max_count = max([max_count, max(count)])
     plt.figure(1)
-    l = plt.legend()
-    xticks = np.linspace(0, max(x), 5)
-    xticks_str = ['%d' % (t) for t in xticks]
+    plt.legend()
+    # xticks = np.linspace(0, max(x), 5)
+    # xticks_str = ['%d' % (t) for t in xticks]
 #    plt.xticks([int(f) for f in x])
     # print xticks, xticks_str
     # plt.xticks(xticks, xticks_str)
@@ -67,7 +65,7 @@ def plot_exec_time(task_time_map, converge, energy):
     plt.title('Execution Time Summary')
     plt.grid(True)
     plt.figure(2)
-    l = plt.legend()
+    plt.legend()
     # plt.xticks([int(f) for f in x])
     # plt.xticks(xticks, xticks_str)
     # print xticks_str
@@ -104,7 +102,7 @@ def plot_exec_time(task_time_map, converge, energy):
         Y = np.ma.array(np.zeros([len(iterations) + 1, len(slices) + 1]))
         X1 = np.zeros(len(iterations) + 1)
         Y1 = np.zeros(len(slices) + 1)
-        Z1 = np.ones([len(slices) + 1, len(iterations) + 1])
+        # Z1 = np.ones([len(slices) + 1, len(iterations) + 1])
         for i in range(len(X1)):
             X1[i] = i
         for i in range(len(Y1)):
@@ -147,9 +145,9 @@ def plot_exec_time(task_time_map, converge, energy):
         # plt.yticks([int(i) for i in iterations])
         # print 'min of converge = ', convergence.min()
         # print 'converge = ', convergence
-        p = plt.pcolor(X.transpose(), Y.transpose(), convergence.transpose(),
-                       norm=LogNorm())
-        tol_level = [1.5e-6]
+        plt.pcolor(X.transpose(), Y.transpose(), convergence.transpose(),
+                   norm=LogNorm())
+        # tol_level = [1.5e-6]
         # CS = plt.contour(X1, Y1, Z1, levels = tol_level)
 
         cb = plt.colorbar(spacing='proportional', format='%.1e')

@@ -91,7 +91,6 @@ class Node:
         """
         # add tid and o to lists
         slots = []
-        rm_from_avail = []
         self.task_ids.append(tid)
         self.owners.append(o)
         k = 0   # number of cores allocated
