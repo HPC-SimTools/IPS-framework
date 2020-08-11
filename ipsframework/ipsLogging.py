@@ -9,7 +9,6 @@ import logging.handlers
 import socketserver
 import struct
 import functools
-import logging.handlers
 import socket
 import os
 import os.path

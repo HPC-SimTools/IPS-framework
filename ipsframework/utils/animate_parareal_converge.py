@@ -6,13 +6,11 @@
 
 import sys
 import subprocess
-import os
 import BeautifulSoup
 import urllib.request
 import urllib.error
 import urllib.parse
 import numpy as np
-import math
 
 NUM_FRAMES = 100
 FPS = 4
@@ -23,7 +21,6 @@ try:
     matplotlib.use('Agg')
     import matplotlib.pyplot as plt
     from matplotlib.colors import LogNorm
-    from matplotlib.contour import ContourSet
 except:
     raise
 

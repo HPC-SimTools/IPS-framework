@@ -3,7 +3,6 @@
 # Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
 # -------------------------------------------------------------------------------
 import sys
-import os
 
 
 def parse_log_line(l):

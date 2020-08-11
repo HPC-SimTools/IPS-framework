@@ -8,7 +8,7 @@ import BeautifulSoup
 import urllib.request
 import urllib.error
 import urllib.parse
-from math import floor, ceil
+from math import floor
 
 PLOT = True
 PLOT_MULTIPLE_INSTANCES = False   # Separate concurrent instances of the same component

@@ -18,7 +18,6 @@ from .configobj import ConfigObj
 import glob
 import weakref
 import inspect
-import signal
 
 MY_VERSION = float(sys.version[:3])
 
@@ -1169,7 +1168,9 @@ class ServicesProxy:
         sim_conf = self.sim_conf
         tlist = []
         time_conf = sim_conf['TIME_LOOP']
-        safe = lambda nums: len(set(str(nums)).difference(set("1234567890-+/*.e "))) == 0
+
+        def safe(nums):
+            return len(set(str(nums)).difference(set("1234567890-+/*.e "))) == 0
         # generate tlist in regular mode (start, finish, step)
         if (time_conf['MODE'] == 'REGULAR'):
             for entry in ['FINISH', 'START', 'NSTEP']:

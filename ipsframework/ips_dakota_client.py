@@ -7,7 +7,6 @@ import os
 import sys
 from .configobj import ConfigObj
 import shutil
-import socket
 from multiprocessing.connection import Client
 import time
 
