@@ -6,19 +6,15 @@
 
 import sys
 import subprocess
-import os
 import BeautifulSoup
 import urllib.request
 import urllib.error
 import urllib.parse
 import numpy as np
-import math
 
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt  # noqa: E402
-from matplotlib.colors import LogNorm  # noqa: E402
-from matplotlib.contour import ContourSet  # noqa: E402
 from matplotlib.ticker import FixedLocator  # noqa: E402
 
 FPS = 8

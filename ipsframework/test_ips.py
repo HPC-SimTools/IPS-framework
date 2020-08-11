@@ -2,18 +2,8 @@
 # Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
 # -------------------------------------------------------------------------------
 import sys
-import socket
 import getopt
 import os
-import traceback
-import time
-from componentRegistry import ComponentID
-from ipsExceptions import BlockedMessageException
-from eventService import EventService
-from cca_es_spec import initialize_event_service
-from ipsLogging import ipsLogger
-import logging
-import logging.handlers
 import unittest
 from ips import Framework
 

@@ -13,7 +13,7 @@ Notes:
 
 """
 
-from resourceHelper import get_checkjob_info, get_qstat_jobinfo, get_pbs_info, get_slurm_info, get_topo, get_qstat_jobinfo2
+from resourceHelper import get_checkjob_info, get_qstat_jobinfo, get_pbs_info, get_slurm_info, get_qstat_jobinfo2
 
 
 def test_get_checkjob_info():

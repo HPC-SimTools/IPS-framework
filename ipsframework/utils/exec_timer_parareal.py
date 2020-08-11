@@ -10,13 +10,11 @@ import urllib.request
 import urllib.error
 import urllib.parse
 import numpy as np
-import math
 
 PLOT = True
 try:
     import matplotlib.pyplot as plt
     from matplotlib.colors import LogNorm
-    from matplotlib.contour import ContourSet
 except:
     PLOT = False
 

@@ -23,7 +23,6 @@ import urllib.parse
 import getopt
 PLOT = True
 try:
-    from pylab import *
     from numpy import array
 except:
     PLOT = False
