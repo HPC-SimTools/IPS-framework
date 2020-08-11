@@ -6,12 +6,8 @@ Experimental timing of the IPS using TAU
 """
 
 import os
-import sys
 import inspect
-if (sys.version_info > (2, 6)):
-    from types import MethodType
-else:
-    from new import instancemethod as MethodType
+from types import MethodType
 
 
 IPS_TIMING = False
@@ -19,7 +15,7 @@ try:
     if os.environ['IPS_TIMING'] == '1':
         try:
             import pytau
-        except:
+        except ImportError:
             raise
         IPS_TIMING = True
 except KeyError:

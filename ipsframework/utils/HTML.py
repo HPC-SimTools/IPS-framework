@@ -483,11 +483,11 @@ if __name__ == '__main__':
         ['Carpenter', 'Jack', 47, 7],
         ['Johnson', 'Paul', 62, 10.55],
     ]
-    htmlcode = HTML.table(table_data,  # noqa: F821
-                          header_row=['Last name', 'First name', 'Age', 'Score'],
-                          col_width=['', '20%', '10%', '10%'],
-                          col_align=['left', 'center', 'right', 'char'],
-                          col_styles=['font-size: large', '', 'font-size: small', 'background-color:yellow'])
+    htmlcode = table(table_data,
+                     header_row=['Last name', 'First name', 'Age', 'Score'],
+                     col_width=['', '20%', '10%', '10%'],
+                     col_align=['left', 'center', 'right', 'char'],
+                     col_styles=['font-size: large', '', 'font-size: small', 'background-color:yellow'])
     f.write(htmlcode + '<p>\n')
     print(htmlcode)
     print('-' * 79)

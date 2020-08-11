@@ -148,10 +148,9 @@ class Driver(Component):
             try:
                 os.makedirs(self.old_master_conf['SIM_ROOT'])
             except OSError as oserr:
-                (errno, strerror) = oserr.args
-                if (errno != 17):
+                if (oserr.errno != 17):
                     print('Error creating Simulation directory %s : %d %s' %
-                          (self.old_master_conf['SIM_ROOT'], errno, strerror))
+                          (self.old_master_conf['SIM_ROOT'], oserr.errno, oserr.strerror))
                     raise
             if first_sim:
                 summary_file = open(os.path.join(self.sim_root, 'SIMULATION_LIST.%s' % (dakota_runid)), 'a', 1)

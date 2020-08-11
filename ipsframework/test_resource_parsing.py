@@ -20,7 +20,7 @@ def test_get_checkjob_info():
     try:
         print('Testing get_checkjob_info:')
         n, ppn, mixed_nodes, lon = get_checkjob_info()
-        print('get_checkjob_info yields %d nodes and %d ppn' % (n, ppn))
+        print('get_checkjob_info yields {} nodes and {} ppn'.format(n, ppn))
         for name, p in lon:
             print('\t%s: %d' % (name, p))
     except:

@@ -306,7 +306,7 @@ class Core:
             return self.name
         else:
             print("trying to allocate core that is not available")
-            raise
+            raise RuntimeError("trying to allocate core that is not available")
 
     def release(self):
         """

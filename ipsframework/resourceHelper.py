@@ -595,7 +595,7 @@ def getResourceList(services, host, ftb, partial_nodes=False):
                         accurateNodes = True
                     except:
                         try:
-                            num_nodes, ppn, mixed_nodes, listOfNodes = manual_detection()
+                            num_nodes, ppn, mixed_nodes, listOfNodes = manual_detection(services)
                             accurateNodes = False
                         except:
                             print("*** NO DETECTION MECHANISM WORKS ***")
