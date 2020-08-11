@@ -5,7 +5,9 @@
 
 import sys
 import BeautifulSoup
-import urllib.request, urllib.error, urllib.parse
+import urllib.request
+import urllib.error
+import urllib.parse
 from math import floor, ceil
 
 PLOT = True

@@ -11,7 +11,8 @@ import struct
 import functools
 import logging.handlers
 import socket
-import os, os.path
+import os
+import os.path
 import queue
 import errno
 import time

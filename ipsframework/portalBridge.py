@@ -5,9 +5,15 @@ import re
 
 import datetime
 from ipsframework.component import Component
-import sys, urllib.request, urllib.parse, urllib.error, os
+import sys
+import urllib.request
+import urllib.parse
+import urllib.error
+import os
 from subprocess import Popen, PIPE
-import urllib.request, urllib.error, urllib.parse
+import urllib.request
+import urllib.error
+import urllib.parse
 import time
 from ipsframework import ipsutil
 import inspect

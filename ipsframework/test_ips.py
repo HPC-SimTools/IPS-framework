@@ -12,7 +12,8 @@ from ipsExceptions import BlockedMessageException
 from eventService import EventService
 from cca_es_spec import initialize_event_service
 from ipsLogging import ipsLogger
-import logging, logging.handlers
+import logging
+import logging.handlers
 import unittest
 from ips import Framework
 
