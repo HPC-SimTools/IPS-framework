@@ -436,7 +436,7 @@ class ServicesProxy:
         self.debug('_get_service_response(%s)', str(msg_id))
         response = self._wait_msg_response(msg_id, block)
         self.debug('_get_service_response(%s), response = %s', str(msg_id), str(response))
-        if response == None:
+        if response is None:
             return None
         if response.status == messages.Message.FAILURE:
             self.debug('###### Raising %s', str(response.args[0]))
@@ -1098,7 +1098,7 @@ class ServicesProxy:
                     continue
                 process = self.task_map[task_id][0]
                 retval = process.poll()
-                if (retval != None):
+                if (retval is not None):
                     task_retval = self.wait_task(task_id)
                     ret_dict[task_id] = task_retval
                     running_tasks.remove(task_id)
@@ -2509,7 +2509,7 @@ class ServicesProxy:
         for c in comps:
             if not c:
                 continue
-            if input_dir == None:
+            if input_dir is None:
                 sub_conf_new[c]['INPUT_DIR'] = os.path.join(os.getcwd(), c)
             else:
                 sub_conf_new[c]['INPUT_DIR'] = os.path.join(os.getcwd(), input_dir)

@@ -126,7 +126,7 @@ class ResourceManager:
                 # print "SSSSSSSSSSSSSSSSSS", self.cores_per_node, self.sockets_per_node, self.max_ppn
                 self.fwk.warning('RM: listOfNodes = %s', str(listOfNodes))
                 self.fwk.warning('RM: max_ppn = %d ', int(self.max_ppn))
-                if self.accurateNodes == True and not self.CM.get_platform_parameter('USE_ACCURATE_NODES'):
+                if self.accurateNodes is True and not self.CM.get_platform_parameter('USE_ACCURATE_NODES'):
                     self.accurateNodes = False
                     self.fwk.warning('RM: User set accurateNodes to False')
             except Exception as e:

@@ -123,7 +123,7 @@ class ipsLogger:
         self.log_dynamic_sim_queue = dynamic_sim_queue
 
     def add_sim_log(self, log_pipe_name, log_file=sys.stdout):
-        if (log_file == sys.stdout or log_file == None):
+        if (log_file == sys.stdout or log_file is None):
             log_handler = self.stdout_handler
         else:
             if(log_file.__class__.__name__ == 'TextIOWrapper'):

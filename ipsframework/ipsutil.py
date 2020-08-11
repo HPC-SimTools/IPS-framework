@@ -214,7 +214,7 @@ def writeToContainer(ziphandle, src_dir, src_file_list):
             # print 'item.filename = ', item.filename
             # print 'zout.namelist() = ', zout.namelist()
             # print 'item.filename in zout.namelist() = ', item.filename in zout.namelist()
-            if not item.filename in zout.namelist():
+            if item.filename not in zout.namelist():
                 zout.writestr(item, buffer)
 
         zin.close()
@@ -229,7 +229,7 @@ def getTimeString(timeArg=None):
     to be an appropriate object to be processed by :py:meth:`time.strftime`.
     If *timeArg* is ``None``, current time is used.
     """
-    if timeArg == None:
+    if timeArg is None:
         arg = time.localtime()
     else:
         arg = timeArg

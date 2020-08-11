@@ -510,7 +510,7 @@ class PortalBridge(Component):
         d = datetime.datetime.now()
         date_str = "%s.%03d" % (d.strftime("%Y-%m-%dT%H:%M:%S"), int(d.microsecond / 1000))
         sim_data.portal_runid = "_".join([self.host, self.USER, date_str])
-        if (self.runid_url != None):
+        if (self.runid_url is not None):
             self.services.debug('PORTAL_RUNID_URL = %s', str(self.runid_url))
             try:
                 #               raise urllib2.URLError('TEXT')

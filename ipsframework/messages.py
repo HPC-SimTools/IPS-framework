@@ -20,7 +20,7 @@ class Message:
         self.message_id = None
 
     def get_message_id(self):
-        if (self.message_id == None):
+        if (self.message_id is None):
             delim = self.delimiter
             self.message_id = delim.join([self.identifier,
                                           str(self.sender_id),

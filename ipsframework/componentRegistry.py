@@ -6,7 +6,7 @@ import sys
 
 class Singleton:
     def __new__(cls, *param, **keywords):
-        if not '_the_instance' in cls.__dict__:
+        if '_the_instance' not in cls.__dict__:
             cls._the_instance = object.__new__(cls)
         return cls._the_instance
 

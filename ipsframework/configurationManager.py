@@ -670,13 +670,13 @@ class ConfigurationManager:
             elif (port == 'INIT'):
                 sim_data.init_comp = component_id
 
-        if (sim_data.driver_comp == None):
+        if (sim_data.driver_comp is None):
             self.fwk.error('Missing DRIVER specification in ' +
                            'config file for simulation %s', sim_data.sim_name)
             # pytau.stop(self.timers['_initialize_sim'])
             # stop(self.timers['_initialize_sim'])
             sys.exit(1)
-        if (sim_data.init_comp == None):
+        if (sim_data.init_comp is None):
             self.fwk.warning('Missing INIT specification in ' +
                              'config file for simulation %s', sim_data.sim_name)
 
