@@ -12,9 +12,9 @@ import tempfile
 from . import ipsLogging
 import logging
 import socket
+from multiprocessing import Queue, Process
 
 my_version = float(sys.version[:3])
-from multiprocessing import Queue, Process
 
 
 class ConfigurationManager:

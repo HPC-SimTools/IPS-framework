@@ -1,7 +1,8 @@
 # -------------------------------------------------------------------------------
 # Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
 # -------------------------------------------------------------------------------
-import os, sys
+import os
+import sys
 from component import Component
 from .configobj import ConfigObj
 from multiprocessing.connection import Listener

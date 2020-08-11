@@ -8,6 +8,7 @@ https://www.cca-forum.org/wiki/tiki-index.php?page=Event+Specification+Proposal
 It pretty much forwards calls to an event proxy which in turn talks to the
 central event service.
 """
+from copy import deepcopy
 
 
 class EventServiceException(Exception):
@@ -130,6 +131,5 @@ def initialize_event_service(service):
         _proxy = EventServiceCmpProxy(service)
 
 
-from .eventService import EventService
-from .eventServiceProxy import EventServiceFwkProxy, EventServiceCmpProxy
-from copy import deepcopy
+from .eventService import EventService  # noqa: E402
+from .eventServiceProxy import EventServiceFwkProxy, EventServiceCmpProxy  # noqa: E402

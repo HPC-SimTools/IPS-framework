@@ -6,7 +6,9 @@
 
 import sys
 import BeautifulSoup
-import urllib.request, urllib.error, urllib.parse
+import urllib.request
+import urllib.error
+import urllib.parse
 PLOT = True
 try:
     from pylab import *

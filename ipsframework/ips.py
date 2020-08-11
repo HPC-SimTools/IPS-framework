@@ -54,7 +54,7 @@
 """
 import sys
 
-if sys.version[0] != '3':
+if sys.version[0] != '3':  # noqa: E402
     print("IPS can is only compatible with Python 3.5 or higher")
     sys.exit(1)
 

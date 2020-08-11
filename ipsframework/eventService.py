@@ -7,6 +7,9 @@ The cca_es_spec.py file provides a CCA-style event service interface to IPS,
 with calls on the interface being routed here via the proxy. The CCA event
 interface is straightforwardly mapped onto matching methods in this file.
 """
+from .debug import debug
+from .cca_es_spec import EventServiceException, Event, Topic
+from .topicManager import TopicManager
 
 
 class EventService:
@@ -338,8 +341,3 @@ class EventService:
                      % (theEvent, topicName), listenerid)
 
     """""""""Methods internal to the event service end here"""""""""
-
-
-from .debug import debug
-from .cca_es_spec import EventServiceException, Event, Topic
-from .topicManager import TopicManager
