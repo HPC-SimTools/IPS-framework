@@ -71,9 +71,9 @@ def plot_exec_time(plot_data, used_procs, used_proc_map, task_procs):
     # for k in sorted(moving_ave.keys(), key = float):
     #    print k, moving_ave[k]
 
-    x2 = [float(k) for k in sorted(list(moving_ave.keys()), key=float)]
-    y2 = [moving_ave[k] for k in sorted(list(moving_ave.keys()), key=float)]
-    plot_label = '%.1fH Moving Ave.' % (float(window / 3600.))
+    # x2 = [float(k) for k in sorted(list(moving_ave.keys()), key=float)]
+    # y2 = [moving_ave[k] for k in sorted(list(moving_ave.keys()), key=float)]
+    # plot_label = '%.1fH Moving Ave.' % (float(window / 3600.))
     # plot(x2, y2, linewidth=2, label = plot_label)
 
     grid(True)
@@ -122,7 +122,6 @@ def plot_exec_time(plot_data, used_procs, used_proc_map, task_procs):
             for i in range(1, max_num_comp_sims + 1):
                 for t in range(len(y_inc)):
                     y_inc[t] = min(y_inc[t] + task_procs[comp], y[comp][t])
-                y_inc_array = np.array(y_inc)
                 y_plot = y_inc + y_sum
                 if(i == 1):
                     ax1.plot(x, y_plot, label=comp, markeredgecolor='c',
@@ -164,7 +163,6 @@ def get_task_times(url_list):
     task_data = {}
     active_tasks = {}
     used_procs = {}
-    task_usage = {}
     task_map = {}
     task_start_map = {}
     task_end_map = {}

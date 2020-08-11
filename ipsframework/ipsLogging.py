@@ -76,7 +76,7 @@ class myLogRecordStreamHandler(socketserver.StreamRequestHandler):
             obj = self.unPickle(chunk)
             record = logging.makeLogRecord(obj)
             self.handleLogRecord(record)
-        except Exception as e:
+        except Exception:
             pass
 
     def unPickle(self, data):
@@ -118,7 +118,6 @@ class ipsLogger:
         self.server_map = {}
         self.stdout_handler = logging.StreamHandler(sys.stdout)
         self.formatter = logging.Formatter("%(asctime)s %(name)-15s %(levelname)-8s %(message)s")
-        fileno_map = {}
         self.log_dynamic_sim_queue = dynamic_sim_queue
 
     def add_sim_log(self, log_pipe_name, log_file=sys.stdout):

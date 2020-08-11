@@ -23,10 +23,7 @@ MY_VERSION = float(sys.version[:3])
 
 
 def launch(binary, task_name, working_dir, *args, **keywords):
-    from dask.distributed import get_worker
-    import sys
     os.chdir(working_dir)
-    myid = get_worker()
     task_stdout = sys.stdout
     try:
         log_filename = keywords["logfile"]
@@ -676,7 +673,7 @@ class ServicesProxy:
                                           working_dir, task_ppn, block,
                                           whole_nodes, whole_socks, *args)
             (task_id, command, env_update) = self._get_service_response(msg_id, block=True)
-        except Exception as e:
+        except Exception:
             # self.exception('Error initiating task %s %s on %d nodes' %  (binary, str(args), int(nproc)))
             raise
 
@@ -728,7 +725,7 @@ class ServicesProxy:
                 process = subprocess.Popen(cmd_lst, stdout=task_stdout,
                                            stderr=task_stderr,
                                            cwd=working_dir)
-        except Exception as e:
+        except Exception:
             self.exception('Error executing command : %s', command)
             raise
         self._send_monitor_event('IPS_LAUNCH_TASK', 'task_id = %s , Tag = %s , nproc = %d , Target = %s' %
@@ -764,7 +761,7 @@ class ServicesProxy:
                                           working_dir, task_ppn,
                                           block, wnodes, wsocks, *args)
             (task_id, command, env_update) = self._get_service_response(msg_id, block=True)
-        except Exception as e:
+        except Exception:
             self.exception('Error initiating task %s %s on %d nodes' %
                            (binary, str(args), int(nproc)))
             raise
@@ -796,7 +793,7 @@ class ServicesProxy:
                 process = subprocess.Popen(cmd_lst, stdout=task_stdout,
                                            stderr=subprocess.STDOUT,
                                            cwd=working_dir)
-        except Exception as e:
+        except Exception:
             self.exception('Error executing command : %s', command)
             raise
         self._send_monitor_event('IPS_LAUNCH_TASK', 'Target = ' + command +
@@ -847,7 +844,7 @@ class ServicesProxy:
             msg_id = self._invoke_service(self.fwk.component_id,
                                           'init_task_pool', submit_dict)
             allocated_tasks = self._get_service_response(msg_id, block=True)
-        except Exception as e:
+        except Exception:
             self.exception('Error initiating task pool %s ', task_pool_name)
             raise
 
@@ -906,7 +903,7 @@ class ServicesProxy:
                     process = subprocess.Popen(cmd_lst, stdout=task_stdout,
                                                stderr=task_stderr,
                                                cwd=task.working_dir)
-            except Exception as e:
+            except Exception:
                 self.exception('Error executing task %s - command : %s', task_name, command)
                 raise
             self._send_monitor_event('IPS_LAUNCH_TASK_POOL',
@@ -926,7 +923,7 @@ class ServicesProxy:
             # TODO: process and start_time will have to be accessed as shown
             #      below if this task can be relaunched to support FT...
             # process, start_time = self.task_map[task_id][0], self.task_map[task_id][1]
-        except KeyError as e:
+        except KeyError:
             self.exception('Error: unrecognizable task_id = %s ', task_id)
             raise  # do we really want to raise an error or just return?
         task_retval = 'killed'
@@ -936,7 +933,7 @@ class ServicesProxy:
                 os.kill(process.pid, signal.SIGTERM)
             else:
                 process.terminate()
-        except Exception as e:
+        except Exception:
             self.exception('exception during process termination for task %d', task_id)
             raise
 
@@ -945,7 +942,7 @@ class ServicesProxy:
             msg_id = self._invoke_service(self.fwk.component_id,
                                           'finish_task', task_id, task_retval)
             self._get_service_response(msg_id, block=True)
-        except Exception as e:
+        except Exception:
             self.exception('Error finalizing task  %s', task_id)
             raise
         return
@@ -957,7 +954,7 @@ class ServicesProxy:
         while len(self.task_map) > 0:
             try:
                 self.kill_task(self.task_map[0])
-            except Exception as e:
+            except Exception:
                 raise
         return
 
@@ -973,7 +970,7 @@ class ServicesProxy:
             # TODO: process and start_time will have to be accessed as shown
             #      below if this task can be relaunched to support FT...
             # process, start_time = self.task_map[task_id][0], self.task_map[task_id][1]
-        except KeyError as e:
+        except KeyError:
             self.exception('Error: unrecognizable task_id = %s ', task_id)
             raise
         task_retval = process.poll()
@@ -999,7 +996,7 @@ class ServicesProxy:
         # print "in wait task"
         try:
             process, start_time, task_timeout = self.task_map[task_id]
-        except KeyError as e:
+        except KeyError:
             self.exception('Error: unrecognizable task_id = %s ', str(task_id))
             raise
         task_retval = None
@@ -1026,8 +1023,8 @@ class ServicesProxy:
         try:
             msg_id = self._invoke_service(self.fwk.component_id,
                                           'finish_task', task_id, task_retval)
-            retval = self._get_service_response(msg_id, block=True)
-        except Exception as e:
+            self._get_service_response(msg_id, block=True)
+        except Exception:
             self.exception('Error finalizing task  %s', task_id)
             raise
         return task_retval
@@ -1038,7 +1035,7 @@ class ServicesProxy:
         """
         try:
             process, start_time, nproc, working_dir, binary, args, keywords = self.task_map[task_id]
-        except KeyError as e:
+        except KeyError:
             self.exception('Error: unrecognizable task_id = %s ', str(task_id))
             raise
         task_retval = process.wait()
@@ -1050,7 +1047,7 @@ class ServicesProxy:
             msg_id = self._invoke_service(self.fwk.component_id,
                                           'finish_task', task_id, task_retval)
             retval = self._get_service_response(msg_id, block=True)
-        except Exception as e:
+        except Exception:
             self.exception('Error finalizing task  %s', task_id)
             raise
 
@@ -1421,7 +1418,7 @@ class ServicesProxy:
         simroot = self.sim_conf['SIM_ROOT']
         try:
             outprefix = self.sim_conf['OUTPUT_PREFIX']
-        except KeyError as e:
+        except KeyError:
             outprefix = ''
 
         targetdir = os.path.join(simroot, 'simulation_setup',
@@ -1495,7 +1492,7 @@ class ServicesProxy:
         simroot = self.sim_conf['SIM_ROOT']
         try:
             outprefix = self.sim_conf['OUTPUT_PREFIX']
-        except KeyError as e:
+        except KeyError:
             outprefix = ''
 
         targetdir = os.path.join(simroot, 'simulation_setup',
@@ -1518,7 +1515,6 @@ class ServicesProxy:
         Same as stage_output_files, but does not do anything with the Plasma State.
         """
         workdir = self.get_working_dir()
-        conf = self.component_ref.config
         sim_root = self.sim_conf['SIM_ROOT']
         try:
             outprefix = self.sim_conf['OUTPUT_PREFIX']
@@ -1595,18 +1591,14 @@ class ServicesProxy:
             outprefix = ''
         out_root = 'simulation_results'
 
-        output_dir = os.path.join(sim_root, out_root,
-                                  str(timeStamp), 'components',
-                                  self.full_comp_id)
-
         # Store plasma state files into $SIM_ROOT/history/plasma_state
         # Plasma state files are renamed, by appending the full component
         # name (CLASS_SUBCLASS_NAME) and timestamp to the file name.
         # A version number is added to the end of the file name to avoid
         # overwriting existing plasma state files
-        plasma_dir = os.path.join(self.sim_conf['SIM_ROOT'],
-                                  'simulation_results',
-                                  'plasma_state')
+        plasma_dir = os.path.join(sim_root,
+                                  out_root,
+                                  'Plasma_state')
         try:
             os.makedirs(plasma_dir)
         except OSError as e:
@@ -1682,7 +1674,6 @@ class ServicesProxy:
 
         return_dict = {}
         for (sim_name, (sub_conf_new, _, _, driver_comp)) in subflow_dict.items():
-            ports = sub_conf_new['PORTS']['NAMES'].split()
             driver = sub_conf_new[sub_conf_new['PORTS']['DRIVER']['IMPLEMENTATION']]
             output_dir = os.path.join(sub_conf_new['SIM_ROOT'], 'work',
                                       '_'.join([driver['CLASS'], driver['SUB_CLASS'],
@@ -1965,7 +1956,7 @@ class ServicesProxy:
         try:
             msg_id = self._invoke_service(self.fwk.component_id,
                                           'stage_state', files, state_dir, workdir)
-            retval = self._get_service_response(msg_id, block=True)
+            self._get_service_response(msg_id, block=True)
         except Exception as e:
             self._send_monitor_event('IPS_STAGE_STATE',
                                      ' Exception raised : ' + str(e),
@@ -2018,7 +2009,7 @@ class ServicesProxy:
         try:
             msg_id = self._invoke_service(self.fwk.component_id,
                                           'update_state', files, workdir, state_dir)
-            retval = self._get_service_response(msg_id, block=True)
+            self._get_service_response(msg_id, block=True)
         except Exception as e:
             print('Error updating state files', str(e))
             self._send_monitor_event('IPS_UPDATE_STATE',
@@ -2177,7 +2168,6 @@ class ServicesProxy:
         physics time *timeStamp*.  Return location of new local copies.
         """
         replay_comp_data = self._get_replay_comp_data(timeStamp)
-        comp_conf = replay_comp_data[0]
         outprefix = replay_comp_data[1]
         replay_sim_root = replay_comp_data[2]
         replay_comp_id = replay_comp_data[3]

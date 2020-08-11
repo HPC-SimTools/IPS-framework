@@ -27,7 +27,7 @@ except:
 
 def animate_convergence(converge, max_slice, max_iteration, max_wall_time):
 
-    f = plt.figure(4)
+    plt.figure(4)
     plt.ylabel('Slice')
     plt.xlabel('Iteration')
     plt.title('%.3f Sec.' % (max_wall_time))
@@ -44,7 +44,7 @@ def animate_convergence(converge, max_slice, max_iteration, max_wall_time):
     Y = np.ma.array(np.zeros([len(iterations) + 1, len(slices) + 1]))
     X1 = np.zeros(len(iterations) + 1)
     Y1 = np.zeros(len(slices) + 1)
-    Z1 = np.ones([len(slices) + 1, len(iterations) + 1])
+    # Z1 = np.ones([len(slices) + 1, len(iterations) + 1])
     for i in range(len(X1)):
         X1[i] = i
     for i in range(len(Y1)):
@@ -74,12 +74,12 @@ def animate_convergence(converge, max_slice, max_iteration, max_wall_time):
             convergence[iteration, slice] = value_min
             # print ' to ', value_min
     try:
-        p = plt.pcolor(X.transpose(), Y.transpose(), convergence.transpose(),
-                       norm=LogNorm())
+        plt.pcolor(X.transpose(), Y.transpose(), convergence.transpose(),
+                   norm=LogNorm())
     except ValueError:
-        p = plt.plot((0), (0))
+        plt.plot((0), (0))
     else:
-        tol_level = [1.5e-6]
+        # tol_level = [1.5e-6]
         # CS = plt.contour(X1, Y1, Z1, levels = tol_level)
 
         cb = plt.colorbar(spacing='proportional', format='%.1e')
@@ -201,12 +201,10 @@ def get_task_times(url_list):
         max_slice += 1
         max_iteration += 1
 
-    converge_event_sorted = sorted(anim_converge.keys())
     interval = len(events) / NUM_FRAMES
     last_event_lst = list(range(0, len(events), interval))
     if last_event_lst[-1] != len(events):
         last_event_lst[-1] = len(events)
-    event_idx = converge_event_sorted[0]
     plot_idx = 1
 
     partial_converge = {}

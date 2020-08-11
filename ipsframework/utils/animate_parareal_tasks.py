@@ -31,7 +31,7 @@ def format(x, pos=None):
 
 def plot_task_data(end_time_map, max_slice, max_iteration, max_wall_time):
 
-    f = plt.figure(4)
+    plt.figure(4)
     plt.ylabel('Slice')
     plt.xlabel('Iteration')
     plt.title('%.3f Sec.' % (max_wall_time))
@@ -53,7 +53,6 @@ def plot_task_data(end_time_map, max_slice, max_iteration, max_wall_time):
 
     comp_names = list(end_time_map.keys())
     for i in range(len(comp_names)):
-        offset = (1.0 / num_components) * i
         end_map = end_time_map[comp_names[i]]
         # print end_map
         for ((iteration, slice), value) in sorted(end_map.items()):
@@ -80,9 +79,9 @@ def plot_task_data(end_time_map, max_slice, max_iteration, max_wall_time):
     fig = plt.figure()
     ax = fig.add_subplot(111)
     try:
-        p = ax.pcolor(X.transpose(), Y.transpose(), convergence.transpose())
+        ax.pcolor(X.transpose(), Y.transpose(), convergence.transpose())
     except ValueError:
-        p = ax.plot((0), (0))
+        ax.plot((0), (0))
     else:
         ax.set_xlim([0, 2 * max_iteration + 1])
         ax.set_ylim([0, max_slice + 1])

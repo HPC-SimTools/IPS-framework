@@ -34,7 +34,7 @@ def create_timer(name, fnc, pid):
             return pytau.profileTimer(name + '.' + fnc, '', str(pid))
         # else:
             # print 'timing not on'
-    except Exception as e:
+    except Exception:
         # print "*********** NO TIMING *************"
         # print e
         return None
@@ -68,7 +68,7 @@ def dumpAll(label=""):
         #    print 'timing not on'
     except KeyError:
         pass
-    except Exception as e:
+    except Exception:
         print('something happened during dump')
         raise
 

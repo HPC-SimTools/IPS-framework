@@ -189,8 +189,8 @@ class ConfigurationManager:
         # get mandatory values
         for kw in self.platform_keywords:
             try:
-                val = self.platform_conf[kw]
-            except KeyError as ex:
+                self.platform_conf[kw]
+            except KeyError:
                 self.fwk.exception('Missing required parameter %s in platform config file',
                                    kw)
                 # pytau.stop(self.timers['initialize'])
@@ -306,8 +306,8 @@ class ConfigurationManager:
                 # get mandatory values
                 for kw in self.compset_keywords:
                     try:
-                        val = csconf[kw]
-                    except KeyError as ex:
+                        csconf[kw]
+                    except KeyError:
                         self.fwk.exception('Missing required parameter %s in %s config file',
                                            kw, csfile)
                         raise
@@ -587,8 +587,7 @@ class ConfigurationManager:
         ports_config = sim_conf['PORTS']
         ports_list = ports_config['NAMES'].split()
 
-        simRootDir = self.get_sim_parameter(sim_name, 'SIM_ROOT')
-
+        # simRootDir = self.get_sim_parameter(sim_name, 'SIM_ROOT')
         # SIMYAN: removed code that would make the simrootDir from here and
         # moved it to the runspaceInit component
         # set simulation level partial_nodes
@@ -625,7 +624,7 @@ class ConfigurationManager:
                 if (comp_ref.strip() == ''):
                     continue
                 comp_conf = sim_conf[comp_ref]
-            except Exception as e:
+            except Exception:
                 self.fwk.exception('Error accessing configuration section for ' +
                                    'component %s in simulation %s', comp_ref, sim_name)
                 # pytau.stop(self.timers['_initialize_sim'])
@@ -680,8 +679,7 @@ class ConfigurationManager:
             self.fwk.warning('Missing INIT specification in ' +
                              'config file for simulation %s', sim_data.sim_name)
 
-        conf_file = sim_data.config_file
-
+        # conf_file = sim_data.config_file
         # SIMYAN: No longer doing this in configurationManager.py
         # Copy the configuration and platform files to the simRootDir
         # ipsutil.copyFiles(os.path.dirname(conf_file),
@@ -690,13 +688,12 @@ class ConfigurationManager:
         #                  os.path.basename(self.platform_file), simRootDir)
 
         # try to find the statedir
-        try:
-            statedir = self.get_sim_parameter(sim_name,
-                                              'STATE_WORK_DIR')
-            haveStateDir = True
-        except:
-            haveStateDir = False
-
+        # try:
+        #    self.get_sim_parameter(sim_name,
+        #                           'STATE_WORK_DIR')
+        #    haveStateDir = True
+        # except:
+        #    haveStateDir = False
         # SIMYAN: removed from configurationManager
         # if haveStateDir:
         #   try:
@@ -719,11 +716,10 @@ class ConfigurationManager:
         """
         # pytau.start(self.timers['_create_component'])
         sim_name = sim_data.sim_name
-        path = comp_conf['BIN_PATH']
         fullpath = os.path.abspath(comp_conf['SCRIPT'])
         # originalpath= comp_conf['SCRIPT']
         script = comp_conf['SCRIPT'].rsplit('.', 1)[0].split('/')[-1]
-        endpath = comp_conf['SCRIPT'].rfind('/')
+        # endpath = comp_conf['SCRIPT'].rfind('/')
         # print 'path[0]', comp_conf['SCRIPT'][0:endpath]
         # print 'script', script
         # print 'endpath', endpath
@@ -745,7 +741,7 @@ class ConfigurationManager:
             module = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(module)
             component_class = getattr(module, class_name)
-        except Exception as e:
+        except Exception:
             self.fwk.error('Error in configuration file : NAME = %s   SCRIPT = %s',
                            comp_conf['NAME'], comp_conf['SCRIPT'])
             self.fwk.exception('Error instantiating IPS component %s From %s', class_name, script)
@@ -951,7 +947,7 @@ in configuration file %s', config_file)
         except KeyError:
             pass
         try:
-            real_log_level = getattr(logging, log_level)
+            getattr(logging, log_level)
         except AttributeError:
             self.fwk.exception('Invalid LOG_LEVEL value %s in config file %s ',
                                log_level, config_file)
@@ -1024,7 +1020,7 @@ in configuration file %s', config_file)
         val = None
         try:
             val = self.platform_conf[param]
-        except KeyError as ex:
+        except KeyError:
             if not silent:
                 self.fwk.warning('CM: No platform data for %s ', param)
                 # pytau.stop(self.timers['get_platform_parameter'])

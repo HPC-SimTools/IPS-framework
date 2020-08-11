@@ -127,7 +127,7 @@ class PortalBridge(Component):
         self.services.subscribe('_IPS_MONITOR', "process_event")
         try:
             freq = int(self.services.get_config_param("HTML_DUMP_FREQ", silent=True))
-        except Exception as e:
+        except Exception:
             pass
         else:
             self.dump_freq = freq
@@ -182,7 +182,7 @@ class PortalBridge(Component):
             try:
                 sim_data.monitor_file.close()
                 sim_data.json_monitor_file.close()
-            except Exception as e:
+            except Exception:
                 pass
 
     def get_elapsed_time(self):
@@ -354,7 +354,7 @@ class PortalBridge(Component):
                 print('Existing dataobject : id = ', file_uid)
                 self.mpo.meta(dataobject['uid'], 'ips_checksum', checksum)
                 # add filename metadata the dataobject reference
-                filepathname_mpo = self.mpo.meta(dataobject['uid'], 'ips_filename', file)
+                self.mpo.meta(dataobject['uid'], 'ips_filename', file)
             else:
                 print(('file', file))
                 file_uri = file
@@ -365,7 +365,7 @@ class PortalBridge(Component):
                 full_dataobject = self.mpo.search('dataobject/' + dataobject['uid'])[0]
                 print('New data object', full_dataobject['do_uid'])
                 # add checksum so dataobject and also
-                checksum_mpo = self.mpo.meta(full_dataobject['do_uid'], 'ips_checksum', checksum)
+                self.mpo.meta(full_dataobject['do_uid'], 'ips_checksum', checksum)
                 self.mpo.meta(dataobject['uid'], 'ips_filename', file)
                 self.mpo.meta(dataobject['uid'], 'ips_checksum', checksum)
                 dataobject = full_dataobject
@@ -378,12 +378,11 @@ class PortalBridge(Component):
             :return: tuple (MPO uid if found, None if not found, file_hash)
             '''
             cached_hash_dict = None
-            f_uid = None
             full_path = os.path.join(path, file_name)
             hash = hash_file(full_path)
             cached_hash_dict = self.file_hash_cache[file_name]
             try:
-                f_uid = cached_hash_dict[hash]
+                cached_hash_dict[hash]
             except KeyError:
                 pass
             return (None, hash)  # (f_uid, hash)

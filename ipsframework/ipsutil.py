@@ -163,7 +163,6 @@ def writeToContainer(ziphandle, src_dir, src_file_list):
         zin = None
         zout = zipfile.ZipFile(ziphandle, 'a')
 
-    curdir = os.path.curdir
     if src_dir:
         # Handle possible wildcards in input files.
         # Build and flatten list of lists using sum(l_of_l, [])

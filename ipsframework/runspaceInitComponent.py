@@ -192,7 +192,6 @@ class runspaceInitComponent(Component):
             # for each component_id in the list of components
             for comp_id in comp_list:
                 # build the work directory name
-                comp_ref = registry.getEntry(comp_id).component_ref
                 comp_conf = registry.getEntry(comp_id).component_ref.config
                 full_comp_id = '_'.join([comp_conf['CLASS'], comp_conf['SUB_CLASS'],
                                          comp_conf['NAME'],

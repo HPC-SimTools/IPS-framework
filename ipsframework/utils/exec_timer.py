@@ -22,7 +22,7 @@ def plot_exec_time(task_time_map):
         x = [float(k) for k in sorted(list(time_map.keys()), key=float)]
         y = [float(time_map[k]) for k in sorted(list(time_map.keys()), key=float)]
         plot(x, y, label=comp_name)
-    l = legend()
+    legend()
     xlabel('Physics Time')
     ylabel('Task execution Time')
     title('Execution time for IPS tasks')

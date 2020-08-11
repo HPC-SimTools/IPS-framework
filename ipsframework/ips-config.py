@@ -60,7 +60,6 @@ def main(argv=None):
 
     # Try to see if we can find the platform file
     ipsPathName = inspect.getfile(inspect.currentframe())
-    ipsDir = os.path.dirname(ipsPathName)
     ipsPDir0 = os.path.dirname(ipsPathName)
     ipsPDir1 = os.path.dirname(ipsPDir0)
     ipsPDir2 = os.path.dirname(ipsPDir1)

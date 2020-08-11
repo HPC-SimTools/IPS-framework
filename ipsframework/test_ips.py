@@ -55,7 +55,6 @@ class testIPS(unittest.TestCase):
 
         # create framework with config file
         fwk = Framework(True, True, True, cfgFile_list, log_file, platform_filename)
-        absCfgFile_list = [os.path.abspath(cfgFile) for cfgFile in cfgFile_list]
 
         # test must return true if nothing bad happened, false otherwise.
         self.assertTrue(fwk.run(), 'error in running fwk')

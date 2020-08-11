@@ -34,7 +34,7 @@ end = -1
 def get_task_times():
     try:
         opts, args = getopt.getopt(sys.argv[1:], 'r:b:e:', ['run=', 'begin=', 'end='])
-    except getopt.GetoptError as err:
+    except getopt.GetoptError:
         print('problems with command line args')
         sys.exit(2)
 
@@ -98,8 +98,6 @@ def get_task_times():
         print()
     n_arrays = {}
     for (comp_name, time_map) in list(task_time_map.items()):
-        x = [float(k) for k in sorted(list(time_map.keys()), key=float)]
-        y = [float(time_map[k]) for k in sorted(list(time_map.keys()), key=float)]
         n_arrays.update({comp_name: array([float(time_map[k]) for k in sorted(list(time_map.keys()), key=float)])})
     for c, a in list(n_arrays.items()):
         print(a[0], beg + end, len(a))

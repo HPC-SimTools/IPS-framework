@@ -87,7 +87,7 @@ class IPSDakotaClient:
             try:
                 # print 'Connecting to dakota_bridge : ', str(sys.argv[1:])
                 conn = Client(str(server_address), 'AF_UNIX')
-            except Exception as inst:
+            except Exception:
                 print('%s: %d Failed to connect to %s: %s' %
                       (time.strftime("%b %d %Y %H:%M:%S", time.localtime()),
                        trials, server_address, str(sys.argv)))

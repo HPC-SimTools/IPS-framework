@@ -106,8 +106,6 @@ class Component:
                     fname = self.services.sim_conf['OUT_REDIRECT_FNAME']
                 original_stdout_fd = sys.stdout.fileno()
                 original_stderr_fd = sys.stderr.fileno()
-                saved_stdout_fd = os.dup(original_stdout_fd)
-                saved_stderr_fd = os.dup(original_stderr_fd)
                 outf = open(fname, "a")
                 outf_fno = outf.fileno()
                 # sys.stdout.close()
