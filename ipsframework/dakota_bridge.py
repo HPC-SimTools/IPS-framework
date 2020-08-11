@@ -182,7 +182,7 @@ class Driver(Component):
             idx += 1
 
         listener.close()
-        if not summary_file == None:
+        if summary_file is not None:
             summary_file.close()
         return
 

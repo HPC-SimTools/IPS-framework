@@ -41,7 +41,7 @@ def create_timer(name, fnc, pid):
 
 
 def start(timer):
-    if timer != None:
+    if timer is not None:
         # import pytau
         pytau.start(timer)
     else:
@@ -49,7 +49,7 @@ def start(timer):
 
 
 def stop(timer):
-    if timer != None:
+    if timer is not None:
         # import pytau
         pytau.stop(timer)
     else:
