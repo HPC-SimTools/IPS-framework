@@ -1,6 +1,19 @@
 from ipsframework.ips import Framework
 import glob
 import json
+import os
+import psutil
+import pytest
+
+
+@pytest.fixture(autouse=True)
+def run_around_tests():
+    yield
+    # if an assert fails then not all the children may close and the
+    # test will hang, so kill all the children
+    children = psutil.Process(os.getpid()).children()
+    for child in children:
+        child.kill()
 
 
 def write_basic_config_and_platform_files(tmpdir):
@@ -59,7 +72,7 @@ SIMULATION_MODE = NORMAL
     return platform_file, config_file
 
 
-def test_framework_simple(tmpdir):
+def test_framework_simple(tmpdir, capfd):
     platform_file, config_file = write_basic_config_and_platform_files(tmpdir)
 
     framework = Framework(do_create_runspace=True,  # create runspace: init.init()
@@ -85,14 +98,14 @@ def test_framework_simple(tmpdir):
 
     component_map = framework.config_manager.get_component_map()
 
-    assert len(component_map)
+    assert len(component_map) == 1
     assert 'test' in component_map
     test = component_map['test']
     assert len(test) == 1
     assert test[0].get_class_name() == 'test_driver'
-    assert test[0].get_instance_name() == 'test@test_driver@1'
-    assert test[0].get_seq_num() == 1
-    assert test[0].get_serialization() == 'test@test_driver@1'
+    assert test[0].get_instance_name().startswith('test@test_driver')
+    # assert test[0].get_seq_num() == 1 # need to find a way to reset static variable
+    assert test[0].get_serialization().startswith('test@test_driver')
     assert test[0].get_sim_name() == 'test'
 
     framework.run()
@@ -116,3 +129,12 @@ def test_framework_simple(tmpdir):
     for event in [event0, event1, event2]:
         assert str(event['ok']) == 'True'
         assert event['sim_name'] == 'test'
+
+    captured = capfd.readouterr()
+    assert captured.out.endswith('checklist.conf" could not be found, continuing without.\n')
+    assert captured.err == ''
+
+    # cleanup
+    for fname in ["test_framework_simple0.zip", "dask_preload.py"]:
+        if os.path.isfile(fname):
+            os.remove(fname)

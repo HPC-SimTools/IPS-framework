@@ -4,7 +4,7 @@ python:
   - "3.7"
   - "3.8"
 install:
-  - pip install pytest-runner pytest-cov flake8 pylint matplotlib
+  - pip install pytest-runner pytest-cov flake8 pylint matplotlib psutil
   - python setup.py develop
 script:
   - ips.py --help
