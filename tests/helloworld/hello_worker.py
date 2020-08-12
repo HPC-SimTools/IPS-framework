@@ -2,7 +2,7 @@
 # Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
 #-------------------------------------------------------------------------------
 
-from  component import Component
+from ipsframework.component import Component
 
 class HelloWorker(Component):
     def __init__(self, services, config):
