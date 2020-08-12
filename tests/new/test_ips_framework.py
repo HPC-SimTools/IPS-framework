@@ -2,6 +2,18 @@ from ipsframework.ips import Framework
 import glob
 import json
 import os
+import psutil
+import pytest
+
+
+@pytest.fixture(autouse=True)
+def run_around_tests():
+    yield
+    # if an assert fails then not all the children may close and the
+    # test will hang, so kill all the children
+    children = psutil.Process(os.getpid()).children()
+    for child in children:
+        child.kill()
 
 
 def write_basic_config_and_platform_files(tmpdir):
