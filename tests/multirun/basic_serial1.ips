@@ -17,6 +17,8 @@ SIM_NAME = ${RUN_ID}_${TOKAMAK_ID}_${SHOT_NUMBER}   # Name of current simulation
 SIM_ROOT = $SIM_NAME                      # Where to put results from this simulation
 #PRE SIM_ROOT = $ALL_RUNS/$SIM_NAME                      # Where to put results from this simulation
 
+SIMULATION_MODE = NORMAL
+
 PLASMA_STATE_WORK_DIR = $SIM_ROOT/work/plasma_state # Where to put plasma state files as the simulation evolves 
 CURRENT_STATE = 
 PRIOR_STATE = 

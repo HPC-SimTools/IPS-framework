@@ -1,7 +1,5 @@
 #!/bin/sh
 
-source ../frameworkpath.py
-
 ###
 ##  Some initial setting up
 #
@@ -24,7 +22,7 @@ echo "-------------------------------------------------------"
 echo "Testing runspace creation"
 echo "-------------------------------------------------------"
 #-------------------------------------------------------------
-${fsrc}/ips.py --create-runspace --simulation=b1.ips 
+ips.py --create-runspace --simulation=b1.ips --platform=platform.conf
 
 #-------------------------------------------------------------
 echo; echo; echo
@@ -32,7 +30,7 @@ echo "-------------------------------------------------------"
 echo "Testing run setup"
 echo "-------------------------------------------------------"
 #-------------------------------------------------------------
-${fsrc}/ips.py --run-setup --simulation=b1.ips
+ips.py --run-setup --simulation=b1.ips --platform=platform.conf
 
 #-------------------------------------------------------------
 echo; echo; echo
@@ -40,12 +38,12 @@ echo "-------------------------------------------------------"
 echo "Testing running under ips"
 echo "-------------------------------------------------------"
 #-------------------------------------------------------------
-${fsrc}/ips.py --run --simulation=b1.ips
+ips.py --run --simulation=b1.ips --platform=platform.conf
 
 echo "-------------------------------------------------------"
 echo "Testing all with two ips files and two names"
 echo "-------------------------------------------------------"
-${fsrc}/ips.py --create-runspace --run-setup --run --simulation=b1.ips,b2.ips --sim_name=b,c
+ips.py --create-runspace --run-setup --run --simulation=b1.ips,b2.ips --sim_name=b,c --platform=platform.conf
 
 exit
 #-------------------------------------------------------------
@@ -62,18 +60,18 @@ echo "-------------------------------------------------------"
 echo "Testing runspace creation using --clone"
 echo "-------------------------------------------------------"
 #-------------------------------------------------------------
-${fsrc}/ips.py --clone=test_basic_serial1_0.ctz  --sim_name=basic_serial02
+ips.py --clone=test_basic_serial1_0.ctz  --sim_name=basic_serial02
 #-------------------------------------------------------------
 echo; echo; echo
 echo "-------------------------------------------------------"
 echo "Testing run_setup from cloned directory"
 echo "-------------------------------------------------------"
 #-------------------------------------------------------------
-${fsrc}/ips.py --run-setup  --sim_name=basic_serial02
+ips.py --run-setup  --sim_name=basic_serial02
 #-------------------------------------------------------------
 echo; echo; echo
 echo "-------------------------------------------------------"
 echo "Testing run from cloned directory"
 echo "-------------------------------------------------------"
 #-------------------------------------------------------------
-${fsrc}/ips.py --run   --sim_name=basic_serial02
+ips.py --run   --sim_name=basic_serial02

@@ -3,7 +3,6 @@
 # -------------------------------------------------------------------------------
 from ipsframework.component import Component
 
-
 class MCMDDriver(Component):
     # class mcmd_driver(Component):
     def __init__(self, services, config):

@@ -86,9 +86,9 @@ class test_permutations(ParameterizedTestCase):
             call_args.append('--platform=' + self.param.platform_filename)
         call_args.append('--log=' + self.param.log_file)
 
-        print(string.join(call_args, ' '))
-        # test must return true if nothing bad happened, false otherwise
-        # self.assertTrue(self.fwk.run(), 'error in running fwk')
+        print(' '.join(call_args))
+        #test must return true if nothing bad happened, false otherwise
+#       self.assertTrue(self.fwk.run(), 'error in running fwk')
         self.assertEqual(subprocess.call(call_args), 0, 'error in running IPS')
 
         """
