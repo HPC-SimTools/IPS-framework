@@ -4,10 +4,12 @@ python:
   - "3.7"
   - "3.8"
 install:
-  - pip install pytest-runner pytest-cov flake8 pylint matplotlib psutil
+  - pip install pytest-runner pytest-cov flake8 pylint matplotlib psutil codecov
   - python setup.py develop
 script:
   - ips.py --help
   - flake8
   - pylint -E --ignore=six.py,configobj.py,BeautifulSoup.py,batch_mgmt_script.py,read_dict.py ipsframework
   - python setup.py test --addopts --cov
+after_success:
+  - codecov
