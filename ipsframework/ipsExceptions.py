@@ -25,7 +25,7 @@ class IncompleteCallException(Exception):
 
     def __init__(self, callID):
         self.callID = callID
-        self.args = (callID)
+        self.args = (callID,)
 
     def __str__(self):
         return 'nonblocking wait_call() invoked before call %s finished' % self.callID
