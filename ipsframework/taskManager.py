@@ -196,7 +196,7 @@ class TaskManager:
             response_msg = self.finished_calls[call_id][1]
             del self.finished_calls[call_id]
             if (response_msg.status == messages.Message.FAILURE):
-                raise response_msg.args[0]
+                raise Exception(response_msg.args[0])
             else:
                 return response_msg.args
         if (not blocking):
