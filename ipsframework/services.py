@@ -806,7 +806,7 @@ class ServicesProxy:
                                   args, keywords)
         return task_id  # process.pid
 
-    def launch_task_pool(self, task_pool_name):
+    def launch_task_pool(self, task_pool_name, launch_interval=0.0):
         """
         Construct messages to task manager to launch each task.
         Used by :py:class:`TaskPool` to launch tasks in a task_pool.
@@ -850,6 +850,8 @@ class ServicesProxy:
 
         active_tasks = {}
         for task_name in list(allocated_tasks.keys()):
+            if launch_interval > 0:
+                time.sleep(launch_interval)
             # (nproc, working_dir, binary, args, keywords) = queued_tasks[task_name]
             task = queued_tasks[task_name]
             (task_id, command, env_update) = allocated_tasks[task_name]
@@ -2438,7 +2440,8 @@ class ServicesProxy:
         return task_pool.add_task(task_name, nproc, working_dir, binary,
                                   *args, keywords=keywords)
 
-    def submit_tasks(self, task_pool_name, block=True, use_dask=False, dask_nodes=1, dask_ppn=None):
+    def submit_tasks(self, task_pool_name, block=True, use_dask=False, dask_nodes=1,
+                     dask_ppn=None, launch_interval=0.0):
         """
         Launch all unfinished tasks in task pool *task_pool_name*.  If *block* is ``True``,
         return when all tasks have been launched.  If *block* is ``False``, return when all
@@ -2448,7 +2451,7 @@ class ServicesProxy:
         start_time = time.time()
         self._send_monitor_event('IPS_TASK_POOL_BEGIN', 'task_pool = %s ' % task_pool_name)
         task_pool: TaskPool = self.task_pools[task_pool_name]
-        retval = task_pool.submit_tasks(block, use_dask, dask_nodes, dask_ppn)
+        retval = task_pool.submit_tasks(block, use_dask, dask_nodes, dask_ppn, launch_interval)
         self._send_monitor_event('IPS_TASK_POOL_END', 'task_pool = %s  elapsed time = %.2f S' %
                                  (task_pool_name, time.time() - start_time))
         return retval
@@ -2692,7 +2695,7 @@ class TaskPool:
         self.queued_tasks = {}
         return len(self.futures)
 
-    def submit_tasks(self, block=True, use_dask=False, dask_nodes=1, dask_ppn=None):
+    def submit_tasks(self, block=True, use_dask=False, dask_nodes=1, dask_ppn=None, launch_interval=0.0):
         """
         Launch tasks in *queued_tasks*.  Finished tasks are handled before
         launching new ones.  If *block* is ``True``, the number of tasks
@@ -2712,7 +2715,7 @@ class TaskPool:
         while True:
             if len(self.queued_tasks) == 0:
                 break
-            active_tasks = self.services.launch_task_pool(self.name)
+            active_tasks = self.services.launch_task_pool(self.name, launch_interval)
             for task_name, task_id in active_tasks.items():
                 self.active_tasks[task_id] = self.queued_tasks.pop(task_name)
                 submit_count += 1
