@@ -18,7 +18,12 @@ class medium_worker(Component):
     def step(self, timestamp):
         sleep_time = 1
         self.services.log('Stepping Worker boogity boogity', self.NPROC, self.BIN_PATH)
-        pid = self.services.launch_task(int(self.NPROC), self.BIN_PATH, './parallel_sleep', str(sleep_time), logfile='my_out'+timestamp)
+        cwd = self.services.get_working_dir()
+        pid = self.services.launch_task(int(self.NPROC),
+                                        cwd,
+                                        os.path.join(self.BIN_PATH, self.BIN),
+                                        str(sleep_time),
+                                        logfile='my_out'+timestamp)
         retval = self.services.wait_task(pid)
         return retval
 
