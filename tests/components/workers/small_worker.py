@@ -2,6 +2,7 @@
 # Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
 # -------------------------------------------------------------------------------
 from ipsframework.component import Component
+import os
 
 
 class small_worker(Component):
