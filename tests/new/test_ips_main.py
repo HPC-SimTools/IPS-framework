@@ -22,42 +22,42 @@ def test_ips_main(MockFramework):
     # override sys.argv for testing
     sys.argv = ["ips.py"]
     ips.main()
-    MockFramework.assert_called_with(True, True, True, [], 'sys.stdout', '', [], None, None, None, 0, 0)
+    MockFramework.assert_called_with(True, True, True, [], 'sys.stdout', '', [], False, False, False, 0, 0)
 
     MockFramework.reset_mock()
     sys.argv = ["ips.py", "--create-runspace"]
     ips.main()
-    MockFramework.assert_called_with(True, None, None, [], 'sys.stdout', '', [], None, None, None, 0, 0)
+    MockFramework.assert_called_with(True, False, False, [], 'sys.stdout', '', [], False, False, False, 0, 0)
 
     MockFramework.reset_mock()
     sys.argv = ["ips.py", "--create-runspace"]
     ips.main()
-    MockFramework.assert_called_with(True, None, None, [], 'sys.stdout', '', [], None, None, None, 0, 0)
+    MockFramework.assert_called_with(True, False, False, [], 'sys.stdout', '', [], False, False, False, 0, 0)
 
     MockFramework.reset_mock()
     sys.argv = ["ips.py", "--run-setup"]
     ips.main()
-    MockFramework.assert_called_with(None, True, None, [], 'sys.stdout', '', [], None, None, None, 0, 0)
+    MockFramework.assert_called_with(False, True, False, [], 'sys.stdout', '', [], False, False, False, 0, 0)
 
     MockFramework.reset_mock()
     sys.argv = ["ips.py", "--run"]
     ips.main()
-    MockFramework.assert_called_with(None, None, True, [], 'sys.stdout', '', [], None, None, None, 0, 0)
+    MockFramework.assert_called_with(False, False, True, [], 'sys.stdout', '', [], False, False, False, 0, 0)
 
     MockFramework.reset_mock()
     sys.argv = ["ips.py", "--simulation=sim.cfg"]
     ips.main()
-    MockFramework.assert_called_with(True, True, True, ['sim.cfg'], 'sys.stdout', '', [], None, None, None, 0, 0)
+    MockFramework.assert_called_with(True, True, True, ['sim.cfg'], 'sys.stdout', '', [], False, False, False, 0, 0)
 
     MockFramework.reset_mock()
     sys.argv = ["ips.py", "--config=sim.cfg"]
     ips.main()
-    MockFramework.assert_called_with(True, True, True, ['sim.cfg'], 'sys.stdout', '', [], None, None, None, 0, 0)
+    MockFramework.assert_called_with(True, True, True, ['sim.cfg'], 'sys.stdout', '', [], False, False, False, 0, 0)
 
     MockFramework.reset_mock()
     sys.argv = ["ips.py", "--config=sim1.cfg,sim2.cfg"]
     ips.main()
-    MockFramework.assert_called_with(True, True, True, ['sim1.cfg', 'sim2.cfg'], 'sys.stdout', '', [], None, None, None, 0, 0)
+    MockFramework.assert_called_with(True, True, True, ['sim1.cfg', 'sim2.cfg'], 'sys.stdout', '', [], False, False, False, 0, 0)
 
     MockFramework.reset_mock()
     sys.argv = ["ips.py", "--simulation=sim1.cfg", "--sim_name=sim1,sim2"]
@@ -67,24 +67,24 @@ def test_ips_main(MockFramework):
     MockFramework.reset_mock()
     sys.argv = ["ips.py", "--log=file.log"]
     ips.main()
-    MockFramework.assert_called_with(True, True, True, [], 'file.log', '', [], None, None, None, 0, 0)
+    MockFramework.assert_called_with(True, True, True, [], 'file.log', '', [], False, False, False, 0, 0)
 
     MockFramework.reset_mock()
     sys.argv = ["ips.py", "--nodes=5", "--ppn=32"]
     ips.main()
-    MockFramework.assert_called_with(True, True, True, [], 'sys.stdout', '', [], None, None, None, 5, 32)
+    MockFramework.assert_called_with(True, True, True, [], 'sys.stdout', '', [], False, False, False, 5, 32)
 
     MockFramework.reset_mock()
     sys.argv = ["ips.py", "--debug"]
     ips.main()
-    MockFramework.assert_called_with(True, True, True, [], 'sys.stdout', '', [], False, None, None, 0, 0)
+    MockFramework.assert_called_with(True, True, True, [], 'sys.stdout', '', [], True, False, False, 0, 0)
 
     MockFramework.reset_mock()
     sys.argv = ["ips.py", "--verbose"]
     ips.main()
-    MockFramework.assert_called_with(True, True, True, [], 'sys.stdout', '', [], None, None, False, 0, 0)
+    MockFramework.assert_called_with(True, True, True, [], 'sys.stdout', '', [], False, False, True, 0, 0)
 
     MockFramework.reset_mock()
     sys.argv = ["ips.py", "--ftb"]
     ips.main()
-    MockFramework.assert_called_with(True, True, True, [], 'sys.stdout', '', [], None, False, None, 0, 0)
+    MockFramework.assert_called_with(True, True, True, [], 'sys.stdout', '', [], False, True, False, 0, 0)

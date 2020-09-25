@@ -982,11 +982,11 @@ def main(argv=None):
 
     # SIMYAN: add the options to the options parser
     parser = optparse.OptionParser(usage="%prog " + runopts + debugopts + fileopts + miscopts)
-    parser.add_option('-d', '--debug', dest='debug', action='store_false',
+    parser.add_option('-d', '--debug', dest='debug', default=False, action='store_true',
                       help='Turn on debugging')
-    parser.add_option('-v', '--verbose', dest='verbose_debug', action='store_false',
+    parser.add_option('-v', '--verbose', dest='verbose_debug', default=False, action='store_true',
                       help='Run IPS verbosely')
-    parser.add_option('-f', '--ftb', dest='ftb', action='store_false',
+    parser.add_option('-f', '--ftb', dest='ftb', default=False, action='store_true',
                       help='Turn on FTB capability')
     platform_default = ""
     try:
@@ -1018,13 +1018,13 @@ def main(argv=None):
                       type="int", help='Computer nodes')
     parser.add_option('-o', '--ppn', dest='cmd_ppn', default='0',
                       type="int", help='Computer processor per nodes')
-    parser.add_option('-t', '--create-runspace', dest='do_create_runspace', action='store_true',
+    parser.add_option('-t', '--create-runspace', dest='do_create_runspace', default=False, action='store_true',
                       help='Create the runspace')
-    parser.add_option('-s', '--run-setup', dest='do_run_setup', action='store_true',
+    parser.add_option('-s', '--run-setup', dest='do_run_setup', default=False, action='store_true',
                       help='Run the setup (init of the driver)')
-    parser.add_option('-r', '--run', dest='do_run', action='store_true',
+    parser.add_option('-r', '--run', dest='do_run', default=False, action='store_true',
                       help='Run')
-    parser.add_option('-a', '--all', dest='do_all', action='store_true',
+    parser.add_option('-a', '--all', dest='do_all', default=False, action='store_true',
                       help='Do all steps of the workflow')
 
     # SIMYAN: parse the options from command line
