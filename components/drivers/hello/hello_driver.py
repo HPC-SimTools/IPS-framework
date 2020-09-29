@@ -1,8 +1,9 @@
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 # Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 
-from  component import Component
+from component import Component
+
 
 class HelloDriver(Component):
     def __init__(self, services, config):
@@ -24,5 +25,6 @@ class HelloDriver(Component):
         self.services.call(worker_comp, 'step', 0.0)
         return
         print('made it out of the worker call')
+
     def finalize(self, timeStamp=0.0):
         return

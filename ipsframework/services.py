@@ -200,7 +200,7 @@ class ServicesProxy:
         try:
             if os.environ['IPS_TIMING'] == '1':
                 self.profile = True
-        except:
+        except Exception:
             pass
         ipsTiming.instrument_object_with_tau('services', self, exclude=['__init__'])
 
@@ -258,7 +258,7 @@ class ServicesProxy:
             else:
                 self.fwk.exception("Bad 'NODE_ALLOCATION_MODE' value %s" % pn_compconf)
                 raise Exception("Bad 'NODE_ALLOCATION_MODE' value %s")
-        except:
+        except Exception:
             if self.sim_conf['NODE_ALLOCATION_MODE'] == 'SHARED':
                 self.shared_nodes = True
             else:
@@ -269,7 +269,7 @@ class ServicesProxy:
         # ------------------
         try:
             self.ppn = int(conf['PROCS_PER_NODE'])
-        except:
+        except Exception:
             self.ppn = 0
 
         if self.sim_conf['SIMULATION_MODE'] == 'RESTART':
@@ -632,25 +632,25 @@ class ServicesProxy:
         task_ppn = self.ppn
         try:
             task_ppn = keywords['task_ppn']
-        except:
+        except Exception:
             pass
 
         block = True
         try:
             block = keywords['block']
-        except:
+        except Exception:
             pass
 
         tag = 'None'
         try:
             tag = keywords['tag']
-        except:
+        except Exception:
             pass
 
         try:
             whole_nodes = keywords['whole_nodes']
             # print ">>>> value of whole_nodes", whole_nodes
-        except:
+        except Exception:
             if self.shared_nodes:
                 whole_nodes = False
             else:
@@ -659,7 +659,7 @@ class ServicesProxy:
         try:
             whole_socks = keywords['whole_sockets']
             # print ">>>> value of whole_socks", whole_socks
-        except:
+        except Exception:
             if self.shared_nodes:
                 whole_socks = False
             else:
@@ -693,7 +693,7 @@ class ServicesProxy:
         if log_filename:
             try:
                 task_stdout = open(log_filename, 'w')
-            except:
+            except Exception:
                 self.exception('Error opening log file %s : using stdout', log_filename)
 
         task_stderr = subprocess.STDOUT
@@ -743,13 +743,13 @@ class ServicesProxy:
         task_ppn = self.ppn
         try:
             task_ppn = keywords['task_ppn']
-        except:
+        except Exception:
             pass
 
         block = True
         try:
             block = keywords['block']
-        except:
+        except Exception:
             pass
         wnodes = keywords['whole_nodes']
         wsocks = keywords['whole_sockets']
@@ -776,7 +776,7 @@ class ServicesProxy:
         if log_filename:
             try:
                 task_stdout = open(log_filename, 'w')
-            except:
+            except Exception:
                 self.exception('Error opening log file %s : using stdout', log_filename)
 
         cmd_lst = command.split(' ')
@@ -820,18 +820,18 @@ class ServicesProxy:
             task_ppn = self.ppn
             try:
                 task_ppn = task.keywords['task_ppn']
-            except:
+            except Exception:
                 pass
             try:
                 wnodes = task.keywords['whole_nodes']
-            except:
+            except Exception:
                 if self.shared_nodes:
                     wnodes = False
                 else:
                     wnodes = True
             try:
                 wsocks = task.keywords['whole_sockets']
-            except:
+            except Exception:
                 if self.shared_nodes:
                     wsocks = False
                 else:
@@ -877,7 +877,7 @@ class ServicesProxy:
             if log_filename:
                 try:
                     task_stdout = open(log_filename, 'w')
-                except:
+                except Exception:
                     self.exception('Error opening log file %s : using stdout', log_filename)
 
             task_stderr = subprocess.STDOUT
@@ -1377,7 +1377,7 @@ class ServicesProxy:
                 chkpt_dir = os.path.join(base_dir, obsolete_chkpt)
                 try:
                     shutil.rmtree(chkpt_dir)
-                except:
+                except Exception:
                     self.exception('Error removing directory %s', chkpt_dir)
                     raise
         self._send_monitor_event('IPS_CHECKPOINT_END',
@@ -2116,7 +2116,7 @@ class ServicesProxy:
             replay_sim_root = self.component_ref.REPLAY_SIM_ROOT
             replay_port = self.component_ref.REPLAY_PORT
             replay_config_file = self.component_ref.REPLAY_CONFIG_FILE
-        except:
+        except Exception:
             self.exception('Error retrieving replay configuration parameters')
             raise
         if not self.replay_conf:
@@ -2130,7 +2130,7 @@ class ServicesProxy:
         comp_conf = None
         try:
             comp_conf = ports[replay_port]['IMPLEMENTATION']
-        except:
+        except Exception:
             self.exception('Error accessing replay component for port %s',
                            replay_port)
             raise
@@ -2200,7 +2200,7 @@ class ServicesProxy:
                         shutil.copy(sym_link, f)
                 else:
                     shutil.copy(sym_link, f)
-            except:
+            except Exception:
                 self.exception('Error copying replay file from %s to %s',
                                sym_link, f)
                 raise
@@ -2275,7 +2275,7 @@ class ServicesProxy:
                         shutil.copy(replay_file, target_name)
                 else:
                     shutil.copy(replay_file, target_name)
-            except:
+            except Exception:
                 self.exception('Error copying replay file from %s to %s',
                                replay_file, target_name)
                 self._send_monitor_event('IPS_STAGE_REPLAY_PLASMA_STATE',
@@ -2353,7 +2353,7 @@ class ServicesProxy:
             else:
                 msg = args[0]
             self.logger.debug(msg)
-        except:
+        except Exception:
             self.error('Bad format in call to services.debug() ' + str(args))
 
     def info(self, *args):
@@ -2366,7 +2366,7 @@ class ServicesProxy:
             else:
                 msg = args[0]
             self.logger.info(msg)
-        except:
+        except Exception:
             self.error('Bad format in call to services.info() ' + str(args))
 
     def warning(self, *args):
@@ -2379,7 +2379,7 @@ class ServicesProxy:
             else:
                 msg = args[0]
             self.logger.warning(msg)
-        except:
+        except Exception:
             self.error('Bad format in call to services.warning() ' + str(args))
 
     def error(self, *args):
@@ -2392,7 +2392,7 @@ class ServicesProxy:
             else:
                 msg = args[0]
             self.logger.error(msg)
-        except:
+        except Exception:
             self.error('Bad format in call to services.error() ' + str(args))
 
     def exception(self, *args):
@@ -2405,7 +2405,7 @@ class ServicesProxy:
             else:
                 msg = args[0]
             self.logger.exception(msg)
-        except:
+        except Exception:
             self.error('Bad format in call to services.exception() ' + str(args))
 
     def critical(self, *args):
@@ -2418,7 +2418,7 @@ class ServicesProxy:
             else:
                 msg = args[0]
             self.logger.critical(msg)
-        except:
+        except Exception:
             self.error('Bad format in call to services.critical() ' + str(args))
 
     def create_task_pool(self, task_pool_name):

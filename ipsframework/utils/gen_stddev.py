@@ -24,7 +24,7 @@ import getopt
 PLOT = True
 try:
     from numpy import array
-except:
+except Exception:
     PLOT = False
 
 beg = 0
@@ -49,7 +49,7 @@ def get_task_times():
             else:
                 print("you did not follow directions")
                 sys.exit(2)
-    except:
+    except Exception:
         print("problems....")
         sys.exit(2)
 
@@ -57,7 +57,7 @@ def get_task_times():
     all_phys_stamps = set()
     try:
         page = urllib.request.urlopen(url)
-    except:
+    except Exception:
         print('Error retreiving URL ', url)
         raise
     parsed_page = BeautifulSoup.BeautifulSoup(page)

@@ -1,19 +1,19 @@
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 # Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 
-from  component import Component
-from  numpy import random
-import os
-import sys
+from component import Component
+from numpy import random
 import copy
 from time import asctime, sleep
+
 
 def myFun(*args):
     print(f"{asctime()} : Running myFUN {args}")
     sleep(int(args[0]))
     print(f"{asctime()} : Finished myFUN {args}")
     return 0
+
 
 class HelloWorker(Component):
     def __init__(self, services, config):
@@ -28,17 +28,16 @@ class HelloWorker(Component):
 
     def step(self, timeStamp=0.0):
         random.seed(1)
-        SIZE=10
+        SIZE = 10
         print('Hello from HelloWorker')
         duration = random.random_integers(1, high=20, size=SIZE)
-        tasks = {}
-        bin="/bin/sleep"
+        bin = "/bin/sleep"
         try:
             bin = self.CODE
         except Exception:
             pass
         cwd = self.services.get_working_dir()
-        pool = self.services.create_task_pool('pool')
+        self.services.create_task_pool('pool')
         for i in range(SIZE):
             task_env = {}
             task_env["FOO"] = f"task_{i}_FOO"
@@ -50,8 +49,8 @@ class HelloWorker(Component):
                                    cwd, copy.copy(self).myMethod, str(duration[i]),
                                    task_env=task_env)
             self.services.add_task('pool', 'function_' + str(i), 1,
-                               cwd, myFun, str(duration[i]),
-                               task_env=task_env)
+                                   cwd, myFun, str(duration[i]),
+                                   task_env=task_env)
 
         ret_val = self.services.submit_tasks('pool', use_dask=True, dask_nodes=1, dask_ppn=10)
         print('ret_val = ', ret_val)
@@ -64,7 +63,7 @@ class HelloWorker(Component):
         total_tasks = SIZE
         active_tasks = self.services.submit_tasks('pool', block=False)
         finished_tasks = 0
-        while (finished_tasks <  total_tasks) :
+        while (finished_tasks < total_tasks):
             exit_status = self.services.get_finished_tasks('pool')
             print(exit_status)
             finished_tasks += len(exit_status)

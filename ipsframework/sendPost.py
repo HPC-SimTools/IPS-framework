@@ -33,7 +33,7 @@ def sendEncodedMessage(url, msg):
             break
     try:
         f.close()
-    except:
+    except Exception:
         pass
 
 
@@ -44,14 +44,14 @@ if __name__ == "__main__":
     timeout = 3
     socket.setdefaulttimeout(timeout)
     error_f = open("sendpost.err", 'a')
-    l = '   '
-    while (l != ''):
+    line = '   '
+    while (line != ''):
         try:
-            l = sys.stdin.readline().rstrip('\n')
-            tokens = l.split(' ', 1)
+            line = sys.stdin.readline().rstrip('\n')
+            tokens = line.split(' ', 1)
             url = tokens[0]
             msg = tokens[1]
             sendEncodedMessage(url, msg)
-        except:
+        except Exception:
             traceback.print_exc(file=error_f)
     sys.exit(0)

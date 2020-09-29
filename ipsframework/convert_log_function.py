@@ -5,8 +5,8 @@
 from ipsframework.utils import HTML
 
 
-def parse_log_line(l):
-    tokens = l.split()
+def parse_log_line(line):
+    tokens = line.split()
 
     ret_fields = ['event_time', 'event_num', 'eventtype', 'code', 'state', 'walltime',
                   'phystimestamp', 'comment']
@@ -18,15 +18,15 @@ def parse_log_line(l):
     val_dict['event_num'] = tokens[0]
     val_dict['event_time'] = tokens[1]
 
-    start = {s: l.find(s) + len(s + "=") for s in field_names}
-    end = {s: l.find("'", start[s] + 1) if l[start[s]] == "'" else
-           l.find(" ", start[s] + 1) for s in field_names}
+    start = {s: line.find(s) + len(s + "=") for s in field_names}
+    end = {s: line.find("'", start[s] + 1) if line[start[s]] == "'" else
+           line.find(" ", start[s] + 1) for s in field_names}
     for k in end:
         if end[k] == -1:
-            end[k] = len(l)
-        if l[start[k]] == "'":
+            end[k] = len(line)
+        if line[start[k]] == "'":
             start[k] += 1
-    val_dict.update({s: l[start[s]:end[s]] for s in field_names})
+    val_dict.update({s: line[start[s]:end[s]] for s in field_names})
     ret_list = [val_dict[k].strip("'") for k in ret_fields]
 
     return ret_list
@@ -34,12 +34,12 @@ def parse_log_line(l):
 
 def convert_logdata_to_html(lines):
     if type(lines).__name__ == 'str':
-        lines = [l for l in lines.split('\n') if l != '']
+        lines = [line for line in lines.split('\n') if line != '']
     # lines.reverse()
     tokens = []
-    for l in lines:
-        if 'IPS_RESOURCE_ALLOC' not in l and 'IPS_START' not in l and 'IPS_END' not in l:
-            tmp = parse_log_line(l)
+    for line in lines:
+        if 'IPS_RESOURCE_ALLOC' not in line and 'IPS_START' not in line and 'IPS_END' not in line:
+            tmp = parse_log_line(line)
             tokens.append(tmp)
     header = ['Time', 'Sequence Num', 'Type', 'Code', 'State', 'Wall Time',
               'Physics Time', 'Comment']

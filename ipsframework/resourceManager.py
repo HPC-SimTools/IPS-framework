@@ -164,7 +164,7 @@ class ResourceManager:
                     self.fwk.warning("Platform specified  PROCS_PER_NODE is greater than batch job specification.")
                     self.fwk.warning("Will use batch job specification to launch tasks")
                     self.ppn = self.max_ppn
-            except:
+            except Exception:
                 # this stipulation doesn't make sense for explicitly named cores
                 pass
 
@@ -432,7 +432,7 @@ class ResourceManager:
                     self.alloc_cores += k
                     self.avail_cores -= k
                     self.active_tasks.update({task_id: (comp_id, nproc, k)})
-            except:
+            except Exception:
                 print("Available Nodes:")
                 for nm in self.avail_nodes:
                     n = self.nodes[nm]
@@ -487,7 +487,7 @@ class ResourceManager:
                     nodes.append(n)
                     if whole_cap >= nproc:
                         return True, nodes
-        except:
+        except Exception:
             self.fwk.exception("problem in RM.check_whole_node_cap")
             raise
         # check to see if it is possible to satify the request
@@ -531,7 +531,7 @@ class ResourceManager:
                 k += sk
                 if k >= nproc:
                     return True, nodes
-        except:
+        except Exception:
             self.fwk.exception("problem in RM.check_whole_sock_cap")
             raise
         # check to see if it is possible to satify the request
@@ -579,7 +579,7 @@ class ResourceManager:
                         nodes.append(n)
                 if k >= nproc:
                     return True, nodes
-        except:
+        except Exception:
             self.fwk.exception("problem in RM.check_core_cap")
             raise
         # check to see if it is possible to satify the request
@@ -671,7 +671,7 @@ class ResourceManager:
                         try:
                             self.avail_nodes.append(node)
                             self.nodes[node].is_available = 1
-                        except:
+                        except Exception:
                             self.add_nodes([node])
         except Exception as e:
             print(e)

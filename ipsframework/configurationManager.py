@@ -240,7 +240,7 @@ class ConfigurationManager:
             if node_alloc_mode not in ['EXCLUSIVE', 'SHARED']:
                 self.fwk.exception("bad value for NODE_ALLOCATION_MODE. expected 'EXCLUSIVE' or 'SHARED'.")
                 raise ValueError("bad value for NODE_ALLOCATION_MODE. expected 'EXCLUSIVE' or 'SHARED'.")
-        except:
+        except Exception:
             self.fwk.exception("missing value or bad type for NODE_ALLOCATION_MODE.  expected 'EXCLUSIVE' or 'SHARED'.")
             raise
 
@@ -250,7 +250,7 @@ class ConfigurationManager:
                 use_accurate_nodes = False
             else:
                 use_accurate_nodes = True
-        except:
+        except Exception:
             use_accurate_nodes = True
 
         try:
@@ -600,7 +600,7 @@ class ConfigurationManager:
             else:
                 self.fwk.exception("Bad 'NODE_ALLOCATION_MODE' value %s" % pn_simconf)
                 raise Exception("Bad 'NODE_ALLOCATION_MODE' value %s" % pn_simconf)
-        except:
+        except Exception:
             sim_data.sim_conf['NODE_ALLOCATION_MODE'] = self.platform_conf['NODE_ALLOCATION_MODE']
 
         if 'PLASMA_STATE_FILES' in list(sim_conf.keys()):
@@ -692,7 +692,7 @@ class ConfigurationManager:
         #    self.get_sim_parameter(sim_name,
         #                           'STATE_WORK_DIR')
         #    haveStateDir = True
-        # except:
+        # except Exception:
         #    haveStateDir = False
         # SIMYAN: removed from configurationManager
         # if haveStateDir:
@@ -1039,7 +1039,7 @@ in configuration file %s', config_file)
             p.join()
         try:
             os.remove(sim_data.log_pipe_name)
-        except:
+        except Exception:
             pass
         for comp_id in all_sim_components:
             self.comp_registry.removeEntry(comp_id)
@@ -1056,7 +1056,7 @@ in configuration file %s', config_file)
         try:
             for sim_name in list(self.sim_map.keys()):
                 self.terminate_sim(sim_name)
-        except:
+        except Exception:
             print('Encountered exception when terminating simulation')
             raise
         for k in list(self.sim_map.keys()):

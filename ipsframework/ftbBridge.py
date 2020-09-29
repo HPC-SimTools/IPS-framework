@@ -86,7 +86,7 @@ class FTBBridge(Component):
     def init(self, timestamp=0.0):
         try:
             self.libftb = cdll.LoadLibrary("libftb.so")
-        except:
+        except Exception:
             self.services.error("Unable to locate the FTB.")
             return
 

@@ -64,9 +64,9 @@ class TopicManager:
         """
         if len(self.listenerDirectory) > 0:
             self.eventList.append(theEvent)
-            l = len(self.eventList)
-            if l > self.maxPendingEvents:
-                self.maxPendingEvents = l
+            eventList_len = len(self.eventList)
+            if eventList_len > self.maxPendingEvents:
+                self.maxPendingEvents = eventList_len
         debug.output("TopicManager.sendEvent")
         self.printEventsAndListeners()
 

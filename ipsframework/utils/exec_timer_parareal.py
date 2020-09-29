@@ -15,7 +15,7 @@ PLOT = True
 try:
     import matplotlib.pyplot as plt
     from matplotlib.colors import LogNorm
-except:
+except Exception:
     PLOT = False
 
 
@@ -183,7 +183,7 @@ def get_task_times(url_list):
     for url in url_list:
         try:
             page = urllib.request.urlopen(url)
-        except:
+        except Exception:
             print('Error retreiving URL ', url)
             raise
         parsed_page = BeautifulSoup.BeautifulSoup(page)

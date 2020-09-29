@@ -5,8 +5,8 @@
 import sys
 
 
-def parse_log_line(l):
-    tokens = l.split()
+def parse_log_line(line):
+    tokens = line.split()
     # event_num = tokens[0]
     # e_time = tokens[1]
 
@@ -22,24 +22,24 @@ def parse_log_line(l):
     val_dict['event_num'] = tokens[0]
     val_dict['event_time'] = tokens[1]
 
-    start[fields[2]] = l.find(fields[2] + '=') + len(fields[2]) + 1
-    end[fields[2]] = l.find(fields[3] + '=') - 1
-    val_dict[fields[2]] = l[start[fields[2]]: end[fields[2]]]
+    start[fields[2]] = line.find(fields[2] + '=') + len(fields[2]) + 1
+    end[fields[2]] = line.find(fields[3] + '=') - 1
+    val_dict[fields[2]] = line[start[fields[2]]: end[fields[2]]]
 
     for i in range(3, len(fields) - 1):
         start[fields[i]] = end[fields[i - 1]] + len(fields[i]) + 2
-        end[fields[i]] = l.find(fields[i + 1] + '=', start[fields[i]]) - 1
-        val_dict[fields[i]] = l[start[fields[i]]: end[fields[i]]]
+        end[fields[i]] = line.find(fields[i + 1] + '=', start[fields[i]]) - 1
+        val_dict[fields[i]] = line[start[fields[i]]: end[fields[i]]]
 
     start['walltime'] = end['seqnum'] + 1 + len('walltime=')
-    end['walltime'] = l.find('\r\n', start['walltime'])
-    val_dict['walltime'] = l[start['walltime']: end['walltime']]
+    end['walltime'] = line.find('\r\n', start['walltime'])
+    val_dict['walltime'] = line[start['walltime']: end['walltime']]
 
     ret_list = [val_dict[k].strip("'") for k in ret_fields]
 
-    comment_start = l.find("comment=") + len("comment=")
-    comment_end = l.find("code=") - 1
-    comment = l[comment_start:comment_end]
+    comment_start = line.find("comment=") + len("comment=")
+    comment_end = line.find("code=") - 1
+    comment = line[comment_start:comment_end]
     comment = comment.strip("'")
 
     # code_start = comment_end + 1 + len("code=")
@@ -85,9 +85,9 @@ fname = sys.argv[1]
 lines = open(fname).readlines()
 lines.reverse()
 tokens = []
-for l in lines[1:-2]:
-    if 'IPS_RESOURCE_ALLOC' not in l:
-        tokens.append(parse_log_line(l))
+for line in lines[1:-2]:
+    if 'IPS_RESOURCE_ALLOC' not in line:
+        tokens.append(parse_log_line(line))
         # print tokens
 page = """<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd" >
 <head>

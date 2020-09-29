@@ -1,16 +1,17 @@
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 # Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 import unittest
+
 
 class ParameterizedTestCase(unittest.TestCase):
     """ TestCase classes that want to be parametrized should
         inherit from this class.
     """
     def __init__(self, methodName='runTest', param=None):
-#                do_create_runspace=True, do_run_setup=True, do_run=True,
-#                create_runspace_done=True, run_setup_done=True, run_done=True,
-#                cfgFile_list=None, log_file=None, platform_filename=None):
+        # do_create_runspace=True, do_run_setup=True, do_run=True,
+        # create_runspace_done=True, run_setup_done=True, run_done=True,
+        # cfgFile_list=None, log_file=None, platform_filename=None):
         super(ParameterizedTestCase, self).__init__(methodName)
         self.param = param
 #       self.do_create_runspace = do_create_runspace
@@ -34,4 +35,3 @@ class ParameterizedTestCase(unittest.TestCase):
         for name in testnames:
             suite.addTest(testcase_klass(name, param=param))
         return suite
-
