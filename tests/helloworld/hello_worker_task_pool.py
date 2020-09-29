@@ -1,9 +1,10 @@
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 # Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 
 from ipsframework.component import Component
 from numpy import random
+
 
 class HelloWorker(Component):
     def __init__(self, services, config):
@@ -18,17 +19,17 @@ class HelloWorker(Component):
         print('Hello from HelloWorker')
         total_tasks = 10
         duration = random.random_integers(1, high=3, size=total_tasks)
-        tasks = {}
-        bin = '/bin/sleep' 
+
+        bin = '/bin/sleep'
         cwd = self.services.get_working_dir()
-        pool = self.services.create_task_pool('pool')
+        self.services.create_task_pool('pool')
         for i in range(total_tasks):
             self.services.add_task('pool', 'task_'+str(i), 1, cwd, bin, str(duration[i]))
         ret_val = self.services.submit_tasks('pool')
         print('ret_val = ', ret_val)
         exit_status = self.services.get_finished_tasks('pool')
         print(exit_status)
-        
+
         print("====== Non Blocking ")
         for i in range(total_tasks):
             self.services.add_task('pool', 'Nonblock_task_'+str(i), 1, cwd, bin, str(duration[i]))
@@ -71,7 +72,6 @@ class HelloWorker(Component):
                 active_tasks += new_active_tasks
                 print('Active = ', active_tasks, 'Finished = ', finished_tasks)
         """
-    
+
     def finalize(self, timeStamp=0.0):
         return
-    

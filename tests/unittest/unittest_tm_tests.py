@@ -45,14 +45,14 @@ class faux_fwk:
     def debug(self, *args):
         try:
             self.current_logger.debug(*args)
-        except:
+        except Exception:
             print('error in Framework.debug', args)
             raise
 
     def warning(self, *args):
         try:
             self.current_logger.warning(*args)
-        except:
+        except Exception:
             print('error in Framework.warning', args)
             raise
 

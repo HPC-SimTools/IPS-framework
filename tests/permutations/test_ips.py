@@ -1,28 +1,15 @@
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 # Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
-#-------------------------------------------------------------------------------
-#from processing import Queue
-import gc
-import pprint
+# -------------------------------------------------------------------------------
 import sys
-import socket
-import getopt
-import os
-import traceback
-import time
 import unittest
-import logging
 from test_permutations import test_permutations
 from test_parameterized_cases import ParameterizedTestCase
 
 sys.path.append('..')
-from frameworkpath import *
-sys.path.append(fsrc)
 sys.path.append('../components/drivers')
 sys.path.append('../components/workers')
 
-from ips import Framework
-from configobj import ConfigObj
 
 """
     This will be the test harness for the various comprehensive tests.
@@ -30,10 +17,11 @@ from configobj import ConfigObj
     * develop a way to set up different test scenarios (input files and expected results) along with descriptions
 """
 
+
 class testIPS(unittest.TestCase):
 
     class Parameterization(object):
-        """ Structure to hold the parameterization of 
+        """ Structure to hold the parameterization of
             a Framework object
         """
         def __init__(self):
@@ -48,7 +36,8 @@ class testIPS(unittest.TestCase):
             self.platform_filename = None
 
     def printUsageMessage(self):
-        print('Usage: ips [--create-runspace | --run-setup | --run]+ --simulation=SIM_FILE_NAME --platform=PLATFORM_FILE_NAME --log=LOG_FILE_NAME [--debug | --ftb]')
+        print('Usage: ips [--create-runspace | --run-setup | --run]+ --simulation=SIM_FILE_NAME '
+              '--platform=PLATFORM_FILE_NAME --log=LOG_FILE_NAME [--debug | --ftb]')
 
     """
     def test_single_permutation(self):
@@ -78,23 +67,22 @@ class testIPS(unittest.TestCase):
 
 #   """
     def test_basic_serial1_permutations(self):
-        print() 
+        print()
         cfgFile_list = []
         cfgFile_list.append('basic_serial1.ips')
 
-
         log_file = 'log_test_basic_serial1.log'
-        #log_file = open(os.path.abspath('log_test_basic_serial1_on_iter.log'), 'w')
-        #log_file = 'sys.stdout'
+        # log_file = open(os.path.abspath('log_test_basic_serial1_on_iter.log'), 'w')
+        # log_file = 'sys.stdout'
 
         # create framework with config file
         failure_count = 0
         true_or_false = [True, False]
-        for do_create_runspace in true_or_false: 
+        for do_create_runspace in true_or_false:
             for create_runspace_done in true_or_false:
-                for do_run_setup in true_or_false: 
+                for do_run_setup in true_or_false:
                     for run_setup_done in true_or_false:
-                        for do_run in true_or_false: 
+                        for do_run in true_or_false:
                             for run_done in true_or_false:
                                 param = self.Parameterization()
                                 param.do_create_runspace = do_create_runspace
@@ -106,9 +94,9 @@ class testIPS(unittest.TestCase):
                                 param.cfgFile_list = cfgFile_list
                                 param.log_file = log_file
                                 try:
-                                   param.platform_filename = platform_filename
-                                except:
-                                   print("Getting platform file from build")
+                                    param.platform_filename = self.platform_filename
+                                except Exception:
+                                    print("Getting platform file from build")
                                 suite = unittest.TestSuite()
                                 suite.addTest(ParameterizedTestCase.parametrize(test_permutations, param=param))
                                 res = unittest.TextTestRunner(verbosity=2).run(suite)

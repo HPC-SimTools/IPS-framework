@@ -1,17 +1,11 @@
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 # Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
-#-------------------------------------------------------------------------------
-import sys
-import os
-import time
-sys.path.append('../..')
-sys.path.append('..')
-from frameworkpath import *
-sys.path.append(fsrc)
-from component import Component
+# -------------------------------------------------------------------------------
+from ipsframework.component import Component
+
 
 class MCMDDriver(Component):
-#class mcmd_driver(Component):
+    # class mcmd_driver(Component):
     def __init__(self, services, config):
         Component.__init__(self, services, config)
 
@@ -25,17 +19,17 @@ class MCMDDriver(Component):
         return
 
     def step(self, timestamp):
-        #pid = self.services.launch_task(1, os.getcwd(), '/bin/ls', '-a', '-l')
-        #self.services.stage_input_files(self.INPUT_FILES)
-        #self.services.update_plasma_state()
-        #self.services.stage_output_files(timestamp, self.OUTPUT_FILES)
+        # pid = self.services.launch_task(1, os.getcwd(), '/bin/ls', '-a', '-l')
+        # self.services.stage_input_files(self.INPUT_FILES)
+        # self.services.update_plasma_state()
+        # self.services.stage_output_files(timestamp, self.OUTPUT_FILES)
         self.services.log('Stepping')
         p = self.services.get_port('WORKER')
         retval = self.services.call(p, 'step', '01.00')
         print('retval of worker step: ', retval)
 
         # Need to fix timeloop invocation....
-        #self.services.get_timeloop()
+        # self.services.get_timeloop()
 #        eventBody = {}
 #        eventBody["bond"] = "007"
 #        self.services.publish("hello world", "here i come", eventBody)

@@ -1,12 +1,9 @@
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 # Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
-#-------------------------------------------------------------------------------
-import sys
+# -------------------------------------------------------------------------------
+from ipsframework.component import Component
 import os
-sys.path.append('../..')
-from frameworkpath import *
-sys.path.append(fsrc)
-from component import Component
+
 
 class MCMDWorker(Component):
     def __init__(self, services, config):
@@ -16,12 +13,12 @@ class MCMDWorker(Component):
         print(self.__class__.__name__, ':', 'init() called')
         print('timestamp = ', timestamp)
         self.services.log('Initing Worker')
-        return [self.__class__.__name__+ ':'+ str(timestamp), 234]
+        return [self.__class__.__name__ + ':' + str(timestamp), 234]
 
     def step(self, timestamp):
         self.services.log('Stepping Worker')
-        pid = self.services.launch_task(1, os.getcwd(), '/bin/ls', '-a', '-l')
-        return #self.services.wait_task(pid)
+        self.services.launch_task(1, os.getcwd(), '/bin/ls', '-a', '-l')
+        return  # self.services.wait_task(pid)
 
     def finalize(self, timestamp):
         self.services.log('Finalizing Worker')
