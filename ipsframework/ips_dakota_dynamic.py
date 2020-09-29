@@ -216,7 +216,7 @@ IPS_ROOT/bin or IPS_ROOT/framework/src')
         # print '%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%', sock_address
 
         fd = open(new_dakota_config, 'w')
-        [fd.write('%s\n' % (l)) for l in self.dakota_conf]
+        [fd.write('%s\n' % (line)) for line in self.dakota_conf]
         fd.close()
 
         ips = which('ips.py', alt_paths)

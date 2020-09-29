@@ -506,11 +506,11 @@ if __name__ == '__main__':
     f.write(str(t) + '<p>\n')
 
     print('-' * 79)
-    l = List(['aaa', 'bbb', 'ccc'])
-    f.write(str(l) + '<p>\n')
-    l.ordered = True
-    f.write(str(l) + '<p>\n')
-    l.start = 10
-    f.write(str(l) + '<p>\n')
+    li = List(['aaa', 'bbb', 'ccc'])
+    f.write(str(li) + '<p>\n')
+    li.ordered = True
+    f.write(str(li) + '<p>\n')
+    li.start = 10
+    f.write(str(li) + '<p>\n')
 
     f.close()

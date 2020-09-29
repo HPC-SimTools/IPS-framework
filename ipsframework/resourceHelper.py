@@ -58,8 +58,8 @@ def get_qstat_jobinfo():
             num_nodes = len(node_list)
             return num_nodes, ppn, True, node_list
         else:
-            width = [l.strip() for l in out if 'Resource_List.mppwidth' in l]
-            mpp_npp = [l.strip() for l in out if 'Resource_List.mppnppn' in l]
+            width = [x.strip() for x in out if 'Resource_List.mppwidth' in x]
+            mpp_npp = [x.strip() for x in out if 'Resource_List.mppnppn' in x]
             num_procs = int(width[0].split('=')[1])
             if len(mpp_npp) > 0:
                 ppn = int(mpp_npp[0].split('=')[1])
@@ -88,14 +88,14 @@ def get_qstat_jobinfo2():
         found_start = False
         found_end = False
         lines = ''
-        for l in out:
-            if 'exec_host' in l:
+        for line in out:
+            if 'exec_host' in line:
                 found_start = True
-                lines += l.strip()
-            elif 'Hold_Types' in l:
+                lines += line.strip()
+            elif 'Hold_Types' in line:
                 found_end = True
             elif found_start and not found_end:
-                lines += l.strip()
+                lines += line.strip()
 
         # print lines
         lines = lines.split('=')[1].strip()
@@ -140,7 +140,7 @@ def get_checkjob_info():
     # run checkjob $PBS_JOBID
     try:
         proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, shell=True)
-        lines = [l.strip() for l in proc.stdout.readlines()]
+        lines = [line.strip() for line in proc.stdout.readlines()]
         # print '============== lines ======================'
         # for l in lines : print l
         # print '============== lines ======================'

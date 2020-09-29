@@ -79,7 +79,7 @@ def plot_exec_time(plot_data, used_procs, used_proc_map, task_procs):
     grid(True)
     plot([sorted_proc_times[0], sorted_proc_times[-1]], [average_util, average_util],
          linewidth=2, label='Average')
-    l = plt.legend()
+    plt.legend()
 
     fig = figure()
     comp_names = list(used_proc_map.keys())
@@ -143,17 +143,17 @@ def plot_exec_time(plot_data, used_procs, used_proc_map, task_procs):
     lines = lgd.get_lines()
     lgd_texts = lgd.get_texts()
     for i in range(len(lines)):
-        l = lines[i]
+        line = lines[i]
         comp_name = lgd_texts[i]
         fill_color = comp_color[comp_name.get_text()]
-        l.set_linestyle('')
-        l.set_marker('s')
-        l.set_markersize(12)
-        l.set_markevery(2)
-        l.set_markerfacecolor(fill_color)
-        l.set_alpha(0.5)
-        l.set_markeredgecolor('k')
-        l.set_markeredgewidth(1.5)
+        line.set_linestyle('')
+        line.set_marker('s')
+        line.set_markersize(12)
+        line.set_markevery(2)
+        line.set_markerfacecolor(fill_color)
+        line.set_alpha(0.5)
+        line.set_markeredgecolor('k')
+        line.set_markeredgewidth(1.5)
     plt.xlabel('Wall Time (Sec.)')
     plt.ylabel('Cores Used')
     show()
