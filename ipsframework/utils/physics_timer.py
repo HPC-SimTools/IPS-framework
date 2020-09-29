@@ -11,7 +11,7 @@ import urllib.parse
 PLOT = True
 try:
     from pylab import figure, xlabel, ylabel, title, grid, plot, show, legend
-except:
+except Exception:
     PLOT = False
 
 
@@ -34,7 +34,7 @@ def get_task_times(url_list):
     for url in url_list:
         try:
             page = urllib.request.urlopen(url)
-        except:
+        except Exception:
             print('Error retreiving URL ', url)
             raise
         parsed_page = BeautifulSoup.BeautifulSoup(page)

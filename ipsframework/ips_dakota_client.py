@@ -127,7 +127,7 @@ def main(argv=None):
     try:
         ips_executer = IPSDakotaClient(config_file, log_file_name, platform_filename, debug, in_file, out_file)
         ips_executer.run()
-    except:
+    except Exception:
         raise
     return 0
 

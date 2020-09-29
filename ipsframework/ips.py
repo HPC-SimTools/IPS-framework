@@ -376,7 +376,7 @@ class Framework:
             else:
                 msg = args[0]
             self.logger.debug(msg)
-        except:
+        except Exception:
             self.error('Bad format in call to fwk.debug() ' + str(args))
 
     def info(self, *args):
@@ -389,7 +389,7 @@ class Framework:
             else:
                 msg = args[0]
             self.logger.info(msg)
-        except:
+        except Exception:
             self.error('Bad format in call to fwk.info() ' + str(args))
 
     def warning(self, *args):
@@ -402,7 +402,7 @@ class Framework:
             else:
                 msg = args[0]
             self.logger.warning(msg)
-        except:
+        except Exception:
             self.error('Bad format in call to fwk.warning() ' + str(args))
 
     def error(self, *args):
@@ -415,7 +415,7 @@ class Framework:
             else:
                 msg = args[0]
             self.logger.error(msg)
-        except:
+        except Exception:
             self.error('Bad format in call to fwk.error() ' + str(args))
 
     def exception(self, *args):
@@ -428,7 +428,7 @@ class Framework:
             else:
                 msg = args[0]
             self.logger.exception(msg)
-        except:
+        except Exception:
             self.error('Bad format in call to fwk.exception() ' + str(args))
 
     def critical(self, *args):
@@ -437,7 +437,7 @@ class Framework:
         """
         try:
             self.logger.critical(*args)
-        except:
+        except Exception:
             print('error in Framework.critical', args)
             raise
 
@@ -668,7 +668,7 @@ class Framework:
             # get new messages
             try:
                 msg = self.in_queue.get()
-            except:
+            except Exception:
                 continue
             if (self.verbose_debug):
                 self.debug("Framework received Message : %s", str(msg.__dict__))
@@ -1223,7 +1223,7 @@ def main(argv=None):
                             options.cmd_nodes, options.cmd_ppn)
             fwk.run()
             ipsTiming.dumpAll('framework')
-    except:
+    except Exception:
         raise
 
     # SIMYAN: post running cleanup of working files, so there aren't

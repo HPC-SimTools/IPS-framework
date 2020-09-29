@@ -51,7 +51,7 @@ def create_script(ips_path, cfgFile_list, platform_file,
         except IOError:
             print('Error opening config file: ', cfg_file)
             raise
-        except:
+        except Exception:
             print('Error parsing config file: ', cfg_file)
             raise
         conf.append(cfg)
@@ -70,7 +70,7 @@ def create_script(ips_path, cfgFile_list, platform_file,
         if (errno != 17):
             print('Error creating directory ', sim_root)
             raise
-    except:
+    except Exception:
         print('Error creating directory ', sim_root)
         raise
 

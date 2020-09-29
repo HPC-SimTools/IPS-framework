@@ -103,7 +103,7 @@ def get_task_times(url):
     all_comp_names = []
     try:
         page = urllib.request.urlopen(url)
-    except:
+    except Exception:
         print('Error retrieving URL ', url)
         raise
     parsed_page = BeautifulSoup.BeautifulSoup(page)
@@ -169,7 +169,7 @@ def get_task_times(url):
                 try:
                     aprun = comment_fields.index('aprun')
                     nproc = int(comment_fields[aprun + 2])
-                except:
+                except Exception:
                     raise
             try:
                 new_task = task_map[task_id]

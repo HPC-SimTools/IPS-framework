@@ -329,7 +329,7 @@ class PortalBridge(Component):
             # if file exist, look for its checksum in the database
             try:
                 checksum = md5(file)
-            except:
+            except Exception:
                 print(("checksum could not find file:", file))
                 raise
 

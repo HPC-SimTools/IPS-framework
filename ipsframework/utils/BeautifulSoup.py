@@ -1893,7 +1893,7 @@ class UnicodeDammit:
             else:
                 sniffed_xml_encoding = 'ascii'
                 pass
-        except:
+        except Exception:
             xml_encoding_match = None
         xml_encoding_re = '^<\?.*encoding=[\'"](.*?)[\'"].*\?>'.encode()
         xml_encoding_match = re.compile(xml_encoding_re).match(xml_data)

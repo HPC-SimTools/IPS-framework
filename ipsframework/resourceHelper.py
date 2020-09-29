@@ -18,13 +18,13 @@ def get_qstat_jobinfo():
     """
     try:
         job_id = os.environ['PBS_JOBID']
-    except:
+    except Exception:
         raise
 
     shell_host = None
     try:
         shell_host = os.environ['HOST']
-    except:
+    except Exception:
         pass
 
     command = 'qstat -f %s' % (job_id)
@@ -77,7 +77,7 @@ def get_qstat_jobinfo2():
     """
     try:
         job_id = os.environ['PBS_JOBID']
-    except:
+    except Exception:
         raise
 
     command = 'qstat -f %s' % (job_id)
@@ -260,7 +260,7 @@ def get_checkjob_info_old():
 
     try:
         os.environ['PBS_JOBID']
-    except:
+    except Exception:
         print('problems getting job id')
         raise
 
@@ -275,7 +275,7 @@ def get_checkjob_info_old():
                 break
         print 'hostname prefix is %s' % n
         frmt_str = n + "%0" + str(len(hname[k:])) + "d"
-    except:
+    except Exception:
         print 'problems getting hostname'
         raise
     """
@@ -296,7 +296,7 @@ def get_checkjob_info_old():
         for line in lines[start:end]:
             if line.strip() != "":
                 data_lines.append(line.strip())
-    except:
+    except Exception:
         print('problems getting checkjob output')
         raise
 
@@ -331,7 +331,7 @@ def get_checkjob_info_old():
                         b, e = be.split("-")
                         # ndata.extend([(frmt_str % k, ppn) for k in range(int(b), int(e) + 1)])
                         ndata.extend([(str(k), ppn) for k in range(int(b), int(e) + 1)])
-                    except:
+                    except Exception:
                         # ndata.append((frmt_str % int(be), ppn))
                         ndata.append((be, ppn))
         else:
@@ -349,7 +349,7 @@ def get_checkjob_info_old():
                     max_p = p
                 # ndata.append((frmt_str % int(m), p))
                 ndata.append((m, p))
-    except:
+    except Exception:
         raise
 
     nodes = len(ndata)
@@ -369,22 +369,22 @@ def get_slurm_info():
     mixed_nodes = False
     try:
         nodelist = os.environ['SLURM_NODELIST']
-    except:
+    except Exception:
         raise
     try:
         ppn = os.environ['SLURM_TASKS_PER_NODE']
         ppn = int(ppn.split("(")[0])
-    except:
+    except Exception:
         try:
             ppn = os.environ['SLURM_JOB_TASKS_PER_NODE']
             ppn = int(ppn.split("(")[0])
-        except:
+        except Exception:
             # print "can't find ppn"
             raise
     max_p = ppn
     try:
         nproc = int(os.environ['SLURM_NPROC'])
-    except:
+    except Exception:
         # need to set later
         nproc = 0
 
@@ -424,7 +424,7 @@ def get_slurm_info():
     #     else:
     #         nodes.append((nodelist, ppn))
     #
-    # except:
+    # except Exception:
     #     # print "problems parsing slurm_nodelist"
     #     raise
 
@@ -463,11 +463,11 @@ def get_pbs_info():
         max_p = max(node_dict.values())
         mixed_nodes = (max_p != min(node_dict.values()))
         return len(listOfNodes), max_p, mixed_nodes, listOfNodes
-    except:
+    except Exception:
         try:
             node_count = int(os.environ['PBS_NNODES'])
             return node_count, 0, False, []
-        except:
+        except Exception:
             raise
 
 
@@ -575,11 +575,11 @@ def getResourceList(services, host, ftb, partial_nodes=False):
         try:
             num_nodes, ppn, mixed_nodes, listOfNodes = get_checkjob_info()
             accurateNodes = True
-        except:
+        except Exception:
             try:
                 num_nodes, ppn, mixed_nodes, listOfNodes = get_qstat_jobinfo()
                 accurateNodes = False
-            except:
+            except Exception:
                 try:
                     num_nodes, ppn, mixed_nodes, listOfNodes = get_pbs_info()
                     if ppn == 0:
@@ -589,15 +589,15 @@ def getResourceList(services, host, ftb, partial_nodes=False):
                             listOfNodes.append(("dummynode%d" % n, ppn))
                     else:
                         accurateNodes = True
-                except:
+                except Exception:
                     try:
                         num_nodes, ppn, mixed_nodes, listOfNodes = get_slurm_info()
                         accurateNodes = True
-                    except:
+                    except Exception:
                         try:
                             num_nodes, ppn, mixed_nodes, listOfNodes = manual_detection(services)
                             accurateNodes = False
-                        except:
+                        except Exception:
                             print("*** NO DETECTION MECHANISM WORKS ***")
                             raise
     # detect topology

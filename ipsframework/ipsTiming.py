@@ -78,7 +78,7 @@ class TauWrap:
             start(self.timer)
             try:
                 res = func(*arg, **keywords)
-            except:
+            except Exception:
                 stop(self.timer)
 #                dumpAll()
                 raise
@@ -102,7 +102,7 @@ def weave_tau_timer(self, target):
         start(timer)
         try:
             ret_val = target(self, *args, **kwargs)
-        except:
+        except Exception:
             stop(timer)
             raise
         stop(timer)

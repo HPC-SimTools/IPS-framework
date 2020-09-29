@@ -104,7 +104,7 @@ def copyFiles(src_dir, src_file_list, target_dir, prefix='', keep_old=False):
             # print 'src_file =', src_file
             # print 'target_file =', target_file
             shutil.copy(src_file, target_file)
-        except:
+        except Exception:
             raise
 
 

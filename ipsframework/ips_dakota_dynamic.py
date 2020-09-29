@@ -62,7 +62,7 @@ class DakotaDynamic:
         """
         try:
             self.dakota_conf = [t.strip() for t in open(self.dakota_cfg).readlines()]
-        except:
+        except Exception:
             raise
 
         """
@@ -202,7 +202,7 @@ IPS_ROOT/bin or IPS_ROOT/framework/src')
             if k not in list(self.master_conf.keys()):
                 try:
                     list(v.keys())
-                except:
+                except Exception:
                     self.master_conf[k] = v
 
         self.master_conf.filename = os.path.join(sim_root, 'dakota_bridge_%d.conf' % (os.getpid()))
@@ -346,7 +346,7 @@ def main(argv=None):
     try:
         sweep = DakotaDynamic(dakota_cfg, log_file_name, platform_filename, debug, ips_config_file, restart_file)
         sweep.run()
-    except:
+    except Exception:
         raise
     return 0
 

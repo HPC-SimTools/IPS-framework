@@ -120,7 +120,7 @@ class DataManager:
             log_fullpath = os.path.join(component_work_dir, log_file)
             try:
                 merge_stdout = open(log_fullpath, 'w')
-            except:
+            except Exception:
                 self.fwk.exception('Error opening log file %s : using stdout',
                                    log_fullpath)
 

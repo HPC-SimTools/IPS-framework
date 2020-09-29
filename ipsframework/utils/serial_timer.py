@@ -15,7 +15,7 @@ PLOT_MULTIPLE_INSTANCES = False   # Separate concurrent instances of the same co
 PLOT_END_EDGE = False             # Plot an edge whenever a task finishes
 try:
     from pylab import figure, vlines, xlabel, ylabel, title, grid, plot, plt, show
-except:
+except Exception:
     PLOT = False
 
 
@@ -172,7 +172,7 @@ def get_task_times(url_list):
     for url in url_list:
         try:
             page = urllib.request.urlopen(url)
-        except:
+        except Exception:
             print('Error retreiving URL ', url)
             raise
         parsed_page = BeautifulSoup.BeautifulSoup(page)
@@ -206,7 +206,7 @@ def get_task_times(url_list):
                     new_task.end_time = float(wall_time)
                 try:
                     task_end_map[wall_time].append(task_id)
-                except:
+                except Exception:
                     task_end_map[wall_time] = [task_id]
                 # print phys_stamp, comp_task, exec_time
             elif (field_values[2] in ['IPS_LAUNCH_TASK_POOL', 'IPS_LAUNCH_TASK']):
@@ -226,7 +226,7 @@ def get_task_times(url_list):
                     try:
                         aprun = comment_fields.index('aprun')
                         nproc = int(comment_fields[aprun + 2])
-                    except:
+                    except Exception:
                         raise
                 try:
                     new_task = task_map[task_id]
@@ -243,7 +243,7 @@ def get_task_times(url_list):
                     new_task.phys_time = phys_stamp
                 try:
                     task_start_map[wall_time].append(task_id)
-                except:
+                except Exception:
                     task_start_map[wall_time] = [task_id]
                 if comp not in all_comp_names:
                     all_comp_names.append(comp)

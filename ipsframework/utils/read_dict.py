@@ -18,7 +18,7 @@ def read_dict(conf_dict={}, filename="SWIM_config"):
             line = config_file.readline().strip()
         else:
             line = ""
-    except:
+    except Exception:
         message = "Unable to open config file " + filename
         publish_event(message, topic=FSP_log, action="halt_run")  # noqa: F821
         print(message)

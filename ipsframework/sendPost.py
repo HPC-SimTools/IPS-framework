@@ -33,7 +33,7 @@ def sendEncodedMessage(url, msg):
             break
     try:
         f.close()
-    except:
+    except Exception:
         pass
 
 
@@ -52,6 +52,6 @@ if __name__ == "__main__":
             url = tokens[0]
             msg = tokens[1]
             sendEncodedMessage(url, msg)
-        except:
+        except Exception:
             traceback.print_exc(file=error_f)
     sys.exit(0)

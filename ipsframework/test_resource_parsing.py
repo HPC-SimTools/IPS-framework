@@ -23,7 +23,7 @@ def test_get_checkjob_info():
         print('get_checkjob_info yields {} nodes and {} ppn'.format(n, ppn))
         for name, p in lon:
             print('\t%s: %d' % (name, p))
-    except:
+    except Exception:
         print('get_checkjob_info does not work on this machine')
         raise
 
@@ -35,7 +35,7 @@ def test_get_qstat_jobinfo():
         print('get_qstat_jobinfo yields %d nodes and %d ppn ' % (n, ppn))
         for name, p in lon:
             print('\t%s: %d' % (name, p))
-    except:
+    except Exception:
         print('get_qstat_jobinfo does not work on this machine')
         raise
 
@@ -47,7 +47,7 @@ def test_get_qstat_jobinfo2():
         print('get_qstat_jobinfo2 yields %d nodes and %d ppn ' % (n, ppn))
         for name, l in lon:
             print('\t%s: ' % name, l)
-    except:
+    except Exception:
         print('get_qstat_jobinfo2 does not work on this machine')
         raise
 
@@ -60,7 +60,7 @@ def test_get_pbs_info():
         for name, p in lon:
             print('\t%s: %d' % (name, p))
 
-    except:
+    except Exception:
         print('get_pbs_info does not work on this machine')
         raise
 
@@ -73,7 +73,7 @@ def test_get_slurm_info():
         for name, p in lon:
             print('\t%s: %d' % (name, p))
 
-    except:
+    except Exception:
         print('get_slurm_info does not work on this machine')
         raise
 
@@ -84,31 +84,31 @@ if __name__ == "__main__":
     try:
         test_get_checkjob_info()
         recommendations.append('checkjob')
-    except:
+    except Exception:
         pass
     print("\n\n")
     try:
         test_get_qstat_jobinfo()
         recommendations.append('qstat')
-    except:
+    except Exception:
         pass
     print("\n\n")
     try:
         test_get_qstat_jobinfo2()
         recommendations.append('qstat2')
-    except:
+    except Exception:
         pass
     print("\n\n")
     try:
         test_get_pbs_info()
         recommendations.append('pbs')
-    except:
+    except Exception:
         pass
     print("\n\n")
     try:
         test_get_slurm_info()
         recommendations.append('slurm')
-    except:
+    except Exception:
         pass
     print("\n\n")
     print("Recommended approaches:", recommendations)
