@@ -319,18 +319,17 @@ class TaskManager:
         """
         Construct task launch command to be executed by the component.
 
-          *nproc* - number of processes to use
-          *binary* - binary to launch
-          *cmd_args* - additional command line arguments for the binary
-          *working_dir* - full path to where the executable will be launched
-          *ppn* - processes per node value to use
-          *max_ppn* - maximum possible ppn for this allocation
-          *nodes* - comma separated list of node ids
-          *accurateNodes* - if ``True``, launch on nodes in *nodes*, otherwise the parallel launcher
-               determines the process placement
-          *partial_nodes* - if ``True`` and *accurateNodes* and *task_launch_cmd* == 'mpirun',
+         * nproc - number of processes to use
+         * binary - binary to launch
+         * cmd_args - additional command line arguments for the binary
+         * working_dir - full path to where the executable will be launched
+         * ppn - processes per node value to use
+         * max_ppn - maximum possible ppn for this allocation
+         * nodes - comma separated list of node ids
+         * accurateNodes - if ``True``, launch on nodes in *nodes*, otherwise the parallel launcher determines the process placement
+         * partial_nodes - if ``True`` and *accurateNodes* and *task_launch_cmd* == 'mpirun',
                a host file is created specifying the exact placement of processes on cores.
-          *core_list* - used for creating host file with process to core mappings
+         * core_list - used for creating host file with process to core mappings
         """
         # set up launch command
         # print 'build_launch_cmd(', nproc, binary, cmd_args, ppn, max_ppn, nodes, accurateNodes, partial_nodes,')'

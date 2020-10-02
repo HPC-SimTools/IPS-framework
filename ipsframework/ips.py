@@ -49,7 +49,7 @@
 
    :Authors: Wael R. Elwasif, Samantha Foley, Aniruddha G. Shet
    :Organization: Center for Simulation of RF Wave Interactions
-                  with Magnetohydrodynamics (`CSWIM <http://www.cswim.org>`_)
+                  with Magnetohydrodynamics
 
 """
 import sys

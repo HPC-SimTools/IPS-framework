@@ -18,7 +18,6 @@ Contents:
    user_guides/user_guides
    component_guides/component_guides
    developer_guides/developer_guides
-   portal_guides/portal_guides
 
    the_code
 

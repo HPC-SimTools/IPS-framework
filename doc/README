@@ -3,7 +3,7 @@ build them into webpages, latex, and text files.
 
 At the moment, in order to view them in a pretty and composed fashion you will 
 need to build them yourself.  This will change once we have stabilized the 
-documentation such that we can share them (probably at cswim.org).
+documentation such that we can share them.
 
 1) Obtain sphinx - http://sphinx.pocoo.org/
    * What is sphinx?  It is a python package that helps you produce nice 
