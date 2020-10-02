@@ -7,13 +7,11 @@ This document will guide you through the process of running an IPS simulation an
 Obtaining, Dependencies, Platforms
 ======================================
 
-The IPS code is currently located in the SWIM project's Subversion (SVN) repository.  In order to checkout a copy, you must have SVN installed on the machine you will be using and be given permission to check out the IPS from the SWIM project.  (SVN is installed on the machines used in the examples below.)  See the SWIM_ project's website for details and instructions on how to sign up.
+The IPS code is currently located in the SWIM project's Subversion (SVN) repository.  In order to checkout a copy, you must have SVN installed on the machine you will be using and be given permission to check out the IPS from the SWIM project.  (SVN is installed on the machines used in the examples below.)  See the SWIM project's website for details and instructions on how to sign up.
 
 Once you have permission to access the repository, replace <cswim_user> with your user name and check out the IPS trunk thusly::
 
-      svn co https://<cswim_user>@cswim.org/svn/cswim/ips/trunk ips
-
-.. _SWIM: http://cswim.org
+      git clone https://github.com/HPC-SimTools/IPS-framework.git ips
 
 ^^^^^^^^^^^^^^^^^^^
 Dependencies
@@ -25,7 +23,7 @@ The IPS framework is written in Python_, and requires Python 2.5+ [#]_.  There a
 
 **Portal**
 
-The portal is a web interface for monitoring IPS runs and requires only a connection to the internet and a web browser.  Advanced features on the portal require an OpenID account backed by ORNL's XCAMS.  Information on getting an XCAMS backed OpenID can be found on the SWIM_ website.  There are also visualization utilities that can be accessed that require Elvis_ or PCMF (see below).
+The portal is a web interface for monitoring IPS runs and requires only a connection to the internet and a web browser.  Advanced features on the portal require an OpenID account backed by ORNL's XCAMS.  Information on getting an XCAMS backed OpenID can be found on the SWIM website.  There are also visualization utilities that can be accessed that require Elvis_ or PCMF (see below).
 
 ::::::::::::::::
 Other Utilities
@@ -90,7 +88,7 @@ To build the IPS on one of the locations it has been ported to:
 
 1. Checkout or copy the ips trunk to the machine of your choice::
 
-     head_node: ~ > svn co https://cswim_user@cswim.org/svn/cswim/ips/trunk ips
+     head_node: ~ > git clone https://github.com/HPC-SimTools/IPS-framework.git ips
 
 #. Configure your shell (assumes you are using bash).  If you use a different shell, type ``bash`` at the command line before sourcing the swim.bashrc.* file::
 

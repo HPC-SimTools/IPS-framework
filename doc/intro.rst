@@ -3,7 +3,7 @@ Introduction
 
 Welcome to the documentation for the Integrated Plasma Simulator (IPS).  The documents contained here will provide information regarding obtaining, using and developing the IPS and some associated tools.  
 
-The IPS was originally developed for the SWIM_ project and is designed for coupling plasma physics codes to simulate the interactions of various heating methods on plasmas in a tokamak.  The physics goal of the project is to better understand how the heating changes the properties of the plasma and how these heating methods can be used to improve the stability of plasmas for fusion energy production.
+The IPS was originally developed for the SWIM project and is designed for coupling plasma physics codes to simulate the interactions of various heating methods on plasmas in a tokamak.  The physics goal of the project is to better understand how the heating changes the properties of the plasma and how these heating methods can be used to improve the stability of plasmas for fusion energy production.
 
 The IPS framework is thus designed to couple standalone codes flexibly and easily using python wrappers and file-based data coupling.  These activities are not inherently plasma physics related and the IPS framework can be considered a general code coupling framework.  The framework provides services to manage:
 
@@ -46,13 +46,9 @@ Documentation related to using and developing for the web portal is contained in
 Acknowledgments
 ---------------
 
-This documentation has been primarily written or adapted from other sources by `Samantha Foley`_, as part of the SWIM_ team.  Don Batchelor provided examples and documentation that provided the basis for the :doc:`Getting Started<getting_started/getting_started>` and :doc:`Basic IPS Usage<user_guides/basic_guide>` sections.  Wael Elwasif provided much of the code documentation and initial documents on the directory structure and build process.
+This documentation has been primarily written or adapted from other sources by Samantha Foley, as part of the SWIM team.  Don Batchelor provided examples and documentation that provided the basis for the :doc:`Getting Started<getting_started/getting_started>` and :doc:`Basic IPS Usage<user_guides/basic_guide>` sections.  Wael Elwasif provided much of the code documentation and initial documents on the directory structure and build process.
 
 Additional Information
 ----------------------
 
 For more information on the design and implementation of the IPS and physics results generated using the IPS, see :doc:`Publications<pubs>`.
-
-
-.. _SWIM: http://cswim.org
-.. _Samantha Foley: mailto:foleyss@ornl.gov

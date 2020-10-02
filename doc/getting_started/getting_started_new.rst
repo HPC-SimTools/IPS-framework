@@ -28,7 +28,7 @@ For more inf
 The portal is a web interface for monitoring IPS runs and requires only
 a connection to the internet and a web browser.  Advanced features on
 the portal require an OpenID account backed by ORNL's XCAMS.
-Information on getting an XCAMS backed OpenID can be found on the _SWIM
+Information on getting an XCAMS backed OpenID can be found on the SWIM
 website.  There are also visualization utilities that can be accessed
 that require Elvis_ or PCMF (see below).
 

@@ -19,8 +19,7 @@ import sys, os
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
-sys.path.insert(0, os.path.abspath('.'))
-sys.path.insert(0, os.path.abspath('../ipsframework'))
+sys.path.insert(0, os.path.abspath('..'))
 # -- General configuration -----------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
@@ -44,7 +43,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'Integrated Plasma Simulator (IPS)'
-copyright = u'2011, SWIM Project'
+copyright = u'2011-2020, UT-Battelle, LLC'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -185,7 +184,7 @@ htmlhelp_basename = 'IntegratedPlasmaSimulatorIPSdoc'
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
   ('index', 'IntegratedPlasmaSimulatorIPS.tex', u'Integrated Plasma Simulator (IPS) Documentation',
-   u'SWIM Project', 'manual'),
+   u'UT-Battelle, LLC', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -230,5 +229,5 @@ latex_preamble = r'''
 # (source start file, name, description, authors, manual section).
 man_pages = [
     ('index', 'simyan', u'Simyan Servant Documentation',
-     [u'SWIM Project'], 1)
+     [u'UT-Battelle, LLC'], 1)
 ]
