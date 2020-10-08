@@ -641,9 +641,7 @@ class ConfigurationManager:
         component's configuration section.
         """
         sim_name = sim_data.sim_name
-        fullpath = os.path.abspath(comp_conf['SCRIPT'])
         # originalpath= comp_conf['SCRIPT']
-        script = comp_conf['SCRIPT'].rsplit('.', 1)[0].split('/')[-1]
         # endpath = comp_conf['SCRIPT'].rfind('/')
         # print 'path[0]', comp_conf['SCRIPT'][0:endpath]
         # print 'script', script
@@ -662,15 +660,21 @@ class ConfigurationManager:
             comp_conf["STATE_FILES"] = comp_conf["PLASMA_STATE_FILES"]
             # del comp_conf["PLASMA_STATE_FILES"]
         try:
-            spec = importlib.util.spec_from_file_location(script, fullpath)
-            module = importlib.util.module_from_spec(spec)
-            spec.loader.exec_module(module)
+            module = importlib.import_module(comp_conf['SCRIPT'])
             component_class = getattr(module, class_name)
-        except Exception:
-            self.fwk.error('Error in configuration file : NAME = %s   SCRIPT = %s',
-                           comp_conf['NAME'], comp_conf['SCRIPT'])
-            self.fwk.exception('Error instantiating IPS component %s From %s', class_name, script)
-            raise
+        except (ModuleNotFoundError, AttributeError):
+            try:
+                fullpath = os.path.abspath(comp_conf['SCRIPT'])
+                script = comp_conf['SCRIPT'].rsplit('.', 1)[0].split('/')[-1]
+                spec = importlib.util.spec_from_file_location(script, fullpath)
+                module = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(module)
+                component_class = getattr(module, class_name)
+            except (FileNotFoundError, AttributeError):
+                self.fwk.error('Error in configuration file : NAME = %s   SCRIPT = %s',
+                               comp_conf['NAME'], comp_conf['SCRIPT'])
+                self.fwk.exception('Error instantiating IPS component %s From %s', class_name, script)
+                raise
 
         # SIMYAN: removed else conditional, copying files in runspaceInit
         # component now

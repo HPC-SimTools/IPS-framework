@@ -2,6 +2,7 @@
 # Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
 # -------------------------------------------------------------------------------
 import os
+import importlib
 from ipsframework.component import Component
 from ipsframework import ipsutil
 
@@ -236,14 +237,20 @@ class runspaceInitComponent(Component):
                                           workdir)
 
                 # copy the component's script to the simulation_setup directory
-                if os.path.isabs(comp_conf['SCRIPT']):
-                    ipsutil.copyFiles(os.path.dirname(comp_conf['SCRIPT']),
-                                      [os.path.basename(comp_conf['SCRIPT'])],
+                try:
+                    module = importlib.import_module(comp_conf['SCRIPT'])
+                    ipsutil.copyFiles(os.path.dirname(module.__file__),
+                                      [os.path.basename(module.__file__)],
                                       simulation_setup)
-                else:
-                    ipsutil.copyFiles(comp_conf['BIN_DIR'],
-                                      [os.path.basename(comp_conf['SCRIPT'])],
-                                      simulation_setup)
+                except ModuleNotFoundError:
+                    if os.path.isabs(comp_conf['SCRIPT']):
+                        ipsutil.copyFiles(os.path.dirname(comp_conf['SCRIPT']),
+                                          [os.path.basename(comp_conf['SCRIPT'])],
+                                          simulation_setup)
+                    else:
+                        ipsutil.copyFiles(comp_conf['BIN_DIR'],
+                                          [os.path.basename(comp_conf['SCRIPT'])],
+                                          simulation_setup)
 
             # get the working directory from the runspaceInitComponent
             workdir = services.get_working_dir()
