@@ -5,7 +5,6 @@ from .configobj import ConfigObj
 import os
 import sys
 import importlib
-import inspect
 from .services import ServicesProxy
 from .componentRegistry import ComponentID, ComponentRegistry
 import tempfile
@@ -445,11 +444,7 @@ class ConfigurationManager:
         runspace_conf['SUB_CLASS'] = 'COMP'
         runspace_conf['NAME'] = 'runspaceInitComponent'
         # SIMYAN: using inspect to grab the ipsPathName from the current frame
-        ipsPathName = inspect.getfile(inspect.currentframe())
-        ipsDir = os.path.dirname(ipsPathName)
-        runspace_conf['BIN_PATH'] = ipsDir
-        runspace_conf['SCRIPT'] = os.path.join(runspace_conf['BIN_PATH'],
-                                               'runspaceInitComponent.py')
+        runspace_conf['SCRIPT'] = 'ipsframework.runspaceInitComponent'
         runspace_conf['INPUT_DIR'] = '/dev/null'
         runspace_conf['INPUT_FILES'] = ''
         runspace_conf['IPS_CONFFILE_DIR'] = ''
@@ -478,9 +473,9 @@ class ConfigurationManager:
             portal_conf['NAME'] = 'PortalBridge'
             if 'FWK_COMPS_PATH' in self.sim_map[self.fwk_sim_name].sim_conf:
                 portal_conf['BIN_PATH'] = self.sim_map[self.fwk_sim_name].sim_conf['FWK_COMPS_PATH']
+                portal_conf['SCRIPT'] = os.path.join(portal_conf['BIN_PATH'], 'portalBridge.py')
             else:
-                portal_conf['BIN_PATH'] = ipsDir
-            portal_conf['SCRIPT'] = os.path.join(portal_conf['BIN_PATH'], 'portalBridge.py')
+                portal_conf['SCRIPT'] = 'ipsframework.portalBridge'
             portal_conf['INPUT_DIR'] = '/dev/null'
             portal_conf['INPUT_FILES'] = ''
             portal_conf['DATA_FILES'] = ''
