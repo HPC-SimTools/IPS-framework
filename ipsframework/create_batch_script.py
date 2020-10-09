@@ -28,19 +28,19 @@ now=`date +%Y%m%d_%k%M%S`
 
 fwk_logfile=@SIM_NAME@_${host}_${now}.log
 
-@IPS_PATH@  @CONFIG_FILES@ --platform=@PLATFORM_PATH@ --log=@SIM_ROOT@/${fwk_logfile} @DEBUG@ @FTB@
+@IPS_PATH@  @CONFIG_FILES@ --platform=@PLATFORM_PATH@ --log=@SIM_ROOT@/${fwk_logfile} @DEBUG@
 """
 
 
 def printUsageMessage():
     print('Usage: create_batch_script.py --ips=PATH_TO_IPS [--config=CONFIG_FILE_NAME]+ \
 --platform=PLATFORM_FILE_NAME [--account=CHRGE_ACCOUNT] [--queue=BATCH_QUEUE] \
-[--walltime=ALLOCATION_TIME] [--nproc=NPROCESSES] [--debug] [--ftb] \
+[--walltime=ALLOCATION_TIME] [--nproc=NPROCESSES] [--debug] \
 [--output=BATCH_SCRIPT]')
 
 
 def create_script(ips_path, cfgFile_list, platform_file,
-                  debug, ftb, account='AAAA', queue='QQQQ',
+                  debug, account='AAAA', queue='QQQQ',
                   nproc='NNNN', walltime='HH:MM:SS', out_file=sys.stdout):
     conf = []
     config_cmd_string = ''
@@ -103,10 +103,6 @@ def create_script(ips_path, cfgFile_list, platform_file,
         debug_string = '--debug'
     script = script.replace('@DEBUG@', debug_string)
 
-    ftb_string = ''
-    if (ftb):
-        ftb_string = '--ftb'
-    script = script.replace('@FTB@', ftb_string)
     out_file.write(script)
 
 
@@ -127,7 +123,6 @@ def main(argv=None):
                                         "config=",
                                         "platform=",
                                         "debug",
-                                        "ftb",
                                         "account=",
                                         "queue=",
                                         "nproc=",
@@ -138,7 +133,6 @@ def main(argv=None):
         printUsageMessage()
         return 1
     debug = False
-    ftb = False
     ips_path = ''
     account = 'AAAA'
     queue = 'QQQQ'
@@ -154,8 +148,6 @@ def main(argv=None):
             platform_filename = value
         elif (arg == '--debug'):
             debug = True
-        elif (arg == '--ftb'):
-            ftb = True
         elif (arg == '--account'):
             account = value
         elif (arg == '--queue'):
@@ -178,7 +170,6 @@ def main(argv=None):
                   absCfgFile_list,
                   platform_file,
                   debug,
-                  ftb,
                   account,
                   queue,
                   nproc,

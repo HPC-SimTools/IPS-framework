@@ -135,7 +135,7 @@ class ConfigurationManager:
         self.log_process = None
 
     # CM initialize
-    def initialize(self, data_mgr, resource_mgr, task_mgr, ftb):
+    def initialize(self, data_mgr, resource_mgr, task_mgr):
         """
         Parse the platform and simulation configuration files using the
         :py:obj:`ConfigObj` module.  Create and initialize simulation(s) and
@@ -146,7 +146,6 @@ class ConfigurationManager:
         self.data_mgr = data_mgr
         self.resource_mgr = resource_mgr
         self.task_mgr = task_mgr
-        self.FTB = ftb
         # Parse configuration files into configuration map
         sim_root_list = self.sim_root_list = []
         sim_name_list = self.sim_name_list = []
@@ -511,29 +510,6 @@ class ConfigurationManager:
                 component_id = self._create_component(portal_conf,
                                                       self.sim_map[self.fwk_sim_name])
                 self.fwk_components.append(component_id)
-
-        # set up the FTB
-        if self.FTB:
-            ftb_conf = {}
-            ftb_conf['CLASS'] = 'FWK'
-            ftb_conf['SUB_CLASS'] = 'COMP'
-            ftb_conf['NAME'] = 'FTBBridge'
-            # SIMYAN: set the BIN_PATH from the FWK_COMPS_PATH
-            ftb_conf['BIN_PATH'] = self.sim_map[self.fwk_sim_name].sim_conf['FWK_COMPS_PATH']
-            ftb_conf['SCRIPT'] = os.path.join(ftb_conf['BIN_PATH'], 'ftbBridge.py')
-            ftb_conf['INPUT_DIR'] = ''
-            ftb_conf['INPUT_FILES'] = ''
-            # SIMYAN: initialize the DATA_FILES value to ''
-            ftb_conf['DATA_FILES'] = ''
-            ftb_conf['OUTPUT_FILES'] = ''
-            ftb_conf['NPROC'] = 1
-            ftb_conf['LOG_LEVEL'] = 'WARNING'
-            if (self.fwk.log_level == logging.DEBUG):
-                ftb_conf['LOG_LEVEL'] = 'DEBUG'
-
-            ftb_component_id = self._create_component(ftb_conf,
-                                                      self.sim_map[self.fwk_sim_name])
-            self.fwk_components.append(ftb_component_id)
 
     def _initialize_sim(self, sim_data):
         """

@@ -12,7 +12,7 @@ class test_permutations(ParameterizedTestCase):
 
     def printUsageMessage(self):
         print('Usage: ips [--create-runspace | --run-setup | --run]+ --simulation=SIM_FILE_NAME '
-              '--platform=PLATFORM_FILE_NAME --log=LOG_FILE_NAME [--debug | --ftb]')
+              '--platform=PLATFORM_FILE_NAME --log=LOG_FILE_NAME [--debug]')
 
     def setUp(self):
         if self.param is None:

@@ -90,7 +90,7 @@ class Framework:
     def __init__(self, do_create_runspace, do_run_setup, do_run,
                  config_file_list, log_file_name, platform_file_name=None,
                  compset_list=None, debug=False,
-                 ftb=False, verbose_debug=False, cmd_nodes=0, cmd_ppn=0):
+                 verbose_debug=False, cmd_nodes=0, cmd_ppn=0):
         """
         Create an IPS Framework Instance to coordinate the execution of IPS simulations
 
@@ -131,8 +131,6 @@ class Framework:
                 If component list is not specified, then it is assumed that these variables are
                 defined in the platform.conf file (backward compatibility).
             debug: [boolean] A flag indicating whether framework debugging messages are enabled (default = False)
-            ftb: [boolean]  A flag indicating whether integration with the Fault tolerance Backplane
-                Protocol (FTB) is enabled (default = False)
             verbose_debug: [boolean] A flag adding more verbose framework debugging (default = False)
 
         """
@@ -143,8 +141,6 @@ class Framework:
         self.ips_dosteps['RUN_SETUP'] = do_run_setup    # validate inputs: sim_comps.init()
         self.ips_dosteps['RUN'] = do_run          # Main part of simulation
 
-        # fault tolerance flag
-        self.ftb = ftb
         # SIMYAN: set the logging to either file or sys.stdout based on
         # command line option
         self.log_file_name = log_file_name
@@ -239,16 +235,13 @@ class Framework:
             # want to send and receive events
             self.config_manager.initialize(self.data_manager,
                                            self.resource_manager,
-                                           self.task_manager,
-                                           self.ftb)
+                                           self.task_manager)
             self.task_manager.initialize(self.data_manager,
                                          self.resource_manager,
-                                         self.config_manager,
-                                         self.ftb)
+                                         self.config_manager)
             self.resource_manager.initialize(self.data_manager,
                                              self.task_manager,
                                              self.config_manager,
-                                             self.ftb,
                                              cmd_nodes,
                                              cmd_ppn)
         except Exception:
@@ -415,7 +408,7 @@ class Framework:
         """
         Invoke *method_name* on components in *fwk_comps* (list of component
         ids).  Typically, this is
-        all framework-attached components (portal bridge and FTB bridge).  The
+        all framework-attached components (portal bridge).  The
         calling method blocks until all invocations terminate. No arguments
         are passed to the invoked methods.
         """
@@ -559,8 +552,6 @@ class Framework:
                 self._send_monitor_event(sim_name, 'IPS_RESOURCE_ALLOC', comment)
                 # SIMYAN: ordered list of methods to call
                 methods = []
-                if self.ftb:
-                    self._send_ftb_event('IPS_START')
 
                 if self.ips_dosteps['RUN_SETUP'] and self.ips_status['CREATE_RUNSPACE']:
                     self.ips_status['RUN_SETUP'] = True
@@ -687,8 +678,6 @@ class Framework:
                             self._send_dynamic_sim_event(sim_name, 'IPS_END', ok)
                             self.send_terminate_msg(sim_name, Message.SUCCESS)
                             self.config_manager.terminate_sim(sim_name)
-                            if self.ftb:
-                                self._send_ftb_event('IPS_END')
 
         # SIMYAN: update the status of the simulation after all calls have
         # been executed
@@ -711,8 +700,6 @@ class Framework:
         msg_list = []
         self._send_monitor_event(sim_name, 'IPS_START', 'Starting IPS Simulation', ok=True)
         self._send_dynamic_sim_event(sim_name=sim_name, event_type='IPS_START')
-        if self.ftb:
-            self._send_ftb_event('IPS_START')
         for comp_id in comp_list:
             for method in ['init', 'step', 'finalize']:
                 req_msg = ServiceRequestMessage(self.component_id,
@@ -805,16 +792,6 @@ class Framework:
         if (self.verbose_debug):
             self.debug('Publishing %s', str(event_body))
         self.event_manager.publish(topic_name, 'IPS_SIM', event_body)
-
-    def _send_ftb_event(self, eventType=''):
-        """
-        Publish an event of type *eventType* to topic *_IPS_FTB*.
-        """
-        self.debug('_send_ftb_event(%s)', eventType)
-        ftb_data = {}
-        ftb_data['eventtype'] = eventType
-        topic_name = '_IPS_FTB'
-        self.event_manager.publish(topic_name, 'IPS_SIM', ftb_data)
 
     def _send_dynamic_sim_event(self, sim_name='', event_type='', ok=True):
         self.debug('_send_dynamic_sim_event(%s:%s)', event_type, sim_name)
@@ -929,7 +906,7 @@ def main(argv=None):
     runopts = "[--create-runspace | --clone | --run-setup | --run] "
     fileopts = "--simulation=SIM_FILE_NAME --platform=PLATFORM_FILE_NAME "
     miscopts = "[--component=COMPONENT_FILE_NAME(S)] [--sim_name=SIM_NAME] [--log=LOG_FILE_NAME] "
-    debugopts = "[--debug | --ftb] [--verbose] "
+    debugopts = "[--debug] [--verbose] "
 
     # SIMYAN: add the options to the options parser
     parser = optparse.OptionParser(usage="%prog " + runopts + debugopts + fileopts + miscopts)
@@ -937,8 +914,6 @@ def main(argv=None):
                       help='Turn on debugging')
     parser.add_option('-v', '--verbose', dest='verbose_debug', default=False, action='store_true',
                       help='Run IPS verbosely')
-    parser.add_option('-f', '--ftb', dest='ftb', default=False, action='store_true',
-                      help='Turn on FTB capability')
     platform_default = ""
     try:
         platform_default = os.environ["IPS_PLATFORM_FILE"]
@@ -1163,13 +1138,13 @@ def main(argv=None):
                 cfgFile_list = sim_file_map[sim_name]
                 fwk = Framework(options.do_create_runspace, options.do_run_setup, options.do_run,
                                 cfgFile_list, options.log_file, options.platform_filename,
-                                compset_list, options.debug, options.ftb, options.verbose_debug,
+                                compset_list, options.debug, options.verbose_debug,
                                 options.cmd_nodes, options.cmd_ppn)
                 fwk.run()
         else:
             fwk = Framework(options.do_create_runspace, options.do_run_setup, options.do_run,
                             cfgFile_list, options.log_file, options.platform_filename,
-                            compset_list, options.debug, options.ftb, options.verbose_debug,
+                            compset_list, options.debug, options.verbose_debug,
                             options.cmd_nodes, options.cmd_ppn)
             fwk.run()
     except Exception:

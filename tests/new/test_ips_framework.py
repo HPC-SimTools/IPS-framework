@@ -83,7 +83,6 @@ def test_framework_simple(tmpdir, capfd):
                           platform_file_name=str(platform_file),
                           compset_list=[],
                           debug=None,
-                          ftb=None,
                           verbose_debug=None,
                           cmd_nodes=0,
                           cmd_ppn=0)

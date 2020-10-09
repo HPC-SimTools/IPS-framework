@@ -525,7 +525,7 @@ def get_topo(services):
         print(topo)
 
 
-def getResourceList(services, host, ftb, partial_nodes=False):
+def getResourceList(services, host, partial_nodes=False):
     """
     Using the host information, the resources are detected.  Return list of
     (<node name>, <processes per node>), cores per node, sockets per node,
@@ -617,19 +617,6 @@ def getResourceList(services, host, ftb, partial_nodes=False):
         raise InvalidResourceSettingsException("spn > cpn", spn, cpn)
     elif cpn % spn != 0:
         raise InvalidResourceSettingsException("spn not divisible by cpn", spn, cpn)
-
-    """
-    ### AGS: SC09 demo code, also useful for debugging FT capabilities.
-    if not accurateNodes:
-        for i in range(1, num_nodes+1):
-            listOfNodes.append(i)
-
-    if ftb:
-        my_nids = open('my_nids', 'w')
-        for i in range(len(listOfNodes)):
-            my_nids.write(str(listOfNodes[i]) + '\n')
-        my_nids.close()
-    """
     # if cpn < ppn:
     #    cpn = ppn
     # return list of node names

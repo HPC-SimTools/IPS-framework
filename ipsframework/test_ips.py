@@ -10,7 +10,7 @@ from ipsframework.ips import Framework
 
 def printUsageMessage():
     print("Usage: ips [--create-runspace | --run-setup | --run]+ --simulation=SIM_FILE_NAME "
-          "--platform=PLATFORM_FILE_NAME --log=LOG_FILE_NAME [--debug | --ftb]")
+          "--platform=PLATFORM_FILE_NAME --log=LOG_FILE_NAME [--debug]")
 
 
 class testIPS(unittest.TestCase):
@@ -30,7 +30,7 @@ class testIPS(unittest.TestCase):
                                            ["create-runspace", "run-setup", "run",
                                             "simulation=", "platform=", "log=",
                                             "nodes=", "ppn=",
-                                            "debug", "verbose", "ftb"])
+                                            "debug", "verbose"])
         except getopt.error as msg:
             self.fail('Invalid command line arguments' + msg)
             # print 'Invalid command line arguments', msg

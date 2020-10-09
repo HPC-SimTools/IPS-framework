@@ -74,7 +74,7 @@ class TaskManager:
         return retval
 
     # TM initialize
-    def initialize(self, data_mgr, resource_mgr, config_mgr, ftb):
+    def initialize(self, data_mgr, resource_mgr, config_mgr):
         """
         Initialize references to other managers and key values from
         configuration manager.
@@ -83,7 +83,6 @@ class TaskManager:
         self.data_mgr = data_mgr
         self.resource_mgr = resource_mgr
         self.config_mgr = config_mgr
-        self.FTB = ftb
         self.host = self.config_mgr.get_platform_parameter('HOST')
         self.node_alloc_mode = self.config_mgr.get_platform_parameter('NODE_ALLOCATION_MODE')
         try:
