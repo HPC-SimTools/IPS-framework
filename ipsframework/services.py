@@ -1,7 +1,7 @@
 # -------------------------------------------------------------------------------
 # Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
 # -------------------------------------------------------------------------------
-from . import messages, ipsutil, ipsLogging, ipsTiming, component
+from . import messages, ipsutil, ipsLogging, component
 import sys
 import queue
 import os
@@ -90,55 +90,6 @@ def launch(binary, task_name, working_dir, *args, **keywords):
     return task_name, ret_val
 
 
-def make_timers_parent():
-    """
-    Create a list of timers to be applied to methods executed before the new component
-    object is forked into its own separate process.
-    """
-    pid = str(os.getpid())
-    return {'__init__': ipsTiming.create_timer("services", "__init__", pid),
-            'get_config_param': ipsTiming.create_timer("services", "get_config_param", pid),
-            '__initialize__': ipsTiming.create_timer("services", "__initialize__", pid)}
-
-
-def make_timers_child():
-    """
-    Create a list of timers to be applied to methods executed after the new component
-    object is forked into its own separate process.
-    """
-    pid = str(os.getpid())
-    return {'_init_event_service': ipsTiming.create_timer("services", "_init_event_service", pid),
-            '_get_elapsed_time': ipsTiming.create_timer("services", "_get_elapsed_time", pid),
-            '_get_incoming_responses': ipsTiming.create_timer("services", "_get_incoming_responses", pid),
-            '_wait_msg_response': ipsTiming.create_timer("services", "_wait_msg_response", pid),
-            '_invoke_service': ipsTiming.create_timer("services", "invoke_service", pid),
-            '_get_service_response': ipsTiming.create_timer("services", "_get_service_response", pid),
-            '_send_monitor_event': ipsTiming.create_timer("services", "_send_monitor_event", pid),
-            'get_port': ipsTiming.create_timer("services", "get_port", pid),
-            'call_nonblocking': ipsTiming.create_timer("services", "call_nonblocking", pid),
-            'call': ipsTiming.create_timer("services", "call", pid),
-            'wait_call': ipsTiming.create_timer("services", "wait_call", pid),
-            'wait_call_list': ipsTiming.create_timer("services", "wait_call_list", pid),
-            'launch_task': ipsTiming.create_timer("services", "launch_task", pid),
-            'kill_task': ipsTiming.create_timer("services", "kill_task", pid),
-            'kill_all_tasks': ipsTiming.create_timer("services", "kill_all_tasks", pid),
-            'wait_task_nonblocking': ipsTiming.create_timer("services", "wait_task_nonblocking", pid),
-            'wait_task': ipsTiming.create_timer("services", "wait_task", pid),
-            'wait_tasklist': ipsTiming.create_timer("services", "wait_tasklist", pid),
-            'get_config_param': ipsTiming.create_timer("services", "get_config_param", pid),
-            'get_time_loop': ipsTiming.create_timer("services", "get_time_loop", pid),
-            'get_working_dir': ipsTiming.create_timer("services", "get_working_dir", pid),
-            'stage_input_files': ipsTiming.create_timer("services", "stage_input_files", pid),
-            'stage_data_files': ipsTiming.create_timer("services", "stage_data_files", pid),
-            'stage_output_files': ipsTiming.create_timer("services", "stage_output_files", pid),
-            'stage_nonPS_output_files': ipsTiming.create_timer("services", "stage_nonPS_output_files", pid),
-            'stage_PS_output_files': ipsTiming.create_timer("services", "stage_PS_output_files", pid),
-            'stage_plasma_state': ipsTiming.create_timer("services", "stage_plasma_state", pid),
-            'update_plasma_state': ipsTiming.create_timer("services", "update_plasma_state", pid),
-            'update_time_stamp': ipsTiming.create_timer("services", "update_time_stamp", pid),
-            'setMonitorURL': ipsTiming.create_timer("services", "setMonitorURL", pid)}
-
-
 class ServicesProxy:
 
     def __init__(self, fwk, fwk_in_q, svc_response_q, sim_conf, log_pipe_name):
@@ -196,16 +147,6 @@ class ServicesProxy:
         self.sub_flows = {}
         self.binary_fullpath_cache = {}
         self.dask_preload = "dask_preload.py"
-
-        try:
-            if os.environ['IPS_TIMING'] == '1':
-                self.profile = True
-        except Exception:
-            pass
-        ipsTiming.instrument_object_with_tau('services', self, exclude=['__init__'])
-
-    def _make_timers(self):
-        ipsTiming.instrument_object_with_tau('services', self, exclude=['__init__'])
 
     def __initialize__(self, component_ref):
         """
@@ -366,7 +307,6 @@ class ServicesProxy:
                 # time to die!
                 if r.__class__ == messages.ExitMessage:
                     self.debug('%s Exiting', str(self.component_ref.component_id))
-                    self._cleanup()
                     if r.status == messages.Message.SUCCESS:
                         sys.exit(0)
                     else:
@@ -470,15 +410,6 @@ class ServicesProxy:
         event_data['portal_data'] = portal_data
         self.publish('_IPS_MONITOR', 'PORTAL_EVENT', event_data)
         return
-
-    def _cleanup(self):
-        """
-        Clean up any state from the services.  Called by the terminate method
-        in the base class for components.
-        """
-        # add anything else to clean up in the services
-        if self.profile:
-            ipsTiming.dumpAll('component')
 
     def get_port(self, port_name):
         """

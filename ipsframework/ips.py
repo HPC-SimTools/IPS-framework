@@ -62,7 +62,7 @@ import glob
 import fnmatch
 import optparse
 import multiprocessing
-from . import platformspec, ipsutil, ipsTiming, checklist
+from . import platformspec, ipsutil, checklist
 import shutil
 import zipfile
 import inspect
@@ -84,27 +84,7 @@ import time
 from .configobj import ConfigObj
 
 
-def make_timers():
-    """
-    Create TAU timers to be used to profile simulation execution.
-    """
-    mypid = str(os.getpid())
-    timer_funcs = ['__init__', '_dispatch_service_request', '_invoke_framework_comps',
-                   'run', '_send_monitor_event', 'terminate_all_sims']
-    timer_dict = {}
-    for i in range(len(timer_funcs)):
-        timer_dict[timer_funcs[i]] = ipsTiming.create_timer("fwk", timer_funcs[i], mypid)
-    return timer_dict
-
-
-TIMERS = make_timers()
-""" A dictionary mapping method names in the `Framework`_ object to tau
-    timers.
-"""
-
-
 class Framework:
-    # @ipsTiming.TauWrap(TIMERS['__init__'])
     # SIMYAN: added options for creating runspace, run-setup, and running,
     # added compset_list for list of components to load config files for
     def __init__(self, do_create_runspace, do_run_setup, do_run,
@@ -156,8 +136,6 @@ class Framework:
             verbose_debug: [boolean] A flag adding more verbose framework debugging (default = False)
 
         """
-        # self.timers = make_timers()
-        # start(self.timers['__init__'])
 
         # SIMYAN: collect the steps to do in this invocation of the Framework
         self.ips_dosteps = {}
@@ -235,11 +213,6 @@ class Framework:
         self.resource_manager = ResourceManager(self)
         self.data_manager = DataManager(self)
         self.task_manager = TaskManager(self)
-        ipsTiming.instrument_object_with_tau('Fwk', self, exclude=['__init__'])
-        ipsTiming.instrument_object_with_tau('ConfigMgr', self.config_manager)
-        ipsTiming.instrument_object_with_tau('ResourceMgr', self.resource_manager)
-        ipsTiming.instrument_object_with_tau('EventMgr', self.event_manager)
-        ipsTiming.instrument_object_with_tau('DataMgr', self.data_manager)
         # define a Handler which writes INFO messages or higher to the sys.stderr
         logger = logging.getLogger("FRAMEWORK")
         self.log_level = logging.WARNING
@@ -281,10 +254,8 @@ class Framework:
         except Exception:
             self.exception("Problem initializing managers")
             self.terminate_all_sims(status=Message.FAILURE)
-            # stop(self.timers['__init__'])
             raise
         self.blocked_messages = []
-        # stop(self.timers['__init__'])
         # SIMYAN: determine the sim_root for the Framework to use later
         fwk_comps = self.config_manager.get_framework_components()
         main_fwk_comp = self.comp_registry.getEntry(fwk_comps[0])
@@ -340,7 +311,6 @@ class Framework:
                 if self.verbose_debug:
                     self.debug('Blocked message : %s', e.__str__())
                 self.blocked_messages.append(msg)
-                # stop(self.timers['_dispatch_service_request'])
                 return
             except Exception as e:
                 # self.exception('Exception handling service message: %s - %s', str(msg.__dict__), str(e))
@@ -441,7 +411,6 @@ class Framework:
             print('error in Framework.critical', args)
             raise
 
-    # @ipsTiming.TauWrap(TIMERS['_invoke_framework_comps'])
     def _invoke_framework_comps(self, fwk_comps, method_name):
         """
         Invoke *method_name* on components in *fwk_comps* (list of component
@@ -451,7 +420,6 @@ class Framework:
         are passed to the invoked methods.
         """
 
-        # start(self.timers['_invoke_framework_comps'])
         outstanding_fwk_calls = []
         for comp_id in fwk_comps:
             msg = ServiceRequestMessage(self.component_id,
@@ -481,15 +449,12 @@ class Framework:
                     else:
                         if (msg.status == Message.FAILURE):
                             self.terminate_all_sims(status=Message.FAILURE)
-                            # stop(self.timers['_invoke_framework_comps'])
                             raise msg.args[0]
                         outstanding_fwk_calls.remove(msg.call_id)
                 else:
                     self.error('Framework received unexpected message : %s',
                                str(msg.__dict__))
-        # stop(self.timers['invoke_framework_comps'])
 
-    # @ipsTiming.TauWrap(TIMERS['run'])
     def run(self):
         """
         Run the communication outer loop of the framework.
@@ -522,7 +487,6 @@ class Framework:
         :py:meth:`Framework.terminate_sim` is called to trigger normal
         termination of all component processes.
         """
-        # start(self.timers['run'])
         try:
             fwk_comps = self.config_manager.get_framework_components()
             sim_comps = self.config_manager.get_component_map()
@@ -530,7 +494,6 @@ class Framework:
         except Exception:
             self.exception('encountered exception during fwk.run() initialization')
             self.terminate_all_sims(status=Message.FAILURE)
-            # stop(self.timers['run'])
             return False
 
         # SIMYAN: required fields for the checklist file
@@ -644,7 +607,6 @@ class Framework:
         except Exception:
             self.exception('encountered exception during fwk.run() genration of call messages')
             self.terminate_all_sims(status=Message.FAILURE)
-            # stop(self.timers['run'])
             return False
 
         # send off first round of invocations...
@@ -688,7 +650,6 @@ class Framework:
                     except Exception:
                         self.exception('Error dispatching service request message.')
                         self.terminate_all_sims(status=Message.FAILURE)
-                        # stop(self.timers['run'])
                         return False
                     continue
                 elif (msg.__class__.__name__ == 'MethodResultMessage'):
@@ -738,8 +699,6 @@ class Framework:
 
         self.terminate_all_sims(Message.SUCCESS)
         self.event_service._print_stats()
-        # stop(self.timers['run'])
-        # dumpAll()
         return True
 
     def initiate_new_simulation(self, sim_name):
@@ -769,7 +728,6 @@ class Framework:
         self.outstanding_calls_list.append(call_id)
         return
 
-    # @ipsTiming.TauWrap(TIMERS['_send_monitor_event'])
     def _send_monitor_event(self, sim_name='', eventType='', comment='', ok='True'):
         """
         Publish a portal monitor event to the *_IPS_MONITOR* event topic.
@@ -783,7 +741,6 @@ class Framework:
             whether the event indicates normal simulation execution, or an
             error condition.
         """
-        # start(self.timers['_send_monitor_event'])
         if (self.verbose_debug):
             self.debug('_send_monitor_event(%s - %s)', sim_name, eventType)
         portal_data = {}
@@ -848,8 +805,6 @@ class Framework:
         if (self.verbose_debug):
             self.debug('Publishing %s', str(event_body))
         self.event_manager.publish(topic_name, 'IPS_SIM', event_body)
-        # stop(self.timers['_send_monitor_event'])
-        return
 
     def _send_ftb_event(self, eventType=''):
         """
@@ -860,7 +815,6 @@ class Framework:
         ftb_data['eventtype'] = eventType
         topic_name = '_IPS_FTB'
         self.event_manager.publish(topic_name, 'IPS_SIM', ftb_data)
-        return
 
     def _send_dynamic_sim_event(self, sim_name='', event_type='', ok=True):
         self.debug('_send_dynamic_sim_event(%s:%s)', event_type, sim_name)
@@ -871,7 +825,6 @@ class Framework:
         topic_name = '_IPS_DYNAMIC_SIMULATION'
         self.debug('Publishing %s', str(event_data))
         self.event_manager.publish(topic_name, 'IPS_DYNAMIC_SIM', event_data)
-        return
 
     def send_terminate_msg(self, sim_name, status=Message.SUCCESS):
         """
@@ -901,7 +854,6 @@ class Framework:
         This method remotely invokes the method C{terminate()} on all componnets in the
         IPS simulation.
         """
-        # start(self.timers['terminate_all_sims'])
         sim_names = self.config_manager.get_sim_names()
         # print 'Terminating ', sim_names
         for sim in sim_names:
@@ -912,7 +864,6 @@ class Framework:
         except Exception:
             self.exception('exception encountered while cleaning up config_manager')
         # sys.exit(status)
-        # stop(self.timers['terminate_sim'])
 
 # SIMYAN: method for modifying the config file with the given parameter to
 # the new value given
@@ -1215,14 +1166,12 @@ def main(argv=None):
                                 compset_list, options.debug, options.ftb, options.verbose_debug,
                                 options.cmd_nodes, options.cmd_ppn)
                 fwk.run()
-            ipsTiming.dumpAll('framework')
         else:
             fwk = Framework(options.do_create_runspace, options.do_run_setup, options.do_run,
                             cfgFile_list, options.log_file, options.platform_filename,
                             compset_list, options.debug, options.ftb, options.verbose_debug,
                             options.cmd_nodes, options.cmd_ppn)
             fwk.run()
-            ipsTiming.dumpAll('framework')
     except Exception:
         raise
 

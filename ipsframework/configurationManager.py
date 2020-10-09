@@ -51,7 +51,6 @@ class ConfigurationManager:
             self.process_list = []
             self.fwk_logger = None
 
-    # @TauWrap(TIMERS['__init__'])
     # SIMYAN: accept a compset_list to find specific configuration files for
     # the components
     def __init__(self, fwk, config_file_list, platform_file_name, compset_list):
@@ -61,9 +60,6 @@ class ConfigurationManager:
         file, and the configuration files are read in.
         """
         # ref to framework
-        # self.timers = make_timers()
-        # start(self.timers['__init__'])
-        # pytau.start(self.timers['__init__'])
         self.fwk = fwk
         self.event_mgr = None
         self.data_mgr = None
@@ -137,19 +133,14 @@ class ConfigurationManager:
         self.myTopic = None
         self.log_daemon = ipsLogging.ipsLogger(self.log_dynamic_sim_queue)
         self.log_process = None
-        # pytau.stop(self.timers['__init__'])
-        # stop(self.timers['__init__'])
 
     # CM initialize
-    # @TauWrap(TIMERS['initialize'])
     def initialize(self, data_mgr, resource_mgr, task_mgr, ftb):
         """
         Parse the platform and simulation configuration files using the
         :py:obj:`ConfigObj` module.  Create and initialize simulation(s) and
         their components, framework components and loggers.
         """
-        # pytau.start(self.timers['initialize'])
-        # start(self.timers['initialize'])
         local_debug = False
         self.event_mgr = None  # eventManager(self)
         self.data_mgr = data_mgr
@@ -177,14 +168,10 @@ class ConfigurationManager:
         except IOError:
             self.fwk.exception('Error opening config file: %s',
                                self.platform_file)
-            # pytau.stop(self.timers['initialize'])
-            # stop(self.timers['initialize'])
             raise
         except SyntaxError:
             self.fwk.exception('Error parsing config file: %s',
                                self.platform_file)
-            # pytau.stop(self.timers['initialize'])
-            # stop(self.timers['initialize'])
             raise
         # get mandatory values
         for kw in self.platform_keywords:
@@ -193,8 +180,6 @@ class ConfigurationManager:
             except KeyError:
                 self.fwk.exception('Missing required parameter %s in platform config file',
                                    kw)
-                # pytau.stop(self.timers['initialize'])
-                # stop(self.timers['initialize'])
                 raise
         # Make sure the HOST variable is defined
         try:
@@ -351,13 +336,9 @@ class ConfigurationManager:
 
             except IOError:
                 self.fwk.exception('Error opening config file %s: ', conf_file)
-                # pytau.stop(self.timers['initialize'])
-                # stop(self.timers['initialize'])
                 raise
             except SyntaxError:
                 self.fwk.exception('Error parsing config file %s: ', conf_file)
-                # pytau.stop(self.timers['initialize'])
-                # stop(self.timers['initialize'])
                 raise
             except Exception:
                 self.fwk.exception('Error(s) during parsing of supplied config file %s: ', conf_file)
@@ -370,8 +351,6 @@ class ConfigurationManager:
             except KeyError:
                 self.fwk.exception('Missing required parameters SIM_NAME, SIM_ROOT or LOG_FILE\
  in configuration file %s', conf_file)
-                # pytau.stop(self.timers['initialize'])
-                # stop(self.timers['initialize'])
                 raise
 
             # SIMYAN allow for a container file with default .zip extension
@@ -383,18 +362,12 @@ class ConfigurationManager:
 
             if (sim_name in sim_name_list):
                 self.fwk.exception('Error: Duplicate SIM_NAME in configuration files')
-                # pytau.stop(self.timers['initialize'])
-                # stop(self.timers['initialize'])
                 sys.exit(1)
             if (sim_root in sim_root_list):
                 self.fwk.exception('Error: Duplicate SIM_ROOT in configuration files')
-                # pytau.stop(self.timers['initialize'])
-                # stop(self.timers['initialize'])
                 sys.exit(1)
             if (log_file in log_file_list):
                 self.fwk.exception('Error: Duplicate LOG_FILE in configuration files')
-                # pytau.stop(self.timers['initialize'])
-                # stop(self.timers['initialize'])
                 sys.exit(1)
             if 'SIMULATION_CONFIG_FILE' not in conf:
                 conf['SIMULATION_CONFIG_FILE'] = conf_file
@@ -426,8 +399,6 @@ class ConfigurationManager:
             except AttributeError:
                 self.fwk.exception('Invalid LOG_LEVEL value %s in config file %s ',
                                    log_level, conf_file)
-                # pytau.stop(self.timers['initialize'])
-                # stop(self.timers['initialize'])
                 raise
             socketHandler = ipsLogging.IPSLogSocketHandler(new_sim.log_pipe_name)
             new_sim.fwk_logger = logging.getLogger(sim_name + '_FRAMEWORK')
@@ -459,20 +430,15 @@ class ConfigurationManager:
         # ***** commenting out portal stuff for now
         self._initialize_fwk_components()
 
-        # pytau.stop(self.timers['initialize'])
-        # stop(self.timers['initialize'])
         # do later - subscribe to events, set up event publishing structure
         # publish "CM initialized" event
 
-    # @TauWrap(TIMERS['_initialize_fwk_components'])
     def _initialize_fwk_components(self):
         """
         Initialize 'components' that are part of the framework infrastructure.
         Those components (for now) communicate using the event bus and are not
         part of the normal framework-mediated RPC inter-compponent interactions
         """
-        # pytau.start(self.timers['_initialize_fwk_components'])
-        # start(self.timers['_initialize_fwk_components'])
 
         # SIMYAN: set up the runspaceInit component
         runspace_conf = {}
@@ -569,10 +535,6 @@ class ConfigurationManager:
                                                       self.sim_map[self.fwk_sim_name])
             self.fwk_components.append(ftb_component_id)
 
-        # pytau.stop(self.timers['_initialize_fwk_components'])
-        # stop(self.timers['_initialize_fwk_components'])
-
-    # @TauWrap(TIMERS['_initialize_sim'])
     def _initialize_sim(self, sim_data):
         """
         Parses the configuration data (*sim_conf*) associated with a simulation
@@ -580,8 +542,6 @@ class ConfigurationManager:
         Populate the *component_registry* with appropriate component and port
         mapping info.
         """
-        # pytau.start(self.timers['_initialize_sim'])
-        # start(self.timers['_initialize_sim'])
         sim_conf = sim_data.sim_conf
         sim_name = sim_data.sim_name
         ports_config = sim_conf['PORTS']
@@ -627,8 +587,6 @@ class ConfigurationManager:
             except Exception:
                 self.fwk.exception('Error accessing configuration section for ' +
                                    'component %s in simulation %s', comp_ref, sim_name)
-                # pytau.stop(self.timers['_initialize_sim'])
-                # stop(self.timers['_initialize_sim'])
                 sys.exit(1)
             conf_fields = set(comp_conf.keys())
 
@@ -659,8 +617,6 @@ class ConfigurationManager:
                 self.fwk.exception('Error: missing required entries %s \
                     in simulation %s component %s configuration section',
                                    list(self.required_fields - conf_fields), sim_name, comp_ref)
-                # pytau.stop(self.timers['_initialize_sim'])
-                # stop(self.timers['_initialize_sim'])
                 sys.exit(1)
             component_id = self._create_component(comp_conf, sim_data)
             sim_data.port_map[port] = component_id
@@ -672,8 +628,6 @@ class ConfigurationManager:
         if (sim_data.driver_comp is None):
             self.fwk.error('Missing DRIVER specification in ' +
                            'config file for simulation %s', sim_data.sim_name)
-            # pytau.stop(self.timers['_initialize_sim'])
-            # stop(self.timers['_initialize_sim'])
             sys.exit(1)
         if (sim_data.init_comp is None):
             self.fwk.warning('Missing INIT specification in ' +
@@ -702,19 +656,14 @@ class ConfigurationManager:
         #       if (errno != 17):
         #           self.fwk.exception('Error creating State directory %s : %d %s' ,
         #                              statedir, errno, strerror)
-        #           #pytau.stop(self.timers['_initialize_sim'])
-        #           #stop(self.timers['_initialize_sim'])
         #           #raise
-        #   #pytau.stop(self.timers['_initialize_sim'])
         return
 
-    # @TauWrap(TIMERS['_create_component'])
     def _create_component(self, comp_conf, sim_data):
         """
         Create component and populate it with the information from the
         component's configuration section.
         """
-        # pytau.start(self.timers['_create_component'])
         sim_name = sim_data.sim_name
         fullpath = os.path.abspath(comp_conf['SCRIPT'])
         # originalpath= comp_conf['SCRIPT']
@@ -745,7 +694,6 @@ class ConfigurationManager:
             self.fwk.error('Error in configuration file : NAME = %s   SCRIPT = %s',
                            comp_conf['NAME'], comp_conf['SCRIPT'])
             self.fwk.exception('Error instantiating IPS component %s From %s', class_name, script)
-            # pytau.stop(self.timers['_create_component'])
             raise
 
         # SIMYAN: removed else conditional, copying files in runspaceInit
@@ -770,16 +718,13 @@ class ConfigurationManager:
         p.start()
         sim_data.process_list.append(p)
         sim_data.all_comps.append(component_id)
-        # pytau.stop(self.timers['_create_component'])
         return component_id
 
-    # @TauWrap(TIMERS['get_component_map'])
     def get_component_map(self):
         """
         Return a dictionary of simulation names and lists of component
         references.  (May only be the driver, and init (if present)???)
         """
-        # pytau.start(self.timers['get_component_map'])
         sim_comps = {}
         for sim_name in list(self.sim_map.keys()):
             if (sim_name == self.fwk_sim_name):
@@ -805,32 +750,26 @@ class ConfigurationManager:
         """
         Return a list of driver components, one for each sim.
         """
-        # pytau.start(self.timers['get_driver_components'])
         driver_list = []
         for sim in list(self.sim_map.values()):
             driver_list.append(sim.driver_comp)
-        # pytau.stop(self.timers['get_driver_components'])
         return driver_list
 
     def get_framework_components(self):
         """
         Return list of framework components.
         """
-        # pytau.start(self.timers['get_framework_components'])
         fwk_components = self.fwk_components[:]
-        # pytau.stop(self.timers['get_framework_components'])
         return fwk_components
 
     def get_init_components(self):
         """
         Return list of init components.
         """
-        # pytau.start(self.timers['get_init_components'])
         init_list = []
         for sim_data in list(self.sim_map.values()):
             if (sim_data.init_comp):
                 init_list.append(sim_data.init_comp)
-        # pytau.stop(self.timers['get_init_components'])
         return init_list
 
     def get_sim_parameter(self, sim_name, param):
@@ -838,7 +777,6 @@ class ConfigurationManager:
         Return value of *param* from simulation configuration file for
         *sim_name*.
         """
-        # pytau.start(self.timers['get_sim_parameter'])
         try:
             sim_data = self.sim_map[sim_name]
         except KeyError:
@@ -849,7 +787,6 @@ class ConfigurationManager:
         except KeyError:
             val = self.platform_conf[param]
         self.fwk.debug('Returning value = %s for config parameter %s in simulation %s', val, param, sim_name)
-        # pytau.start(self.timers['get_sim_parameter'])
         return val
 
     def get_sim_names(self):
@@ -863,14 +800,12 @@ class ConfigurationManager:
         Invokes public configuration manager method for a component.  Return
         method's return value.
         """
-        # pytau.start(self.timers['process_service_request'])
         self.fwk.debug('Configuration Manager received message: %s', str(msg.__dict__))
         sim_name = msg.sender_id.get_sim_name()
         method = getattr(self, msg.target_method)
         self.fwk.debug('Configuration manager dispatching method %s on simulation %s',
                        method, sim_name)
         retval = method(sim_name, *msg.args)
-        # pytau.start(self.timers['process_service_request'])
         return retval
 
     def create_simulation(self, sim_name, config_file, override, sub_workflow=False):
@@ -973,10 +908,8 @@ in configuration file %s', config_file)
         implementing port *port_name*.
         """
         # print sim_name, port_name
-        # pytau.start(self.timers['get_port'])
         sim_data = self.sim_map[sim_name]
         comp_id = sim_data.port_map[port_name]
-        # pytau.stop(self.timers['get_port'])
         return comp_id
 
     def get_config_parameter(self, sim_name, param):
@@ -1016,16 +949,13 @@ in configuration file %s', config_file)
         (default) ``None`` is returned when *param* not found, otherwise an
         exception is raised.
         """
-        # pytau.start(self.timers['get_platform_parameter'])
         val = None
         try:
             val = self.platform_conf[param]
         except KeyError:
             if not silent:
                 self.fwk.warning('CM: No platform data for %s ', param)
-                # pytau.stop(self.timers['get_platform_parameter'])
                 raise
-        # pytau.stop(self.timers['get_platform_parameter'])
         return val
 
     def terminate_sim(self, sim_name):
