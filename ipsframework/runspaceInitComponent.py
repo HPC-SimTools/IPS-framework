@@ -140,7 +140,6 @@ class runspaceInitComponent(Component):
 #           except OSError, (errno, strerror):
 #               self.services.exception('Error creating directory %s : %s' ,
 #                                       workdir, strerror)
-#               #pytau.stop(timer)
 #               raise
 
 #       print 'curdir=', curdir
@@ -210,7 +209,6 @@ class runspaceInitComponent(Component):
                     if (errno != 17):
                         self.services.exception('Error creating directory %s : %s',
                                                 workdir, strerror)
-                        # pytau.stop(timer)
                         raise
 
                 # copy the input files into the working directory
@@ -258,7 +256,6 @@ class runspaceInitComponent(Component):
                 if (errno != 17):
                     self.services.exception('Error creating directory %s : %s',
                                             workdir, strerror)
-                    # pytau.stop(timer)
                     raise
 
         # print 'FINISHED RUNSPACEINIT'

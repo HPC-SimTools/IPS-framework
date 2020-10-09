@@ -7,16 +7,6 @@ import os
 import weakref
 from copy import copy
 
-try:
-    if os.environ['IPS_TIMING'] == '1':
-        try:
-            import pytau
-        except ImportError:
-            raise
-        IPS_TIMING = True
-except KeyError:
-    pass
-
 
 class Component:
     """
@@ -28,9 +18,6 @@ class Component:
         """
         Set up config values and reference to services.
         """
-        # pytau.setNode(1)
-        # timer = pytau.profileTimer("component.__init__", "", str(os.getpid()))
-        # pytau.start(timer)
         self.component_id = None
         self.invocation_q = None
         self.services = weakref.proxy(services)
@@ -42,10 +29,7 @@ class Component:
                 setattr(self, i, config[i])
             except Exception as e:
                 print('Error setting Component parameter : ', i, ' - ', e)
-                # pytau.stop(timer)
                 raise
-
-        # pytau.stop(timer)
 
     def __copy__(self):
         cls = self.__class__
@@ -61,15 +45,10 @@ class Component:
         """
         Establish connection to *invocation_q*.
         """
-        # timer = pytau.profileTimer("component.__initialize__", "", str(os.getpid()))
-        # pytau.start(timer)
         self.component_id = component_id
         self.invocation_q = invocation_q
         self.start_time = start_time
 #        setattr(sys, 'exit', sys.exit)
-
-        # pytau.stop(timer)
-        return
 
     def __my_exit__(self, arg=0):
         """
@@ -86,8 +65,6 @@ class Component:
         Wait for incoming commands delivered via the *invocation_q*, and
         dispatch the incoming methods accordingly.
         """
-        # timer = pytau.profileTimer(self.component_id.__str__() + ".__run__", "", str(os.getpid()))
-        # pytau.start(timer)
 
         tmp = sys.exit
         sys.exit = self.__my_exit__
@@ -131,7 +108,6 @@ class Component:
                 (errno, strerror) = oserr.args
                 self.services.exception('Error creating directory %s : %s',
                                         workdir, strerror)
-                # pytau.stop(timer)
                 raise
             os.chdir(workdir)
         self.services.debug('Running - CompID =  %s',
@@ -140,9 +116,6 @@ class Component:
         if (self.services.profile):
             self.services.debug('Instrumenting - CompID =  %s',
                                 self.component_id.get_serialization())
-            pytau.setNode(int(self.component_id.get_seq_num()))
-            pytau.dbPurge()
-            self.services._make_timers()
         self.services._init_event_service()
 
         while True:
@@ -175,7 +148,6 @@ class Component:
                                                    call_id,
                                                    Message.SUCCESS, retval)
             self.services.fwk_in_q.put(response_msg)
-        # pytau.stop(timer)
 
     def init(self, timestamp=0.0, **keywords):
         """
@@ -241,7 +213,6 @@ class Component:
         Clean up services and call :py:obj:`sys_exit`.
         """
         # print self.services.full_comp_id, ": terminate() method called"
-        self.services._cleanup()
 #        self.services.debug('###(1) %s %s', str(self), str(self.__dict__))
 
         if (status == Message.SUCCESS):
