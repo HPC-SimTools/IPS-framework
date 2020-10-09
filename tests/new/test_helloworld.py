@@ -50,7 +50,6 @@ def test_helloworld(tmpdir, capfd):
                           platform_file_name=os.path.join(tmpdir, "platform.conf"),
                           compset_list=[],
                           debug=None,
-                          ftb=None,
                           verbose_debug=None,
                           cmd_nodes=0,
                           cmd_ppn=0)
@@ -111,7 +110,6 @@ def test_helloworld_task_pool(tmpdir, capfd):
                           platform_file_name=os.path.join(tmpdir, "platform.conf"),
                           compset_list=[],
                           debug=None,
-                          ftb=None,
                           verbose_debug=None,
                           cmd_nodes=0,
                           cmd_ppn=0)

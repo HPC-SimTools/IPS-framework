@@ -7,7 +7,6 @@ import time
 from math import ceil
 from .ipsExceptions import InsufficientResourcesException, \
     BadResourceRequestException, \
-    AllocatedNodeDownException, \
     ResourceRequestMismatchException
 from .ips_es_spec import eventManager
 from .resourceHelper import getResourceList
@@ -62,12 +61,11 @@ class ResourceManager:
                                           getattr(self, 'process_service_request'))
     # RM initialize
 
-    def initialize(self, dataMngr, taskMngr, configMngr, ftb,
+    def initialize(self, dataMngr, taskMngr, configMngr,
                    cmd_nodes=0, cmd_ppn=0):
         """
         Initialize resource management structures, references to other
-        managers (*dataMngr*, *taskMngr*, *configMngr*), and feature settings
-        (*ftb*).
+        managers (*dataMngr*, *taskMngr*, *configMngr*).
 
         Resource information comes from the following in order of priority:
 
@@ -82,7 +80,6 @@ class ResourceManager:
         self.DM = dataMngr
         self.TM = taskMngr
         self.CM = configMngr
-        self.FTB = ftb
         self.node_alloc_mode = self.CM.get_platform_parameter('NODE_ALLOCATION_MODE')
 
         rfile_name = os.path.join(self.CM.sim_map[self.CM.fwk_sim_name].sim_root, "resource_usage")
@@ -121,7 +118,7 @@ class ResourceManager:
             try:
                 listOfNodes, self.cores_per_node, self.sockets_per_node,  \
                     self.max_ppn, self.accurateNodes = \
-                    getResourceList(self.CM, self.host, self.FTB)
+                    getResourceList(self.CM, self.host)
                 # print "SSSSSSSSSSSSSSSSSS", self.cores_per_node, self.sockets_per_node, self.max_ppn
                 self.fwk.warning('RM: listOfNodes = %s', str(listOfNodes))
                 self.fwk.warning('RM: max_ppn = %d ', int(self.max_ppn))
@@ -186,11 +183,6 @@ class ResourceManager:
         self.total_cores = self.add_nodes(listOfNodes)
         self.avail_cores = self.total_cores
         self.begin_RM_report()
-        if self.FTB:
-            # self.EM.publish('FTBEvents', 'RM reporting nodes', listOfNodes)  <-- Not needed anymore
-            self.EM.subscribe('_IPS_NODE_STATUS', self.process_FTB_events)
-            self.effected_task_list = []
-        # self.printRMState()
 
     def process_service_request(self, msg):
         pass
@@ -264,13 +256,6 @@ class ResourceManager:
                     tot_cores += p
                 else:  # p is a list of core names
                     tot_cores += len(p)
-        """
-        ### AGS: SC09 demo code, also useful for debugging FT capabilities.
-        if self.FTB and not self.accurateNodes:
-            self.resource_visualizer()
-            print ">>> Nodes allocated."
-            sys.stdout.flush()
-        """
         return tot_cores
 
     # RM getAllocation
@@ -305,9 +290,6 @@ class ResourceManager:
           * *method*: name of method (string)
           * *task_ppn*: ppn for this task (optional) (int)
         """
-        if self.FTB:
-            # check the FTB for new information
-            self.EM.process_events()
         # get the component requirements for all of the components
 
         # set ppn for this task
@@ -457,17 +439,6 @@ class ResourceManager:
                 self.report_RM_status("allocation for task %d using partial nodes" % task_id)
                 return not whole_nodes, nodes, node_file_entries, ppn, self.max_ppn, self.accurateNodes
 
-        """
-        ### AGS: SC09 demo code, also useful for debugging FT capabilities.
-        if self.FTB and not self.accurateNodes:
-            self.resource_visualizer()
-            task_name = self.map_task_owner(str(comp_id))
-            if not task_name:
-                task_name = task_id
-            print ">>> Task", task_name, "running."
-            sys.stdout.flush()
-        """
-
     def check_whole_node_cap(self, nproc, ppn):
         """
         Determine if it is currently possible to allocate *nproc* processes
@@ -601,8 +572,6 @@ class ResourceManager:
         not used, but may be used to correlate resource failures to task
         failures and implement task relaunch strategies.
         """
-        if self.FTB:
-            self.EM.process_events()
 
         o, nproc, num_cores = self.active_tasks[task_id]
         tot_avc = 0
@@ -621,101 +590,7 @@ class ResourceManager:
 
         self.report_RM_status('released nodes for task %d' % task_id)
 
-        """
-        ### AGS: SC09 demo code, also useful for debugging FT capabilities.
-        if self.FTB and not self.accurateNodes:
-            self.resource_visualizer()
-            task_name = self.map_task_owner(str(owner))
-            if not task_name:
-                task_name = task_id
-            if task_id in self.effected_task_list:
-                print ">>> Task", task_name, "completed with errors."
-            else:
-                print ">>> Task", task_name, "completed without errors."
-            sys.stdout.flush()
-        """
-
-        if self.FTB:
-            if task_id in self.effected_task_list:
-                self.effected_task_list.remove(task_id)
-                raise AllocatedNodeDownException("down", task_id, "owner")
-
         return True
-
-    def process_FTB_events(self, topic, event):
-        # messages are gotten and processed here
-        # assuming all events are from the FTB
-        try:
-            b = event.getBody()
-            self.fwk.debug("Processing FTB event: %s, %s", b['NODE_STATUS'], b['NODE_LIST'])
-
-            for node in b['NODE_LIST']:
-
-                """
-                ### AGS: SC09 demo code, also useful for debugging FT capabilities.
-                if self.FTB and not self.accurateNodes:
-                    node = int(node)
-                """
-
-                self.nodes[node].status = b['NODE_STATUS']
-
-                if b['NODE_STATUS'] == 'NODE_DOWN':
-                    if node in self.avail_nodes:
-                        self.avail_nodes.remove(node)
-                        self.nodes[node]['available'] = False
-                    elif node in self.alloc_nodes:
-                        if self.nodes[node]['task_id'] not in self.effected_task_list:
-                            self.effected_task_list.append(self.nodes[node]['task_id'])
-                elif b['NODE_STATUS'] == 'NODE_UP':
-                    if (node not in self.avail_nodes) and (node not in self.alloc_nodes):
-                        try:
-                            self.avail_nodes.append(node)
-                            self.nodes[node].is_available = 1
-                        except Exception:
-                            self.add_nodes([node])
-        except Exception as e:
-            print(e)
-            print(">>> Problems with the FTB.")
-
-    """
-    ### AGS: SC09 demo code, also useful for debugging FT capabilities.
-    def resource_visualizer(self):
-        print time.strftime("\n\n\n%Y-%m-%d %H:%M:%S", time.localtime())
-        print "-------------------"
-        print "Resource Visualizer"
-        print "-------------------"
-        count = 0
-        for n in sorted(self.nodes.keys()):
-            i = self.nodes[n]
-            if i['status'] == 'NODE_DOWN':
-                #TODO: this is an old way of formatting print output, that will eventually be
-                #      removed from the language, hence switch to str.format().
-                print "%4s" %'X',
-            elif i['status'] == 'NODE_UP':
-                if i['available'] == True:
-                    print "%4s" %'.',
-                elif n in self.alloc_nodes:
-                    task_name = self.map_task_owner(str(i['owner']))
-                    if not task_name:
-                        task_name = i['task_id']
-                    print "%4s" %task_name,
-            count += 1
-            if count%4 == 0:
-                print "\n",
-            sys.stdout.flush()
-        print "-------------------"
-        sys.stdout.flush()
-
-    def map_task_owner(self, owner):
-        if owner.find('medium_worker') >= 0:
-            return 'A'
-        elif owner.find('large_worker') >= 0:
-            return 'B'
-        elif owner.find('small_worker') >= 0:
-            return 'C'
-        else:
-            return None
-    """
 
     # RM SendEvent
     def sendEvent(self, eventName, info):
