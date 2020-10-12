@@ -1,21 +1,15 @@
-#PRE IPS_ROOT = /home/facets/dexter/builds/facetsall/simyan    # Root of IPS component and binary tree
-#PRE FWK_COMPS_PATH = $IPS_ROOT    # Root of IPS component and binary tree
-#PRE ALL_RUNS = /home/facets/dexter/all_runs
 OUTPUT_PREFIX = 
 
 RUN_COMMENT = testing basic concurrent component simulation capability
-#PORTAL_URL = http://127.0.0.1:8000/monitor		# URL for the portal
-#RUNID_URL  = httt://127.0.0.1:4040/runid.esp
-#LOG_FILE = $IPS_ROOT/$SIM_NAME.log
-#LOG_LEVEL = DEBUG                   # Possible values: DEBUG, INFO, WARNING, ERROR, CRITICAL
 
 RUN_ID = test                       # Indentifier for this simulation run
 TOKAMAK_ID = basic_serial2          # Identifier for tokamak simulated
 SHOT_NUMBER = 0                     # Identifier for specific case for this tokamak (not necessarily a number)
 
 SIM_NAME = ${RUN_ID}_${TOKAMAK_ID}_${SHOT_NUMBER}   # Name of current simulation
-SIM_ROOT = $SIM_NAME                      # Where to put results from this simulation
-#PRE SIM_ROOT = $ALL_RUNS/$SIM_NAME                      # Where to put results from this simulation
+SIM_ROOT = $PWD/$SIM_NAME                      # Where to put results from this simulation
+
+SIMULATION_MODE = NORMAL
 
 PLASMA_STATE_WORK_DIR = $SIM_ROOT/work/plasma_state # Where to put plasma state files as the simulation evolves 
 CURRENT_STATE = 
@@ -31,7 +25,7 @@ LOG_LEVEL = DEBUG                   # Possible values: DEBUG, INFO, WARNING, ERR
    NAMES = DRIVER WORKER1 WORKER2 WORKER3
    
    [[DRIVER]]                                       # REQUIRED Port section 
-      IMPLEMENTATION = BASIC_SERIAL1
+      IMPLEMENTATION = BASIC_SERIAL2
 
    [[WORKER1]]
       IMPLEMENTATION = SMALL_WORKER
@@ -111,30 +105,33 @@ LOG_LEVEL = DEBUG                   # Possible values: DEBUG, INFO, WARNING, ERR
     SUB_CLASS = testing
     NAME = small_worker
     NPROC = 1
-    BIN_PATH = $IPS_ROOT/tests/components/workers
+    BIN_PATH = $IPS_ROOT/tests/bin
+    BIN = parallel_sleep
     INPUT_FILES =
     OUTPUT_FILES = $CURRENT_STATE
-    SCRIPT = $BIN_PATH/small_worker.py
+    SCRIPT = $IPS_ROOT/tests/components/workers/small_worker.py
 
 [MEDIUM_WORKER]
     CLASS = workers
     SUB_CLASS = testing
     NAME = medium_worker
     NPROC = 1
-    BIN_PATH = $IPS_ROOT/tests/components/workers
+    BIN_PATH = $IPS_ROOT/tests/bin
+    BIN = parallel_sleep
     INPUT_FILES =
     OUTPUT_FILES = $CURRENT_STATE
-    SCRIPT = $BIN_PATH/medium_worker.py
+    SCRIPT = $IPS_ROOT/tests/components/workers/medium_worker.py
 
 [LARGE_WORKER]
     CLASS = workers
     SUB_CLASS = testing
     NAME = large_worker
     NPROC = 1
-    BIN_PATH = $IPS_ROOT/tests/components/workers
+    BIN_PATH = $IPS_ROOT/tests/bin
+    BIN = parallel_sleep
     INPUT_FILES =
     OUTPUT_FILES = $CURRENT_STATE
-    SCRIPT = $BIN_PATH/large_worker.py
+    SCRIPT = $IPS_ROOT/tests/components/workers/large_worker.py
 
 [XL_WORKER]
     CLASS = workers

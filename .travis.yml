@@ -3,8 +3,11 @@ python:
   - "3.6"
   - "3.7"
   - "3.8"
+before_install:
+  - sudo apt-get -y install openmpi-bin libopenmpi-dev
 install:
   - pip install pytest-runner pytest-cov flake8 pylint matplotlib psutil codecov
+  - pushd . && cd tests/bin/ && mpicc -o parallel_sleep parallel_sleep.c && popd
   - python setup.py develop
 script:
   - ips.py --help

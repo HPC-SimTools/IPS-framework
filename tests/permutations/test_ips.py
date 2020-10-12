@@ -33,7 +33,7 @@ class testIPS(unittest.TestCase):
             self.run_done = None
             self.cfgFile_list = []
             self.log_file = None
-            self.platform_filename = None
+            self.platform_filename = 'platform.conf'
 
     def printUsageMessage(self):
         print('Usage: ips [--create-runspace | --run-setup | --run]+ --simulation=SIM_FILE_NAME '

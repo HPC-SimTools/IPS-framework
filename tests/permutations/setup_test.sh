@@ -1,7 +1,5 @@
 #!/bin/sh
 
-source ../frameworkpath.py
-
 ###
 ##  Some initial setting up
 #

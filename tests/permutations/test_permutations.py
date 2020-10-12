@@ -2,7 +2,6 @@
 # Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
 # -------------------------------------------------------------------------------
 import os
-import string
 import subprocess
 from test_parameterized_cases import ParameterizedTestCase
 from configobj import ConfigObj
@@ -86,7 +85,7 @@ class test_permutations(ParameterizedTestCase):
             call_args.append('--platform=' + self.param.platform_filename)
         call_args.append('--log=' + self.param.log_file)
 
-        print(string.join(call_args, ' '))
+        print(' '.join(call_args))
         # test must return true if nothing bad happened, false otherwise
         # self.assertTrue(self.fwk.run(), 'error in running fwk')
         self.assertEqual(subprocess.call(call_args), 0, 'error in running IPS')
