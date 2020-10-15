@@ -100,10 +100,6 @@ IPS Utilities
    :members:
    :undoc-members:
 
-.. automodule:: ipsframework.sendPost
-   :members:
-   :undoc-members:
-
 Framework Components
 --------------------
 
