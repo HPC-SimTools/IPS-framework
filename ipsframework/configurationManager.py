@@ -5,7 +5,6 @@ from .configobj import ConfigObj
 import os
 import sys
 import importlib
-import inspect
 from .services import ServicesProxy
 from .componentRegistry import ComponentID, ComponentRegistry
 import tempfile
@@ -445,11 +444,8 @@ class ConfigurationManager:
         runspace_conf['SUB_CLASS'] = 'COMP'
         runspace_conf['NAME'] = 'runspaceInitComponent'
         # SIMYAN: using inspect to grab the ipsPathName from the current frame
-        ipsPathName = inspect.getfile(inspect.currentframe())
-        ipsDir = os.path.dirname(ipsPathName)
-        runspace_conf['BIN_PATH'] = ipsDir
-        runspace_conf['SCRIPT'] = os.path.join(runspace_conf['BIN_PATH'],
-                                               'runspaceInitComponent.py')
+        runspace_conf['SCRIPT'] = ''
+        runspace_conf['MODULE'] = 'ipsframework.runspaceInitComponent'
         runspace_conf['INPUT_DIR'] = '/dev/null'
         runspace_conf['INPUT_FILES'] = ''
         runspace_conf['IPS_CONFFILE_DIR'] = ''
@@ -478,9 +474,10 @@ class ConfigurationManager:
             portal_conf['NAME'] = 'PortalBridge'
             if 'FWK_COMPS_PATH' in self.sim_map[self.fwk_sim_name].sim_conf:
                 portal_conf['BIN_PATH'] = self.sim_map[self.fwk_sim_name].sim_conf['FWK_COMPS_PATH']
+                portal_conf['SCRIPT'] = os.path.join(portal_conf['BIN_PATH'], 'portalBridge.py')
             else:
-                portal_conf['BIN_PATH'] = ipsDir
-            portal_conf['SCRIPT'] = os.path.join(portal_conf['BIN_PATH'], 'portalBridge.py')
+                portal_conf['SCRIPT'] = ''
+                portal_conf['MODULE'] = 'ipsframework.portalBridge'
             portal_conf['INPUT_DIR'] = '/dev/null'
             portal_conf['INPUT_FILES'] = ''
             portal_conf['DATA_FILES'] = ''
@@ -495,11 +492,6 @@ class ConfigurationManager:
             if (self.fwk.log_level == logging.DEBUG):
                 portal_conf['LOG_LEVEL'] = 'DEBUG'
 
-            # does not work, this returns True, not a url
-            #           try:
-            #               portal_conf['PORTAL_URL']=self.sim_map[self.fwk_sim_name].sim_conf.has_key('PORTAL_URL')
-            #               portal_conf['RUNID_URL']=self.sim_map[self.fwk_sim_name].sim_conf.has_key('RUNID_URL')
-            #           except KeyError:
             try:
                 portal_conf['PORTAL_URL'] = self.get_platform_parameter('PORTAL_URL', silent=True)
                 portal_conf['RUNID_URL'] = self.get_platform_parameter('RUNID_URL', silent=True)
@@ -609,49 +601,12 @@ class ConfigurationManager:
             self.fwk.warning('Missing INIT specification in ' +
                              'config file for simulation %s', sim_data.sim_name)
 
-        # conf_file = sim_data.config_file
-        # SIMYAN: No longer doing this in configurationManager.py
-        # Copy the configuration and platform files to the simRootDir
-        # ipsutil.copyFiles(os.path.dirname(conf_file),
-        #                  os.path.basename(conf_file), simRootDir)
-        # ipsutil.copyFiles(os.path.dirname(self.platform_file),
-        #                  os.path.basename(self.platform_file), simRootDir)
-
-        # try to find the statedir
-        # try:
-        #    self.get_sim_parameter(sim_name,
-        #                           'STATE_WORK_DIR')
-        #    haveStateDir = True
-        # except Exception:
-        #    haveStateDir = False
-        # SIMYAN: removed from configurationManager
-        # if haveStateDir:
-        #   try:
-        #       os.makedirs(statedir)
-        #   except OSError, (errno, strerror):
-        #       if (errno != 17):
-        #           self.fwk.exception('Error creating State directory %s : %d %s' ,
-        #                              statedir, errno, strerror)
-        #           #raise
-        return
-
     def _create_component(self, comp_conf, sim_data):
         """
         Create component and populate it with the information from the
         component's configuration section.
         """
         sim_name = sim_data.sim_name
-        fullpath = os.path.abspath(comp_conf['SCRIPT'])
-        # originalpath= comp_conf['SCRIPT']
-        script = comp_conf['SCRIPT'].rsplit('.', 1)[0].split('/')[-1]
-        # endpath = comp_conf['SCRIPT'].rfind('/')
-        # print 'path[0]', comp_conf['SCRIPT'][0:endpath]
-        # print 'script', script
-        # print 'endpath', endpath
-        # if (endpath != -1):
-        #    path = [comp_conf['SCRIPT'][0:endpath],
-        #           comp_conf['SCRIPT'][0:endpath] + '/' + script,
-        #           comp_conf['SCRIPT'][0:endpath] + '/' + script + '.py']
         class_name = comp_conf['NAME']
         if 'PLASMA_STATE_FILES' in list(comp_conf.keys()):
             self.fwk.warning("deprecated PLASMA_STATE_FILES field in component configuration")
@@ -660,17 +615,26 @@ class ConfigurationManager:
                 self.fwk.warning('overriding STATE_FILES component configuration parameter ' +
                                  'with entries from component-level PLASMA_STATE_FILES')
             comp_conf["STATE_FILES"] = comp_conf["PLASMA_STATE_FILES"]
-            # del comp_conf["PLASMA_STATE_FILES"]
-        try:
-            spec = importlib.util.spec_from_file_location(script, fullpath)
-            module = importlib.util.module_from_spec(spec)
-            spec.loader.exec_module(module)
-            component_class = getattr(module, class_name)
-        except Exception:
-            self.fwk.error('Error in configuration file : NAME = %s   SCRIPT = %s',
-                           comp_conf['NAME'], comp_conf['SCRIPT'])
-            self.fwk.exception('Error instantiating IPS component %s From %s', class_name, script)
-            raise
+
+        if comp_conf['SCRIPT']:
+            try:
+                fullpath = os.path.abspath(comp_conf['SCRIPT'])
+                script = comp_conf['SCRIPT'].rsplit('.', 1)[0].split('/')[-1]
+                spec = importlib.util.spec_from_file_location(script, fullpath)
+                module = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(module)
+                component_class = getattr(module, class_name)
+            except (FileNotFoundError, AttributeError):
+                self.fwk.error('Error in configuration file : NAME = %s   SCRIPT = %s',
+                               comp_conf['NAME'], comp_conf['SCRIPT'])
+                self.fwk.exception('Error instantiating IPS component %s From %s', class_name, script)
+                raise
+        else:
+            try:
+                module = importlib.import_module(comp_conf['MODULE'])
+                component_class = getattr(module, class_name)
+            except (ModuleNotFoundError, AttributeError):
+                raise
 
         # SIMYAN: removed else conditional, copying files in runspaceInit
         # component now

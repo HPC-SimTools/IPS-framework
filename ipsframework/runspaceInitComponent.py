@@ -236,14 +236,15 @@ class runspaceInitComponent(Component):
                                           workdir)
 
                 # copy the component's script to the simulation_setup directory
-                if os.path.isabs(comp_conf['SCRIPT']):
-                    ipsutil.copyFiles(os.path.dirname(comp_conf['SCRIPT']),
-                                      [os.path.basename(comp_conf['SCRIPT'])],
-                                      simulation_setup)
-                else:
-                    ipsutil.copyFiles(comp_conf['BIN_DIR'],
-                                      [os.path.basename(comp_conf['SCRIPT'])],
-                                      simulation_setup)
+                if comp_conf['SCRIPT']:
+                    if os.path.isabs(comp_conf['SCRIPT']):
+                        ipsutil.copyFiles(os.path.dirname(comp_conf['SCRIPT']),
+                                          [os.path.basename(comp_conf['SCRIPT'])],
+                                          simulation_setup)
+                    else:
+                        ipsutil.copyFiles(comp_conf['BIN_DIR'],
+                                          [os.path.basename(comp_conf['SCRIPT'])],
+                                          simulation_setup)
 
             # get the working directory from the runspaceInitComponent
             workdir = services.get_working_dir()

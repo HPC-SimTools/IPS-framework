@@ -1,22 +1,8 @@
 from ipsframework.ips import Framework
-import glob
-import json
 import os
 
 
 def write_basic_config_and_platform_files(tmpdir):
-    test_component = tmpdir.join("test_component.py")
-
-    driver = """#!/usr/bin/env python3
-from ipsframework.component import Component
-class test_driver(Component):
-    def __init__(self, services, config):
-        super().__init__(services, config)
-"""
-
-    with open(test_component, 'w') as f:
-        f.write(driver)
-
     platform_file = tmpdir.join('platform.conf')
 
     platform = """MPIRUN = eval
@@ -39,19 +25,31 @@ LOG_FILE = {str(tmpdir)}/log.warning
 SIM_ROOT = {str(tmpdir)}
 SIMULATION_MODE = NORMAL
 [PORTS]
-    NAMES = DRIVER
+    NAMES = DRIVER WORKER
     [[DRIVER]]
-        IMPLEMENTATION = test_driver
-[test_driver]
-    CLASS = driver
-    SUB_CLASS =
-    NAME = test_driver
-    NPROC = 1
+      IMPLEMENTATION = HELLO_DRIVER
+    [[WORKER]]
+      IMPLEMENTATION = HELLO_WORKER
+[HELLO_DRIVER]
+    CLASS = DRIVERS
+    SUB_CLASS = HELLO
+    NAME = HelloDriver
     BIN_PATH =
-    INPUT_DIR =
+    NPROC = 1
     INPUT_FILES =
     OUTPUT_FILES =
-    SCRIPT = {test_component}
+    SCRIPT =
+    MODULE = helloworld.hello_driver
+[HELLO_WORKER]
+    CLASS = WORKERS
+    SUB_CLASS = HELLO
+    BIN_PATH =
+    NAME = HelloWorker
+    NPROC = 1
+    INPUT_FILES =
+    OUTPUT_FILES =
+    SCRIPT =
+    MODULE = helloworld.hello_worker
 """
 
     with open(config_file, 'w') as f:
@@ -60,7 +58,7 @@ SIMULATION_MODE = NORMAL
     return platform_file, config_file
 
 
-def test_framework_simple(tmpdir, capfd):
+def test_using_module_components(tmpdir, capfd):
     platform_file, config_file = write_basic_config_and_platform_files(tmpdir)
 
     framework = Framework(do_create_runspace=True,  # create runspace: init.init()
@@ -89,39 +87,22 @@ def test_framework_simple(tmpdir, capfd):
     assert 'test' in component_map
     test = component_map['test']
     assert len(test) == 1
-    assert test[0].get_class_name() == 'test_driver'
-    assert test[0].get_instance_name().startswith('test@test_driver')
-    # assert test[0].get_seq_num() == 1 # need to find a way to reset static variable
-    assert test[0].get_serialization().startswith('test@test_driver')
+    assert test[0].get_class_name() == 'HelloDriver'
+    assert test[0].get_instance_name().startswith('test@HelloDriver')
+    assert test[0].get_serialization().startswith('test@HelloDriver')
     assert test[0].get_sim_name() == 'test'
 
-    framework.run()
-
-    # check simulation_log
-    json_files = glob.glob(str(tmpdir.join("simulation_log").join("*.json")))
-    assert len(json_files) == 1
-    with open(json_files[0], 'r') as json_file:
-        json_lines = json_file.readlines()
-
-    assert len(json_lines) == 3
-
-    event0 = json.loads(json_lines[0])
-    event1 = json.loads(json_lines[1])
-    event2 = json.loads(json_lines[2])
-
-    assert event0['eventtype'] == 'IPS_START'
-    assert event1['eventtype'] == 'IPS_RESOURCE_ALLOC'
-    assert event2['eventtype'] == 'IPS_END'
-
-    for event in [event0, event1, event2]:
-        assert str(event['ok']) == 'True'
-        assert event['sim_name'] == 'test'
+    # Don't run anything, just check initialization of components
+    framework.terminate_all_sims()
 
     captured = capfd.readouterr()
-    assert captured.out.endswith('checklist.conf" could not be found, continuing without.\n')
+
+    captured_out = captured.out.split('\n')
+    assert captured_out[0] == "Created <class 'helloworld.hello_driver.HelloDriver'>"
+    assert captured_out[1] == "Created <class 'helloworld.hello_worker.HelloWorker'>"
     assert captured.err == ''
 
     # cleanup
-    for fname in ["test_framework_simple0.zip", "dask_preload.py"]:
+    for fname in ["test_using_module_components0.zip", "dask_preload.py"]:
         if os.path.isfile(fname):
             os.remove(fname)

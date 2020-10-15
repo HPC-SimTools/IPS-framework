@@ -1,19 +1,7 @@
 from ipsframework.ips import Framework
 import os
 import shutil
-import psutil
-import pytest
 import glob
-
-
-@pytest.fixture(autouse=True)
-def run_around_tests():
-    yield
-    # if an assert fails then not all the children may close and the
-    # test will hang, so kill all the children
-    children = psutil.Process(os.getpid()).children()
-    for child in children:
-        child.kill()
 
 
 def copy_config_and_replace(infile, srcdir, tmpdir):
@@ -79,7 +67,7 @@ def test_basic_serial1(tmpdir, capfd):
         assert outfile in large_worker_files
 
     # cleanup
-    for fname in ["test_basic_serial10.zip", "dask_preload.py"]:
+    for fname in ["test_basic_serial1_0.zip", "dask_preload.py"]:
         if os.path.isfile(fname):
             os.remove(fname)
 
@@ -152,6 +140,6 @@ def test_basic_serial_multi(tmpdir, capfd):
             assert outfile in large_worker_files
 
     # cleanup
-    for fname in ["test_basic_serial10.zip", "dask_preload.py"]:
+    for fname in ["test_basic_serial1_0.zip", "dask_preload.py"]:
         if os.path.isfile(fname):
             os.remove(fname)
