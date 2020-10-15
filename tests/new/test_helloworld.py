@@ -1,19 +1,7 @@
 from ipsframework.ips import Framework
 import os
 import shutil
-import psutil
-import pytest
 import json
-
-
-@pytest.fixture(autouse=True)
-def run_around_tests():
-    yield
-    # if an assert fails then not all the children may close and the
-    # test will hang, so kill all the children
-    children = psutil.Process(os.getpid()).children()
-    for child in children:
-        child.kill()
 
 
 def copy_config_and_replace(infile, outfile, tmpdir, task_pool=False):
