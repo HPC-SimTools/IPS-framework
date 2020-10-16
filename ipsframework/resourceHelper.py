@@ -243,119 +243,6 @@ def get_checkjob_info():
 #    return nodes, int(p)
 
 
-def get_checkjob_info_old():
-    """
-    Use ``checkjob $PBS_JOBID`` to get the node names and core counts of
-    allocation.  Typically works in a Cray environment.
-
-    .. note:: Two formats for outputing resource information.
-
-               1. [node_id:tasks_per_node]+
-               2. ([comma separated list of node_ids and node_id ranges]*tasks_per_node)+
-
-    """
-    ndata = []
-    cmd = "checkjob $PBS_JOBID"
-    data_lines = []
-
-    try:
-        os.environ['PBS_JOBID']
-    except Exception:
-        print('problems getting job id')
-        raise
-
-    """
-    try:
-        hname = os.environ['HOST']
-        if hname.find('.') > 0:
-            hname = hname.split('.')[0]
-        for k in range(len(hname)):
-            if hname[k].isdigit():
-                n = hname[:k]
-                break
-        print 'hostname prefix is %s' % n
-        frmt_str = n + "%0" + str(len(hname[k:])) + "d"
-    except Exception:
-        print 'problems getting hostname'
-        raise
-    """
-
-    # run checkjob $PBS_JOBID
-    try:
-        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, shell=True)
-        lines = proc.stdout.readlines()
-        for k in range(len(lines)):
-            x = lines[k].rstrip()
-            if x.find("Allocated Nodes:") > -1:
-                start = k + 1
-            elif x.find("StartCount:") > -1:
-                end = k
-            if x.find("Total Requested Tasks:") > -1:
-                a, b = x.split(":")
-                b = b.strip()
-        for line in lines[start:end]:
-            if line.strip() != "":
-                data_lines.append(line.strip())
-    except Exception:
-        print('problems getting checkjob output')
-        raise
-
-    """
-    There are two different formats for listing nodes that the job has access to.
-    For the small numbers of nodes:
-        [node_id:tasks_per_node]+
-
-    For large numbers of nodes:
-        [list of comma separated node_ids and node_id ranges]*tasks_per_node(:[list of comma separated node_ids and node_id ranges]*tasks_per_node)*
-    """
-    data_lines = "".join(data_lines)
-    mixed_nodes = False
-    max_p = 0
-    # print data_lines
-    # large node numbers mode
-    try:
-        if data_lines.find("*") > -1:
-            # split by :
-            data_lines = data_lines.split(":")
-            for d in data_lines:
-                nids, ppn = d.split("*")
-                ppn = int(ppn)
-                if max_p < ppn:
-                    if max_p > 0:
-                        mixed_nodes = True
-                    max_p = ppn
-                nids = nids.strip("[]")
-                ranges = nids.split(",")
-                for be in ranges:
-                    try:
-                        b, e = be.split("-")
-                        # ndata.extend([(frmt_str % k, ppn) for k in range(int(b), int(e) + 1)])
-                        ndata.extend([(str(k), ppn) for k in range(int(b), int(e) + 1)])
-                    except Exception:
-                        # ndata.append((frmt_str % int(be), ppn))
-                        ndata.append((be, ppn))
-        else:
-            # small node number format
-            data_lines = data_lines.strip('[]')
-            pairs = data_lines.split("][")
-            # print "pairs", pairs
-            for i in pairs:
-                # print i
-                m, p = i.split(":")
-                p = int(p)
-                if max_p < p:
-                    if max_p > 0:
-                        mixed_nodes = True
-                    max_p = p
-                # ndata.append((frmt_str % int(m), p))
-                ndata.append((m, p))
-    except Exception:
-        raise
-
-    nodes = len(ndata)
-    return nodes, max_p, mixed_nodes, ndata
-
-
 def get_slurm_info():
     """
     Access environment variables set by Slurm to get the node names,
@@ -498,33 +385,6 @@ def manual_detection(services):
     return num_nodes, ppn, False, listOfNodes
 
 
-def get_topo(services):
-    """
-    Uses `hwloc <http://www.open-mpi.org/projects/hwloc/>`_ library calls in C
-    program ``topo_disco`` to detect the topology of a node in the allocation.
-    Return the number of sockets and the number of cores.
-
-    .. note:: Not available on all platforms.
-    """
-    print("***in get_topo")
-    # TODO: change launch_str to use mpirun and command line flags from
-    # platform config.
-    script = services.get_platform_parameter('HWLOC_DETECT_SCRIPT')
-    print(script)
-    launch_str = 'mpirun -n 1 -bind-to-core %s' % script
-    p = subprocess.Popen(launch_str, shell=True,
-                         stdout=subprocess.PIPE,
-                         stderr=subprocess.STDOUT)
-    p.wait()
-    if p.returncode == 0:
-        topo = p.communicate()[0]
-        print(topo)
-        return topo.count('Socket'), topo.count('Core')
-    else:
-        print("returncode = %d\nproblem launching: '%s'" % (p.returncode, launch_str))
-        print(topo)
-
-
 def getResourceList(services, host, partial_nodes=False):
     """
     Using the host information, the resources are detected.  Return list of
@@ -559,7 +419,7 @@ def getResourceList(services, host, partial_nodes=False):
         if ppn == 0:
             ppn = 1
         if not listOfNodes:
-            for n in num_nodes:
+            for n in range(num_nodes):
                 listOfNodes.append(("dummynode%d" % n, ppn))
         else:
             accurateNodes = True
