@@ -5,17 +5,13 @@ At the moment, in order to view them in a pretty and composed fashion you will
 need to build them yourself.  This will change once we have stabilized the 
 documentation such that we can share them.
 
-1) Obtain sphinx - http://sphinx.pocoo.org/
+1) Obtain sphinx - https://www.sphinx-doc.org
    * What is sphinx?  It is a python package that helps you produce nice 
      looking documentation in various forms, so you can write the 
      documentation once, then use sphinx to generate html, latex (pdf), 
      text, or many other forms.
    * What do I need to install sphinx?  You will need Python 
-     (http://www.python.org/), docutils (http://docutils.sourceforge.net/), 
-     and sphinx.  You may also want easy-install (a package installer for 
-     Python kind of like yum - http://pypi.python.org/pypi/setuptools) 
-     to make installing Python packages easier.
-   * I suggest getting Python, then easy-install, then the other two packages.
+     (http://www.python.org/), and sphinx.
 
 2) Build the documentation
    * Choose a desired output format (html, latex, text).
@@ -23,10 +19,10 @@ documentation such that we can share them.
    * For example, "make html" will produce webpages containing documentation
      and APIs for the framework code.
    * The documentation in the specified format will be located in:
-       ips/trunk/doc/_build/<format>/
+       doc/_build/<format>/
    
      For example, "make html" puts the top-level page:
-       ips/trunk/doc/_build/html/index.html
+       doc/_build/html/index.html
 
 3) Writing documentation
    * Each category of documentation (e.g., user guides, component guides) 
@@ -38,10 +34,8 @@ documentation such that we can share them.
      index.rst.
    * Documentation is written using the reStructuredText markup language.  It 
      is similar to languages used to write wiki documents.  You can find a 
-     good reference at http://sphinx.pocoo.org/rest.html, which covers the 
+     good reference at https://www.sphinx-doc.org, which covers the
      basics, and links to more detailed information on the language.
    * Documentation files must end in .rst.
    * Docstrings in the source code for the framework use reStructuredText 
      formatting as well.
-
-Questions? Contact Samantha Foley (foleyss@ornl.gov)

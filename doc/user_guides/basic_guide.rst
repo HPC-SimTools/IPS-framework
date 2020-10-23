@@ -58,10 +58,6 @@ Elements of a Simulation
 **Batch script**
   The *batch script* tells the batch scheduler how and what to run, including the number of processes and nodes for the allocation, the command to launch the IPS, and any other information that the batch scheduler needs to know to run your job.  There are some examples in the :doc:`examples <examples_listing>` directory.
 
-**Portal**
-  The *portal* is a web portal set up to monitor SWIM runs.  There are some additional capabilities with regard to saving and visualizing data associated with the run that are in development.  See the :doc:`portal documentation <../portal_guides/portal_guides>` for more information and up-to-date capabilities.
-
-
 .. _ConfigObj: http://www.voidspace.org.uk/python/configobj.html
 
 ----------------

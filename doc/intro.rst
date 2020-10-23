@@ -41,8 +41,6 @@ Developers of the IPS framework and services, or brave souls who wish to underst
 
 Component developers should also contribute and update the documentation associated with each component in the :doc:`Component Guides<component_guides/component_guides>` section.
 
-Documentation related to using and developing for the web portal is contained in :doc:`Portal Guides<portal_guides/portal_guides>`.  Basic usage of the portal is covered in the appropriate documents in the User Guides section.
-
 Acknowledgments
 ---------------
 

@@ -7,9 +7,7 @@ This document will guide you through the process of running an IPS simulation an
 Obtaining, Dependencies, Platforms
 ======================================
 
-The IPS code is currently located in the SWIM project's Subversion (SVN) repository.  In order to checkout a copy, you must have SVN installed on the machine you will be using and be given permission to check out the IPS from the SWIM project.  (SVN is installed on the machines used in the examples below.)  See the SWIM project's website for details and instructions on how to sign up.
-
-Once you have permission to access the repository, replace <cswim_user> with your user name and check out the IPS trunk thusly::
+The IPS code is currently located on the GitHub repository. In order to checkout a copy, you must have git installed on the machine you will be using. Once you have git you can check out the IPS thusly::
 
       git clone https://github.com/HPC-SimTools/IPS-framework.git ips
 
@@ -19,52 +17,33 @@ Dependencies
 
 **IPS Proper**
 
-The IPS framework is written in Python_, and requires Python 2.5+ [#]_.  There are a few other packages that may be needed for certain components or utilities.  For Python packages listed below, we recommend using easy_install_ (it is what the developers use and like).  The framework does use the Python package ConfigObj_, however the source is already included and no package installation is necessary (likewise for Python 2.5 and the processing module).
-
-**Portal**
-
-The portal is a web interface for monitoring IPS runs and requires only a connection to the internet and a web browser.  Advanced features on the portal require an OpenID account backed by ORNL's XCAMS.  Information on getting an XCAMS backed OpenID can be found on the SWIM website.  There are also visualization utilities that can be accessed that require Elvis_ or PCMF (see below).
+The IPS framework is written in Python_, and requires Python 3.6+.  There are a few other packages that may be needed for certain components or utilities.  The framework does use the Python package ConfigObj_, however the source is already included and no package installation is necessary (likewise for Python 3.6 and the processing module).
 
 ::::::::::::::::
 Other Utilities
 ::::::::::::::::
 
-**PCMF**
-  This utility generates plots from monitor component files for visual analysis of runs.  It can be run locally on your machine and generates plots like this one of the thermal profiles of an ITER run:
-
-  Requires: Matplotlib_ (which requires `Numpy/Scipy`_)
-
-
-  .. image:: thermal_profiles.png
-      :alt: thermal profiles of an ITER run
-
 **Resource Usage Simulator (RUS)**
   This is a utility for simulation the execution of tasks in the IPS
   for research purposes.
 
-  Requires: Matplotlib_ (which requires `Numpy/Scipy`_)
+  Requires: Matplotlib_ (which requires Numpy_/Scipy_)
 
 **Documentation**
   The documentation you are reading now was created by a Python-based
   tool called Sphinx.
 
-  Requires: Sphinx_ (which requires docutils_)
+  Requires: Sphinx_
 
 
 ***Plus*** anything that the components or underlying codes that you are using need (e.g., MPI, math libraries, compilers).  For the example in this tutorial, all packages that are needed are already available on the target machines and the shell configuration script sets up your environment to use them.
 
-.. [#] For Python 2.5, an external package - processing_ - is used by the framework, however it was incorporated into Python 2.6 and higher as the multiprocessing_ module.  Each package allows Python to spawn, manage and communicate between multiple processes, a key capability that allows the IPS to achieve multiple levels of parallelism. 
-
-.. _Sphinx: http://sphinx.pocoo.org/
-.. _Matplotlib: http://matplotlib.sourceforge.net/
-.. _Numpy/Scipy: http://numpy.scipy.org/
-.. _Elvis: http://w3.pppl.gov/elvis/
-.. _docutils: http://docutils.sourceforge.net/
-.. _easy_install: http://packages.python.org/distribute/easy_install.html
-.. _ConfigObj: http://www.voidspace.org.uk/python/configobj.html
-.. _Python: http://python.org/
-.. _processing: http://pypi.python.org/pypi/processing
-.. _multiprocessing: http://docs.python.org/library/multiprocessing.html
+.. _Sphinx: https://www.sphinx-doc.org
+.. _Matplotlib: https://matplotlib.org
+.. _Numpy: https://numpy.org
+.. _Scipy: https://numpy.org
+.. _ConfigObj: http://configobj.readthedocs.io
+.. _Python: http://python.org
 
 ========================================
 Building and Setting up Your Environment
