@@ -13,8 +13,6 @@ import logging
 import socket
 from multiprocessing import Queue, Process
 
-my_version = float(sys.version[:3])
-
 
 class ConfigurationManager:
     """

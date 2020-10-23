@@ -19,8 +19,6 @@ import glob
 import weakref
 import inspect
 
-MY_VERSION = float(sys.version[:3])
-
 
 def launch(binary, task_name, working_dir, *args, **keywords):
     os.chdir(working_dir)
@@ -862,10 +860,7 @@ class ServicesProxy:
         task_retval = 'killed'
         # kill process
         try:
-            if MY_VERSION < 2.6:
-                os.kill(process.pid, signal.SIGTERM)
-            else:
-                process.terminate()
+            process.terminate()
         except Exception:
             self.exception('exception during process termination for task %d', task_id)
             raise
