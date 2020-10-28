@@ -41,7 +41,7 @@ Elements of a Simulation
   A *port* is a category of component that can be implemented by different component implementations, i.e., components that wrap codes that different mathematical models of the same phenomenon.  Each component that has the same port must implement the same interface (i.e., implement functions with the same names - in the IPS all components implement "init", "step", and "finalize"), and provide the same functionality in a coupled simulation.  In most cases, this means that it updates the same values in the plasma state.  Drivers use the port name of a component to obtain a reference for that component at run time, as specified in the configuration file.
 
 **Services**
-  The framework *services* provide APIs for setting up the simulation, and managing data, resources, tasks, component invocations, access to configuration data and communication via an event service during execution.  For more details, see our published :doc:`papers <../pubs>`, :doc:`IPS developer documentation <../developer_guides/developer_guides>` and :doc:`code listings <../the_code>`.  Component writers should check out the :ref:`services API <api_section>` for relevant services and tips on how to use them.
+  The framework *services* provide APIs for setting up the simulation, and managing data, resources, tasks, component invocations, access to configuration data and communication via an event service during execution.  For more details, see :doc:`code listings <../the_code>`.  Component writers should check out the :ref:`services API <api_section>` for relevant services and tips on how to use them.
 
 **Data files**
   Each component specifies the input and output *data files* it needs for a given simulation.  These file names and locations are used to stage data in and out for each time step.  Note that these are not the same as the *plasma state files*, in that *data files* are component local (and thus private).
@@ -56,7 +56,7 @@ Elements of a Simulation
   The *platform configuration file* contains platform specific information needed by the framework for task and resource management, as well as paths needed by the portal and configuration manager.  These rarely change, so the version in the top level of the IPS corresponding to the platform you are running on should be used.
 
 **Batch script**
-  The *batch script* tells the batch scheduler how and what to run, including the number of processes and nodes for the allocation, the command to launch the IPS, and any other information that the batch scheduler needs to know to run your job.  There are some examples in the :doc:`examples <examples_listing>` directory.
+  The *batch script* tells the batch scheduler how and what to run, including the number of processes and nodes for the allocation, the command to launch the IPS, and any other information that the batch scheduler needs to know to run your job.
 
 .. _ConfigObj: http://www.voidspace.org.uk/python/configobj.html
 
@@ -93,7 +93,7 @@ Once you have a plan for constructing, managing and analyzing the results of you
 A Brief Introduction to Writing and Modifying Components
 :::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-In many cases, new components or modifications to existing components need to be made.  In this section, the anatomy of a component and a driver are explained for a simple invocation style of execution (see :doc:`Advanced User Guide <advanced_guide>` for more information on creating components and drivers with complex logic, parallelism and asynchronous control flow).
+In many cases, new components or modifications to existing components need to be made.  In this section, the anatomy of a component and a driver are explained for a simple invocation style of execution. (see :doc:`Advanced User Guide <advanced_guide>` for more information on creating components and drivers with complex logic, parallelism and asynchronous control flow).
 
 Each component is derived from the ``Component`` class, meaning that each IPS component inherits a few base capabilities, and then must augment them.  Each IPS component must implement the following function bodies for the component class:
 
@@ -293,7 +293,7 @@ Third, you must construct the configuration file.  It is helpful to start with a
        NUM_CHECKPOINT = 2
        PROTECT_FREQUENCY = 5
 
-This section specifies the checkpoint policy you would like enforced for this simulation, and the corresponding parameters to control the frequency and number of checkpoints taken.  See the comments in the same configuration file or the configuration file :doc:`documentation <config_file>`.  If you are debugging or running a component or simulation for the first time, it is a good idea to take frequent checkpoints until you are confident that the simulation will run properly.  For guidance on specifying the checkpoint interval, see :doc:`Fundamentals of the Advanced Features of the IPS <advanced_parallelism>`.
+This section specifies the checkpoint policy you would like enforced for this simulation, and the corresponding parameters to control the frequency and number of checkpoints taken.  See the comments in the same configuration file or the configuration file :doc:`documentation <config_file>`.  If you are debugging or running a component or simulation for the first time, it is a good idea to take frequent checkpoints until you are confident that the simulation will run properly.
 
 * Time Loop Section::
 
@@ -338,7 +338,7 @@ As an example, here is a skeleton of a batch script for Franklin::
 		    [--nodes=<number of nodes in this allocation>] \
 		    [--ppn=<number of processes per node for this allocation>] 
 
-Note that you can only run one instance of the IPS per batch submission, however you may run multiple simulations in the same batch allocation by specifying multiple ``--config=<config file>`` entries on the command line.  Each config file must have a unique file name, and *SIM_ROOT*.  The different simulations will share the resources in the allocation, in many cases improving the resource efficiency, however this may make the execution time of each individual simulation a bit longer due to waiting on resources.  For more information on running multiple simulations, see :doc:`Fundamentals of the Advanced Features of the IPS <advanced_parallelism>`.
+Note that you can only run one instance of the IPS per batch submission, however you may run multiple simulations in the same batch allocation by specifying multiple ``--config=<config file>`` entries on the command line.  Each config file must have a unique file name, and *SIM_ROOT*.  The different simulations will share the resources in the allocation, in many cases improving the resource efficiency, however this may make the execution time of each individual simulation a bit longer due to waiting on resources.
 
 The IPS also needs information about the platform it is running on (``--platform=$IPS_ROOT/franklin.conf``) and a log file (``--logfile=<name of log file>``)for the framework output.  Platform files for commonly used platforms are provided in the top-level of the ips directory.  It is strongly recommended that you use the appropriate one for launching IPS runs.  See :doc:`platform` for more information on how to use or create these files.
 

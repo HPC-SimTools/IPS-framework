@@ -121,9 +121,7 @@ it will be
 	allocation description is used.  If nothing is specified, all
 	of the methods are attempted and the first one to succeed will
 	be used.  Note, if the allocation detection fails, the
-	framework will abort, killing the job.  See :doc:`Porting the
-	IPS<../developer_guides/porting>` for more 
-	information [#node_detection]_.
+	framework will abort, killing the job.
 **CORES_PER_NODE**
         number of cores per node [#nochange]_.
 **SOCKETS_PER_NODE**
@@ -147,15 +145,6 @@ it will be
    or if no detection mechanism is specified and none of the other
    mechansims work first.  It is the *users* responsibility for this
    value to make sense.
-
-.. [#node_detection] Currently the porting documentation is under
-   construction.  Use python script
-   ``ips/framework/utils/test_resource_parsing.py`` to determine 
-   which automatic parsing works for the platform in question.  If
-   nothing works, use the manual settings and contact the framework
-   developers to look into developing a method for automatically
-   detecting the allocation.
-
 
 .. note : the node allocation and detection values in this file can be overriden by command line options to the ips ``--nodes`` and ``--ppn``.  *Both* values must be specified, otherwise the platform configuration values are used.
 

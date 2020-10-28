@@ -27,8 +27,7 @@ process of using the IPS to examine a computational or physics problem,
 with practical hints on what to consider through out the preparation,
 running and analysis/debugging processes.  Additional documentation for
 basic simulation construction include :doc:`The Configuration File -
-Explained<user_guides/config_file>` and :doc:`Using the Plasma
-State<user_guides/plasma_state>`.  :doc:`The IPS for Driver and
+Explained<user_guides/config_file>`.  :doc:`The IPS for Driver and
 Component Developers<user_guides/advanced_guide>` provides component
 developers with basic information on the construction of a component and
 integrating it into the IPS, guidance on how to construct drivers and
@@ -37,7 +36,7 @@ such as multiple levels of parallelism, computational considerations,
 fault tolerance and performance analysis are located in the :doc:`User
 Guides<user_guides/user_guides>` chapter.
 
-Developers of the IPS framework and services, or brave souls who wish to understand how these pieces work, should look at the :doc:`Developer Guides<developer_guides/developer_guides>` and code listings.  The code listings here will include internal and external APIs.  The developer guides include information about the design of the IPS at a high level and the framework and managers at a lower level to acquaint developers with the structures and mechanisms that are used in the IPS framework source code.
+Developers of the IPS framework and services, or brave souls who wish to understand how these pieces work, should look at the :doc:`code listings<the_code>`.  The code listings here will include internal and external APIs.  The developer guides include information about the design of the IPS at a high level and the framework and managers at a lower level to acquaint developers with the structures and mechanisms that are used in the IPS framework source code.
 
 Component developers should also contribute and update the documentation associated with each component in the :doc:`Component Guides<component_guides/component_guides>` section.
 
@@ -45,8 +44,3 @@ Acknowledgments
 ---------------
 
 This documentation has been primarily written or adapted from other sources by Samantha Foley, as part of the SWIM team.  Don Batchelor provided examples and documentation that provided the basis for the :doc:`Getting Started<getting_started/getting_started>` and :doc:`Basic IPS Usage<user_guides/basic_guide>` sections.  Wael Elwasif provided much of the code documentation and initial documents on the directory structure and build process.
-
-Additional Information
-----------------------
-
-For more information on the design and implementation of the IPS and physics results generated using the IPS, see :doc:`Publications<pubs>`.

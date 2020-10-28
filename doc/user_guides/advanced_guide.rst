@@ -11,6 +11,10 @@ When constructing a new simulation scenario, writing a new component or even mak
 
 The framework provides *services* that are used by components to perform data, task, resource and configuration management, and provides an event service for exchanging messages with internal and external entities.  While these services are provided as a single API to component writers, the documentation (and underlying implementation) divides them into groups of methods to perform related actions.  *Data management* services include staging input, output and plasma state files, changing directories, and saving task restart files, among others.  The framework will perform these actions for the calling component based on the files specified in the configuration file and within the method call maintaining coherent directory spaces for each component's work, previous steps, checkpoints and globally accessible data to insure that name collisions do not corrupt data and that global files are accessed in a well-defined manner [#]_.  Services for *task management* include methods for component method invocations, or *calls*, and executable launch on compute nodes, or *task launches*.  The task management portion of the framework works in conjunction with the IPS resource manager to execute multiple parallel executables within a single batch allocation, allowing IPS simulations to efficiently utilize compute resources, as data dependencies allow.  The IPS task manager provides blocking and non-blocking versions of ``call`` and ``launch_task``, including a notion of *task pools* and the ability to wait for the completion of any or all calls or tasks in a group.  These different invocation and launch methods allow a component writer to manage the control flow and implement data dependencies between components and tasks.  This task management interface hides the resource management, platform specific, task scheduling, and process interactions that are performed by the framework, allowing component writers to express their simulations and component coupling more simply.  The *configuration manager* primarily reads the configuration file and instantiates the components for the simulation so that they can interact over the course of the simulation.  It also provides an interface for accessing key data elements from the configuration file, such as the time loop, handles to components and any component specific items listed in the configuration file.
 
+--------------------------
+Components
+--------------------------
+
 There are three classes of components: framework, driver, and general purpose (physics components fall into this category).  In the IPS, each component executes in a separate process (a child of the framework) and implements the following methods:
 
 ``init(self, timeStamp=0)``
@@ -30,7 +34,7 @@ There are three classes of components: framework, driver, and general purpose (p
 
 The component writer will use the services API to help perform data, task, configuration and event management activities to implement these methods.
 
-This document focuses on helping (physics) component and driver writers successfully write new components.  It will take the writer step-by-step through the process of writing basic components.  Detailed discussions of multiple levels of parallelism, fault tolerance strategies, performance and resource utilization considerations, and asynchronous coordination of simulations can be found in the :doc:`advanced topics <advanced_parallelism>` documentation.
+This document focuses on helping (physics) component and driver writers successfully write new components.  It will take the writer step-by-step through the process of writing basic components.
 
 .. [#] Tasks are the binaries that are launched by components on compute nodes, where as components are Python scripts that manage the data movements and execution of the tasks (with the help of IPS services).  In general, the component is aware of the driver and its existence within a coupled simulation, and the task does not.
 
@@ -59,7 +63,7 @@ Data Coupling Preparation
 
 Once you have your binary built properly and available, it is time to work on the data coupling to the other components in a simulation.  This is a component specific task, but it often takes conversation with the other physicists in the group as to what values need to be communicated and to develop an understanding of how they are used.
 
-When the physics of interest is identified, adapters need to be written to translate IPS-style inputs (from the Plasma State) to the inputs the binary is expecting, and a similar adapter for the output files.  More details on how to use the Plasma State and adapting binaries can be found in the :doc:`Plasma State Guide<plasma_state>`.
+When the physics of interest is identified, adapters need to be written to translate IPS-style inputs (from the Plasma State) to the inputs the binary is expecting, and a similar adapter for the output files.
 
 ^^^^^^^^^^^^^^^^^^^^^
 Create a Component
@@ -261,7 +265,7 @@ The driver of the simulation manages the control flow and synchronization across
 
 Before writing a driver, it is a good idea to have the components already written.  Once the components that are to be used are chosen the data coupling and control flow must be addressed.
 
-In order to couple components, the data that must be exchanged between them and the ordering of updates to the plasma state must be determined.  Once the data dependencies are identified (which components have to run before the next, and which ones can run at the same time).  You can write the body of the driver.  Before going through the steps of writing a driver, review the :ref:`method invocation API <comp-invocation-api>` and plan which methods to use during the main time loop.  If you are writing a driver that uses the event service for synchronization, see :doc:`Advanced Features <advanced_parallelism>` for instructions and examples.
+In order to couple components, the data that must be exchanged between them and the ordering of updates to the plasma state must be determined.  Once the data dependencies are identified (which components have to run before the next, and which ones can run at the same time).  You can write the body of the driver.  Before going through the steps of writing a driver, review the :ref:`method invocation API <comp-invocation-api>` and plan which methods to use during the main time loop.
 
 The framework will invoke the methods of the *INIT* and *DRIVER* components over the course of the simulation, defining the execution of the run:
 
@@ -542,7 +546,7 @@ The IPS provides services to checkpoint and restart a coupled simulation by call
 Event Service
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The event service interface is used to implement the web portal connection, as well as for components to communicate asynchronously.  See the :doc:`Advanced Features <advanced_parallelism>` documentation for details on how to use this interface for component communication.
+The event service interface is used to implement the web portal connection, as well as for components to communicate asynchronously.
 
 .. automethod:: ipsframework.services.ServicesProxy.publish
    :noindex:
