@@ -13,10 +13,7 @@ Contents:
 
    intro
    getting_started/getting_started
-   getting_started/getting_started_new
    user_guides/user_guides
-   component_guides/component_guides
-
    the_code
 
 Indexes and tables
