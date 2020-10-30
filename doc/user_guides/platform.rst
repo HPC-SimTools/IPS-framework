@@ -23,6 +23,33 @@ The platforms below fall into the following categories:
 General Production
 ^^^^^^^^^^^^^^^^^^
 :::::::::
+Cori
+:::::::::
+
+Cori_ is a Cray XC40 managed by NERSC_.
+
+* Account: You must have an account at NERSC and be added to the Atom project's group (atom) to log on and access the set of physics binaries in the *PHYS_BIN*.
+* Logging on - ``ssh cori.nersc.gov -l <username>``
+* Architecture - 2,388 Haswell nodes, 32 cores per node, 128GB memory per node + 9,668 KNL nodes, 68 cores per node, 96 GB memory
+* Environment:
+
+  * OS - SUSE Linux Enterprise Server 15 (SLES15)
+  * Batch scheduler/Resource Manager - Slurm
+  * `Queues <https://docs.nersc.gov/jobs/policy/>`__ - **debug**, **regular**, premium, interactive, ...
+  * Parallel Launcher (e.g., mpirun) - srun
+  * Node Allocation policy - exclusive or shared node allocation
+
+* Project directory - ``/global/project/projectdirs/atom``
+* Data Tree - ``/global/common/software/atom/cori/data``
+* Physics Binaries - ``/global/common/software/atom/cori/binaries``
+* WWW Root - ``/global/project/projectdirs/atom/www/<username>``
+* WWW Base URL - ``http://portal.nersc.gov/project/atom/<username>``
+
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Retired/Formerly Used Systems
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+:::::::::
 Franklin
 :::::::::
 
@@ -35,7 +62,7 @@ Franklin_ is a Cray XT4 managed by NERSC_.
 
   * OS - Cray Linux Environment (CLE)
   * Batch scheduler/Resource Manager - PBS, Moab
-  * `Queues <http://www.nersc.gov/users/computational-systems/franklin/running-jobs/queues-and-policies/>`_ - **debug**, **regular**, low, premium, interactive, xfer, iotask, special 
+  * `Queues <http://www.nersc.gov/users/computational-systems/franklin/running-jobs/queues-and-policies/>`__ - **debug**, **regular**, low, premium, interactive, xfer, iotask, special
   * Parallel Launcher (e.g., mpirun) - aprun
   * Node Allocation policy - exclusive node allocation
 
@@ -58,7 +85,7 @@ Hopper_ is a Cray XE6 managed by NERSC_.
 
   * OS - Cray Linux Environment (CLE)
   * Batch scheduler/Resource Manager - PBS, Moab
-  * `Queues <http://www.nersc.gov/users/computational-systems/hopper/running-jobs/queues-and-policies/>`_ - **debug**, **regular**, low, premium, interactive
+  * `Queues <http://www.nersc.gov/users/computational-systems/hopper/running-jobs/queues-and-policies/>`__ - **debug**, **regular**, low, premium, interactive
   * Parallel Launcher (e.g., mpirun) - aprun
   * Node Allocation policy - exclusive node allocation
 
@@ -86,7 +113,7 @@ Stix_ is a SMP hosted at PPPL_.
 
   * OS - linux
   * Batch scheduler/Resource Manager - PBS (Torque), Moab
-  * `Queues <http://beowulf.pppl.gov/queues.html>`_ - **smpq** (this is how you specify that you want to run your job on stix)
+  * `Queues <http://beowulf.pppl.gov/queues.html>`__ - **smpq** (this is how you specify that you want to run your job on stix)
   * Parallel Launcher (e.g., mpirun) - mpiexec (MPICH2)
   * Node Allocation policy - node sharing allowed (whole machine looks like one node)
 
@@ -95,6 +122,85 @@ Stix_ is a SMP hosted at PPPL_.
 * Physics Binaries - ``/p/swim1/phys/``
 * WWW Root - ``/p/swim/w3_html/<username>``
 * WWW Base URL - ``http://w3.pppl.gov/swim/<username>``
+
+:::::::::
+Viz/Mhd
+:::::::::
+
+`Viz/mhd`_ are SMP machines hosted at PPPL_.  These systems appear not to be online any more.
+
+.. note : Retired?
+
+* Account: You must have an account at PPPL to access their Beowulf systems.
+* Logging on:
+
+  1. Log on to the PPPL vpn (https://vpn.pppl.gov)
+  2. ``ssh <username>@portal.pppl.gov``
+
+* Architecture - ? cores, ? GB memory
+* Environment:
+
+  * OS - linux
+  * Batch scheduler/Resource Manager - PBS (Torque), Moab
+  * Parallel Launcher (e.g., mpirun) - mpiexec (MPICH2)
+  * Node Allocation policy - node sharing allowed (whole machine looks like one node)
+
+* Project directory - ``/p/swim1/``
+* Data Tree - ``/p/swim1/data/``
+* Physics Binaries - ``/p/swim1/phys/``
+* WWW Root - ``/p/swim/w3_html/<username>``
+* WWW Base URL - ``http://w3.pppl.gov/swim/<username>``
+
+:::::::::::
+Pingo
+:::::::::::
+
+Pingo_ was a Cray XT5 hosted at ARSC_.
+
+.. note : Retired machine.
+
+.. note : I do not have information about this machine.  Someone who has access needs to update this entry and modify the configuration file with the new entries (see below).
+
+* Account: You must have an account to log on and use the system.
+* Logging on - ?
+* Architecture - 432 nodes, 8 cores per node, ? memory per node
+* Environment:
+
+  * OS - ?
+  * Batch scheduler/Resource Manager - ?
+  * Parallel Launcher (e.g., mpirun) - aprun
+  * Node Allocation policy - exclusive node allocation
+
+* Project directory - ?
+* Data Tree - ?
+* Physics Binaries - ?
+* WWW Root - ?
+* WWW Base URL - ?
+
+:::::::::::
+Jaguar
+:::::::::::
+
+Jaguar_ is a Cray XT5 managed by OLCF_.
+
+.. note : Previously had time on this machine, but do not at this time.
+
+* Account: You must have an account for the OLCF and be added to the SWIM project group for accounting and files sharing purposes, if we have time on this machine.
+* Logging on - ``ssh jaguar.ornl.gov -l <username>``
+* Architecture - 13,688 nodes, 12 cores per node, 16 GB memory per node
+* Environment:
+
+  * OS - Cray Linux Environment (CLE)
+  * Batch scheduler/Resource Manager - PBS, Moab
+  * `Queues <http://www.nccs.gov/computing-resources/jaguar/running-jobs/scheduling-policy-xt5/>`__ - debug, production
+  * Parallel Launcher (e.g., mpirun) - aprun
+  * Node Allocation policy - exclusive node allocation
+
+* Project directory - ?
+* Data Tree - ?
+* Physics Binaries - ?
+* WWW Root - ?
+* WWW Base URL - ?
 
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Experimental Systems
@@ -141,7 +247,7 @@ Pacman_ is a linux cluster hosted at ARSC_.
 
   * OS - Red Hat Linux 5.6
   * Batch scheduler/Resource Manager - Torque (PBS), Moab
-  * `Queues <http://www.arsc.edu/support/news/systemnews/news.xml?system=pacman#1294294578>`_ - debug, standard, standard_12, standard_16, bigmem, gpu, background, shared, transfer
+  * `Queues <http://www.arsc.edu/support/news/systemnews/news.xml?system=pacman#1294294578>`__ - debug, standard, standard_12, standard_16, bigmem, gpu, background, shared, transfer
   * Parallel Launcher (e.g., mpirun) - mpirun (OpenMPI?)
   * Node Allocation policy - node sharing allowed
 
@@ -224,90 +330,6 @@ Sif_ is a linux cluster hosted at `Indiana University`_.
 * WWW Base URL - None
 
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Retired/Formerly Used Systems
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-:::::::::
-Viz/Mhd
-:::::::::
-
-`Viz/mhd`_ are SMP machines hosted at PPPL_.  These systems appear not to be online any more.
-
-.. note : Retired?
-
-* Account: You must have an account at PPPL to access their Beowulf systems.
-* Logging on:
-
-  1. Log on to the PPPL vpn (https://vpn.pppl.gov)
-  2. ``ssh <username>@portal.pppl.gov``
-
-* Architecture - ? cores, ? GB memory
-* Environment:
-
-  * OS - linux
-  * Batch scheduler/Resource Manager - PBS (Torque), Moab
-  * Parallel Launcher (e.g., mpirun) - mpiexec (MPICH2)
-  * Node Allocation policy - node sharing allowed (whole machine looks like one node)
-
-* Project directory - ``/p/swim1/``
-* Data Tree - ``/p/swim1/data/``
-* Physics Binaries - ``/p/swim1/phys/``
-* WWW Root - ``/p/swim/w3_html/<username>``
-* WWW Base URL - ``http://w3.pppl.gov/swim/<username>``
-
-:::::::::::
-Pingo
-:::::::::::
-
-Pingo_ was a Cray XT5 hosted at ARSC_.
-
-.. note : Retired machine.
-
-.. note : I do not have information about this machine.  Someone who has access needs to update this entry and modify the configuration file with the new entries (see below).
-
-* Account: You must have an account to log on and use the system.
-* Logging on - ?
-* Architecture - 432 nodes, 8 cores per node, ? memory per node
-* Environment:
-
-  * OS - ?
-  * Batch scheduler/Resource Manager - ?
-  * Parallel Launcher (e.g., mpirun) - aprun
-  * Node Allocation policy - exclusive node allocation
-
-* Project directory - ?
-* Data Tree - ?
-* Physics Binaries - ?
-* WWW Root - ?
-* WWW Base URL - ?
-
-:::::::::::
-Jaguar
-:::::::::::
-
-Jaguar_ is a Cray XT5 managed by OLCF_.  
-
-.. note : Previously had time on this machine, but do not at this time.
-
-* Account: You must have an account for the OLCF and be added to the SWIM project group for accounting and files sharing purposes, if we have time on this machine.
-* Logging on - ``ssh jaguar.ornl.gov -l <username>``
-* Architecture - 13,688 nodes, 12 cores per node, 16 GB memory per node
-* Environment:
-
-  * OS - Cray Linux Environment (CLE)
-  * Batch scheduler/Resource Manager - PBS, Moab
-  * `Queues <http://www.nccs.gov/computing-resources/jaguar/running-jobs/scheduling-policy-xt5/>`_ - debug, production
-  * Parallel Launcher (e.g., mpirun) - aprun
-  * Node Allocation policy - exclusive node allocation
-
-* Project directory - ?
-* Data Tree - ?
-* Physics Binaries - ?
-* WWW Root - ?
-* WWW Base URL - ?
-
-
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Single User Systems
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -315,6 +337,7 @@ The IPS can be run on your laptop or desktop.  Many of the items above are not p
 
 
 
+.. _Cori: https://docs.nersc.gov/systems/cori/
 .. _Hopper: http://www.nersc.gov/nusers/systems/hopper/
 .. _Franklin: http://www.nersc.gov/nusers/systems/franklin/
 .. _Pacman: http://www.arsc.edu/resources/pacman.html
@@ -396,9 +419,7 @@ The platform configuration file contains platform specific information that the 
 	allocation description is used.  If nothing is specified, all
 	of the methods are attempted and the first one to succeed will
 	be used.  Note, if the allocation detection fails, the
-	framework will abort, killing the job.  See :doc:`Porting the
-	IPS<../developer_guides/porting>` for more 
-	information [#node_detection]_.
+	framework will abort, killing the job.
 **TOTAL_PROCS**
         number of processes in the allocation [#manual_alloc_node]_.
 **NODES**
@@ -429,14 +450,6 @@ The platform configuration file contains platform specific information that the 
    or if no detection mechanism is specified and none of the other
    mechansims work first.  It is the *users* responsibility for this
    value to make sense.
-
-.. [#node_detection] Currently the porting documentation is under
-   construction.  Use python script
-   ``ips/framework/utils/test_resource_parsing.py`` to determine 
-   which automatic parsing works for the platform in question.  If
-   nothing works, use the manual settings and contact the framework
-   developers to look into developing a method for automatically
-   detecting the allocation.
 
 
 .. note : the node allocation and detection values in this file can be overriden by command line options to the ips ``--nodes`` and ``--ppn``.  *Both* values must be specified, otherwise the platform configuration values are used.

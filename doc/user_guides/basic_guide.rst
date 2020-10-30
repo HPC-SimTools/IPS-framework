@@ -41,7 +41,7 @@ Elements of a Simulation
   A *port* is a category of component that can be implemented by different component implementations, i.e., components that wrap codes that different mathematical models of the same phenomenon.  Each component that has the same port must implement the same interface (i.e., implement functions with the same names - in the IPS all components implement "init", "step", and "finalize"), and provide the same functionality in a coupled simulation.  In most cases, this means that it updates the same values in the plasma state.  Drivers use the port name of a component to obtain a reference for that component at run time, as specified in the configuration file.
 
 **Services**
-  The framework *services* provide APIs for setting up the simulation, and managing data, resources, tasks, component invocations, access to configuration data and communication via an event service during execution.  For more details, see our published :doc:`papers <../pubs>`, :doc:`IPS developer documentation <../developer_guides/developer_guides>` and :doc:`code listings <../the_code>`.  Component writers should check out the :ref:`services API <api_section>` for relevant services and tips on how to use them.
+  The framework *services* provide APIs for setting up the simulation, and managing data, resources, tasks, component invocations, access to configuration data and communication via an event service during execution.  For more details, see :doc:`code listings <../the_code>`.  Component writers should check out the :ref:`services API <api_section>` for relevant services and tips on how to use them.
 
 **Data files**
   Each component specifies the input and output *data files* it needs for a given simulation.  These file names and locations are used to stage data in and out for each time step.  Note that these are not the same as the *plasma state files*, in that *data files* are component local (and thus private).
@@ -56,11 +56,7 @@ Elements of a Simulation
   The *platform configuration file* contains platform specific information needed by the framework for task and resource management, as well as paths needed by the portal and configuration manager.  These rarely change, so the version in the top level of the IPS corresponding to the platform you are running on should be used.
 
 **Batch script**
-  The *batch script* tells the batch scheduler how and what to run, including the number of processes and nodes for the allocation, the command to launch the IPS, and any other information that the batch scheduler needs to know to run your job.  There are some examples in the :doc:`examples <examples_listing>` directory.
-
-**Portal**
-  The *portal* is a web portal set up to monitor SWIM runs.  There are some additional capabilities with regard to saving and visualizing data associated with the run that are in development.  See the :doc:`portal documentation <../portal_guides/portal_guides>` for more information and up-to-date capabilities.
-
+  The *batch script* tells the batch scheduler how and what to run, including the number of processes and nodes for the allocation, the command to launch the IPS, and any other information that the batch scheduler needs to know to run your job.
 
 .. _ConfigObj: http://www.voidspace.org.uk/python/configobj.html
 
@@ -97,7 +93,7 @@ Once you have a plan for constructing, managing and analyzing the results of you
 A Brief Introduction to Writing and Modifying Components
 :::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-In many cases, new components or modifications to existing components need to be made.  In this section, the anatomy of a component and a driver are explained for a simple invocation style of execution (see :doc:`Advanced User Guide <advanced_guide>` for more information on creating components and drivers with complex logic, parallelism and asynchronous control flow).
+In many cases, new components or modifications to existing components need to be made.  In this section, the anatomy of a component and a driver are explained for a simple invocation style of execution. (see :doc:`Advanced User Guide <advanced_guide>` for more information on creating components and drivers with complex logic, parallelism and asynchronous control flow).
 
 Each component is derived from the ``Component`` class, meaning that each IPS component inherits a few base capabilities, and then must augment them.  Each IPS component must implement the following function bodies for the component class:
 
@@ -116,7 +112,7 @@ Each component is derived from the ``Component`` class, meaning that each IPS co
 ``restart(self, timeStamp=0)``
   This function replaces ``init`` when restarting a simulation from a previous simulation step.  It should read in data from the appropriate files and set up the component so that it is ready to compute the next step.
 
-To create a new component, there are two ways to do it, start from "scratch" by copying and renaming the skeleton component (``ips/doc/examples/skeleton_component.py``) to your desired location [#]_, or by modifying an existing component (e.g., ``ips/doc/examples/example_component.py``).  When creating your new component, keep in mind that it should be somewhat general and usable in multiple contexts.  In general, for things that change often, you will want to use component configuration variables or input files to drive the logic or set parameters for the tasks.  For more in depth information about how to create components and add them to the build process, see :doc:`Developing Drivers and Components for IPS Simulations <advanced_guide>`.
+To create a new component, there are two ways to do it, start from "scratch" by copying and renaming the skeleton component (:download:`skeleton_comp.py <../examples/skeleton_comp.py>`) to your desired location [#]_, or by modifying an existing component (e.g., :download:`example_comp.py <../examples/example_comp.py>`).  When creating your new component, keep in mind that it should be somewhat general and usable in multiple contexts.  In general, for things that change often, you will want to use component configuration variables or input files to drive the logic or set parameters for the tasks.  For more in depth information about how to create components and add them to the build process, see :doc:`Developing Drivers and Components for IPS Simulations <advanced_guide>`.
 
 When changing an existing component that will diverge from the existing version, be sure to create a new version.  If you are editing an existing component to make it better, be sure to document what you changexs.
 
@@ -286,6 +282,7 @@ Third, you must construct the configuration file.  It is helpful to start with a
             PLASMA_STATE_FILES = ${CURRENT_STATE} ${NEXT_STATE} ${CURRENT_EQDSK}
             RESTART_FILES = ${INPUT_FILES} <extra state files>
         SCRIPT = ${BIN_PATH}/<component implementation>
+        MODULE = <module name to use instead of script e.g. package.component>
 
   For each component, fill in or modify the entry to match the locations of the input, output, plasma state, and script locations.  Also, be sure to check the *NPROC* entry to suit the problem size and scalability of the executable, and add any component specific entries that the component implementation calls for.  The data tree is a SWIM-public area where simulation input data can be stored.  It allows multiple users to access the same data and have reasonable assurance that they are indeed using the same versions.  On franklin the data tree root is ``/project/projectdirs/m876/data/``, and on stix it is ``/p/swim1/data/``.  The plasma state files must be part of the simulation plasma state.  It may be a subset if there are files that are not needed by the component on each step.  Additional component-specific entries can also appear here to signal a piece of logic or set a data value.
 
@@ -297,7 +294,7 @@ Third, you must construct the configuration file.  It is helpful to start with a
        NUM_CHECKPOINT = 2
        PROTECT_FREQUENCY = 5
 
-This section specifies the checkpoint policy you would like enforced for this simulation, and the corresponding parameters to control the frequency and number of checkpoints taken.  See the comments in the same configuration file or the configuration file :doc:`documentation <config_file>`.  If you are debugging or running a component or simulation for the first time, it is a good idea to take frequent checkpoints until you are confident that the simulation will run properly.  For guidance on specifying the checkpoint interval, see :doc:`Fundamentals of the Advanced Features of the IPS <advanced_parallelism>`.
+This section specifies the checkpoint policy you would like enforced for this simulation, and the corresponding parameters to control the frequency and number of checkpoints taken.  See the comments in the same configuration file or the configuration file :doc:`documentation <config_file>`.  If you are debugging or running a component or simulation for the first time, it is a good idea to take frequent checkpoints until you are confident that the simulation will run properly.
 
 * Time Loop Section::
 
@@ -342,13 +339,11 @@ As an example, here is a skeleton of a batch script for Franklin::
 		    [--nodes=<number of nodes in this allocation>] \
 		    [--ppn=<number of processes per node for this allocation>] 
 
-Note that you can only run one instance of the IPS per batch submission, however you may run multiple simulations in the same batch allocation by specifying multiple ``--config=<config file>`` entries on the command line.  Each config file must have a unique file name, and *SIM_ROOT*.  The different simulations will share the resources in the allocation, in many cases improving the resource efficiency, however this may make the execution time of each individual simulation a bit longer due to waiting on resources.  For more information on running multiple simulations, see :doc:`Fundamentals of the Advanced Features of the IPS <advanced_parallelism>`.
+Note that you can only run one instance of the IPS per batch submission, however you may run multiple simulations in the same batch allocation by specifying multiple ``--config=<config file>`` entries on the command line.  Each config file must have a unique file name, and *SIM_ROOT*.  The different simulations will share the resources in the allocation, in many cases improving the resource efficiency, however this may make the execution time of each individual simulation a bit longer due to waiting on resources.
 
 The IPS also needs information about the platform it is running on (``--platform=$IPS_ROOT/franklin.conf``) and a log file (``--logfile=<name of log file>``)for the framework output.  Platform files for commonly used platforms are provided in the top-level of the ips directory.  It is strongly recommended that you use the appropriate one for launching IPS runs.  See :doc:`platform` for more information on how to use or create these files.
 
-Lastly, there are some optional command line arguments that you may use.  ``--debug`` will turn on debugging information from the framework.  ``--nodes`` and ``--ppn`` allow the user to manually set the number of nodes and processes per node for the framework.  This will override any detection by the framework and should be used with caution.  It is, however, a convenient way to run the ips on a machine without a batch scheduler. 
-
-Once your job is running, you can watch their progress on the `portal  <http://swim.gat.com:8080/display/>`_.  Note that each *simulation* will appear on the portal, so multiple simulation jobs will look like multiple simulations that all started around the same time.
+Lastly, there are some optional command line arguments that you may use.  ``--debug`` will turn on debugging information from the framework.  ``--nodes`` and ``--ppn`` allow the user to manually set the number of nodes and processes per node for the framework.  This will override any detection by the framework and should be used with caution.  It is, however, a convenient way to run the ips on a machine without a batch scheduler.
 
 ::::::::::::::::::::::::::::::::::
 Analysis and/or Debugging
