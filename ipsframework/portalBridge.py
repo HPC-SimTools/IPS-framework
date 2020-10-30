@@ -61,7 +61,7 @@ def hash_file(file_name):
 
 class PortalBridge(Component):
     """
-    Framework component to communicate with the `SWIM web portal <http://swim.gat.com:8080/monitor/>`_.
+    Framework component to communicate with the SWIM web portal.
     """
 
     class SimulationData:

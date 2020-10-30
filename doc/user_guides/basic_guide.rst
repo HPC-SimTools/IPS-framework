@@ -282,6 +282,7 @@ Third, you must construct the configuration file.  It is helpful to start with a
             PLASMA_STATE_FILES = ${CURRENT_STATE} ${NEXT_STATE} ${CURRENT_EQDSK}
             RESTART_FILES = ${INPUT_FILES} <extra state files>
         SCRIPT = ${BIN_PATH}/<component implementation>
+        MODULE = <module name to use instead of script e.g. package.component>
 
   For each component, fill in or modify the entry to match the locations of the input, output, plasma state, and script locations.  Also, be sure to check the *NPROC* entry to suit the problem size and scalability of the executable, and add any component specific entries that the component implementation calls for.  The data tree is a SWIM-public area where simulation input data can be stored.  It allows multiple users to access the same data and have reasonable assurance that they are indeed using the same versions.  On franklin the data tree root is ``/project/projectdirs/m876/data/``, and on stix it is ``/p/swim1/data/``.  The plasma state files must be part of the simulation plasma state.  It may be a subset if there are files that are not needed by the component on each step.  Additional component-specific entries can also appear here to signal a piece of logic or set a data value.
 
@@ -342,9 +343,7 @@ Note that you can only run one instance of the IPS per batch submission, however
 
 The IPS also needs information about the platform it is running on (``--platform=$IPS_ROOT/franklin.conf``) and a log file (``--logfile=<name of log file>``)for the framework output.  Platform files for commonly used platforms are provided in the top-level of the ips directory.  It is strongly recommended that you use the appropriate one for launching IPS runs.  See :doc:`platform` for more information on how to use or create these files.
 
-Lastly, there are some optional command line arguments that you may use.  ``--debug`` will turn on debugging information from the framework.  ``--nodes`` and ``--ppn`` allow the user to manually set the number of nodes and processes per node for the framework.  This will override any detection by the framework and should be used with caution.  It is, however, a convenient way to run the ips on a machine without a batch scheduler. 
-
-Once your job is running, you can watch their progress on the `portal  <http://swim.gat.com:8080/display/>`_.  Note that each *simulation* will appear on the portal, so multiple simulation jobs will look like multiple simulations that all started around the same time.
+Lastly, there are some optional command line arguments that you may use.  ``--debug`` will turn on debugging information from the framework.  ``--nodes`` and ``--ppn`` allow the user to manually set the number of nodes and processes per node for the framework.  This will override any detection by the framework and should be used with caution.  It is, however, a convenient way to run the ips on a machine without a batch scheduler.
 
 ::::::::::::::::::::::::::::::::::
 Analysis and/or Debugging
