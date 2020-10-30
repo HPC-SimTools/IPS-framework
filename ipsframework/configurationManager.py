@@ -35,8 +35,6 @@ class ConfigurationManager:
             self.sim_root = None
             self.sim_conf = None
             self.config_file = None
-            # SIMYAN: used for the directory of the platform conf file
-            self.conf_file_dir = None
             self.driver_comp = None
             self.init_comp = None
             self.all_comps = []
@@ -48,9 +46,7 @@ class ConfigurationManager:
             self.process_list = []
             self.fwk_logger = None
 
-    # SIMYAN: accept a compset_list to find specific configuration files for
-    # the components
-    def __init__(self, fwk, config_file_list, platform_file_name, compset_list):
+    def __init__(self, fwk, config_file_list, platform_file_name):
         """
         Initialize the values to be used by the configuration manager.  Also
         specified are the required fields of the simulation configuration
@@ -102,14 +98,10 @@ class ConfigurationManager:
         sys.stdout = Unbuffered(sys.stdout)
         self.platform_file = os.path.abspath(platform_file_name)
         self.platform_conf = {}
-        # SIMYAN: breaking up the keywords a little bit
-        self.compset_list = compset_list
         loc_keys = []
         mach_keys = ['MPIRUN', 'NODE_DETECTION', 'CORES_PER_NODE', 'SOCKETS_PER_NODE', 'NODE_ALLOCATION_MODE']
         prov_keys = ['HOST']
         self.platform_keywords = loc_keys + mach_keys + prov_keys
-        # SIMYAN: keywords specific to individual components
-        self.compset_keywords = ['BIN_PATH', 'PHYS_BIN_ROOT', 'DATA_TREE_ROOT']
 
         self.service_methods = ['get_port',
                                 'getPort',
@@ -138,7 +130,6 @@ class ConfigurationManager:
         :py:obj:`ConfigObj` module.  Create and initialize simulation(s) and
         their components, framework components and loggers.
         """
-        local_debug = False
         self.event_mgr = None  # eventManager(self)
         self.data_mgr = data_mgr
         self.resource_mgr = resource_mgr
@@ -267,39 +258,6 @@ class ConfigurationManager:
         self.platform_conf['USE_ACCURATE_NODES'] = use_accurate_nodes
         self.platform_conf['MPIRUN_VERSION'] = mpirun_version
 
-        # section to parse component conf files
-        """
-        Physics (compset) configuration files (PHYS_BIN_ROOT, BIN_PATH, ...)
-        """
-        self.compset_conf = []
-        if self.compset_list:
-            for csfile in self.compset_list:
-                if local_debug:
-                    print(csfile)
-                try:
-                    csconf = ConfigObj(csfile, interpolation='template', file_error=True)
-                except IOError:
-                    self.fwk.exception('Error opening config file: %s', csfile)
-                    raise
-                except SyntaxError:
-                    self.fwk.exception('Error parsing config file: %s', csfile)
-                    raise
-                # get mandatory values
-                for kw in self.compset_keywords:
-                    try:
-                        csconf[kw]
-                    except KeyError:
-                        self.fwk.exception('Missing required parameter %s in %s config file',
-                                           kw, csfile)
-                        raise
-
-                # allow any csconf parameters override the platform file
-                for key in list(self.platform_conf.keys()):
-                    if key in list(csconf.keys()):
-                        self.platform_conf[key] = csconf[key]
-
-                self.compset_conf.append(csconf)
-
         """
         Simulation Configuration
         """
@@ -307,14 +265,6 @@ class ConfigurationManager:
             try:
                 conf = ConfigObj(conf_file, interpolation='template', file_error=True)
 
-                # Allow simulation file to override compset values
-                # and then put all compset values into simulation map
-                # The fact that csconf is a list is confusing
-                for csconf in self.compset_conf:
-                    for key in list(csconf.keys()):
-                        if key in list(conf.keys()):
-                            csconf[key] = conf[key]
-                    conf.merge(csconf)
                 # Import environment variables into config file
                 # giving precedence to config file definitions in case of duplicates
                 conf_keys = list(conf.keys())
@@ -349,13 +299,6 @@ class ConfigurationManager:
  in configuration file %s', conf_file)
                 raise
 
-            # SIMYAN allow for a container file with default .zip extension
-            self.container_ext = 'zip'
-            if 'CONTAINER_FILE_EXT' in conf:
-                self.container_ext = conf['CONTAINER_FILE_EXT']
-            else:
-                conf['CONTAINER_FILE_EXT'] = self.container_ext
-
             if (sim_name in sim_name_list):
                 self.fwk.exception('Error: Duplicate SIM_NAME in configuration files')
                 sys.exit(1)
@@ -365,8 +308,6 @@ class ConfigurationManager:
             if (log_file in log_file_list):
                 self.fwk.exception('Error: Duplicate LOG_FILE in configuration files')
                 sys.exit(1)
-            if 'SIMULATION_CONFIG_FILE' not in conf:
-                conf['SIMULATION_CONFIG_FILE'] = conf_file
             sim_name_list.append(sim_name)
             sim_root_list.append(sim_root)
             log_file_list.append(log_file)
@@ -441,7 +382,6 @@ class ConfigurationManager:
         runspace_conf['CLASS'] = 'FWK'
         runspace_conf['SUB_CLASS'] = 'COMP'
         runspace_conf['NAME'] = 'runspaceInitComponent'
-        # SIMYAN: using inspect to grab the ipsPathName from the current frame
         runspace_conf['SCRIPT'] = ''
         runspace_conf['MODULE'] = 'ipsframework.runspaceInitComponent'
         runspace_conf['INPUT_DIR'] = '/dev/null'
@@ -684,31 +624,12 @@ class ConfigurationManager:
         del sim_comps[self.fwk_sim_name]
         return sim_comps
 
-    def get_driver_components(self):
-        """
-        Return a list of driver components, one for each sim.
-        """
-        driver_list = []
-        for sim in list(self.sim_map.values()):
-            driver_list.append(sim.driver_comp)
-        return driver_list
-
     def get_framework_components(self):
         """
         Return list of framework components.
         """
         fwk_components = self.fwk_components[:]
         return fwk_components
-
-    def get_init_components(self):
-        """
-        Return list of init components.
-        """
-        init_list = []
-        for sim_data in list(self.sim_map.values()):
-            if (sim_data.init_comp):
-                init_list.append(sim_data.init_comp)
-        return init_list
 
     def get_sim_parameter(self, sim_name, param):
         """
@@ -745,94 +666,6 @@ class ConfigurationManager:
                        method, sim_name)
         retval = method(sim_name, *msg.args)
         return retval
-
-    def create_simulation(self, sim_name, config_file, override, sub_workflow=False):
-        try:
-            conf = ConfigObj(config_file, interpolation='template',
-                             file_error=True)
-        except IOError:
-            self.fwk.exception('Error opening config file %s: ', config_file)
-            raise
-        except SyntaxError:
-            self.fwk.exception(' Error parsing config file %s: ', config_file)
-            raise
-        parent_sim_name = sim_name
-        parent_sim = self.sim_map[parent_sim_name]
-        # Incorporate environment variables into config file
-        # Use config file entries when duplicates are detected
-        conf_keys = list(conf.keys())
-        for (k, v) in os.environ.items():
-            # Do not include functions from environment
-            if k not in conf_keys and \
-                    not any([x in v for x in '{}()$']):
-                conf[k] = v
-
-        # Allow propagation of entries from platform config file to simulation
-        # config file
-        for keyword in list(self.platform_conf.keys()):
-            if keyword not in list(conf.keys()):
-                conf[keyword] = self.platform_conf[keyword]
-        if (override):
-            for kw in list(override.keys()):
-                conf[kw] = override[kw]
-        try:
-            sim_name = conf['SIM_NAME']
-            sim_root = conf['SIM_ROOT']
-            log_file = os.path.abspath(conf['LOG_FILE'])
-        except KeyError:
-            self.fwk.exception('Missing required parameters SIM_NAME, SIM_ROOT or LOG_FILE\
-in configuration file %s', config_file)
-            raise
-        if (sim_name in self.sim_name_list):
-            self.fwk.error('Error: Duplicate SIM_NAME %s in configuration files' % (sim_name))
-            raise Exception('Duplicate SIM_NAME %s in configuration files' % (sim_name))
-        if (sim_root in self.sim_root_list):
-            self.fwk.exception('Error: Duplicate SIM_ROOT in configuration files')
-            raise Exception('Duplicate SIM_ROOT in configuration files')
-        if (log_file in self.log_file_list):
-            self.fwk.exception('Error: Duplicate LOG_FILE in configuration files')
-            raise Exception('Duplicate LOG_FILE in configuration files')
-
-        # Add path to configuration file to simulation configuration in memory
-        if 'SIMULATION_CONFIG_FILE' not in conf:
-            conf['SIMULATION_CONFIG_FILE'] = config_file
-
-        self.sim_name_list.append(sim_name)
-        self.sim_root_list.append(sim_root)
-        self.log_file_list.append(log_file)
-        new_sim = self.SimulationData(sim_name)
-        new_sim.sim_conf = conf
-        new_sim.config_file = config_file
-        new_sim.sim_root = sim_root
-        new_sim.log_file = log_file
-        if not sub_workflow:
-            new_sim.portal_sim_name = sim_name
-            new_sim.log_pipe_name = tempfile.mktemp('.logpipe', 'ips_')
-            self.log_dynamic_sim_queue.put('CREATE_SIM  %s  %s' % (new_sim.log_pipe_name, new_sim.log_file))
-        else:
-            new_sim.portal_sim_name = parent_sim.portal_sim_name
-            new_sim.log_pipe_name = parent_sim.log_pipe_name
-
-        conf['__PORTAL_SIM_NAME'] = new_sim.portal_sim_name
-        log_level = 'DEBUG'
-        try:
-            log_level = conf['LOG_LEVEL']
-        except KeyError:
-            pass
-        try:
-            getattr(logging, log_level)
-        except AttributeError:
-            self.fwk.exception('Invalid LOG_LEVEL value %s in config file %s ',
-                               log_level, config_file)
-            raise
-        # self.log_dynamic_sim_queue.put('CREATE_SIM  %s  %s' % (new_sim.log_pipe_name, new_sim.log_file))
-        self.sim_map[sim_name] = new_sim
-        self._initialize_sim(new_sim)
-
-        if not sub_workflow:
-            self.fwk.initiate_new_simulation(sim_name)
-
-        return (sim_name, new_sim.init_comp, new_sim.driver_comp)
 
     def getPort(self, sim_name, port_name):
         """

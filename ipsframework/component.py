@@ -157,25 +157,6 @@ class Component:
         self.services.debug('init() method called')
         pass
 
-    # SIMYAN: This is the step method that is used for run-setup
-    def setup(self, timestamp=0.0, **keywords):
-        """
-        Produce some default debugging information before the rest of the code
-        is executed.
-        """
-        self.services.debug('setup() method called')
-        pass
-
-    # SIMYAN: this is a placeholder for future validation methods (i.e.
-    # checking data)
-    def validate(self, timestamp=0.0, **keywords):
-        """
-        Produce some default debugging information before the rest of the code
-        is executed.
-        """
-        self.services.debug('validate() method called')
-        pass
-
     def restart(self, timestamp=0.0, **keywords):
         """
         Produce some default debugging information before the rest of the code

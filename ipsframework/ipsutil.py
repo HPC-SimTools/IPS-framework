@@ -5,7 +5,6 @@ import os
 import shutil
 import time
 import glob
-import zipfile
 try:
     import Pyro4
 except ImportError:
@@ -106,120 +105,6 @@ def copyFiles(src_dir, src_file_list, target_dir, prefix='', keep_old=False):
             shutil.copy(src_file, target_file)
         except Exception:
             raise
-
-
-def _ignore_exception(func):
-    ''' Ignore exception raised when calling a function, printing an error message
-    :param func:
-    :return: wrapped function
-    '''
-    def new_func(*args, **kwargs):
-        try:
-            func(*args, **kwargs)
-        except Exception as e:
-            print("Ignoring exception %s in call to %s : %s" %
-                  (e.__class__, func.__name__, e.args))
-    return new_func
-
-
-# SIMYAN: added a utility method to write to the container file
-@_ignore_exception
-def writeToContainer(ziphandle, src_dir, src_file_list):
-    """
-    Write files to the ziphandle.  Because when one wants to unzip the
-    file, one typically doesn't want the full path, this handles getting
-    just the shorter path name.
-    src_file_list can be a single string
-    If src_dir is specified:
-       relative
-    If it is not specified:
-       relative
-    filename in the zip file.
-    """
-    try:
-        file_list = src_file_list.split()
-    except AttributeError:  # srcFileList is not a string
-        file_list = src_file_list
-
-    # The logic for directories in the current directory follows that of
-    # not specifying a src directory at all
-    if src_dir == ".":
-        src_dir = ""
-
-    # print 'src_file_list = ', src_file_list
-    # print 'ziphandle = ', ziphandle
-    # print 'os.path.exists(ziphandle) = ', os.path.exists(ziphandle)
-    try:
-        if os.path.exists(ziphandle):
-            zin = zipfile.ZipFile(ziphandle, 'r')
-            zout = zipfile.ZipFile('temp.ctz', 'a')
-        else:
-            # print 'so it is None'
-            zin = None
-            zout = zipfile.ZipFile(ziphandle, 'a')
-    except zipfile.BadZipfile:
-        print('Found a bad container file, removing...')
-        os.remove(ziphandle)
-        zin = None
-        zout = zipfile.ZipFile(ziphandle, 'a')
-
-    if src_dir:
-        # Handle possible wildcards in input files.
-        # Build and flatten list of lists using sum(l_of_l, [])
-        for sfile in sum([glob.glob(os.path.join(src_dir, p))
-                          for p in file_list], []):
-            # sfile=os.path.join(src_dir,file)
-            if os.path.exists(sfile):
-                # print 'srcdir has'
-                # print 'sfile =', sfile
-                # print 'file =', file
-                (head, tail) = os.path.split(os.path.abspath(sfile))
-                file = tail
-                if not os.path.exists(file):
-                    shutil.copy(sfile, file)
-                    zout.write(file)
-                    os.remove(file)
-                else:
-                    zout.write(file)
-            else:
-                raise Exception('No such file : %s in directory %s' % (file, src_dir))
-    else:
-        for file in file_list:
-            if os.path.exists(file):
-                # If it is a full path, copy it locally, write to zip, remove
-                if os.path.dirname(file):
-                    absfile = os.path.abspath(file)
-                    (sdir, sfile) = os.path.split(absfile)
-                    # print 'srcdir has not'
-                    # print 'absfile =', absfile
-                    # print 'sfile =', sfile
-                    (head, tail) = os.path.split(os.path.abspath(sfile))
-                    sfile = tail
-                    if not os.path.exists(sfile):
-                        shutil.copy(absfile, sfile)
-                        zout.write(sfile)
-                        os.remove(sfile)
-                    else:
-                        zout.write(sfile)
-                else:
-                    zout.write(file)
-            else:
-                raise Exception('No such file : %s', file)
-
-    # print 'zin is ', zin
-    if zin:
-        for item in zin.infolist():
-            buffer = zin.read(item.filename)
-            # print 'item.filename = ', item.filename
-            # print 'zout.namelist() = ', zout.namelist()
-            # print 'item.filename in zout.namelist() = ', item.filename in zout.namelist()
-            if item.filename not in zout.namelist():
-                zout.writestr(item, buffer)
-
-        zin.close()
-        shutil.move('temp.ctz', ziphandle)
-
-    zout.close()
 
 
 def getTimeString(timeArg=None):
