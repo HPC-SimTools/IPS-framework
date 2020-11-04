@@ -580,10 +580,10 @@ class ConfigurationManager:
                 else:
                     comp_conf['BIN_PATH'] = comp_conf['BIN_DIR']
             if (not self.required_fields.issubset(conf_fields)):
-                self.fwk.exception('Error: missing required entries %s \
-                    in simulation %s component %s configuration section',
-                                   list(self.required_fields - conf_fields), sim_name, comp_ref)
-                sys.exit(1)
+                msg = 'Error: missing required entries {} in simulation {} component {} configuration section'.format(
+                    list(self.required_fields - conf_fields), sim_name, comp_ref)
+                self.fwk.critical(msg)
+                raise RuntimeError(msg)
             component_id = self._create_component(comp_conf, sim_data)
             sim_data.port_map[port] = component_id
             if (port == 'DRIVER'):
@@ -592,9 +592,9 @@ class ConfigurationManager:
                 sim_data.init_comp = component_id
 
         if (sim_data.driver_comp is None):
-            self.fwk.error('Missing DRIVER specification in ' +
-                           'config file for simulation %s', sim_data.sim_name)
-            sys.exit(1)
+            msg = 'Missing DRIVER specification in config file for simulation {}'.format(sim_data.sim_name)
+            self.fwk.critical(msg)
+            raise RuntimeError(msg)
         if (sim_data.init_comp is None):
             self.fwk.warning('Missing INIT specification in ' +
                              'config file for simulation %s', sim_data.sim_name)
