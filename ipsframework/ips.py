@@ -762,9 +762,10 @@ class Framework:
             try:
                 portal_data['rcomment'] = get_config(sim_name, 'SIMULATION_DESCRIPTION')
             except KeyError:
-                portal_data['rcomment'] = get_config(sim_name, 'RUN_COMMENT')
-            except KeyError:
-                portal_data['rcomment'] = 'SWIM simulation run'
+                try:
+                    portal_data['rcomment'] = get_config(sim_name, 'RUN_COMMENT')
+                except KeyError:
+                    portal_data['rcomment'] = 'SWIM simulation run'
             try:
                 portal_data['tokamak'] = get_config(sim_name, 'TOKAMAK_ID')
             except KeyError:
