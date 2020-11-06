@@ -24,13 +24,9 @@ def test_basic_serial1(tmpdir, capfd):
     # setup 'input' files
     os.system(f"cd {tmpdir}; touch file1 ofile1 ofile2 sfile1 sfile2")
 
-    framework = Framework(do_create_runspace=True,
-                          do_run_setup=True,
-                          do_run=True,
-                          config_file_list=[os.path.join(tmpdir, 'basic_serial1.ips')],
+    framework = Framework(config_file_list=[os.path.join(tmpdir, 'basic_serial1.ips')],
                           log_file_name=os.path.join(tmpdir, 'test.log'),
                           platform_file_name=os.path.join(tmpdir, "platform.conf"),
-                          compset_list=[],
                           debug=None,
                           verbose_debug=None,
                           cmd_nodes=0,
@@ -45,12 +41,12 @@ def test_basic_serial1(tmpdir, capfd):
     assert captured_out[0] == "Created <class 'small_worker.small_worker'>"
     assert captured_out[1] == "Created <class 'medium_worker.medium_worker'>"
     assert captured_out[2] == "Created <class 'large_worker.large_worker'>"
-    assert captured_out[4] == "small_worker : init() called"
-    assert captured_out[6] == "medium_worker : init() called"
-    assert captured_out[8] == "large_worker : init() called"
-    assert captured_out[10] == "Current time =  1.00"
-    assert captured_out[11] == "Current time =  2.00"
-    assert captured_out[12] == "Current time =  3.00"
+    assert captured_out[3] == "small_worker : init() called"
+    assert captured_out[5] == "medium_worker : init() called"
+    assert captured_out[7] == "large_worker : init() called"
+    assert captured_out[9] == "Current time =  1.00"
+    assert captured_out[10] == "Current time =  2.00"
+    assert captured_out[11] == "Current time =  3.00"
 
     # check files copied and created
     driver_files = [os.path.basename(f) for f in glob.glob(str(tmpdir.join("test_basic_serial1_0/work/drivers_testing_basic_serial1_*/*")))]
@@ -66,11 +62,6 @@ def test_basic_serial1(tmpdir, capfd):
         assert outfile in medium_worker_files
         assert outfile in large_worker_files
 
-    # cleanup
-    for fname in ["test_basic_serial1_0.zip", "dask_preload.py"]:
-        if os.path.isfile(fname):
-            os.remove(fname)
-
 
 def test_basic_serial_multi(tmpdir, capfd):
     # This is the same as test_basic_serial1 except that 2 simulation files are use at the same time
@@ -82,14 +73,10 @@ def test_basic_serial_multi(tmpdir, capfd):
     # setup 'input' files
     os.system(f"cd {tmpdir}; touch file1 ofile1 ofile2 sfile1 sfile2")
 
-    framework = Framework(do_create_runspace=True,
-                          do_run_setup=True,
-                          do_run=True,
-                          config_file_list=[os.path.join(tmpdir, 'basic_serial1.ips'),
+    framework = Framework(config_file_list=[os.path.join(tmpdir, 'basic_serial1.ips'),
                                             os.path.join(tmpdir, 'basic_serial2.ips')],
                           log_file_name=os.path.join(tmpdir, 'test.log'),
                           platform_file_name=os.path.join(tmpdir, "platform.conf"),
-                          compset_list=[],
                           debug=None,
                           verbose_debug=None,
                           cmd_nodes=0,
@@ -141,8 +128,3 @@ def test_basic_serial_multi(tmpdir, capfd):
             assert outfile in small_worker_files
             assert outfile in medium_worker_files
             assert outfile in large_worker_files
-
-    # cleanup
-    for fname in ["test_basic_serial1_0.zip", "dask_preload.py"]:
-        if os.path.isfile(fname):
-            os.remove(fname)

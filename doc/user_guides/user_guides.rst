@@ -13,9 +13,6 @@ This directory has all of the user guides for using the IPS (see the component a
 :doc:`Introduction to the IPS<basic_guide>`
     A handy reference for constructing and running applications, this document helps users through the process of running a simulation based on existing components.  It also includes: terminology, examples, and guidance on how to translate a computational or scientific question into a series of IPS runs.
 
-:doc:`The Configuration Files (simulation, component and platform files) Explained<config_file_new>`:
-    Annotated version of the configuration file with explanations of how and why the values are used in the framework and components.
-
 :doc:`The Configuration File - Explained<config_file>`:
     Annotated version of the configuration file with explanations of how and why the values are used in the framework and components.
 
@@ -28,9 +25,6 @@ This directory has all of the user guides for using the IPS (see the component a
 :doc:`The IPS for Driver and Component Developers<advanced_guide>`:
     This guide contains the elements of components and drivers, suggestions on how to construct a simulation, how to add the new component to a simulation and the repository, as well as, an IPS services guide to have handy when writing components and drivers.  This guide is for components and drivers based on the *generic driver* model.  More sophisticated logic and execution models are covered in the following document.
 
-:doc:`The New IPS for Simulators and Developers<advanced_guide_new>`:
-    This guide contains the elements of a simulation and an introduction to complex workflow management and the use of the Framework for managing multiple runs.
-
 .. **User Guides Table of Contents**
 
 .. toctree::
@@ -39,8 +33,6 @@ This directory has all of the user guides for using the IPS (see the component a
 
    basic_guide
    advanced_guide
-   advanced_guide_new
    config_file
-   config_file_new
    platform
 

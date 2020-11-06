@@ -1,7 +1,6 @@
 from ipsframework.ips import Framework
 import glob
 import json
-import os
 
 
 def write_basic_config_and_platform_files(tmpdir):
@@ -63,21 +62,13 @@ SIMULATION_MODE = NORMAL
 def test_framework_simple(tmpdir, capfd):
     platform_file, config_file = write_basic_config_and_platform_files(tmpdir)
 
-    framework = Framework(do_create_runspace=True,  # create runspace: init.init()
-                          do_run_setup=True,        # validate inputs: sim_comps.init()
-                          do_run=True,              # Main part of simulation
-                          config_file_list=[str(config_file)],
+    framework = Framework(config_file_list=[str(config_file)],
                           log_file_name=str(tmpdir.join('test.log')),
                           platform_file_name=str(platform_file),
-                          compset_list=[],
                           debug=None,
                           verbose_debug=None,
                           cmd_nodes=0,
                           cmd_ppn=0)
-
-    assert framework.ips_dosteps['CREATE_RUNSPACE']
-    assert framework.ips_dosteps['RUN_SETUP']
-    assert framework.ips_dosteps['RUN']
 
     assert framework.log_file_name.endswith('test.log')
 
@@ -118,10 +109,5 @@ def test_framework_simple(tmpdir, capfd):
         assert event['sim_name'] == 'test'
 
     captured = capfd.readouterr()
-    assert captured.out.endswith('checklist.conf" could not be found, continuing without.\n')
+    assert captured.out == ''
     assert captured.err == ''
-
-    # cleanup
-    for fname in ["test_framework_simple0.zip", "dask_preload.py"]:
-        if os.path.isfile(fname):
-            os.remove(fname)

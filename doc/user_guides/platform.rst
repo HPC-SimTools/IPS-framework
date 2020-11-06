@@ -365,11 +365,6 @@ The platform configuration file contains platform specific information that the 
 
   HOST = franklin
   MPIRUN = aprun
-  PHYS_BIN_ROOT = /project/projectdirs/m876/phys-bin/phys/
-  DATA_TREE_ROOT = /project/projectdirs/m876/data
-  DATA_ROOT = /project/projectdirs/m876/data/
-  PORTAL_URL = http://swim.gat.com:8080/monitor
-  RUNID_URL = http://swim.gat.com:4040/runid.esp
 
   #######################################
   # resource detection method
@@ -407,12 +402,6 @@ The platform configuration file contains platform specific information that the 
 	would like to launch a task directly without the parallel
 	launcher (say, on a SMP style machine or workstation), set
 	this to "eval" -- it tells the task manager to directly launch 	the task as ``<binary> <args>``.
-**\*_ROOT**
-        locations of data and binaries.  Used by the configuration
-	file and components to run the tasks of the simulation.
-**\*_URL**
-        portal URLs.  Used to connect to and communicate with the
-	portal.
 **NODE_DETECTION**
         method to use to detect the number of nodes and processes in
 	the allocation.  If the value is "manual," then the manual
@@ -474,11 +463,6 @@ In addition to these files, there is ``ips/workstation.conf``, a sample platform
 
   HOST = workstation
   MPIRUN = mpirun # eval
-  PHYS_BIN_ROOT = /home/<username>/phys-bin
-  DATA_TREE_ROOT = /home/<username>/swim_data
-  DATA_ROOT = /home/<username>/swim_data
-  #PORTAL_URL = http://swim.gat.com:8080/monitor
-  #RUNID_URL = http://swim.gat.com:4040/runid.esp
 
   #######################################
   # resource detection method

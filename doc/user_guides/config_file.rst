@@ -26,10 +26,6 @@ It is possible for the configuration file to override entries in the platform co
 
 #HOST = 
 #MPIRUN = 
-#PHYS_BIN_ROOT = 
-#DATA_TREE_ROOT =
-#PORTAL_URL = 
-#RUNID_URL  = 
 #NODE_ALLOCATION_MODE = 
 
 

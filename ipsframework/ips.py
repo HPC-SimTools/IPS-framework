@@ -58,13 +58,9 @@ if sys.version[0] != '3':  # noqa: E402
     print("IPS can is only compatible with Python 3.5 or higher")
     sys.exit(1)
 
-import glob
-import fnmatch
 import optparse
 import multiprocessing
-from . import platformspec, ipsutil, checklist
-import shutil
-import zipfile
+from . import platformspec
 import inspect
 from .messages import Message, ServiceRequestMessage, \
     ServiceResponseMessage, MethodInvokeMessage
@@ -81,16 +77,12 @@ import logging
 from .ips_es_spec import eventManager
 import os
 import time
-from .configobj import ConfigObj
 
 
 class Framework:
-    # SIMYAN: added options for creating runspace, run-setup, and running,
     # added compset_list for list of components to load config files for
-    def __init__(self, do_create_runspace, do_run_setup, do_run,
-                 config_file_list, log_file_name, platform_file_name=None,
-                 compset_list=None, debug=False,
-                 verbose_debug=False, cmd_nodes=0, cmd_ppn=0):
+    def __init__(self, config_file_list, log_file_name, platform_file_name=None,
+                 debug=False, verbose_debug=False, cmd_nodes=0, cmd_ppn=0):
         """
         Create an IPS Framework Instance to coordinate the execution of IPS simulations
 
@@ -135,13 +127,6 @@ class Framework:
 
         """
 
-        # SIMYAN: collect the steps to do in this invocation of the Framework
-        self.ips_dosteps = {}
-        self.ips_dosteps['CREATE_RUNSPACE'] = do_create_runspace  # create runspace: init.init()
-        self.ips_dosteps['RUN_SETUP'] = do_run_setup    # validate inputs: sim_comps.init()
-        self.ips_dosteps['RUN'] = do_run          # Main part of simulation
-
-        # SIMYAN: set the logging to either file or sys.stdout based on
         # command line option
         self.log_file_name = log_file_name
         if log_file_name == 'sys.stdout':
@@ -157,37 +142,10 @@ class Framework:
         # map of ports
         self.port_map = {}
 
-        # SIMYAN: Complicated here to allow for a generalization of previous
-        # functionality and to enable the automatic finding of the files
-        self.compset_list = None
-
         current_dir = inspect.getfile(inspect.currentframe())
         (self.platform_file_name, self.ipsShareDir) = \
             platformspec.get_share_and_platform(platform_file_name,
                                                 current_dir)
-
-        checked_compset_list = []
-        # if not self.ipsShareDir == '':
-        if compset_list:
-            for cname in compset_list:
-                cfile = 'component-' + cname + '.conf'
-                fullcfile = os.path.join(self.ipsShareDir, cfile)
-                if os.path.exists(fullcfile):
-                    checked_compset_list.append(fullcfile)
-            if not len(checked_compset_list):
-                # print "Cannot find specified component configuration files."
-                # print "  Assuming that variables are defined anyway"
-                pass
-            else:
-                self.compset_list = checked_compset_list
-        else:
-            if os.path.exists(os.path.join(self.ipsShareDir, 'component-generic.conf')):
-                checked_compset_list.append(os.path.join(self.ipsShareDir, 'component-generic.conf'))
-                self.compset_list = checked_compset_list
-            else:
-                # print "Cannot find any component configuration files."
-                # print "  Assuming that variables are defined anyway"
-                pass
 
         # config file list
         self.config_file_list = config_file_list
@@ -201,11 +159,8 @@ class Framework:
         self.event_service = EventService(self)
         initialize_event_service(self.event_service)
         self.event_manager = eventManager(self)
-        # SIMYAN: added a few parameters to Configuration Manager for
-        # component files
         self.config_manager = \
-            ConfigurationManager(self, self.config_file_list, self.platform_file_name, self.compset_list)
-
+            ConfigurationManager(self, self.config_file_list, self.platform_file_name)
         self.resource_manager = ResourceManager(self)
         self.data_manager = DataManager(self)
         self.task_manager = TaskManager(self)
@@ -489,37 +444,12 @@ class Framework:
             self.terminate_all_sims(status=Message.FAILURE)
             return False
 
-        # SIMYAN: required fields for the checklist file
-        self.required_fields = set(['CREATE_RUNSPACE', 'RUN_SETUP', 'RUN'])
-
         # SIMYAN: get the runspaceInit_component and invoke its init() method
         # this creates the base directory and container file for the simulation
         # and copies the conf files into both and change directory to base dir
-        self.ips_status = {}
         main_fwk_comp = self.comp_registry.getEntry(fwk_comps[0])
         self.sim_root = os.path.abspath(main_fwk_comp.services.get_config_param('SIM_ROOT'))
-        self.checklist_file = os.path.join(self.sim_root, 'checklist.conf')
-        # SIMYAN:
-        # Get the status of the simulation
-        #
-        self.ips_status = checklist.get_status(self.checklist_file)
-
-        if self.ips_dosteps['CREATE_RUNSPACE'] and self.ips_status['CREATE_RUNSPACE']:
-            self._invoke_framework_comps(fwk_comps, 'init')
-            self.ips_status['CREATE_RUNSPACE'] = True
-            self.ips_status['RUN_SETUP'] = False
-            self.ips_status['RUN'] = False
-        elif self.ips_dosteps['CREATE_RUNSPACE'] and not self.ips_status['CREATE_RUNSPACE']:
-            self._invoke_framework_comps(fwk_comps, 'init')
-            self.ips_status['CREATE_RUNSPACE'] = True
-            self.ips_status['RUN_SETUP'] = False
-            self.ips_status['RUN'] = False
-        elif not self.ips_dosteps['CREATE_RUNSPACE'] and self.ips_status['CREATE_RUNSPACE']:
-            print('Skipping CREATE_RUNSPACE, option was %s but runspace exists' %
-                  self.ips_dosteps['CREATE_RUNSPACE'])
-        else:
-            print('Skipping CREATE_RUNSPACE, option was %s and runspace did not exist' %
-                  self.ips_dosteps['CREATE_RUNSPACE'])
+        self._invoke_framework_comps(fwk_comps, 'init')
 
         try:
             # Each Framework Component is treated as a stand-alone simulation
@@ -527,16 +457,11 @@ class Framework:
             for comp_id in fwk_comps:
                 msg_list = []
                 for method in ['step', 'finalize']:
-                    # SIMYAN: if --create_runspace was specified, add calls
-                    # to step() and finalize() for the framework components
-                    if self.ips_dosteps['CREATE_RUNSPACE']:
-                        req_msg = ServiceRequestMessage(self.component_id, self.component_id,
-                                                        comp_id, 'init_call', method, 0)
-                        msg_list.append(req_msg)
+                    req_msg = ServiceRequestMessage(self.component_id, self.component_id,
+                                                    comp_id, 'init_call', method, 0)
+                    msg_list.append(req_msg)
 
-                # SIMYAN: add those calls to the outstanding call map
-                if self.ips_dosteps['CREATE_RUNSPACE']:
-                    outstanding_sim_calls[str(comp_id)] = msg_list
+                outstanding_sim_calls[str(comp_id)] = msg_list
 
             # generate a queue of invocation messages for each simulation
             #   - list will look like: [init_comp.init(), init_comp.step(), init_comp.finalize(),
@@ -551,37 +476,7 @@ class Framework:
                           (self.resource_manager.num_nodes, self.resource_manager.ppn)
                 self._send_monitor_event(sim_name, 'IPS_RESOURCE_ALLOC', comment)
                 # SIMYAN: ordered list of methods to call
-                methods = []
-
-                if self.ips_dosteps['RUN_SETUP'] and self.ips_status['CREATE_RUNSPACE']:
-                    self.ips_status['RUN_SETUP'] = True
-                    methods.append('setup')
-                elif self.ips_dosteps['RUN_SETUP'] and not self.ips_status['CREATE_RUNSPACE']:
-                    self.ips_status['RUN_SETUP'] = False
-                    print('RUN_SETUP was requested, but a runspace does not exist...')
-                elif self.ips_status['RUN_SETUP'] and self.ips_status['CREATE_RUNSPACE']:
-                    print('RUN_SETUP already performed by a previous run, continuing...')
-                elif self.ips_status['RUN_SETUP'] and not self.ips_status['CREATE_RUNSPACE']:
-                    self.ips_status['RUN_SETUP'] = False
-                    print('RUN_SETUP is marked as complete, but a runspace does not exist...')
-                else:
-                    self.ips_status['RUN'] = False
-
-                if self.ips_dosteps['RUN'] and self.ips_status['RUN_SETUP']:
-                    self.ips_status['RUN'] = True
-                    methods.append('init')
-                    methods.append('step')
-                    methods.append('finalize')
-                elif self.ips_dosteps['RUN'] and not self.ips_status['RUN_SETUP']:
-                    self.ips_status['RUN'] = False
-                    print('RUN was requested, but run setup hasn\'t been performed...')
-                elif self.ips_status['RUN'] and self.ips_dosteps['RUN_SETUP']:
-                    self.ips_status['RUN'] = False
-                    print('RUN was not requested, but had been performed.')
-                elif not self.ips_dosteps['RUN'] and self.ips_status['RUN'] and self.ips_status['RUN_SETUP']:
-                    print('RUN was not requested, but had been performed.')
-                else:
-                    self.ips_status['RUN'] = False
+                methods = ['init', 'step', 'finalize']
 
                 # SIMYAN: add each method call to the msg_list
                 for comp_id in comp_list:
@@ -679,41 +574,9 @@ class Framework:
                             self.send_terminate_msg(sim_name, Message.SUCCESS)
                             self.config_manager.terminate_sim(sim_name)
 
-        # SIMYAN: update the status of the simulation after all calls have
-        # been executed
-        main_fwk_comp = self.comp_registry.getEntry(fwk_comps[0])
-        container_ext = main_fwk_comp.services.get_config_param('CONTAINER_FILE_EXT')
-        self.container_file = os.path.basename(self.sim_root) + os.path.extsep + container_ext
-        ipsutil.writeToContainer(self.container_file, self.sim_root, 'checklist.conf')
-
         self.terminate_all_sims(Message.SUCCESS)
         self.event_service._print_stats()
         return True
-
-    def initiate_new_simulation(self, sim_name):
-        '''
-        This is to be called by the configuration manager as part of dynamically creating
-        a new simulation. The purpose here is to initiate the method invocations for the
-        framework-visible components in the new simulation
-        '''
-        comp_list = self.config_manager.get_simulation_components(sim_name)
-        msg_list = []
-        self._send_monitor_event(sim_name, 'IPS_START', 'Starting IPS Simulation', ok=True)
-        self._send_dynamic_sim_event(sim_name=sim_name, event_type='IPS_START')
-        for comp_id in comp_list:
-            for method in ['init', 'step', 'finalize']:
-                req_msg = ServiceRequestMessage(self.component_id,
-                                                self.component_id, comp_id,
-                                                'init_call', method, 0)
-                msg_list.append(req_msg)
-
-    # send off first round of invocations...
-        msg = msg_list.pop(0)
-        self.debug('Framework sending message %s ', msg.__dict__)
-        call_id = self.task_manager.init_call(msg, manage_return=False)
-        self.call_queue_map[call_id] = msg_list
-        self.outstanding_calls_list.append(call_id)
-        return
 
     def _send_monitor_event(self, sim_name='', eventType='', comment='', ok='True'):
         """
@@ -843,55 +706,6 @@ class Framework:
             self.exception('exception encountered while cleaning up config_manager')
         # sys.exit(status)
 
-# SIMYAN: method for modifying the config file with the given parameter to
-# the new value given
-
-
-def modifyConfigObjFile(configFile, parameter, newValue, writeNew=True):
-    # open the file, create the config object
-    cfg_file = ConfigObj(configFile, interpolation='template', file_error=True)
-
-    # modify the SIM_NAME value to the new value
-    if parameter in cfg_file:
-        cfg_file[parameter] = newValue
-    else:
-        print(configFile + " has no parameter: " + parameter)
-        return ""
-
-    newFileName = newValue + '.ips'
-    newFile = open(newFileName, "w")
-    if writeNew:
-        cfg_file.write(newFile)  # write & close to avoid multiple references to these files
-    else:
-        cfg_file.write()
-
-    return newFileName
-
-# SIMYAN: method for extracting the needed files to the current directory
-# for cloning runs from a container file
-
-
-def extractIpsFile(containerFile, newSimName):
-    """
-    Given a container file, get the ips file in it and write it to current
-    directory so that it can be used
-    """
-    oldIpsFile = os.path.splitext(containerFile)[0] + os.extsep + "ips"
-
-    zf = zipfile.ZipFile(containerFile, "r")
-
-    # Assume that container file contains 1 ips file.
-    oldIpsFile = fnmatch.filter(zf.namelist(), "*.ips")[0]
-    ifile = zf.read(oldIpsFile)
-    ipsFile = newSimName + ".ips"
-    if os.path.exists(ipsFile):
-        print("Moving " + ipsFile + " to " + "Save" + ipsFile)
-        shutil.copy(ipsFile, "Save" + ipsFile)
-    ff = open(ipsFile, "w")
-    ff.write(ifile)
-    ff.close()
-    return ipsFile
-
 # callback function for options needing a file list
 
 
@@ -903,14 +717,11 @@ def main(argv=None):
     """
     Check and parse args, create and run the framework.
     """
-    # SIMYAN: setting options for command line invocation of the Framework
-    runopts = "[--create-runspace | --clone | --run-setup | --run] "
     fileopts = "--simulation=SIM_FILE_NAME --platform=PLATFORM_FILE_NAME "
-    miscopts = "[--component=COMPONENT_FILE_NAME(S)] [--sim_name=SIM_NAME] [--log=LOG_FILE_NAME] "
+    miscopts = "[--log=LOG_FILE_NAME] "
     debugopts = "[--debug] [--verbose] "
 
-    # SIMYAN: add the options to the options parser
-    parser = optparse.OptionParser(usage="%prog " + runopts + debugopts + fileopts + miscopts)
+    parser = optparse.OptionParser(usage="%prog " + debugopts + fileopts + miscopts)
     parser.add_option('-d', '--debug', dest='debug', default=False, action='store_true',
                       help='Turn on debugging')
     parser.add_option('-v', '--verbose', dest='verbose_debug', default=False, action='store_true',
@@ -924,242 +735,36 @@ def main(argv=None):
         print("IPS using platform file :", platform_default)
     parser.add_option('-p', '--platform', dest='platform_filename', default=platform_default,
                       type="string", help='IPS platform configuration file')
-    parser.add_option('-c', '--component',
-                      action='callback', callback=filelist_callback,
-                      type="string", help='IPS component configuration file(s)')
     parser.add_option('-i', '--simulation',
                       action='callback', callback=filelist_callback,
                       type="string", help='IPS simulation/config file')
     parser.add_option('-j', '--config',
                       action='callback', callback=filelist_callback,
                       type="string", help='IPS simulation/config file')
-    parser.add_option('-y', '--clone',
-                      action='callback', callback=filelist_callback,
-                      type="string", help='Clone container file')
-    parser.add_option('-e', '--sim_name',
-                      action='callback', callback=filelist_callback,
-                      type="string", help='Simulation name to replace in the IPS simulation file or a directory that has an ips file')
     parser.add_option('-l', '--log', dest='log_file', default='sys.stdout',
                       type="string", help='IPS Log file')
     parser.add_option('-n', '--nodes', dest='cmd_nodes', default='0',
                       type="int", help='Computer nodes')
     parser.add_option('-o', '--ppn', dest='cmd_ppn', default='0',
                       type="int", help='Computer processor per nodes')
-    parser.add_option('-t', '--create-runspace', dest='do_create_runspace', default=False, action='store_true',
-                      help='Create the runspace')
-    parser.add_option('-s', '--run-setup', dest='do_run_setup', default=False, action='store_true',
-                      help='Run the setup (init of the driver)')
-    parser.add_option('-r', '--run', dest='do_run', default=False, action='store_true',
-                      help='Run')
-    parser.add_option('-a', '--all', dest='do_all', default=False, action='store_true',
-                      help='Do all steps of the workflow')
 
-    # SIMYAN: parse the options from command line
     options, args = parser.parse_args()
-    # Default behavior : do all steps
-    if options.do_create_runspace or \
-            options.do_run_setup or \
-            options.do_run:
-        pass
-    else:
-        options.do_all = True
 
-    # -SIMYAN:----------------------------------------------------------------------------------
-    ##
-    # Three ways of specifying where to find the config_file
-    # 1. --simulation or --config: Specify directly
-    # 2. --sim_name: Either rename simulation files, or use sim_name/sim_name.ips
-    # 3. --clone: Look for IPS file in container file.  --sim_name must be specified to rename
-    ##
-    # See tests/refactor/test_ips.sh for motivation
-    ##
-    # ------------------------------------------------------------------------------------------
-    ipsFilesToRemove = []
-
-    # SIMYAN:
-    # Some initial processing of the --simulation, --sim_name, clone
-    # for basic checking and ease in processing better.
-    #
     cfgFile_list = []
-    usedSimulation = False
     if options.simulation:
         cfgFile_list = options.simulation
-        nCfgFile = len(cfgFile_list)
-        usedSimulation = True
     if options.config:
         cfgFile_list = options.config
-        nCfgFile = len(cfgFile_list)
-
-    # SIMYAN: grab the list of sim_names for multirun situations
-    simName_list = []
-    usedSim_name = False
-    if options.sim_name:
-        simName_list = options.sim_name
-        nSimName = len(simName_list)
-        usedSim_name = True
-        if usedSimulation:
-            if nSimName != nCfgFile and usedSimulation:
-                print("When using both --simulation and --sim_name the list length must be the same")
-                return
-
-    # SIMYAN: grab the list of clone container files, and make sure the
-    # new sim_names are given for each
-    clone_list = []
-    usedClone = False
-    multiCloneSingleSource = False
-    if options.clone:
-        if not usedSim_name:
-            print("Must specify SIM_NAME using --sim_name when cloning")
-            return
-        if usedSimulation:
-            print("Cannot use both --simulation and --clone")
-            return
-        clone_list = options.clone
-        nClone = len(clone_list)
-        usedClone = True
-        if nSimName > nClone and nClone == 1:
-            # print "When using both --clone and --sim_name the list length must be the same"
-            print('Cloning from single clone file', clone_list[0], 'into multiple simulations', simName_list)
-            multiCloneSingleSource = True
-            # return
-
-    # SIMYAN: initialize list for each sim_name
-    sim_file_map = {}
-    for sim_name in simName_list:
-        sim_file_map[sim_name] = []
-
-    # SIMYAN:
-    # Now process the simulation files
-    # Two methods for replacing the SIM_NAME:
-    # 1. colon syntax:   NEW_SIM_NAME:ips_file
-    # 2. sim_name parameter list
-    #
-    if usedSimulation:
-        cleaned_file_list = []
-        ipsFilesToRemove = []
-        # iterate over the list of files
-        i = -1
-        for file in cfgFile_list:
-            # if the file name contains ':', we must replace SIM_NAME in the
-            # file with the new value and remove the new SIM_NAME and ':'
-            # from the string for IPS to read the modified .ips file.
-            if file.find(':') != -1:
-                # split the mapping.  new_sim_name gets replaced below
-                (new_sim_name, file_name) = file.split(':')
-                if usedSim_name:
-                    file = modifyConfigObjFile(file_name, 'SIM_NAME', new_sim_name)
-                    ipsFilesToRemove.append(file)
-                    sim_file_map[new_sim_name].append(file)
-                else:
-                    iFile = modifyConfigObjFile(file, 'SIM_NAME', new_sim_name,)
-                    # ipsFilesToRemove.append(file)
-
-            if usedSim_name:
-                i = i + 1
-                new_sim_name = simName_list[i]
-                file = modifyConfigObjFile(file, 'SIM_NAME', new_sim_name)
-                ipsFilesToRemove.append(file)
-                sim_file_map[new_sim_name].append(file)
-
-            # append file to the list of cleaned names that don't contain ':'
-            cleaned_file_list.append(file)
-
-        # replace cfgFile_list with a list that won't have any ':' or sim_names
-        cfgFile_list = cleaned_file_list
-
-    # SIMYAN:
-    # Now process container files when cloning
-    #
-    if usedClone:
-        options.do_create_runspace = True
-        cleaned_file_list = []
-        # iterate over the list of files
-        i = -1
-        for clone_file in clone_list:
-            if multiCloneSingleSource:
-                for new_sim_name in simName_list:
-                    iFile = extractIpsFile(clone_file, new_sim_name)
-                    file = modifyConfigObjFile(iFile, 'SIM_NAME', new_sim_name, writeNew=False)
-                    sim_file_map[new_sim_name].append(iFile)
-                    cleaned_file_list.append(iFile)
-            else:
-                i = i + 1
-                new_sim_name = simName_list[i]
-                print('else')
-                iFile = extractIpsFile(clone_file, new_sim_name)
-                file = modifyConfigObjFile(iFile, 'SIM_NAME', new_sim_name, writeNew=False)
-                sim_file_map[new_sim_name].append(iFile)
-                # append file to the list of cleaned names that don't contain ':'
-                cleaned_file_list.append(iFile)
-
-        # replace cfgFile_list with a list that won't have any ':' or sim_names
-        cfgFile_list = cleaned_file_list
-        ipsFilesToRemove = cleaned_file_list
-
-    # SIMYAN:
-    # sim_name specified without simulation or clone means
-    # look for the IPS file in sim_name subdirectory
-    #
-    if usedSim_name and not (usedSimulation or usedClone):
-        cleaned_file_list = []
-        for simname in simName_list:
-            foundFile = ""
-            for testFile in glob.glob(simname + "/*.ips"):
-                cfg_file = ConfigObj(testFile, interpolation='template')
-                if "SIM_NAME" in cfg_file:
-                    testSimName = cfg_file["SIM_NAME"]
-                    if testSimName == simname:
-                        foundFile = testFile
-                        sim_file_map[sim_name].append(foundFile)
-
-            print("FOUND FILE", foundFile)
-            if foundFile:
-                cleaned_file_list.append(foundFile)
-            else:
-                print("Cannot find ips file associated with SIM_NAME= ", simname)
-                return
-
-        cfgFile_list = cleaned_file_list
-
-    # SIMYAN: process component files
-    compset_list = []
-    if options.component:
-        compset_list = options.component
-
-    if options.do_all:
-        # print 'doing all steps'
-        options.do_create_runspace = True
-        options.do_run_setup = True
-        options.do_run = True
 
     try:
-        # SIMYAN: added logic to handle multiple runs in sequence
-        if simName_list:
-            for sim_name in simName_list:
-                cfgFile_list = sim_file_map[sim_name]
-                fwk = Framework(options.do_create_runspace, options.do_run_setup, options.do_run,
-                                cfgFile_list, options.log_file, options.platform_filename,
-                                compset_list, options.debug, options.verbose_debug,
-                                options.cmd_nodes, options.cmd_ppn)
-                fwk.run()
-        else:
-            fwk = Framework(options.do_create_runspace, options.do_run_setup, options.do_run,
-                            cfgFile_list, options.log_file, options.platform_filename,
-                            compset_list, options.debug, options.verbose_debug,
-                            options.cmd_nodes, options.cmd_ppn)
-            fwk.run()
+        fwk = Framework(cfgFile_list, options.log_file, options.platform_filename,
+                        options.debug, options.verbose_debug,
+                        options.cmd_nodes, options.cmd_ppn)
+        fwk.run()
     except Exception:
         raise
 
-    # SIMYAN: post running cleanup of working files, so there aren't
-    # leftover files from doing clones or renaming simulations
-    if len(ipsFilesToRemove) > 0:
-        for file in ipsFilesToRemove:
-            os.remove(file)
-
     return 0
-
-# ----- end main -----
 
 
 if __name__ == "__main__":

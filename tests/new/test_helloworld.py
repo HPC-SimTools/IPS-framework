@@ -37,21 +37,13 @@ def test_helloworld(tmpdir, capfd):
     shutil.copy(os.path.join(data_dir, "hello_driver.py"), tmpdir)
     shutil.copy(os.path.join(data_dir, "hello_worker.py"), tmpdir)
 
-    framework = Framework(do_create_runspace=True,  # create runspace: init.init()
-                          do_run_setup=True,        # validate inputs: sim_comps.init()
-                          do_run=True,              # Main part of simulation
-                          config_file_list=[os.path.join(tmpdir, "hello_world.ips")],
+    framework = Framework(config_file_list=[os.path.join(tmpdir, "hello_world.ips")],
                           log_file_name=str(tmpdir.join('test.log')),
                           platform_file_name=os.path.join(tmpdir, "platform.conf"),
-                          compset_list=[],
                           debug=None,
                           verbose_debug=None,
                           cmd_nodes=0,
                           cmd_ppn=0)
-
-    assert framework.ips_dosteps['CREATE_RUNSPACE']
-    assert framework.ips_dosteps['RUN_SETUP']
-    assert framework.ips_dosteps['RUN']
 
     assert framework.log_file_name.endswith('test.log')
 
@@ -78,22 +70,16 @@ def test_helloworld(tmpdir, capfd):
     captured_out = captured.out.split('\n')
     assert captured_out[0] == "Created <class 'hello_driver.HelloDriver'>"
     assert captured_out[1] == "Created <class 'hello_worker.HelloWorker'>"
-    assert captured_out[2].endswith('checklist.conf" could not be found, continuing without.')
-    assert captured_out[3] == 'HelloDriver: init'
-    assert captured_out[4] == 'HelloDriver: finished worker init call'
-    assert captured_out[5] == 'HelloDriver: beginning step call'
-    assert captured_out[6] == 'Hello from HelloWorker'
-    assert captured_out[7] == 'HelloDriver: finished worker call'
+    assert captured_out[2] == 'HelloDriver: init'
+    assert captured_out[3] == 'HelloDriver: finished worker init call'
+    assert captured_out[4] == 'HelloDriver: beginning step call'
+    assert captured_out[5] == 'Hello from HelloWorker'
+    assert captured_out[6] == 'HelloDriver: finished worker call'
     assert captured.err == ''
 
     # check that portal didn't write anything since USE_PORTAL=False
     assert not os.path.exists(tmpdir.join("simulation_log"))
     assert not os.path.exists(tmpdir.join("www"))
-
-    # cleanup
-    for fname in ["test_helloworld0.zip", "dask_preload.py"]:
-        if os.path.isfile(fname):
-            os.remove(fname)
 
 
 def test_helloworld_task_pool(tmpdir, capfd):
@@ -103,21 +89,13 @@ def test_helloworld_task_pool(tmpdir, capfd):
     shutil.copy(os.path.join(data_dir, "hello_driver.py"), tmpdir)
     shutil.copy(os.path.join(data_dir, "hello_worker_task_pool.py"), tmpdir)
 
-    framework = Framework(do_create_runspace=True,  # create runspace: init.init()
-                          do_run_setup=True,        # validate inputs: sim_comps.init()
-                          do_run=True,              # Main part of simulation
-                          config_file_list=[os.path.join(tmpdir, "hello_world.ips")],
+    framework = Framework(config_file_list=[os.path.join(tmpdir, "hello_world.ips")],
                           log_file_name=str(tmpdir.join('test.log')),
                           platform_file_name=os.path.join(tmpdir, "platform.conf"),
-                          compset_list=[],
                           debug=None,
                           verbose_debug=None,
                           cmd_nodes=0,
                           cmd_ppn=0)
-
-    assert framework.ips_dosteps['CREATE_RUNSPACE']
-    assert framework.ips_dosteps['RUN_SETUP']
-    assert framework.ips_dosteps['RUN']
 
     assert framework.log_file_name.endswith('test.log')
 
@@ -142,33 +120,27 @@ def test_helloworld_task_pool(tmpdir, capfd):
 
     assert captured_out[0] == "Created <class 'hello_driver.HelloDriver'>"
     assert captured_out[1] == "Created <class 'hello_worker_task_pool.HelloWorker'>"
-    assert captured_out[2].endswith('checklist.conf" could not be found, continuing without.')
-    assert captured_out[3] == 'HelloDriver: init'
-    assert captured_out[4] == 'HelloDriver: finished worker init call'
-    assert captured_out[5] == 'HelloDriver: beginning step call'
-    assert captured_out[6] == 'Hello from HelloWorker'
-    assert captured_out[7] == 'ret_val =  10'
+    assert captured_out[2] == 'HelloDriver: init'
+    assert captured_out[3] == 'HelloDriver: finished worker init call'
+    assert captured_out[4] == 'HelloDriver: beginning step call'
+    assert captured_out[5] == 'Hello from HelloWorker'
+    assert captured_out[6] == 'ret_val =  10'
 
-    exit_status = json.loads(captured_out[8].replace("'", '"'))
+    exit_status = json.loads(captured_out[7].replace("'", '"'))
     assert len(exit_status) == 10
     for n in range(10):
         assert f'task_{n}' in exit_status
         assert exit_status[f'task_{n}'] == 0
 
-    assert captured_out[9] == "====== Non Blocking "
+    assert captured_out[8] == "====== Non Blocking "
 
-    for line in range(10, len(captured_out) - 2):
+    for line in range(9, len(captured_out) - 2):
         if "Nonblock_task" in captured_out[line]:
             assert captured_out[line].endswith("': 0}")
 
     assert captured_out[-3] == 'Active =  0 Finished =  10'
     assert captured_out[-2] == 'HelloDriver: finished worker call'
     assert captured.err == ''
-
-    # cleanup
-    for fname in ["test_helloworld_task_pool0.zip", "dask_preload.py"]:
-        if os.path.isfile(fname):
-            os.remove(fname)
 
 
 def test_helloworld_portal(tmpdir, capfd):
@@ -178,21 +150,13 @@ def test_helloworld_portal(tmpdir, capfd):
     shutil.copy(os.path.join(data_dir, "hello_driver.py"), tmpdir)
     shutil.copy(os.path.join(data_dir, "hello_worker.py"), tmpdir)
 
-    framework = Framework(do_create_runspace=True,  # create runspace: init.init()
-                          do_run_setup=True,        # validate inputs: sim_comps.init()
-                          do_run=True,              # Main part of simulation
-                          config_file_list=[os.path.join(tmpdir, "hello_world.ips")],
+    framework = Framework(config_file_list=[os.path.join(tmpdir, "hello_world.ips")],
                           log_file_name=str(tmpdir.join('test.log')),
                           platform_file_name=os.path.join(tmpdir, "platform.conf"),
-                          compset_list=[],
                           debug=None,
                           verbose_debug=None,
                           cmd_nodes=0,
                           cmd_ppn=0)
-
-    assert framework.ips_dosteps['CREATE_RUNSPACE']
-    assert framework.ips_dosteps['RUN_SETUP']
-    assert framework.ips_dosteps['RUN']
 
     assert framework.log_file_name.endswith('test.log')
 
@@ -220,12 +184,11 @@ def test_helloworld_portal(tmpdir, capfd):
     captured_out = captured.out.split('\n')
     assert captured_out[0] == "Created <class 'hello_driver.HelloDriver'>"
     assert captured_out[1] == "Created <class 'hello_worker.HelloWorker'>"
-    assert captured_out[2].endswith('checklist.conf" could not be found, continuing without.')
-    assert captured_out[3] == 'HelloDriver: init'
-    assert captured_out[4] == 'HelloDriver: finished worker init call'
-    assert captured_out[5] == 'HelloDriver: beginning step call'
-    assert captured_out[6] == 'Hello from HelloWorker'
-    assert captured_out[7] == 'HelloDriver: finished worker call'
+    assert captured_out[2] == 'HelloDriver: init'
+    assert captured_out[3] == 'HelloDriver: finished worker init call'
+    assert captured_out[4] == 'HelloDriver: beginning step call'
+    assert captured_out[5] == 'Hello from HelloWorker'
+    assert captured_out[6] == 'HelloDriver: finished worker call'
     assert captured.err == ''
 
     # check that portal created output folders
@@ -243,8 +206,3 @@ def test_helloworld_portal(tmpdir, capfd):
     assert '.json' in exts
     assert '.html' in exts
     assert '.eventlog' in exts
-
-    # cleanup
-    for fname in ["test_helloworld_portal0.zip", "dask_preload.py"]:
-        if os.path.isfile(fname):
-            os.remove(fname)
