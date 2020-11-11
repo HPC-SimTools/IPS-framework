@@ -38,8 +38,6 @@ Guides<user_guides/user_guides>` chapter.
 
 Developers of the IPS framework and services, or brave souls who wish to understand how these pieces work, should look at the :doc:`code listings<the_code>`.  The code listings here will include internal and external APIs.  The developer guides include information about the design of the IPS at a high level and the framework and managers at a lower level to acquaint developers with the structures and mechanisms that are used in the IPS framework source code.
 
-Component developers should also contribute and update the documentation associated with each component in the :doc:`Component Guides<component_guides/component_guides>` section.
-
 Acknowledgments
 ---------------
 

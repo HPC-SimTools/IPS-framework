@@ -8,6 +8,17 @@ This directory has all of the user guides for using the IPS (see the component a
 
   Advanced IPS usage documents contain information for *writers* of drivers and components.  These documents will help those who wish to make new components and drivers, make significant changes to an existing component or driver, examine the performance of the IPS and components, or those who would like to understand how to use the multiple levels of parallelism and asynchronous communication mechanisms effectively.
 
+**Installing and setup**
+
+:doc:`Installing IPS<install>`
+     Install guide.
+
+:doc:`Migration from old IPS to new IPS<migration>`
+     A guide on converting from the old (up to July 2020) way of doing things to the new way.
+
+:doc:`Setting up environment on NERSC<nersc_conda>`
+     How to setup conda environments on NERSC for using IPS.
+
 **Basic IPS Usage**
 
 :doc:`Introduction to the IPS<basic_guide>`
@@ -31,6 +42,9 @@ This directory has all of the user guides for using the IPS (see the component a
    :maxdepth: 1
    :hidden:
 
+   install
+   migration
+   nersc_conda
    basic_guide
    advanced_guide
    config_file

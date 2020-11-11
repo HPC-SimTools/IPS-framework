@@ -254,7 +254,7 @@ This section contains some useful tips on testing, debugging and documenting you
 * Documentation:
 
   * Document the component code such that another person can understand how it works.  It helps if the structure remains the same as the example component.
-  * Write a description of what the component does, the inputs it uses, outputs it produces, and what scenarios and modes it can be used in in the component documentation section, :doc:`Component Guides<../component_guides/component_guides>`.
+  * Write a description of what the component does, the inputs it uses, outputs it produces, and what scenarios and modes it can be used in in the component documentation section.
 
 
 -----------------
