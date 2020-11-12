@@ -16,7 +16,7 @@ python3 setup.py develop
 
 ```
 ips.py --help
-ips.py --simulation=SIMULATION --platform=PLATFORM_FILENAME
+ips.py --config=simulation.config --platform=platform.conf
 ```
 
 ## To run the tests (requires pytest)

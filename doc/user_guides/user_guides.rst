@@ -19,20 +19,26 @@ This directory has all of the user guides for using the IPS (see the component a
 :doc:`Platform Configuration File - Explained<platform>`:
     Annotated platform configuration file and explanation of the manual allocation specification interface.
 
-
 **Advanced IPS Usage**
 
 :doc:`The IPS for Driver and Component Developers<advanced_guide>`:
     This guide contains the elements of components and drivers, suggestions on how to construct a simulation, how to add the new component to a simulation and the repository, as well as, an IPS services guide to have handy when writing components and drivers.  This guide is for components and drivers based on the *generic driver* model.  More sophisticated logic and execution models are covered in the following document.
 
+:doc:`Migration from old IPS to new IPS<migration>`
+     A guide on converting from the old (up to July 2020) way of doing things to the new way.
+
+:doc:`Setting up environment on NERSC<nersc_conda>`
+     How to setup conda environments on NERSC for using IPS.
+
 .. **User Guides Table of Contents**
 
 .. toctree::
    :maxdepth: 1
-   :hidden:
 
    basic_guide
-   advanced_guide
    config_file
    platform
+   advanced_guide
+   migration
+   nersc_conda
 

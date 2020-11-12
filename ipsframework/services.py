@@ -2000,7 +2000,7 @@ class ServicesProxy:
 
     def merge_current_plasma_state(self, partial_state_file, logfile=None, merge_binary=None):
         """
-        Deprecated : Use merge_surrent_state()
+        Deprecated : Use :py:meth:`ServicesProxy.merge_current_state`
         """
         self.warning('merge_current_plasma_state() deprecated - will be removed in a future release')
         self.warning('use merge_current_state() instead')
