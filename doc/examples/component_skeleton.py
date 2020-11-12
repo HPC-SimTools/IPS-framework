@@ -11,7 +11,7 @@ your own code, and places to change the current text to reflect your component.
 import os
 import subprocess
 from Scientific.IO.NetCDF import NetCDFFile
-from ipsframework.component import Component
+from ipsframework import Component
 
 
 class my_comp (Component):

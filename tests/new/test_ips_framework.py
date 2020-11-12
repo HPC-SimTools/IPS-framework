@@ -1,4 +1,4 @@
-from ipsframework.ips import Framework
+from ipsframework import Framework
 import glob
 import json
 

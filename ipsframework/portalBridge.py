@@ -4,7 +4,7 @@
 import re
 
 import datetime
-from ipsframework.component import Component
+from ipsframework import Component
 import sys
 import urllib.request
 import urllib.parse

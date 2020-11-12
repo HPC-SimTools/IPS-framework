@@ -16,7 +16,7 @@ MCMD version of TORIC component.  Slightly adapted from rf_ic_toric.py
 
 import os
 import subprocess  # not used in skeleton, but useful for launching helper scripts
-from ipsframework.component import Component  # REQUIRED - all components inherit the IPS Component
+from ipsframework import Component  # REQUIRED - all components inherit the IPS Component
 
 
 class example(Component):  # CHANGE CLASS NAME
