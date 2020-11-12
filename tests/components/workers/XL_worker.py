@@ -1,7 +1,7 @@
 # -------------------------------------------------------------------------------
 # Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
 # -------------------------------------------------------------------------------
-from ipsframework.component import Component
+from ipsframework import Component
 
 
 class XL_worker(Component):

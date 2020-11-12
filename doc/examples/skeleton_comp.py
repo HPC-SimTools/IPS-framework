@@ -12,7 +12,7 @@ This is a stripped down component that contains the boilerplate for creating a c
 # ----------------------------------------------------------------------------
 
 import os
-from ipsframework.component import Component  # REQUIRED - all components inherit the IPS Component
+from ipsframework import Component  # REQUIRED - all components inherit the IPS Component
 
 
 class example(Component):  # CHANGE CLASS NAME

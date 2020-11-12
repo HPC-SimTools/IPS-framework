@@ -5,7 +5,7 @@ import pytest
 import socket
 import logging
 import logging.handlers
-from ipsframework.resourceManager import ResourceManager
+from ipsframework import ResourceManager
 from ipsframework.ipsExceptions import (NonexistentResourceException,
                                         AllocatedNodeDownException,
                                         InsufficientResourcesException,

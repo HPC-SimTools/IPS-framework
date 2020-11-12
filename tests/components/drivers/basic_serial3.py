@@ -8,7 +8,7 @@ as a typical SWIM run (similar number of input and output files, size
 of components, resource requirements, etc.).  This test scenario should
 always pass.
 """
-from ipsframework.component import Component
+from ipsframework import Component
 
 
 class MCMDDriver(Component):

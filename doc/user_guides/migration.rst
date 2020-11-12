@@ -29,10 +29,10 @@ Also with this change in the way the package is install there are
 required code changes need to use it. The main one is that since this
 is now a package everything must be imported from ipsframework, so
 when writing components you can no longer do ``from component import
-Component`` and must do ``from ipsframework.component import
+Component`` and must do ``from ipsframework import
 Component``. Similarly if importing the framework directly you can not
 do ``from ips import Framework`` and now must do ``from
-ipsframework.ips import Framework``.
+ipsframework import Framework``.
 
 Additionally the following changes have been made
  - These unused options have been remove from ips.py (``--component``,
