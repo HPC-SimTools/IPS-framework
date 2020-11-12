@@ -1,6 +1,6 @@
 #! /usr/bin/env python3
 # -------------------------------------------------------------------------------
-# Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
+# Copyright 2006-2020 UT-Battelle, LLC. See LICENSE for more information.
 # -------------------------------------------------------------------------------
 """
    # local version
@@ -60,21 +60,21 @@ if sys.version[0] != '3':  # noqa: E402
 
 import optparse
 import multiprocessing
-from . import platformspec
+from ipsframework import platformspec
 import inspect
-from .messages import Message, ServiceRequestMessage, \
+from ipsframework.messages import Message, ServiceRequestMessage, \
     ServiceResponseMessage, MethodInvokeMessage
-from .configurationManager import ConfigurationManager
-from .taskManager import TaskManager
-from .resourceManager import ResourceManager
-from .dataManager import DataManager
-from .componentRegistry import ComponentRegistry, ComponentID
+from ipsframework.configurationManager import ConfigurationManager
+from ipsframework.taskManager import TaskManager
+from ipsframework.resourceManager import ResourceManager
+from ipsframework.dataManager import DataManager
+from ipsframework.componentRegistry import ComponentRegistry, ComponentID
 import socket
-from .ipsExceptions import BlockedMessageException
-from .eventService import EventService
-from .cca_es_spec import initialize_event_service
+from ipsframework.ipsExceptions import BlockedMessageException
+from ipsframework.eventService import EventService
+from ipsframework.cca_es_spec import initialize_event_service
 import logging
-from .ips_es_spec import eventManager
+from ipsframework.ips_es_spec import eventManager
 import os
 import time
 

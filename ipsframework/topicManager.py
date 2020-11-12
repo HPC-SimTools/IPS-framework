@@ -1,5 +1,5 @@
 # -------------------------------------------------------------------------------
-# Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
+# Copyright 2006-2020 UT-Battelle, LLC. See LICENSE for more information.
 # -------------------------------------------------------------------------------
 """
 This file hosts the TopicManager class that manages the set of events and

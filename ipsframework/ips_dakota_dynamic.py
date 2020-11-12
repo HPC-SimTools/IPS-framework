@@ -1,14 +1,14 @@
 #! /usr/bin/env python
 # -------------------------------------------------------------------------------
-# Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
+# Copyright 2006-2020 UT-Battelle, LLC. See LICENSE for more information.
 # -------------------------------------------------------------------------------
 
 import os
 import sys
 import getopt
-import platformspec
+from ipsframework import platformspec
 import inspect
-from .configobj import ConfigObj
+from ipsframework.configobj import ConfigObj
 import subprocess
 import tempfile
 import re
