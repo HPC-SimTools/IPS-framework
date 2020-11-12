@@ -1,33 +1,41 @@
+===============
 Getting Started
 ===============
 
 This document will guide you through the process of running an IPS simulation and describe the overall structure of the IPS.  It is designed to help you build and run your first IPS simulation.  It will serve as a tutorial on how to get, build, and run your first IPS simulation, but not serve as a general reference for constructing and running IPS simulations.  See the :doc:`Basic User Guides<../user_guides/user_guides>` for a handy reference on running and constructing simulations in general, and for more in-depth explanations of how and why the IPS works.
 
-======================================
+.. warning::
+
+   The were major changes in IPS from the old (up to July 2020) way of
+   doing things to a new way. See :doc:`../user_guides/migration`.
+
 Obtaining, Dependencies, Platforms
-======================================
+==================================
 
 The IPS code is currently located on the GitHub repository. In order to checkout a copy, you must have git installed on the machine you will be using. Once you have git you can check out the IPS thusly::
 
       git clone https://github.com/HPC-SimTools/IPS-framework.git ips
 
-^^^^^^^^^^^^^^^^^^^
 Dependencies
-^^^^^^^^^^^^^^^^^^^
+------------
 
 **IPS Proper**
 
 The IPS framework is written in Python_, and requires Python 3.6+.  There are a few other packages that may be needed for certain components or utilities.  The framework does use the Python package ConfigObj_, however the source is already included and no package installation is necessary (likewise for Python 3.6 and the processing module).
 
-::::::::::::::::
 Other Utilities
-::::::::::::::::
+---------------
 
 **Resource Usage Simulator (RUS)**
   This is a utility for simulation the execution of tasks in the IPS
   for research purposes.
 
   Requires: Matplotlib_ (which requires Numpy_/Scipy_)
+
+  .. warning::
+     The RUS (Resource Usage Simulator) has not been updated to python
+     3 or for the changes in IPS and will not function in it current
+     state.
 
 **Documentation**
   The documentation you are reading now was created by a Python-based
@@ -45,49 +53,92 @@ Other Utilities
 .. _ConfigObj: http://configobj.readthedocs.io
 .. _Python: http://python.org
 
-========================================
 Building and Setting up Your Environment
 ========================================
 
-The IPS has been ported to and is in regular use on the following platforms.  See :doc:`../user_guides/platform` for more information:
+.. _installing-ips:
 
-* Franklin_ - Cray XT4
-* Hopper_ - Cray XE6
-* Stix_ - SMP
-* Pacman - Linux Cluster
+Installing IPS
+--------------
 
-.. _Hopper: http://www.nersc.gov/users/computational-systems/hopper/
-.. _Franklin: http://www.nersc.gov/users/computational-systems/franklin/
-.. _Pacman: http://www.arsc.edu/resources/pacman.html
-.. _Stix: http://beowulf.pppl.gov/
+Download IPS from source
 
-It is not hard to port the IPS to another platform, but it may not be trivial.  *Please contact the framework developers before attempting it on your own.*  For this tutorial, we will be using Franklin and Stix as our example platforms.  It is **strongly** recommended that you use one of these two platforms as the example scripts and data files are located on these machines.
+.. code-block:: bash
 
-To build the IPS on one of the locations it has been ported to:
+  git clone https://github.com/HPC-SimTools/IPS-framework.git
 
-1. Checkout or copy the ips trunk to the machine of your choice::
+Install in current python environment, from within the IPS-framework
+source directory
 
-     head_node: ~ > git clone https://github.com/HPC-SimTools/IPS-framework.git ips
+.. code-block:: bash
 
-#. Configure your shell (assumes you are using bash).  If you use a different shell, type ``bash`` at the command line before sourcing the swim.bashrc.* file::
+  pip install .
+  # or
+  python setup.py install
 
-     head_node: ~/ips > cd ips
-     head_node: ~/ips > source swim.bashrc.<machine_name>
+If you are using the system python and don't want to install as root
+you can do a user only install with
 
-#. Setup the make configuration::
+.. code-block:: bash
 
-     head_node: ~/ips > cp config/makeconfig.<machine_name> config/makeconfig.local
+  python setup.py install --user
 
-#. Build the IPS::
+Install in develop mode (this doesn't actually install the package but
+creates an egg link)
 
-     head_node: ~/ips > make
-     head_node: ~/ips > make install
+.. code-block:: bash
 
-Now you are ready to set up your configuration files, and run simulations.
+  python setup.py develop
+  # or
+  pip install -e .
 
-^^^^^^^^^^^^^^^^^^^^^^^^
+``ips.py`` should now be installed in your ``PATH`` and you should be
+able to run
+``ips.py --config=simulation.config --platform=platform.conf``
+
+
+.. note::
+   You may need to use ``pip3`` and ``python3`` if you default
+   ``python`` is not ``python3``.
+
+Create and install in conda environment
+---------------------------------------
+
+.. note::
+
+   For specific instruction on setting up conda environments on NERSC
+   set :doc:`../user_guides/nersc_conda`.
+
+First you need conda, you can either install the full `Anaconda
+package <https://www.anaconda.com/downloads>`_ or `Minconda
+<https://docs.conda.io/en/latest/miniconda.html>`_ (recommenced) which
+is a minimal installer for conda.
+
+First create a conda environment and activate it, this environment is named
+``ips``. You can use any version of python >= 3.6
+
+.. code-block:: bash
+
+  conda create -n ips python=3.9
+  conda activate ips
+
+Next install IPS into this environment. From within the IPS-framework
+source directory
+
+.. code-block:: bash
+
+  python setup.py install
+
+And you are good to go.
+
+To leave your conda environment
+
+.. code-block:: bash
+
+  conda deactivate
+
 IPS Directory Structure
-^^^^^^^^^^^^^^^^^^^^^^^^
+-----------------------
 
 Before running your first simulation, we should go over the contents of these selected ``ips`` subdirectories.
 
@@ -143,9 +194,8 @@ should never appear within the Subversion repository.  In fact, the
 Subversion repository is configured to ignore directories marked below
 as transient.
 
-===================================
 Running Your First IPS Simulations
-===================================
+==================================
 
 This section will take you step-by-step through running a "hello world" example and a "model physics" example.  These examples contain all of the configuration, batch script, component, executables and input files needed to run them.  To run IPS simulations in general, these will need to be borrowed, modified or created.  See the :doc:`Basic User Guides<../user_guides/user_guides>` for more information.
 
@@ -155,9 +205,8 @@ Before getting started, you will want to make sure you have a copy of the ips ch
 
        On **Stix** you will want to work in a directory within ``/p/swim1/`` that you own.  You can keep important runs there or in ``/p/swim1/data/``.
 
-^^^^^^^^^^^^^^^^^^^^
 Hello World Example
-^^^^^^^^^^^^^^^^^^^^
+-------------------
 
 This example simply uses the IPS to print "Hello World," using a single driver component and worker component.  The driver component (hello_driver.py) invokes the worker component (hello_worker.py) that then prints a message.  The implementations of these components reside in ``ips/components/drivers/hello/``, if you would like to examine them.  In this example, the *call()* and *launch_task()* interfaces are demonstrated.  In this tutorial, we are focusing on running simulations and will cover the internals of components and constructing simulation scenarios in the various User Guides (see :doc:`Index<../index>`).
 
@@ -224,9 +273,8 @@ When the simulation has finished, the output file should contain::
      Hello from HelloWorker
      HelloDriver: finished worker call
 
-^^^^^^^^^^^^^^^^^^^^^^
 Model Physics Example
-^^^^^^^^^^^^^^^^^^^^^^
+---------------------
 
 This simulation is intended to look almost like a real simulation, short of requiring actual physics codes and input data.  Instead typical simulation-like data is generated from simple analytic (physics-less) models for most of the plasma state quantities that are followed by the *monitor* component.  This "model" simulation includes time stepping, time varying scalars and profiles, and checkpoint/restart.  
 

@@ -43,7 +43,7 @@ The following items are specific to the user and should be changed accordingly. 
 **Simulation Information Section**
 These items describe this configuration and is used for describing and locating its output, information for the portal, and location of the source code of the IPS.
 
-\*\* Mandatory items: *SIM_ROOT*, *SIM_NAME*, *LOG_FILE*, *RUN_COMMENT*, *IPS_ROOT*
+\*\* Mandatory items: *SIM_ROOT*, *SIM_NAME*, *LOG_FILE*
 
 *RUN_ID*, *TOKOMAK_ID*, *SHOT_NUMBER* - identifiers for the simulation that are helpful for SWIM users.  They ore often used to form a hierarchical name for the simulation, identifying related runs.
 
@@ -54,8 +54,6 @@ These items describe this configuration and is used for describing and locating 
 *LOG_FILE* - name of the log file for this simulation.  The framework log file is specified at the command line.
 
 *LOG_LEVEL* - sets the logging level for the simulation.  If empty, the framework log level is used, which defaults to *WARNING*.  See :ref:`logging-api` for details on the logging capabilities in the IPS.  Possible values: *DEBUG*, *INFO*, *WARNING*, *ERROR*, *EXCEPTION*, *CRITICAL*.
-
-*IPS_ROOT* - location of the ips source code that will be used.
 
 *SIM_ROOT* - location of output tree.  This directory will be created if it does not exist.  If the directory already exists, then data files will be added, possibly overwriting existing data.
 
@@ -72,9 +70,6 @@ These items describe this configuration and is used for describing and locating 
   OUTPUT_PREFIX = 
   LOG_FILE = ${RUN_ID}_sim.log 
   LOG_LEVEL = DEBUG             # Default = WARNING
-
-  # Root of IPS (contains framework and component source code)
-  IPS_ROOT = /scratch/scratchdirs/ssfoley/ips
 
   # Simulation root - path of the simulation directory that will be constructed 
   # by the framework
@@ -167,7 +162,7 @@ The ports section identifies which ports and their associated implementations th
 
 **Component Configuration Section**
 
-Component definition and configuration is done in this "section."  Each component configuration section is defined as a section (e.g., ``[model_RF_IC]``).  Each entry in the component configuration section is available to the component at runtime using that name (e.g., *self.NPROC*), thus these values can be used to create specific simulation cases using generic components.  Variables defined within a component configuration section are local to that section, but values may be defined in terms of the simulation values defined above (e.g., *PLASMA_STATE_FILES*, and *IPS_ROOT*).
+Component definition and configuration is done in this "section."  Each component configuration section is defined as a section (e.g., ``[model_RF_IC]``).  Each entry in the component configuration section is available to the component at runtime using that name (e.g., *self.NPROC*), thus these values can be used to create specific simulation cases using generic components.  Variables defined within a component configuration section are local to that section, but values may be defined in terms of the simulation values defined above (e.g., *PLASMA_STATE_FILES*).
 
 \*\* Mandatory entries: *SCRIPT*, *NAME*, *BIN_PATH*, *INPUT_DIR*
 

@@ -1,5 +1,6 @@
-Install IPS on NERSC
-====================
+=======================
+Installing IPS on NERSC
+=======================
 
 NERSC recommends the use of anaconda environments to mange python
 installs, see `Brief introduction to Python at NERSC
@@ -86,6 +87,5 @@ environment to run use, see `Running Python in a batch job
   #SBATCH --nodes=1
   #SBATCH --time=5
 
-  module load python
   source /global/common/software/myproject/env/bin/activate
   ips.py --config=simulation.config --platform=platform.conf

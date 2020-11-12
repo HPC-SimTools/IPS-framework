@@ -1,3 +1,4 @@
+========================================
 Migrating from old IPS v0.1.0 to new IPS
 ========================================
 
@@ -19,10 +20,10 @@ imported directly from the modules.
 
 Thing have changed, the package install is now managed with python
 setuptools and the IPS framework is install as a package called
-ipsframework, see :doc:`Installing IPS <install>`. The ips.py
-executable is also installed in you current PATH. This means that you
-no longer need to set PYTHONPATH or PATH when the IPS framework is
-installed. This required a rearrangement of the source code.
+ipsframework, see :ref:`installing-ips`. The ips.py executable is also
+installed in you current PATH. This means that you no longer need to
+set PYTHONPATH or PATH when the IPS framework is installed. This
+required a rearrangement of the source code.
 
 Also with this change in the way the package is install there are
 required code changes need to use it. The main one is that since this
