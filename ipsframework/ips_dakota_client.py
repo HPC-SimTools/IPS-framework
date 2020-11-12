@@ -1,11 +1,11 @@
 #! /usr/bin/env python
 # -------------------------------------------------------------------------------
-# Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
+# Copyright 2006-2020 UT-Battelle, LLC. See LICENSE for more information.
 # -------------------------------------------------------------------------------
 
 import os
 import sys
-from .configobj import ConfigObj
+from ipsframework.configobj import ConfigObj
 import shutil
 from multiprocessing.connection import Client
 import time
