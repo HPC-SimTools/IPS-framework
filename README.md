@@ -26,5 +26,5 @@ python3 setup.py test
 ```
 
 ---
-[![Build Status](https://travis-ci.com/HPC-SimTools/IPS-framework.svg?branch=master)](https://travis-ci.com/HPC-SimTools/IPS-framework)
+![CI](https://github.com/HPC-SimTools/IPS-framework/workflows/CI/badge.svg)
 [![codecov](https://codecov.io/gh/HPC-SimTools/IPS-framework/branch/master/graph/badge.svg)](https://codecov.io/gh/HPC-SimTools/IPS-framework)

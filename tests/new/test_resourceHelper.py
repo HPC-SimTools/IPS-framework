@@ -1,6 +1,6 @@
 from ipsframework.resourceHelper import getResourceList
 import pytest
-import mock
+from unittest import mock
 
 
 # checkjob
@@ -167,7 +167,7 @@ def test_resourceHelper_pbs_env(monkeypatch, tmpdir):
     assert "'PBS_NNODES'" == str(excinfo.value)
 
     # PBS_NNODES
-    monkeypatch.setenv("PBS_NNODES", 2)
+    monkeypatch.setenv("PBS_NNODES", "2")
 
     listOfNodes, cpn, spn, ppn, accurateNodes = getResourceList(services, 'host')
 
