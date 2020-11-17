@@ -1,6 +1,6 @@
 from ipsframework import ips
 import pytest
-import mock
+from unittest import mock
 import sys
 
 
