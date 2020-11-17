@@ -42,33 +42,37 @@ Additionally the following changes have been made
    ``MODULE`` instead of a ``SCRIPT``, this allows easy use of
    component that have been installed in the python environment.
 
-These deprecated API will soon be removed and you should update you code:
+These API have been deprecated for a long time and have been removed, you should update you code:
 
-+--------------------------------------------------------------------+----------------------------------------------------------------------------+-----------------------------------------------------------------------------+
-| class                                                              | deprecated API                                                             | new API                                                                     |
-+====================================================================+============================================================================+=============================================================================+
-|:py:class:`~ipsframework.configurationManager.ConfigurationManager` | :py:meth:`~ipsframework.configurationManager.ConfigurationManager.getPort` | :py:meth:`~ipsframework.configurationManager.ConfigurationManager.get_port` |
-+--------------------------------------------------------------------+----------------------------------------------------------------------------+-----------------------------------------------------------------------------+
-|:py:class:`~ipsframework.services.ServicesProxy`                    | :py:meth:`~ipsframework.services.ServicesProxy.getGlobalConfigParameter`   | :py:meth:`~ipsframework.services.ServicesProxy.get_config_param`            |
-+--------------------------------------------------------------------+----------------------------------------------------------------------------+-----------------------------------------------------------------------------+
-|:py:class:`~ipsframework.services.ServicesProxy`                    | :py:meth:`~ipsframework.services.ServicesProxy.getPort`                    | :py:meth:`~ipsframework.services.ServicesProxy.get_port`                    |
-+--------------------------------------------------------------------+----------------------------------------------------------------------------+-----------------------------------------------------------------------------+
-|:py:class:`~ipsframework.services.ServicesProxy`                    | :py:meth:`~ipsframework.services.ServicesProxy.getTimeLoop`                | :py:meth:`~ipsframework.services.ServicesProxy.get_time_loop`               |
-+--------------------------------------------------------------------+----------------------------------------------------------------------------+-----------------------------------------------------------------------------+
-|:py:class:`~ipsframework.services.ServicesProxy`                    | :py:meth:`~ipsframework.services.ServicesProxy.merge_current_plasma_state` | :py:meth:`~ipsframework.services.ServicesProxy.merge_current_state`         |
-+--------------------------------------------------------------------+----------------------------------------------------------------------------+-----------------------------------------------------------------------------+
-|:py:class:`~ipsframework.services.ServicesProxy`                    | :py:meth:`~ipsframework.services.ServicesProxy.stageCurrentPlasmaState`    | :py:meth:`~ipsframework.services.ServicesProxy.stage_plasma_state`          |
-+--------------------------------------------------------------------+----------------------------------------------------------------------------+-----------------------------------------------------------------------------+
-|:py:class:`~ipsframework.services.ServicesProxy`                    | :py:meth:`~ipsframework.services.ServicesProxy.stageInputFiles`            | :py:meth:`~ipsframework.services.ServicesProxy.stage_input_files`           |
-+--------------------------------------------------------------------+----------------------------------------------------------------------------+-----------------------------------------------------------------------------+
-|:py:class:`~ipsframework.services.ServicesProxy`                    | :py:meth:`~ipsframework.services.ServicesProxy.stageOutputFiles`           | :py:meth:`~ipsframework.services.ServicesProxy.stage_output_files`          |
-+--------------------------------------------------------------------+----------------------------------------------------------------------------+-----------------------------------------------------------------------------+
-|:py:class:`~ipsframework.services.ServicesProxy`                    | :py:meth:`~ipsframework.services.ServicesProxy.updatePlasmaState`          | :py:meth:`~ipsframework.services.ServicesProxy.update_plasma_state`         |
-+--------------------------------------------------------------------+----------------------------------------------------------------------------+-----------------------------------------------------------------------------+
-|:py:class:`~ipsframework.services.ServicesProxy`                    | :py:meth:`~ipsframework.services.ServicesProxy.updateTimeStamp`            | :py:meth:`~ipsframework.services.ServicesProxy.update_time_stamp`           |
-+--------------------------------------------------------------------+----------------------------------------------------------------------------+-----------------------------------------------------------------------------+
++--------------------------------------------------------------------+----------------------------------+-----------------------------------------------------------------------------+
+| class                                                              | removed API                      | new API                                                                     |
++====================================================================+==================================+=============================================================================+
+|:py:class:`~ipsframework.configurationManager.ConfigurationManager` | ``getPort()``                    | :py:meth:`~ipsframework.configurationManager.ConfigurationManager.get_port` |
++--------------------------------------------------------------------+----------------------------------+-----------------------------------------------------------------------------+
+|:py:class:`~ipsframework.services.ServicesProxy`                    | ``getGlobalConfigParameter()``   | :py:meth:`~ipsframework.services.ServicesProxy.get_config_param`            |
++--------------------------------------------------------------------+----------------------------------+-----------------------------------------------------------------------------+
+|:py:class:`~ipsframework.services.ServicesProxy`                    | ``getPort()``                    | :py:meth:`~ipsframework.services.ServicesProxy.get_port`                    |
++--------------------------------------------------------------------+----------------------------------+-----------------------------------------------------------------------------+
+|:py:class:`~ipsframework.services.ServicesProxy`                    | ``getTimeLoop()``                | :py:meth:`~ipsframework.services.ServicesProxy.get_time_loop`               |
++--------------------------------------------------------------------+----------------------------------+-----------------------------------------------------------------------------+
+|:py:class:`~ipsframework.services.ServicesProxy`                    | ``merge_current_plasma_state()`` | :py:meth:`~ipsframework.services.ServicesProxy.merge_current_state`         |
++--------------------------------------------------------------------+----------------------------------+-----------------------------------------------------------------------------+
+|:py:class:`~ipsframework.services.ServicesProxy`                    | ``stage_plasma_state()``         | :py:meth:`~ipsframework.services.ServicesProxy.stage_state`                 |
++--------------------------------------------------------------------+----------------------------------+-----------------------------------------------------------------------------+
+|:py:class:`~ipsframework.services.ServicesProxy`                    | ``stageCurrentPlasmaState()``    | :py:meth:`~ipsframework.services.ServicesProxy.stage_state`                 |
++--------------------------------------------------------------------+----------------------------------+-----------------------------------------------------------------------------+
+|:py:class:`~ipsframework.services.ServicesProxy`                    | ``stageInputFiles()``            | :py:meth:`~ipsframework.services.ServicesProxy.stage_input_files`           |
++--------------------------------------------------------------------+----------------------------------+-----------------------------------------------------------------------------+
+|:py:class:`~ipsframework.services.ServicesProxy`                    | ``stageOutputFiles()``           | :py:meth:`~ipsframework.services.ServicesProxy.stage_output_files`          |
++--------------------------------------------------------------------+----------------------------------+-----------------------------------------------------------------------------+
+|:py:class:`~ipsframework.services.ServicesProxy`                    | ``update_plasma_state()``        | :py:meth:`~ipsframework.services.ServicesProxy.update_state`                |
++--------------------------------------------------------------------+----------------------------------+-----------------------------------------------------------------------------+
+|:py:class:`~ipsframework.services.ServicesProxy`                    | ``updatePlasmaState()``          | :py:meth:`~ipsframework.services.ServicesProxy.update_state`                |
++--------------------------------------------------------------------+----------------------------------+-----------------------------------------------------------------------------+
+|:py:class:`~ipsframework.services.ServicesProxy`                    | ``updateTimeStamp()``            | :py:meth:`~ipsframework.services.ServicesProxy.update_time_stamp`           |
++--------------------------------------------------------------------+----------------------------------+-----------------------------------------------------------------------------+
 
-These simulation configuration fields are deprecated and should be updated.
+These simulation configuration fields have been deprecated for a long time and now have been remove, you should be update.
 
 +---------------------------+--------------------+
 | deprecated field          | new field          |

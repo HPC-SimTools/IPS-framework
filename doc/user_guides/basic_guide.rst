@@ -217,7 +217,7 @@ Third, you must construct the configuration file.  It is helpful to start with a
 
 * Plasma State Section::
 
-    PLASMA_STATE_WORK_DIR = ${SIM_ROOT}/work/plasma_state
+    STATE_WORK_DIR = ${SIM_ROOT}/work/plasma_state
 
     # Config variables defining simulation specific names for plasma state files    
     CURRENT_STATE = ${SIM_NAME}_ps.cdf
@@ -229,9 +229,9 @@ Third, you must construct the configuration file.  It is helpful to start with a
     CURRENT_JSDSK = ${SIM_NAME}_ps.jso
 
     # List of files that constitute the plasma state              
-    PLASMA_STATE_FILES1 = ${CURRENT_STATE} ${PRIOR_STATE} ${NEXT_STATE} ${CURRENT_EQDSK}
-    PLASMA_STATE_FILES2 = ${CURRENT_CQL} ${CURRENT_DQL} ${CURRENT_JSDSK}
-    PLASMA_STATE_FILES = ${PLASMA_STATE_FILES1} ${PLASMA_STATE_FILES2}
+    STATE_FILES1 = ${CURRENT_STATE} ${PRIOR_STATE} ${NEXT_STATE} ${CURRENT_EQDSK}
+    STATE_FILES2 = ${CURRENT_CQL} ${CURRENT_DQL} ${CURRENT_JSDSK}
+    STATE_FILES = ${STATE_FILES1} ${STATE_FILES2}
 
 
   Specifies the naming convention for the plasma state files so the framework and components can manipulate and reference them in the config file and during execution.  The initial file locations are also specified here.
@@ -279,7 +279,7 @@ Third, you must construct the configuration file.  It is helpful to start with a
         INPUT_DIR = ${DATA_TREE_ROOT}/<location of input directory>
             INPUT_FILES = <input files for each step>
             OUTPUT_FILES = <output files to be archived>
-            PLASMA_STATE_FILES = ${CURRENT_STATE} ${NEXT_STATE} ${CURRENT_EQDSK}
+            STATE_FILES = ${CURRENT_STATE} ${NEXT_STATE} ${CURRENT_EQDSK}
             RESTART_FILES = ${INPUT_FILES} <extra state files>
         SCRIPT = ${BIN_PATH}/<component implementation>
         MODULE = <module name to use instead of script e.g. package.component>

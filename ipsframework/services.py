@@ -418,13 +418,6 @@ class ServicesProxy:
         response = self._get_service_response(msg_id, True)
         return response
 
-    def getPort(self, port_name):
-        """
-        .. deprecated :: 1.0 Use :py:meth:`ServicesProxy.get_port`
-        """
-        self.warning('getPort() deprecated - use get_port() instead')
-        return self.get_port(port_name)
-
     def call_nonblocking(self, component_id, method_name, *args, **keywords):
         r"""
         Invoke method *method_name* on component *component_id* with optional
@@ -1070,20 +1063,6 @@ class ServicesProxy:
             raise
         return retval
 
-    def getGlobalConfigParameter(self, param):
-        """
-        .. deprecated :: 1.0 Use :py:meth:`ServicesProxy.get_config_param`
-        """
-        self.warning('Method getGlobalConfigParameter() deprecated - use get_config_param() instead')
-        return self.get_config_param(param)
-
-    def getTimeLoop(self):
-        """
-        .. deprecated :: 1.0 Use :py:meth:`ServicesProxy.get_time_loop`
-        """
-        self.warning('getTimeLoop() deprecated - use get_time_loop() instead')
-        return self.get_time_loop()
-
     def get_time_loop(self):
         """
         Return the list of times as specified in the configuration file.
@@ -1394,13 +1373,6 @@ class ServicesProxy:
                                           str(input_file_list)))
 
         return
-
-    def stageInputFiles(self, input_file_list):
-        """
-        .. deprecated :: 1.0 Use :py:meth:`ServicesProxy.stage_input_files`
-        """
-        self.warning('stageInputFiles() deprecated - use stage_input_files() instead')
-        return self.stage_input_files(input_file_list)
 
     # SIMYAN: added method to specifically enable components to stage
     # data files to the component working directory
@@ -1772,13 +1744,6 @@ class ServicesProxy:
                                  (elapsed_time, output_dir, str(file_list)))
         return
 
-    def stageOutputFiles(self, timeStamp, output_file_list):
-        """
-        .. deprecated :: 1.0 Use :py:meth:`ServicesProxy.stage_output_files`
-        """
-        self.warning('stageOutputFiles() deprecated - use stage_output_files() instead')
-        return self.stage_output_files(timeStamp, output_file_list)
-
     def save_restart_files(self, timeStamp, file_list):
         """
         Copy files needed for component restart to the restart directory::
@@ -1856,14 +1821,6 @@ class ServicesProxy:
                                  'Files = ' + str(file_list))
         return
 
-    def stage_plasma_state(self):
-        """
-        Copy current plasma state to work directory.
-        """
-        self.warning('stage_plasma_state() deprecated - will be removed in a future release')
-        self.warning('use stage_state() instead')
-        return self.stage_state()
-
     def stage_state(self, state_files=None):
         """
         Copy current state to work directory.
@@ -1896,24 +1853,6 @@ class ServicesProxy:
                                  'Elapsed time = %.3f  files = %s Success' %
                                  (elapsed_time, ' '.join(files)))
         return
-
-    def stageCurrentPlasmaState(self):
-        """
-        .. deprecated :: 1.0 Use :py:meth:`ServicesProxy.stage_plasma_state`
-        """
-        self.warning('stageCurrentPlasmaState() deprecated - use stage_plasma_state() instead')
-        return self.stage_plasma_state()
-
-    def update_plasma_state(self, plasma_state_files=None):
-        """
-        Copy local (updated) plasma state to global state.  If no plasma state
-        files are specified, component configuration specification is used.
-        Raise exceptions upon copy.
-        """
-        self.warning('update_plasma_state() deprecated - will be removed in future release')
-        self.warning('use update_state() instead with optional argument state_files')
-
-        return self.update_state(state_files=plasma_state_files)
 
     def update_state(self, state_files=None):
         """
@@ -1975,7 +1914,7 @@ class ServicesProxy:
             raise FileNotFoundError("Missing executable file %s in PATH" % bin_name)
         try:
             msg_id = self._invoke_service(self.fwk.component_id,
-                                          'merge_current_plasma_state', update_file,
+                                          'merge_current_state', update_file,
                                           source_plasma_file, logfile, full_path_binary)
             ret_val = self._get_service_response(msg_id, block=True)
         except Exception as e:
@@ -1997,28 +1936,6 @@ class ServicesProxy:
                        partial_state_file, current_plasma_state)
             raise Exception('Error merging update %s into current plasma state file %s' %
                             (partial_state_file, current_plasma_state))
-
-    def merge_current_plasma_state(self, partial_state_file, logfile=None, merge_binary=None):
-        """
-        Deprecated : Use :py:meth:`ServicesProxy.merge_current_state`
-        """
-        self.warning('merge_current_plasma_state() deprecated - will be removed in a future release')
-        self.warning('use merge_current_state() instead')
-        return self.merge_current_state(partial_state_file, logfile, merge_binary)
-
-    def updatePlasmaState(self):
-        """
-        .. deprecated :: 1.0 Use :py:meth:`ServicesProxy.update_plasma_state`
-        """
-        self.warning('updatePlasmaState() deprecated - use update_plasma_state() instead')
-        return self.update_plasma_state()
-
-    def updateTimeStamp(self, newTimeStamp=-1):
-        """
-        .. deprecated :: 1.0 Use :py:meth:`ServicesProxy.update_time_stamp`
-        """
-        self.warning('updateTimeStamp() deprecated - use update_time_stamp() instead')
-        self.update_time_stamp(newTimeStamp)
 
     def update_time_stamp(self, new_time_stamp=-1):
         """

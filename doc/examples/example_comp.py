@@ -55,19 +55,19 @@ class example(Component):  # CHANGE CLASS NAME
 
         # Copy plasma state files over to working directory
         try:
-            services.stage_plasma_state()  # automatically copies current plasma state to work dir
+            services.stage_state()  # automatically copies current plasma state to work dir
         except Exception as e:
-            print('example: Error in call to stage_plasma_state()', e)        # CHANGE EXAMPLE TO COMPONENT NAME
-            self.services.error('example: Error in call to stage_plasma_state()')        # CHANGE EXAMPLE TO COMPONENT NAME
-            raise Exception('example: Error in call to stage_plasma_state()')        # CHANGE EXAMPLE TO COMPONENT NAME
+            print('example: Error in call to stage_state()', e)        # CHANGE EXAMPLE TO COMPONENT NAME
+            self.services.error('example: Error in call to stage_state()')        # CHANGE EXAMPLE TO COMPONENT NAME
+            raise Exception('example: Error in call to stage_state()')        # CHANGE EXAMPLE TO COMPONENT NAME
 
         # Get input files
         try:
             services.stage_input_files(self.INPUT_FILES)  # moves config file specified input files to work dir
         except Exception as e:
-            print('example: Error in call to stageInputFiles()', e)        # CHANGE EXAMPLE TO COMPONENT NAME
-            self.services.error('example: Error in call to stageInputFiles()')        # CHANGE EXAMPLE TO COMPONENT NAME
-            raise Exception('example: Error in call to stageInputFiles()')        # CHANGE EXAMPLE TO COMPONENT NAME
+            print('example: Error in call to stage_input_files()', e)        # CHANGE EXAMPLE TO COMPONENT NAME
+            self.services.error('example: Error in call to stage_input_files()')        # CHANGE EXAMPLE TO COMPONENT NAME
+            raise Exception('example: Error in call to stage_input_files()')        # CHANGE EXAMPLE TO COMPONENT NAME
 
         # run init helper executable <init_helper>
         # CHANGE init_helper TO YOUR INIT HELPER PROGRAM
@@ -80,11 +80,11 @@ class example(Component):  # CHANGE CLASS NAME
 
         # If your init_helper made changes to the plasma_state, update them so other components can see them.
         try:
-            services.update_plasma_state()
+            services.update_state()
         except Exception as e:
-            print('example: Error in call to update_plasma_state()', e)        # CHANGE EXAMPLE TO COMPONENT NAME
-            self.services.error('example: Error in call to update_plasma_state()')        # CHANGE EXAMPLE TO COMPONENT NAME
-            raise Exception('example: Error in call to update_plasma_state()')        # CHANGE EXAMPLE TO COMPONENT NAME
+            print('example: Error in call to update_state()', e)        # CHANGE EXAMPLE TO COMPONENT NAME
+            self.services.error('example: Error in call to update_state()')        # CHANGE EXAMPLE TO COMPONENT NAME
+            raise Exception('example: Error in call to update_state()')        # CHANGE EXAMPLE TO COMPONENT NAME
 
         # Archive output files to output tree to save your work
         try:
@@ -163,19 +163,19 @@ class example(Component):  # CHANGE CLASS NAME
 
         # Copy plasma state files over to working directory
         try:
-            services.stage_plasma_state()
+            services.stage_state()
         except Exception as e:
-            print('example: Error in call to stage_plasma_state()', e)        # CHANGE EXAMPLE TO COMPONENT NAME
-            self.services.error('example: Error in call to stage_plasma_state()')        # CHANGE EXAMPLE TO COMPONENT NAME
-            raise Exception('example: Error in call to stage_plasma_state()')        # CHANGE EXAMPLE TO COMPONENT NAME
+            print('example: Error in call to stage_state()', e)        # CHANGE EXAMPLE TO COMPONENT NAME
+            self.services.error('example: Error in call to stage_state()')        # CHANGE EXAMPLE TO COMPONENT NAME
+            raise Exception('example: Error in call to stage_state()')        # CHANGE EXAMPLE TO COMPONENT NAME
 
         # Get input files
         try:
             services.stage_input_files(self.INPUT_FILES)
         except Exception as e:
-            print('example: Error in call to stageInputFiles()', e)        # CHANGE EXAMPLE TO COMPONENT NAME
-            self.services.error('example: Error in call to stageInputFiles()')        # CHANGE EXAMPLE TO COMPONENT NAME
-            raise Exception('example: Error in call to stageInputFiles()')        # CHANGE EXAMPLE TO COMPONENT NAME
+            print('example: Error in call to stage_input_files()', e)        # CHANGE EXAMPLE TO COMPONENT NAME
+            self.services.error('example: Error in call to stage_input_files()')        # CHANGE EXAMPLE TO COMPONENT NAME
+            raise Exception('example: Error in call to stage_input_files()')        # CHANGE EXAMPLE TO COMPONENT NAME
 
         # get the executables that will be run during step()
         prepare_input = os.path.join(self.BIN_PATH, 'prepare_example_input')         # CHANGE EXAMPLE TO COMPONENT NAME
@@ -214,12 +214,12 @@ class example(Component):  # CHANGE CLASS NAME
         # Merge partial plasma state containing updated IC data
         try:
             partial_file = workdir + '/EXAMPLE_' + cur_state_file      # CHANGE TO LOCATION OF PARTIAL PS
-            services.merge_current_plasma_state(partial_file, logfile='log.update_state')
+            services.merge_current_state(partial_file, logfile='log.update_state')
             print('merged EXAMPLE plasma state data ', partial_file)      # CHANGE EXAMPLE TO COMPONENT NAME
         except Exception:
-            print('example: Error in call to merge_current_plasma_state(', partial_file, ')')      # CHANGE EXAMPLE TO COMPONENT NAME
-            self.services.error('example: Error in call to merge_current_plasma_state')      # CHANGE EXAMPLE TO COMPONENT NAME
-            raise Exception('example: Error in call to merge_current_plasma_state')      # CHANGE EXAMPLE TO COMPONENT NAME
+            print('example: Error in call to merge_current_state(', partial_file, ')')      # CHANGE EXAMPLE TO COMPONENT NAME
+            self.services.error('example: Error in call to merge_current_state')      # CHANGE EXAMPLE TO COMPONENT NAME
+            raise Exception('example: Error in call to merge_current_state')      # CHANGE EXAMPLE TO COMPONENT NAME
 
         # Archive output files
         try:
