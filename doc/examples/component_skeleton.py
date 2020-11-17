@@ -46,19 +46,19 @@ class my_comp (Component):
 
         # Copy plasma state files over to working directory
         try:
-            services.stage_plasma_state()
+            services.stage_state()
         except Exception as e:
-            print('Error in call to stage_plasma_state()', e)
-            self.services.error('Error in call to stage_plasma_state()')
-            raise Exception('Error in call to stage_plasma_state()')
+            print('Error in call to stage_state()', e)
+            self.services.error('Error in call to stage_state()')
+            raise Exception('Error in call to stage_state()')
 
         # Get input files
         try:
             services.stage_input_files(self.INPUT_FILES)
         except Exception as e:
-            print('Error in call to stageInputFiles()', e)
-            self.services.error('Error in call to stageInputFiles()')
-            raise Exception('Error in call to stageInputFiles()')
+            print('Error in call to stage_input_files()', e)
+            self.services.error('Error in call to stage_input_files()')
+            raise Exception('Error in call to stage_input_files()')
 
         # run TORIC init
         do_input = os.path.join(self.BIN_PATH, 'do_toric_init')
@@ -70,11 +70,11 @@ class my_comp (Component):
 
         # Update plasma state files in plasma_state work directory
         try:
-            services.update_plasma_state()
+            services.update_state()
         except Exception as e:
-            print('Error in call to update_plasma_state()', e)
-            self.services.error('Error in call to update_plasma_state()')
-            raise Exception('Error in call to update_plasma_state()')
+            print('Error in call to update_state()', e)
+            self.services.error('Error in call to update_state()')
+            raise Exception('Error in call to update_state()')
 
         # Archive output files
         # N.B.  do_toric_init does not produce a complete set of TORIC output
@@ -147,19 +147,19 @@ class my_comp (Component):
 
         # Copy plasma state files over to working directory
         try:
-            services.stage_plasma_state()
+            services.stage_state()
         except Exception as e:
-            print('Error in call to stage_plasma_state()', e)
-            self.services.error('Error in call to stage_plasma_state()')
-            raise Exception('Error in call to stage_plasma_state()')
+            print('Error in call to stage_state()', e)
+            self.services.error('Error in call to stage_state()')
+            raise Exception('Error in call to stage_state()')
 
         # Get input files
         try:
             services.stage_input_files(self.INPUT_FILES)
         except Exception as e:
-            print('Error in call to stageInputFiles()', e)
-            self.services.error('Error in call to stageInputFiles()')
-            raise Exception('Error in call to stageInputFiles()')
+            print('Error in call to stage_input_files()', e)
+            self.services.error('Error in call to stage_input_files()')
+            raise Exception('Error in call to stage_input_files()')
 
         prepare_input = os.path.join(self.BIN_PATH, 'prepare_toric_input')
         process_output = os.path.join(self.BIN_PATH, 'process_toric_output_mcmd')
@@ -245,12 +245,12 @@ class my_comp (Component):
 # Merge partial plasma state containing updated IC data
         try:
             partial_file = cwd + '/RF_IC_' + cur_state_file
-            services.merge_current_plasma_state(partial_file, logfile='log.update_state')
+            services.merge_current_state(partial_file, logfile='log.update_state')
             print('merged TORIC plasma state data ', partial_file)
         except Exception:
-            print('Error in call to merge_current_plasma_state(', partial_file, ')')
-            self.services.error('Error in call to merge_current_plasma_state')
-            raise Exception('Error in call to merge_current_plasma_state')
+            print('Error in call to merge_current_state(', partial_file, ')')
+            self.services.error('Error in call to merge_current_state')
+            raise Exception('Error in call to merge_current_state')
 
         # Archive output files
         try:

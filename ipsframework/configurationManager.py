@@ -104,10 +104,9 @@ class ConfigurationManager:
         self.platform_keywords = loc_keys + mach_keys + prov_keys
 
         self.service_methods = ['get_port',
-                                'getPort',
                                 'get_config_parameter',
                                 'set_config_parameter',
-                                'getTimeLoop',
+                                'get_time_loop',
                                 'create_simulation']
         self.fwk.register_service_handler(self.service_methods,
                                           getattr(self, 'process_service_request'))
@@ -469,21 +468,6 @@ class ConfigurationManager:
         except Exception:
             sim_data.sim_conf['NODE_ALLOCATION_MODE'] = self.platform_conf['NODE_ALLOCATION_MODE']
 
-        if 'PLASMA_STATE_FILES' in list(sim_conf.keys()):
-            self.fwk.warning("deprecated PLASMA_STATE_FILES field in simulation configuration")
-            self.fwk.warning("Use STATE_FILES field instead")
-            if "STATE_FILES" in list(sim_conf.keys()):
-                self.fwk.warning('Overriding STATE_FILES configuration parameter ' +
-                                 'with entries from PLASMA_STATE_FILES')
-            sim_conf["STATE_FILES"] = sim_conf["PLASMA_STATE_FILES"]
-            # del sim_conf["PLASMA_STATE_FILES"]
-
-        if 'PLASMA_STATE_WORK_DIR' in list(sim_conf.keys()):
-            self.fwk.warning("deprecated PLASMA_STATE_WORK_DIR field in simulation configuration")
-            self.fwk.warning("Use STATE_WORK_DIR field instead")
-            sim_conf["STATE_WORK_DIR"] = sim_conf["PLASMA_STATE_WORK_DIR"]
-            # del sim_conf["PLASMA_STATE_WORK_DIR"]
-
         for port in ports_list:
             try:
                 comp_ref = ports_config[port]['IMPLEMENTATION']
@@ -546,13 +530,6 @@ class ConfigurationManager:
         """
         sim_name = sim_data.sim_name
         class_name = comp_conf['NAME']
-        if 'PLASMA_STATE_FILES' in list(comp_conf.keys()):
-            self.fwk.warning("deprecated PLASMA_STATE_FILES field in component configuration")
-            self.fwk.warning("Use STATE_FILES field instead")
-            if "STATE_FILES" in list(comp_conf.keys()):
-                self.fwk.warning('overriding STATE_FILES component configuration parameter ' +
-                                 'with entries from component-level PLASMA_STATE_FILES')
-            comp_conf["STATE_FILES"] = comp_conf["PLASMA_STATE_FILES"]
 
         if comp_conf['SCRIPT']:
             try:
@@ -666,12 +643,6 @@ class ConfigurationManager:
                        method, sim_name)
         retval = method(sim_name, *msg.args)
         return retval
-
-    def getPort(self, sim_name, port_name):
-        """
-        .. deprecated:: 1.0 Use :py:meth:`.get_port`
-        """
-        return self.get_port(sim_name, port_name)
 
     def get_port(self, sim_name, port_name):
         """

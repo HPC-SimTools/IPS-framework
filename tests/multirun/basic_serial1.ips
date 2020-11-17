@@ -11,7 +11,7 @@ SIM_ROOT = $PWD/$SIM_NAME                      # Where to put results from this 
 
 SIMULATION_MODE = NORMAL
 
-PLASMA_STATE_WORK_DIR = $SIM_ROOT/work/plasma_state # Where to put plasma state files as the simulation evolves 
+STATE_WORK_DIR = $SIM_ROOT/work/plasma_state # Where to put plasma state files as the simulation evolves
 CURRENT_STATE = 
 PRIOR_STATE = 
 NEXT_STATE = 

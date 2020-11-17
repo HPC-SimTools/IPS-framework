@@ -106,7 +106,7 @@ The locations and names of the plasma state files are specified here, along with
 
 ::
 
-  PLASMA_STATE_WORK_DIR = ${SIM_ROOT}/work/plasma_state
+  STATE_WORK_DIR = ${SIM_ROOT}/work/plasma_state
 
   # Config variables defining simulation specific names for plasma state files
   CURRENT_STATE = ${SIM_NAME}_ps.cdf
@@ -118,9 +118,9 @@ The locations and names of the plasma state files are specified here, along with
   CURRENT_JSDSK = ${SIM_NAME}_ps.jso
 
   # List of files that constitute the plasma state
-  PLASMA_STATE_FILES1 = ${CURRENT_STATE} ${PRIOR_STATE}  ${NEXT_STATE} ${CURRENT_EQDSK}
-  PLASMA_STATE_FILES2 = ${CURRENT_CQL} ${CURRENT_DQL} ${CURRENT_JSDSK}
-  PLASMA_STATE_FILES = ${PLASMA_STATE_FILES1} ${PLASMA_STATE_FILES2}
+  STATE_FILES1 = ${CURRENT_STATE} ${PRIOR_STATE}  ${NEXT_STATE} ${CURRENT_EQDSK}
+  STATE_FILES2 = ${CURRENT_CQL} ${CURRENT_DQL} ${CURRENT_JSDSK}
+  STATE_FILES = ${STATE_FILES1} ${STATE_FILES2}
 
 
 **Ports Section**
@@ -162,7 +162,7 @@ The ports section identifies which ports and their associated implementations th
 
 **Component Configuration Section**
 
-Component definition and configuration is done in this "section."  Each component configuration section is defined as a section (e.g., ``[model_RF_IC]``).  Each entry in the component configuration section is available to the component at runtime using that name (e.g., *self.NPROC*), thus these values can be used to create specific simulation cases using generic components.  Variables defined within a component configuration section are local to that section, but values may be defined in terms of the simulation values defined above (e.g., *PLASMA_STATE_FILES*).
+Component definition and configuration is done in this "section."  Each component configuration section is defined as a section (e.g., ``[model_RF_IC]``).  Each entry in the component configuration section is available to the component at runtime using that name (e.g., *self.NPROC*), thus these values can be used to create specific simulation cases using generic components.  Variables defined within a component configuration section are local to that section, but values may be defined in terms of the simulation values defined above (e.g., *STATE_FILES*).
 
 \*\* Mandatory entries: *SCRIPT*, *NAME*, *BIN_PATH*, *INPUT_DIR*
 
@@ -182,10 +182,10 @@ Component definition and configuration is done in this "section."  Each componen
 
 *INPUT_DIR* - directory where the input files (listed below) are found.  This is used during initialization to copy the input files to the work directory of the component.
 
-*INPUT_FILES* - list of files (relative to *INPUT_DIR*) that need to be copied to the component work directory on initialization. 
+*INPUT_FILES* - list of files (relative to *INPUT_DIR*) that need to be copied to the component work directory on initialization.
 *OUTPUT_FILES* - list of output files that are produced that need to be protected and archived on a call to :py:meth:`services.ServicesProxy.stage_output_files`.
 
-*PLASMA_STATE_FILES* - list of plasma state files used and modified by this component.  If not present, then the files specified in the simulation entry *PLASMA_STATE_FILES* is used.
+*STATE_FILES* - list of plasma state files used and modified by this component.  If not present, then the files specified in the simulation entry *STATE_FILES* is used.
 
 *RESTART_FILES* - list of files that need to be archived as the checkpoint of this component.
 
@@ -206,7 +206,7 @@ Additional values that are specific to the component may be added as needed, for
           INPUT_EQDSK_FILE = hy040510_002_ps_epa__tsc_4_20.000.geq 
           INPUT_FILES = model_epa_input.nml ${INPUT_STATE_FILE} ${INPUT_EQDSK_FILE} 
           OUTPUT_FILES = internal_state_data.nml
-          PLASMA_STATE_FILES = ${CURRENT_STATE} ${NEXT_STATE} ${CURRENT_EQDSK}
+          STATE_FILES = ${CURRENT_STATE} ${NEXT_STATE} ${CURRENT_EQDSK}
           RESTART_FILES = ${INPUT_FILES} internal_state_data.nml
       SCRIPT = ${BIN_PATH}/model_epa_ps_file_init.py
 
@@ -222,7 +222,7 @@ Additional values that are specific to the component may be added as needed, for
       INPUT_DIR = ${IPS_ROOT}/components/monitor/monitor_4
       INPUT_FILES = basic_time_traces.xml 
       OUTPUT_FILES = monitor_file.nc
-      PLASMA_STATE_FILES = ${CURRENT_STATE}
+      STATE_FILES = ${CURRENT_STATE}
       RESTART_FILES = ${INPUT_FILES} monitor_restart monitor_file.nc
       SCRIPT = ${BIN_PATH}/monitor_comp.py
 

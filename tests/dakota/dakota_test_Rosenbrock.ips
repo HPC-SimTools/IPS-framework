@@ -23,10 +23,10 @@ RUN_COMMENT = Testing dakota
 # Specification of plasma state files
 
 # Where to put plasma state files as the simulation evolves 
-PLASMA_STATE_WORK_DIR = $SIM_ROOT/work/plasma_state
+STATE_WORK_DIR = $SIM_ROOT/work/plasma_state
 
 # Specify what files constitute the plasma state - N.B. not all components need all files
-PLASMA_STATE_FILES = 
+STATE_FILES =
 
 # Names of ports to be used.  An implementation and configuration must be specified for
 # each port

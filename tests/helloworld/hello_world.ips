@@ -29,7 +29,7 @@ RESTART_TIME =
 RESTART_DIRECTORY = ${SIM_ROOT}
 
 # Where to put plasma state files as the simulation evolves
-PLASMA_STATE_WORK_DIR = ${SIM_ROOT}/work/plasma_state
+STATE_WORK_DIR = ${SIM_ROOT}/work/plasma_state
 
 # Config variables defining simulation specific names for plasma state files
 CURRENT_STATE = ${SIM_NAME}_ps.cdf
@@ -41,7 +41,7 @@ CURRENT_DQL = ${SIM_NAME}_ps_DQL.nc
 CURRENT_JSDSK = ${SIM_NAME}_ps.jso
 
 # List of files that constitute the plasma state
-PLASMA_STATE_FILES = ${CURRENT_STATE}
+STATE_FILES = ${CURRENT_STATE}
 
 # Names of ports to be used in this simulation.  
 # An implementation and configuration must be specified for each port.

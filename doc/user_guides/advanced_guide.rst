@@ -164,7 +164,7 @@ The following sections of the configuration file may need to be modified.  If yo
    You will need to modify this section to include any additional files needed by your component::
 
       # Where to put plasma state files as the simulation evolves
-      PLASMA_STATE_WORK_DIR = ${SIM_ROOT}/work/plasma_state 
+      STATE_WORK_DIR = ${SIM_ROOT}/work/plasma_state
       CURRENT_STATE = ${SIM_NAME}_ps.cdf
       PRIOR_STATE = ${SIM_NAME}_psp.cdf
       NEXT_STATE = ${SIM_NAME}_psn.cdf
@@ -174,11 +174,11 @@ The following sections of the configuration file may need to be modified.  If yo
       CURRENT_JSDSK = ${RUN_ID}_ps.jso
 
       # What files constitute the plasma state
-      PLASMA_STATE_FILES1 = ${CURRENT_STATE} ${PRIOR_STATE} 
+      STATE_FILES1 = ${CURRENT_STATE} ${PRIOR_STATE}
       			    ${NEXT_STATE}
-      PLASMA_STATE_FILES2 = ${PLASMA_STATE_FILES1}  ${CURRENT_EQDSK}
+      STATE_FILES2 = ${STATE_FILES1}  ${CURRENT_EQDSK}
       			    ${CURRENT_CQL} ${CURRENT_DQL}
-      PLASMA_STATE_FILES = ${PLASMA_STATE_FILES2}  ${CURRENT_JSDSK}
+      STATE_FILES = ${STATE_FILES2}  ${CURRENT_JSDSK}
 
 2. *Ports Section*
 
@@ -207,10 +207,10 @@ The following sections of the configuration file may need to be modified.  If yo
          BIN_PATH = ${IPS_ROOT}/bin
          INPUT_DIR = ${IPS_ROOT}/components/epa/tsc
          INPUT_FILES = inputa.I09001 sprsina.I09001config_nbi_ITER.dat
-         OUTPUT_FILES = outputa tsc.cgm inputa log.tsc ${PLASMA_STATE_FILES}
+         OUTPUT_FILES = outputa tsc.cgm inputa log.tsc ${STATE_FILES}
          SCRIPT = ${BIN_PATH}/epa_nb_iter.py
 
-   The component section starts with a label that matches what is listed as the implementation in the ports section.  These *must* match or else the framework will not find your component and the simulation will fail before it starts (or worse, use the wrong implementation!). *CLASS* and *SUBCLASS* typically refer to the directory hierarchy and are sometimes used to identify the location of the source code and input files.  Note that *NAME* must match the python class name that implements the component.  *NPROC* is the number of *processes* that the binary needs to use when launched on compute nodes.  The *BIN_PATH* will almost always be ``${IPS_ROOT}/bin`` and refers to the location of any binaries you wish to use in your component.  The Makefile will move your component script to ``${IPS_ROOT}/bin`` when you build the IPS, and should do the same to any binaries that are produced from the targets in the Makefile.  If you have pre-built binaries that exist in another location, an additional entry in the component description section may be a convenient place to put it.  *INPUT_DIR*, *INPUT_FILES* and *OUTPUT_FILES* specify the location and names of the input and output files, respectively.  If a subset of plasma states files is all that is required by the component, they are specified here (*PLASMA_STATE_FILES*).  If the entry is omitted, *all* of the plasma state files are used.  This prevents the full set of files to be copied to and from the component's work directory on every step, saving time and space.  Lastly, *SCRIPT* is the Python script that contains the component code, specifically the Python class in *NAME*.  Additionally, any component specific values maybe specified here to control logic or set data values that change often.
+   The component section starts with a label that matches what is listed as the implementation in the ports section.  These *must* match or else the framework will not find your component and the simulation will fail before it starts (or worse, use the wrong implementation!). *CLASS* and *SUBCLASS* typically refer to the directory hierarchy and are sometimes used to identify the location of the source code and input files.  Note that *NAME* must match the python class name that implements the component.  *NPROC* is the number of *processes* that the binary needs to use when launched on compute nodes.  The *BIN_PATH* will almost always be ``${IPS_ROOT}/bin`` and refers to the location of any binaries you wish to use in your component.  The Makefile will move your component script to ``${IPS_ROOT}/bin`` when you build the IPS, and should do the same to any binaries that are produced from the targets in the Makefile.  If you have pre-built binaries that exist in another location, an additional entry in the component description section may be a convenient place to put it.  *INPUT_DIR*, *INPUT_FILES* and *OUTPUT_FILES* specify the location and names of the input and output files, respectively.  If a subset of plasma states files is all that is required by the component, they are specified here (*STATE_FILES*).  If the entry is omitted, *all* of the plasma state files are used.  This prevents the full set of files to be copied to and from the component's work directory on every step, saving time and space.  Lastly, *SCRIPT* is the Python script that contains the component code, specifically the Python class in *NAME*.  Additionally, any component specific values maybe specified here to control logic or set data values that change often.
 
 4. *Time Loop Section*
 
@@ -403,13 +403,13 @@ Staging of local (non-shared) files:
 
 Staging of global (plasma state) files:
 
-.. automethod:: ipsframework.services.ServicesProxy.stage_plasma_state
+.. automethod:: ipsframework.services.ServicesProxy.stage_state
    :noindex:
 
-.. automethod:: ipsframework.services.ServicesProxy.update_plasma_state
+.. automethod:: ipsframework.services.ServicesProxy.update_state
    :noindex:
 
-.. automethod:: ipsframework.services.ServicesProxy.merge_current_plasma_state
+.. automethod:: ipsframework.services.ServicesProxy.merge_current_state
    :noindex:
 
 Staging of replay files:
