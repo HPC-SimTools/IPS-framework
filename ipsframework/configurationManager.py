@@ -719,7 +719,6 @@ class ConfigurationManager:
         sim_data.process_list = []
         self.finished_sim_map[sim_name] = sim_data
         del self.sim_map[sim_name]
-        return
 
     def terminate(self, status):
         """

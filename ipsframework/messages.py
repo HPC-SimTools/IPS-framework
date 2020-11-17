@@ -52,7 +52,6 @@ class ServiceRequestMessage(Message):
         self.args = args
         self.keywords = keywords
         self.message_id = self.get_message_id()
-        return
 
 
 class ServiceResponseMessage(Message):
@@ -76,7 +75,6 @@ class ServiceResponseMessage(Message):
         self.status = status
         self.args = args
         self.message_id = self.get_message_id()
-        return
 
 
 class MethodInvokeMessage(Message):
@@ -100,7 +98,6 @@ class MethodInvokeMessage(Message):
         self.args = args
         self.keywords = keywords
         self.message_id = self.get_message_id()
-        return
 
 
 class MethodResultMessage(Message):
@@ -123,7 +120,6 @@ class MethodResultMessage(Message):
         self.args = args
         self.status = status
         self.message_id = self.get_message_id()
-        return
 
 
 class ExitMessage(Message):
@@ -144,4 +140,3 @@ class ExitMessage(Message):
         self.status = status
         self.args = args
         self.message_id = self.get_message_id()
-        return

@@ -57,7 +57,6 @@ class myLogRecordStreamHandler(socketserver.StreamRequestHandler):
                                                    request,
                                                    client_address,
                                                    server)
-        return
 
     def handle(self):
         """
@@ -95,7 +94,6 @@ class myLogRecordStreamHandler(socketserver.StreamRequestHandler):
         # cycles and network bandwidth!
         logger.handle(record)
         logger.removeHandler(self.handler)
-        return
 
 
 class LogRecordSocketReceiver(socketserver.ThreadingUnixStreamServer):
@@ -145,7 +143,6 @@ class ipsLogger:
         recvr = LogRecordSocketReceiver(log_pipe_name, handler=partial_handler)
         fileno = recvr.get_file_no()
         self.log_map[fileno] = (recvr, log_handler, log_pipe_name)
-        return
 
     def __run__(self):
         import select

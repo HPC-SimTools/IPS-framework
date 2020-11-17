@@ -242,7 +242,6 @@ class ServicesProxy:
         self.counter = self.counter + 1
         initialize_event_service(self)
         self.event_service = eventManager(self.component_ref)
-        return
 
     def _get_elapsed_time(self):
         """
@@ -407,7 +406,6 @@ class ServicesProxy:
         event_data['real_sim_name'] = self.sim_name
         event_data['portal_data'] = portal_data
         self.publish('_IPS_MONITOR', 'PORTAL_EVENT', event_data)
-        return
 
     def get_port(self, port_name):
         """
@@ -866,7 +864,6 @@ class ServicesProxy:
         except Exception:
             self.exception('Error finalizing task  %s', task_id)
             raise
-        return
 
     def kill_all_tasks(self):
         """
@@ -877,7 +874,6 @@ class ServicesProxy:
                 self.kill_task(self.task_map[0])
             except Exception:
                 raise
-        return
 
     def wait_task_nonblocking(self, task_id):
         """Check the status of task *task_id*.  If it has finished, the
@@ -1372,8 +1368,6 @@ class ServicesProxy:
                                          (elapsed_time, os.path.abspath(inputDir),
                                           str(input_file_list)))
 
-        return
-
     # SIMYAN: added method to specifically enable components to stage
     # data files to the component working directory
     def stage_data_files(self, data_file_list):
@@ -1407,8 +1401,6 @@ class ServicesProxy:
             self.exception('Error in stage_data_files')
             raise e
         self._send_monitor_event('IPS_STAGE_DATA', 'Files = ' + str(data_file_list))
-
-        return
 
     def stage_nonPS_output_files(self, timeStamp, file_list, keep_old_files=True):
         """
@@ -1476,7 +1468,6 @@ class ServicesProxy:
 
         self._send_monitor_event('IPS_STAGE_OUTPUTS',
                                  'Files = ' + str(file_list))
-        return
 
     def stage_PS_output_files(self, timeStamp, file_list, keep_old_files=True):
         """
@@ -1554,7 +1545,6 @@ class ServicesProxy:
 
         self._send_monitor_event('IPS_STAGE_OUTPUTS',
                                  'Files = ' + str(file_list))
-        return
 
     def stage_subflow_output_files(self, subflow_name='ALL'):
         # Gather outputs from sub-workflows. Sub-workflow output
@@ -1742,7 +1732,6 @@ class ServicesProxy:
         self._send_monitor_event('IPS_STAGE_OUTPUTS',
                                  'Elapsed time = %.3f Path = %s Files = %s' %
                                  (elapsed_time, output_dir, str(file_list)))
-        return
 
     def save_restart_files(self, timeStamp, file_list):
         """
@@ -1785,7 +1774,6 @@ class ServicesProxy:
 
         self._send_monitor_event('IPS_SAVE_RESTART',
                                  'Files = ' + str(file_list))
-        return
 
     def get_restart_files(self, restart_root, timeStamp, file_list):
         """
@@ -1819,7 +1807,6 @@ class ServicesProxy:
 
         self._send_monitor_event('IPS_GET_RESTART',
                                  'Files = ' + str(file_list))
-        return
 
     def stage_state(self, state_files=None):
         """
@@ -1852,7 +1839,6 @@ class ServicesProxy:
         self._send_monitor_event('IPS_STAGE_STATE',
                                  'Elapsed time = %.3f  files = %s Success' %
                                  (elapsed_time, ' '.join(files)))
-        return
 
     def update_state(self, state_files=None):
         """
@@ -1888,7 +1874,6 @@ class ServicesProxy:
         self._send_monitor_event('IPS_UPDATE_STATE',
                                  'Elapsed time = %.3f   files = %s Success' %
                                  (elapsed_time, ' '.join(files)))
-        return
 
     def merge_current_state(self, partial_state_file, logfile=None, merge_binary=None):
         """
@@ -1949,7 +1934,6 @@ class ServicesProxy:
         event_data['portal_data'] = portal_data
         self.publish('_IPS_MONITOR', 'PORTALBRIDGE_UPDATE_TIMESTAMP', event_data)
         self._send_monitor_event('IPS_UPDATE_TIME_STAMP', 'Timestamp = ' + str(new_time_stamp))
-        return
 
     def _get_replay_comp_data(self, timeStamp):
         """
@@ -2139,7 +2123,6 @@ class ServicesProxy:
         """
         self.monitor_url = url
         self._send_monitor_event(eventType='IPS_SET_MONITOR_URL', comment='SUCCESS')
-        return
 
     def publish(self, topicName, eventName, eventBody):
         """
@@ -2271,7 +2254,6 @@ class ServicesProxy:
         if task_pool_name in list(self.task_pools.keys()):
             raise Exception('Error: Duplicate task pool name %s' % (task_pool_name))
         self.task_pools[task_pool_name] = TaskPool(task_pool_name, self)
-        return
 
     def add_task(self, task_pool_name, task_name, nproc, working_dir,
                  binary, *args, **keywords):
@@ -2392,7 +2374,6 @@ class TaskPool:
                     time.sleep(0.05)
                 else:
                     break
-        return
 
     def _wait_active_tasks(self):
         """
@@ -2432,7 +2413,6 @@ class TaskPool:
         self.serial_pool = self.serial_pool and (nproc == 1)
         self.queued_tasks[task_name] = Task(task_name, nproc, working_dir, binary_fullpath, *args,
                                             **keywords["keywords"])
-        return
 
     def submit_dask_tasks(self, block=True, dask_nodes=1, dask_ppn=None):
         services: ServicesProxy = self.services
@@ -2560,7 +2540,6 @@ class TaskPool:
         self.blocked_tasks = {}
         self.active_tasks = {}
         self.finished_tasks = {}
-        return
 
 
 class Task:
