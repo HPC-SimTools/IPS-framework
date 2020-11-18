@@ -20,7 +20,7 @@ def which(program, alt_paths=None):
     def is_exe(fpath):
         return os.path.exists(fpath) and os.access(fpath, os.X_OK)
 
-    fpath, fname = os.path.split(program)
+    fpath, _ = os.path.split(program)
     if fpath:
         if is_exe(program):
             return program
@@ -180,7 +180,7 @@ class DakotaDynamic:
 IPS_ROOT/bin or IPS_ROOT/framework/src')
         self.master_conf['DAKOTA_BRIDGE'] = driver_conf
 
-        for (comp, val) in comp_vars.items():
+        for comp in comp_vars:
             if comp == '':
                 continue
             try:
@@ -314,8 +314,8 @@ def main(argv=None):
         first_arg = 0
 
     try:
-        opts, args = getopt.gnu_getopt(argv[first_arg:], '',
-                                       ["dakotaconfig=", "simulation=", "platform=", "log=", "restart=", "debug"])
+        opts, _ = getopt.gnu_getopt(argv[first_arg:], '',
+                                    ["dakotaconfig=", "simulation=", "platform=", "log=", "restart=", "debug"])
     except getopt.error as msg:
         print('Invalid command line arguments', msg)
         printUsageMessage()

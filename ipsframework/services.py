@@ -841,7 +841,7 @@ class ServicesProxy:
         Kill launched task *task_id*.  Return if successful.  Raises exceptions if the task or process cannot be found or killed successfully.
         """
         try:
-            process, start_time, timeout = self.task_map[task_id]
+            process, _, _ = self.task_map[task_id]
             # TODO: process and start_time will have to be accessed as shown
             #      below if this task can be relaunched to support FT...
             # process, start_time = self.task_map[task_id][0], self.task_map[task_id][1]
@@ -912,7 +912,7 @@ class ServicesProxy:
         """
         # print "in wait task"
         try:
-            process, start_time, task_timeout = self.task_map[task_id]
+            process, start_time, _ = self.task_map[task_id]
         except KeyError:
             self.exception('Error: unrecognizable task_id = %s ', str(task_id))
             raise
@@ -1340,7 +1340,7 @@ class ServicesProxy:
                                      ok='False')
             self.exception('Error in stage_input_files')
             raise e
-        for (name, (new_conf, old_conf, init_comp, driver_comp)) in self.sub_flows.items():
+        for (_, old_conf, _, _) in self.sub_flows.values():
             ports = old_conf['PORTS']['NAMES'].split()
             comps = [old_conf['PORTS'][p]['IMPLEMENTATION'] for p in ports]
             for c in comps:
@@ -1455,7 +1455,7 @@ class ServicesProxy:
                 os.remove(sym_link)
             # We need to use relative path for the symlinks
             common1 = os.path.commonprefix([real_file, sym_link])
-            (head, sep, tail) = common1.rpartition('/')
+            (head, _, _) = common1.rpartition('/')
             common = head.split('/')
             file_suffix = real_file.split('/')[len(common):]  # Include file name
             link_suffix = sym_link.split('/')[len(common):-1]  # No file name
@@ -1717,7 +1717,7 @@ class ServicesProxy:
                 os.remove(sym_link)
             # We need to use relative path for the symlinks
             common1 = os.path.commonprefix([real_file, sym_link])
-            (head, sep, tail) = common1.rpartition('/')
+            (head, _, _) = common1.rpartition('/')
             common = head.split('/')
             file_suffix = real_file.split('/')[len(common):]  # Include file name
             link_suffix = sym_link.split('/')[len(common):-1]  # No file name

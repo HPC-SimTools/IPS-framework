@@ -156,7 +156,7 @@ def get_checkjob_info():
                 # print ' end = ', end
                 # print lines[start:end]
             if x.find("Total Requested Tasks:") > -1:
-                a, b = x.split(":")
+                _, b = x.split(":")
                 b = b.strip()
                 tot_procs = int(b)
         # print "total procs", tot_procs

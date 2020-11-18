@@ -748,7 +748,7 @@ def main(argv=None):
     parser.add_option('-o', '--ppn', dest='cmd_ppn', default='0',
                       type="int", help='Computer processor per nodes')
 
-    options, args = parser.parse_args()
+    options, _ = parser.parse_args()
 
     cfgFile_list = []
     if options.simulation:

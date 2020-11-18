@@ -152,9 +152,9 @@ class ipsLogger:
             # print 'read_set = ', read_set
             # read_set = []
             if read_set:
-                rd, wr, ex = select.select(read_set,
-                                           [], [],
-                                           time_out)
+                rd, _, _ = select.select(read_set,
+                                         [], [],
+                                         time_out)
             else:
                 time.sleep(time_out)
                 rd = []
@@ -162,7 +162,7 @@ class ipsLogger:
             if len(rd) > 0:
                 # print rd
                 for fileno in rd:
-                    (recvr, log_handler, log_pipe_name) = self.log_map[fileno]
+                    (recvr, _, log_pipe_name) = self.log_map[fileno]
                     recvr.handle_request()
                 rd = []
             try:
@@ -179,7 +179,7 @@ class ipsLogger:
                     log_pipe_name = tokens[1]
                     # print list_fds()
                     # print '#################################################'
-                    for fileno, (recvr, log_handler, f_name) in list(self.log_map.items()):
+                    for fileno, (recvr, _, f_name) in list(self.log_map.items()):
                         if f_name == log_pipe_name:
                             # print 'CLOSED file ', fileno
                             del recvr

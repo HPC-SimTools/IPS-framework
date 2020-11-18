@@ -17,7 +17,7 @@ def which(program, alt_paths=None):
     def is_exe(fpath):
         return os.path.exists(fpath) and os.access(fpath, os.X_OK)
 
-    fpath, fname = os.path.split(program)
+    fpath, _ = os.path.split(program)
     if fpath:
         if is_exe(program):
             return program
@@ -90,7 +90,7 @@ def copyFiles(src_dir, src_file_list, target_dir, prefix='', keep_old=False):
                 target_file = new_name
                 break
 
-        (head, tail) = os.path.split(os.path.abspath(target_file))
+        (head, _) = os.path.split(os.path.abspath(target_file))
         try:
             os.makedirs(head)
         except OSError as oserr:

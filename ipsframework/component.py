@@ -105,7 +105,7 @@ class Component:
             try:
                 os.makedirs(workdir)
             except OSError as oserr:
-                (errno, strerror) = oserr.args
+                (_, strerror) = oserr.args
                 self.services.exception('Error creating directory %s : %s',
                                         workdir, strerror)
                 raise

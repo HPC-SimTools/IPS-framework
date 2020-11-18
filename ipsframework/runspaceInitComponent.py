@@ -76,12 +76,12 @@ class runspaceInitComponent(Component):
         if not self.config_files[0].startswith("/"):
             self.conf_file_loc = self.cwd
         else:
-            (head, tail) = os.path.split(os.path.abspath(self.config_files[0]))
+            (head, _) = os.path.split(os.path.abspath(self.config_files[0]))
             self.conf_file_loc = head
         if not self.platform_file.startswith("/"):
             self.plat_file_loc = self.cwd
         else:
-            (head, tail) = os.path.split(os.path.abspath(self.platform_file))
+            (head, _) = os.path.split(os.path.abspath(self.platform_file))
             self.plat_file_loc = head
 
         ipsutil.copyFiles(self.conf_file_loc, self.config_files, self.simRootDir)
@@ -113,7 +113,7 @@ class runspaceInitComponent(Component):
                                         simulation_setup, strerror)
 
         # for each simulation component
-        for sim_name, comp_list in list(sim_comps.items()):
+        for comp_list in sim_comps.values():
             # for each component_id in the list of components
             for comp_id in comp_list:
                 # build the work directory name

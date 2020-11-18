@@ -363,6 +363,7 @@ class PortalBridge(Component):
                 dataobject = full_dataobject
             return dataobject
 
+        """
         def get_file_uid(path, file_name):
             '''
             Get file_name's cached MPO uid if seen before in simulation
@@ -378,6 +379,7 @@ class PortalBridge(Component):
             except KeyError:
                 pass
             return (None, md5)  # (f_uid, hash)
+        """
 
         recordable_events = ['IPS_CALL_BEGIN', 'IPS_STAGE_INPUTS', 'IPS_STAGE_OUTPUTS', 'IPS_CALL_END']
         recordable_mpo_activities = ['IPS_CALL_BEGIN']
@@ -394,7 +396,7 @@ class PortalBridge(Component):
             if (event_type == 'IPS_STAGE_INPUTS'):
                 r = re.compile(r"^Elapsed time = ([0-9]*\.[0-9]*) Path = ([^ ]*) Files = (.*)")
                 o = r.match(comment)
-                (t, path, files) = o.groups()
+                (_, path, files) = o.groups()
                 glist = [glob.glob(os.path.join(path, f)) for f in files.split()]
                 for file_name in [os.path.basename(f) for f in itertools.chain(*glist)]:
                     """
@@ -439,7 +441,7 @@ class PortalBridge(Component):
             if (event_type == 'IPS_STAGE_OUTPUTS'):
                 r = re.compile(r"^Elapsed time = ([0-9]*\.[0-9]*) Path = ([^ ]*) Files = (.*)")
                 o = r.match(comment)
-                (t, path, files) = o.groups()
+                (_, path, files) = o.groups()
                 if not files:
                     return
             activity = self.mpo.step(workflow_ID=sim_data.mpo_wid,

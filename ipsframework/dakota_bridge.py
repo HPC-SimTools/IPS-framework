@@ -76,7 +76,7 @@ class Driver(Component):
         summary_file = None
         failed_connections = 0
         while True:
-            (ready_r, ready_w, ready_x) = select.select([sock_fileno], [], [], time_out)
+            (ready_r, _, _) = select.select([sock_fileno], [], [], time_out)
             self.events_received = []
             self.services.process_events()
             for event in self.events_received:

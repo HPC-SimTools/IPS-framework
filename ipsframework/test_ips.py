@@ -26,11 +26,11 @@ class testIPS(unittest.TestCase):
             first_arg = 0
 
         try:
-            opts, args = getopt.gnu_getopt(argv[first_arg:], '',
-                                           ["create-runspace", "run-setup", "run",
-                                            "simulation=", "platform=", "log=",
-                                            "nodes=", "ppn=",
-                                            "debug", "verbose"])
+            opts, _ = getopt.gnu_getopt(argv[first_arg:], '',
+                                        ["create-runspace", "run-setup", "run",
+                                         "simulation=", "platform=", "log=",
+                                         "nodes=", "ppn=",
+                                         "debug", "verbose"])
         except getopt.error as msg:
             self.fail('Invalid command line arguments' + msg)
             # print 'Invalid command line arguments', msg
