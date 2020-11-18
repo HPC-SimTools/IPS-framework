@@ -26,20 +26,20 @@ class testIPS(unittest.TestCase):
             first_arg = 0
 
         try:
-            opts, args = getopt.gnu_getopt(argv[first_arg:], '',
-                                           ["create-runspace", "run-setup", "run",
-                                            "simulation=", "platform=", "log=",
-                                            "nodes=", "ppn=",
-                                            "debug", "verbose"])
+            opts, _ = getopt.gnu_getopt(argv[first_arg:], '',
+                                        ["create-runspace", "run-setup", "run",
+                                         "simulation=", "platform=", "log=",
+                                         "nodes=", "ppn=",
+                                         "debug", "verbose"])
         except getopt.error as msg:
             self.fail('Invalid command line arguments' + msg)
             # print 'Invalid command line arguments', msg
             # printUsageMessage()
             # return 1
         for arg, value in opts:
-            if (arg == '--config'):
+            if arg == '--config':
                 cfgFile_list.append(value)
-            elif (arg == '--log'):
+            elif arg == '--log':
                 log_file_name = value
                 try:
                     log_file = open(os.path.abspath(log_file_name), 'w')
@@ -48,7 +48,7 @@ class testIPS(unittest.TestCase):
                     # print 'Error writing to log file ' , log_file_name
                     # print str(e)
                     # raise
-            elif (arg == '--platform'):
+            elif arg == '--platform':
                 platform_filename = value
         self.assertFalse(len(cfgFile_list) == 0, 'Empty cfgFile_list')
         self.assertFalse(platform_filename == '', 'No platform config file listed')
@@ -67,5 +67,4 @@ if __name__ == "__main__":
     print("Starting IPS")
     sys.stdout.flush()
     args = '--simulation=sim.conf --simulation=sim2.conf --platform=jaguar.conf'
-    argv = args.split(' ')
-    sys.exit(unittest.main(argv))
+    sys.exit(unittest.main(args.split(' ')))

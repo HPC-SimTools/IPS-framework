@@ -131,5 +131,6 @@ def initialize_event_service(service):
         _proxy = EventServiceCmpProxy(service)
 
 
+# pylint: disable=C0413
 from .eventService import EventService  # noqa: E402
 from .eventServiceProxy import EventServiceFwkProxy, EventServiceCmpProxy  # noqa: E402

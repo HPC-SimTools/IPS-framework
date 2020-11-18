@@ -3,8 +3,8 @@
 # -------------------------------------------------------------------------------
 import sys
 import os
-from . import ipsutil
 import subprocess
+from . import ipsutil
 
 # import things to use event service
 # from event_service_spec import PublisherEventService,SubscriberEventService,EventListener,Topic,EventServiceException
@@ -116,7 +116,7 @@ class DataManager:
         current_plasma_state = os.path.basename(target_state_file)
 
         merge_stdout = sys.stdout
-        if (log_file):
+        if log_file:
             log_fullpath = os.path.join(component_work_dir, log_file)
             try:
                 merge_stdout = open(log_fullpath, 'w')
@@ -133,7 +133,7 @@ class DataManager:
             self.fwk.exception('Error calling update_state - probably not found in $PATH')
             raise
 
-        if (retval != 0):
+        if retval != 0:
             return retval
         try:
             ipsutil.copyFiles(plasma_work_dir, current_plasma_state, component_work_dir)

@@ -30,21 +30,20 @@ def get_qstat_jobinfo():
     command = 'qstat -f %s' % (job_id)
     p = subprocess.Popen(command.split(), stdout=subprocess.PIPE)
     p.wait()
-    if (p.returncode == 0):
+    if p.returncode == 0:
         out = p.stdout.readlines()
         if shell_host == 'stix':
             start_line = -1
             end_line = -1
             ppn = 0
-            for i in range(len(out)):
-                line = out[i]
+            for i, line in enumerate(out):
                 if line.strip().startswith('exec_host ='):
                     start_line = i
                 if start_line != -1 and end_line == -1:
-                    if ('=' in line):
+                    if '=' in line:
                         end_line = i
                 if line.strip().startswith('Resource_List.nodes = '):
-                    if ('ppn=') in line:
+                    if 'ppn=' in line:
                         ppn = int(line.split('=')[-1])
                     else:
                         ppn = 8
@@ -83,7 +82,7 @@ def get_qstat_jobinfo2():
     command = 'qstat -f %s' % (job_id)
     p = subprocess.Popen(command.split(), stdout=subprocess.PIPE)
     p.wait()
-    if (p.returncode == 0):
+    if p.returncode == 0:
         out = p.stdout.readlines()
         found_start = False
         found_end = False
@@ -135,8 +134,8 @@ def get_checkjob_info():
     job_id = os.getenv('PBS_JOBID', '')
     mixed_nodes = False
     # Test for interactive use on batch platforms
-    if (job_id == ''):
-        return [1], 1
+    if job_id == '':
+        raise Exception('Cannot find PBS_JOBID')
     # run checkjob $PBS_JOBID
     try:
         proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, shell=True)
@@ -145,8 +144,8 @@ def get_checkjob_info():
         # for l in lines : print l
         # print '============== lines ======================'
         start = end = 0
-        for k in range(len(lines)):
-            x = lines[k].rstrip()
+        for k, line in enumerate(lines):
+            x = line.rstrip()
             # print x
             if x == "Allocated Nodes:" and start == 0:
                 start = k + 1
@@ -156,7 +155,7 @@ def get_checkjob_info():
                 # print ' end = ', end
                 # print lines[start:end]
             if x.find("Total Requested Tasks:") > -1:
-                a, b = x.split(":")
+                _, b = x.split(":")
                 b = b.strip()
                 tot_procs = int(b)
         # print "total procs", tot_procs
@@ -468,8 +467,8 @@ def getResourceList(services, host, partial_nodes=False):
     elif cpn < ppn:
         ppn = cpn
         if not mixed_nodes:
-            for i in range(len(listOfNodes)):
-                name = listOfNodes[i][0]
+            for i, node in enumerate(listOfNodes):
+                name = node[0]
                 listOfNodes[i] = (name, ppn)
     if spn <= 0:
         spn = 1

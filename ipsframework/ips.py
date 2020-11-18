@@ -53,15 +53,14 @@
 
 """
 import sys
-
-if sys.version[0] != '3':  # noqa: E402
-    print("IPS can is only compatible with Python 3.5 or higher")
-    sys.exit(1)
-
 import optparse
 import multiprocessing
-from ipsframework import platformspec
 import inspect
+import socket
+import logging
+import os
+import time
+from ipsframework import platformspec
 from ipsframework.messages import Message, ServiceRequestMessage, \
     ServiceResponseMessage, MethodInvokeMessage
 from ipsframework.configurationManager import ConfigurationManager
@@ -69,14 +68,14 @@ from ipsframework.taskManager import TaskManager
 from ipsframework.resourceManager import ResourceManager
 from ipsframework.dataManager import DataManager
 from ipsframework.componentRegistry import ComponentRegistry, ComponentID
-import socket
 from ipsframework.ipsExceptions import BlockedMessageException
 from ipsframework.eventService import EventService
 from ipsframework.cca_es_spec import initialize_event_service
-import logging
 from ipsframework.ips_es_spec import eventManager
-import os
-import time
+
+if sys.version[0] != '3':  # noqa: E402
+    print("IPS can is only compatible with Python 3.5 or higher")
+    sys.exit(1)
 
 
 class Framework:
@@ -289,7 +288,7 @@ class Framework:
         """
 
         try:
-            if (len(args) > 1):
+            if len(args) > 1:
                 msg = args[0] % args[1:]
             else:
                 msg = args[0]
@@ -302,7 +301,7 @@ class Framework:
         Produce **informational** message in simulation log file.  Raise exception for bad formatting.
         """
         try:
-            if (len(args) > 1):
+            if len(args) > 1:
                 msg = args[0] % args[1:]
             else:
                 msg = args[0]
@@ -315,7 +314,7 @@ class Framework:
         Produce **warning** message in simulation log file.  Raise exception for bad formatting.
         """
         try:
-            if (len(args) > 1):
+            if len(args) > 1:
                 msg = args[0] % args[1:]
             else:
                 msg = args[0]
@@ -328,7 +327,7 @@ class Framework:
         Produce **error** message in simulation log file.  Raise exception for bad formatting.
         """
         try:
-            if (len(args) > 1):
+            if len(args) > 1:
                 msg = args[0] % args[1:]
             else:
                 msg = args[0]
@@ -341,7 +340,7 @@ class Framework:
         Produce **exception** message in simulation log file.  Raise exception for bad formatting.
         """
         try:
-            if (len(args) > 1):
+            if len(args) > 1:
                 msg = args[0] % args[1:]
             else:
                 msg = args[0]
@@ -378,7 +377,7 @@ class Framework:
             outstanding_fwk_calls.append(call_id)
 
         self.blocked_messages = []
-        while (len(outstanding_fwk_calls) > 0):
+        while len(outstanding_fwk_calls) > 0:
             self.debug("Framework waiting for message")
             msg = self.in_queue.get()
             self.debug("Framework received Message : %s", str(msg.__dict__))
@@ -386,16 +385,16 @@ class Framework:
             self.blocked_messages = []
             for msg in msg_list:
                 self.debug('Framework processing message %s ', msg.message_id)
-                if (msg.__class__.__name__ == 'ServiceRequestMessage'):
+                if msg.__class__.__name__ == 'ServiceRequestMessage':
                     self._dispatch_service_request(msg)
                     continue
-                elif (msg.__class__.__name__ == 'MethodResultMessage'):
+                elif msg.__class__.__name__ == 'MethodResultMessage':
                     self.debug('Received Result for call %s' %
                                (msg.call_id))
                     if msg.call_id not in outstanding_fwk_calls:
                         self.task_manager.return_call(msg)
                     else:
-                        if (msg.status == Message.FAILURE):
+                        if msg.status == Message.FAILURE:
                             self.terminate_all_sims(status=Message.FAILURE)
                             raise msg.args[0]
                         outstanding_fwk_calls.remove(msg.call_id)
@@ -509,16 +508,16 @@ class Framework:
             self.terminate_all_sims(status=Message.FAILURE)
             raise
 
-        while (len(self.outstanding_calls_list) > 0):
+        while len(self.outstanding_calls_list) > 0:
             # print self.outstanding_calls_list
-            if (self.verbose_debug):
+            if self.verbose_debug:
                 self.debug("Framework waiting for message")
             # get new messages
             try:
                 msg = self.in_queue.get()
             except Exception:
                 continue
-            if (self.verbose_debug):
+            if self.verbose_debug:
                 self.debug("Framework received Message : %s", str(msg.__dict__))
 
             # add blocked messages to message list for reprocessing
@@ -526,11 +525,11 @@ class Framework:
             self.blocked_messages = []
             # process new and blocked messages
             for msg in msg_list:
-                if (self.verbose_debug):
+                if self.verbose_debug:
                     self.debug('Framework processing message %s ', msg.message_id)
 
                 sim_name = msg.sender_id.get_sim_name()
-                if (msg.__class__.__name__ == 'ServiceRequestMessage'):
+                if msg.__class__.__name__ == 'ServiceRequestMessage':
                     try:
                         self._dispatch_service_request(msg)
                     except Exception:
@@ -538,7 +537,7 @@ class Framework:
                         self.terminate_all_sims(status=Message.FAILURE)
                         return False
                     continue
-                elif (msg.__class__.__name__ == 'MethodResultMessage'):
+                elif msg.__class__.__name__ == 'MethodResultMessage':
                     if msg.call_id not in self.outstanding_calls_list:
                         self.task_manager.return_call(msg)
                         continue
@@ -546,7 +545,7 @@ class Framework:
                     self.outstanding_calls_list.remove(msg.call_id)
                     sim_msg_list = self.call_queue_map[msg.call_id]
                     del self.call_queue_map[msg.call_id]
-                    if (msg.status == Message.FAILURE):
+                    if msg.status == Message.FAILURE:
                         self.error('received a failure message from component %s : %s',
                                    msg.sender_id, str(msg.args))
                         # No need to process remaining messages for this simulation
@@ -591,7 +590,7 @@ class Framework:
             whether the event indicates normal simulation execution, or an
             error condition.
         """
-        if (self.verbose_debug):
+        if self.verbose_debug:
             self.debug('_send_monitor_event(%s - %s)', sim_name, eventType)
         portal_data = {}
         portal_data['code'] = 'Framework'
@@ -603,7 +602,7 @@ class Framework:
         topic_name = '_IPS_MONITOR'
         # portal_data['phystimestamp'] = self.timeStamp
         get_config = self.config_manager.get_config_parameter
-        if (eventType == 'IPS_START'):
+        if eventType == 'IPS_START':
             portal_data['state'] = 'Running'
             portal_data['host'] = get_config(sim_name, 'HOST')
             try:
@@ -643,7 +642,7 @@ class Framework:
                 pass
             portal_data['startat'] = time.strftime('%Y-%m-%d|%H:%M:%S%Z',
                                                    time.localtime(self.start_time))
-        elif (eventType == 'IPS_END'):
+        elif eventType == 'IPS_END':
             portal_data['state'] = 'Completed'
             portal_data['stopat'] = time.strftime('%Y-%m-%d|%H:%M:%S%Z',
                                                   time.localtime())
@@ -653,7 +652,7 @@ class Framework:
         event_body['sim_root'] = get_config(sim_name, 'SIM_ROOT')
         event_body['portal_data'] = portal_data
 
-        if (self.verbose_debug):
+        if self.verbose_debug:
             self.debug('Publishing %s', str(event_body))
         self.event_manager.publish(topic_name, 'IPS_SIM', event_body)
 
@@ -675,17 +674,17 @@ class Framework:
         IPS simulation sim_name.
         """
         comp_ids = self.comp_registry.get_component_ids(sim_name)
-        for id in comp_ids:
+        for comp_id in comp_ids:
             try:
-                invocation_q = self.comp_registry.getComponentArtifact(id,
+                invocation_q = self.comp_registry.getComponentArtifact(comp_id,
                                                                        'invocation_q')
                 call_id = self.task_manager.get_call_id()
-                msg = MethodInvokeMessage(self.component_id, id, call_id,
+                msg = MethodInvokeMessage(self.component_id, comp_id, call_id,
                                           'terminate', status)
-                self.debug('Sending terminate message to %s', str(id))
+                self.debug('Sending terminate message to %s', str(comp_id))
                 invocation_q.put(msg)
             except Exception as e:
-                self.exception('exception encountered while terminating comp %s', id)
+                self.exception('exception encountered while terminating comp %s', comp_id)
                 print(e)
 
     def terminate_all_sims(self, status=Message.SUCCESS):
@@ -748,7 +747,7 @@ def main(argv=None):
     parser.add_option('-o', '--ppn', dest='cmd_ppn', default='0',
                       type="int", help='Computer processor per nodes')
 
-    options, args = parser.parse_args()
+    options, _ = parser.parse_args()
 
     cfgFile_list = []
     if options.simulation:

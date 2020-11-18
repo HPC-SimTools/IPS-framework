@@ -3,9 +3,9 @@ This file implements several objects that customize logging in the IPS.
 """
 
 import logging
+import logging.handlers
 import sys
 import pickle
-import logging.handlers
 import socketserver
 import struct
 import functools
@@ -15,6 +15,7 @@ import os.path
 import queue
 import errno
 import time
+import select
 
 
 def list_fds():
@@ -41,11 +42,10 @@ class IPSLogSocketHandler(logging.handlers.SocketHandler):
         self.port = port
         self.my_socket = None
 
-    def makeSocket(self):
-        if True:
-            s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-            s.connect(self.port)
-            self.my_socket = s
+    def makeSocket(self, timeout=1):
+        s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        s.connect(self.port)
+        self.my_socket = s
         return self.my_socket
 
 
@@ -122,17 +122,16 @@ class ipsLogger:
         if (log_file == sys.stdout or log_file is None):
             log_handler = self.stdout_handler
         else:
-            if(log_file.__class__.__name__ == 'TextIOWrapper'):
+            if log_file.__class__.__name__ == 'TextIOWrapper':
                 log_handler = logging.StreamHandler(log_file)
             else:
-                dir = os.path.dirname(os.path.abspath(log_file))
+                directory = os.path.dirname(os.path.abspath(log_file))
                 try:
-                    os.makedirs(dir)
+                    os.makedirs(directory)
                 except OSError as oserr:
-                    (errno, strerror) = oserr.args
-                    if (errno != 17):
+                    if oserr.errno != 17:
                         print('Error creating directory %s : %s-%s' %
-                              (dir, errno, strerror))
+                              (directory, oserr.errno, oserr.strerror))
                         sys.exit(1)
                 log_handler = logging.FileHandler(log_file, mode='w')
 
@@ -145,16 +144,15 @@ class ipsLogger:
         self.log_map[fileno] = (recvr, log_handler, log_pipe_name)
 
     def __run__(self):
-        import select
         time_out = 1.0
         while 1:
             read_set = list(self.log_map.keys())
             # print 'read_set = ', read_set
             # read_set = []
             if read_set:
-                rd, wr, ex = select.select(read_set,
-                                           [], [],
-                                           time_out)
+                rd, _, _ = select.select(read_set,
+                                         [], [],
+                                         time_out)
             else:
                 time.sleep(time_out)
                 rd = []
@@ -162,7 +160,7 @@ class ipsLogger:
             if len(rd) > 0:
                 # print rd
                 for fileno in rd:
-                    (recvr, log_handler, log_pipe_name) = self.log_map[fileno]
+                    (recvr, _, log_pipe_name) = self.log_map[fileno]
                     recvr.handle_request()
                 rd = []
             try:
@@ -171,15 +169,15 @@ class ipsLogger:
                 pass
             else:
                 tokens = msg.split()
-                if (tokens[0] == 'CREATE_SIM'):  # Expecting Message: 'CREATE_SIM  log_pipe_name  log_file
+                if tokens[0] == 'CREATE_SIM':  # Expecting Message: 'CREATE_SIM  log_pipe_name  log_file
                     self.add_sim_log(tokens[1], tokens[2])
                     # print list_fds()
                     # print '*************************************************'
-                elif (tokens[0] == 'END_SIM'):  # Expecting Message 'END_SIM log_pipe_name'
+                elif tokens[0] == 'END_SIM':  # Expecting Message 'END_SIM log_pipe_name'
                     log_pipe_name = tokens[1]
                     # print list_fds()
                     # print '#################################################'
-                    for fileno, (recvr, log_handler, f_name) in list(self.log_map.items()):
+                    for fileno, (recvr, _, f_name) in list(self.log_map.items()):
                         if f_name == log_pipe_name:
                             # print 'CLOSED file ', fileno
                             del recvr

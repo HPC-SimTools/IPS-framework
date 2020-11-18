@@ -10,12 +10,12 @@ def catch_and_go(func_to_decorate):
     def new_func(*original_args, **original_kwargs):
         # print "Function has been decorated.  Congratulations."
         # Do whatever else you want here
-        object = original_args[0]
+        obj = original_args[0]
         try:
             func_to_decorate(*original_args, **original_kwargs)
         except Exception as e:
             # print '#################', object.__class__.__name__, func_to_decorate.__name__
-            object.services.exception("Exception in call to %s:%s" % (object.__class__.__name__, func_to_decorate.__name__))
+            obj.services.exception("Exception in call to %s:%s" % (obj.__class__.__name__, func_to_decorate.__name__))
             print(e)
             # object.services.exception("Caught exception during component pre-initialization")
 #            raise
@@ -40,7 +40,7 @@ class runspaceInitComponent(Component):
         # print('Created %s' % (self.__class__))
 
     @catch_and_go
-    def init(self, timeStamp):
+    def init(self, timestamp=0.0, **keywords):
         """
         Creates base directory, copies IPS and FacetsComposer input files.
         """
@@ -61,10 +61,9 @@ class runspaceInitComponent(Component):
         try:
             os.makedirs(self.simRootDir)
         except OSError as oserr:
-            (errno, strerror) = oserr.args
-            if (errno != 17):
+            if oserr.errno != 17:
                 self.services.exception('Error creating directory %s : %s',
-                                        self.simRootDir, strerror)
+                                        self.simRootDir, oserr.strerror)
 
         self.config_files = services.fwk.config_file_list
         self.platform_file = services.fwk.platform_file_name
@@ -76,19 +75,19 @@ class runspaceInitComponent(Component):
         if not self.config_files[0].startswith("/"):
             self.conf_file_loc = self.cwd
         else:
-            (head, tail) = os.path.split(os.path.abspath(self.config_files[0]))
+            (head, _) = os.path.split(os.path.abspath(self.config_files[0]))
             self.conf_file_loc = head
         if not self.platform_file.startswith("/"):
             self.plat_file_loc = self.cwd
         else:
-            (head, tail) = os.path.split(os.path.abspath(self.platform_file))
+            (head, _) = os.path.split(os.path.abspath(self.platform_file))
             self.plat_file_loc = head
 
         ipsutil.copyFiles(self.conf_file_loc, self.config_files, self.simRootDir)
         ipsutil.copyFiles(self.plat_file_loc, self.platform_file, self.simRootDir)
 
     @catch_and_go
-    def step(self, timestamp=0.0):
+    def step(self, timestamp=0.0, **keywords):
         """
         Copies individual subcomponent input files into working subdirectories.
         """
@@ -107,13 +106,12 @@ class runspaceInitComponent(Component):
         try:
             os.makedirs(simulation_setup)
         except OSError as oserr:
-            (errno, strerror) = oserr.args
-            if (errno != 17):
+            if oserr.errno != 17:
                 self.services.exception('Error creating directory %s : %s',
-                                        simulation_setup, strerror)
+                                        simulation_setup, oserr.strerror)
 
         # for each simulation component
-        for sim_name, comp_list in list(sim_comps.items()):
+        for comp_list in sim_comps.values():
             # for each component_id in the list of components
             for comp_id in comp_list:
                 # build the work directory name
@@ -131,10 +129,9 @@ class runspaceInitComponent(Component):
                 try:
                     os.makedirs(workdir)
                 except OSError as oserr:
-                    (errno, strerror) = oserr.args
-                    if (errno != 17):
+                    if oserr.errno != 17:
                         self.services.exception('Error creating directory %s : %s',
-                                                workdir, strerror)
+                                                workdir, oserr.strerror)
                         raise
 
                 # copy the input files into the working directory
@@ -179,8 +176,7 @@ class runspaceInitComponent(Component):
             try:
                 os.makedirs(workdir)
             except OSError as oserr:
-                (errno, strerror) = oserr.args
-                if (errno != 17):
+                if oserr.errno != 17:
                     self.services.exception('Error creating directory %s : %s',
-                                            workdir, strerror)
+                                            workdir, oserr.strerror)
                     raise

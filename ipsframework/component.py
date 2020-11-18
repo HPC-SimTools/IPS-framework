@@ -1,11 +1,11 @@
 # -------------------------------------------------------------------------------
 # Copyright 2006-2020 UT-Battelle, LLC. See LICENSE for more information.
 # -------------------------------------------------------------------------------
-from .messages import Message, MethodResultMessage
 import sys
 import os
 import weakref
 from copy import copy
+from .messages import Message, MethodResultMessage
 
 
 class Component:
@@ -105,15 +105,14 @@ class Component:
             try:
                 os.makedirs(workdir)
             except OSError as oserr:
-                (errno, strerror) = oserr.args
                 self.services.exception('Error creating directory %s : %s',
-                                        workdir, strerror)
+                                        workdir, oserr.strerror)
                 raise
             os.chdir(workdir)
         self.services.debug('Running - CompID =  %s',
                             self.component_id.get_serialization())
 
-        if (self.services.profile):
+        if self.services.profile:
             self.services.debug('Instrumenting - CompID =  %s',
                                 self.component_id.get_serialization())
         self.services._init_event_service()
@@ -155,7 +154,6 @@ class Component:
         is executed.
         """
         self.services.debug('init() method called')
-        pass
 
     def restart(self, timestamp=0.0, **keywords):
         """
@@ -163,7 +161,6 @@ class Component:
         is executed.
         """
         self.services.debug('restart() method called')
-        pass
 
     def step(self, timestamp=0.0, **keywords):
         """
@@ -171,7 +168,6 @@ class Component:
         is executed.
         """
         self.services.debug('step() method called')
-        pass
 
     def finalize(self, timestamp=0.0, **keywords):
         """
@@ -179,7 +175,6 @@ class Component:
         is executed.
         """
         self.services.debug('finalize() method called')
-        pass
 
     def checkpoint(self, timestamp=0.0, **keywords):
         """
@@ -187,7 +182,6 @@ class Component:
         is executed.
         """
         self.services.debug('checkpoint() method called')
-        pass
 
     def terminate(self, status):
         """
@@ -196,7 +190,7 @@ class Component:
         # print self.services.full_comp_id, ": terminate() method called"
 #        self.services.debug('###(1) %s %s', str(self), str(self.__dict__))
 
-        if (status == Message.SUCCESS):
+        if status == Message.SUCCESS:
             self.services.debug('Calling self.sys_exit(0)')
             self.sys_exit(0)
         else:

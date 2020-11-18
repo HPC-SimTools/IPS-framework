@@ -17,7 +17,7 @@ def which(program, alt_paths=None):
     def is_exe(fpath):
         return os.path.exists(fpath) and os.access(fpath, os.X_OK)
 
-    fpath, fname = os.path.split(program)
+    fpath, _ = os.path.split(program)
     if fpath:
         if is_exe(program):
             return program
@@ -51,7 +51,8 @@ def copyFiles(src_dir, src_file_list, target_dir, prefix='', keep_old=False):
     if use_data_server != "DATA_SERVER_NOT_USED":
         if not remote_copy_fun:
             data_server = Pyro4.Proxy("PYRONAME:DataServer")
-        return data_server.copyFiles(src_dir, src_file_list, target_dir, prefix, keep_old)
+        data_server.copyFiles(src_dir, src_file_list, target_dir, prefix, keep_old)
+        return
 
     try:
         file_list = src_file_list.split()
@@ -68,7 +69,7 @@ def copyFiles(src_dir, src_file_list, target_dir, prefix='', keep_old=False):
                 globbed_file_list += [src_file_full]
             else:
                 globbed_files = glob.glob(src_file_full)
-                if (len(globbed_files) > 0):
+                if len(globbed_files) > 0:
                     globbed_file_list += globbed_files
                 else:
                     raise Exception('No such file : %s' % (src_file_full))
@@ -90,13 +91,12 @@ def copyFiles(src_dir, src_file_list, target_dir, prefix='', keep_old=False):
                 target_file = new_name
                 break
 
-        (head, tail) = os.path.split(os.path.abspath(target_file))
+        (head, _) = os.path.split(os.path.abspath(target_file))
         try:
             os.makedirs(head)
         except OSError as oserr:
-            (errno, strerror) = oserr.args
-            if (errno != 17):
-                print('Error creating directory %s : %s' % (head, strerror))
+            if oserr.errno != 17:
+                print('Error creating directory %s : %s' % (head, oserr.strerror))
                 raise
         try:
             # print 'trying to copy...'

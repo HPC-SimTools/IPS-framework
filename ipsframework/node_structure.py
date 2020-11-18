@@ -261,7 +261,7 @@ class Socket:
         Mark cores that are allocated to task *tid* as available.  Return
         number of cores set to available.
         """
-        o, k, num_procs = self.my_tasks[tid]
+        o, k, _ = self.my_tasks[tid]
         self.task_ids.remove(tid)
         self.owners.remove(o)  # make sure it just removes one instance
         count = 0

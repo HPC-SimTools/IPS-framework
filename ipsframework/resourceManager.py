@@ -87,7 +87,7 @@ class ResourceManager:
         try:
             os.makedirs(self.CM.sim_map[self.CM.fwk_sim_name].sim_root)
         except OSError as oserr:
-            if (oserr.errno != 17):
+            if oserr.errno != 17:
                 # self.services.exception('Error creating directory %s : %s',
                 #                       self.CM.sim_map[self.CM.fwk_sim_name].sim_root, oserr.strerror)
                 raise
@@ -140,8 +140,7 @@ class ResourceManager:
 
             if user_ppn <= self.max_ppn:
                 self.ppn = user_ppn
-                for i in range(len(listOfNodes)):
-                    (node, count) = listOfNodes[i]
+                for i, (node, count) in enumerate(listOfNodes):
                     if count > self.ppn:
                         listOfNodes[i] = (node, self.ppn)
                 self.fwk.warning("Using user set procs per node: %d", user_ppn)
@@ -153,8 +152,7 @@ class ResourceManager:
             try:
                 if user_ppn <= self.max_ppn:
                     self.ppn = user_ppn
-                    for i in range(len(listOfNodes)):
-                        (node, count) = listOfNodes[i]
+                    for i, (node, count) in enumerate(listOfNodes):
                         if count > self.ppn:
                             listOfNodes[i] = (node, self.ppn)
                 else:
@@ -259,6 +257,7 @@ class ResourceManager:
         return tot_cores
 
     # RM getAllocation
+    # pylint: disable=inconsistent-return-statements
     def get_allocation(self, comp_id, nproc, task_id,
                        whole_nodes, whole_socks, task_ppn=0):
         """
@@ -305,7 +304,7 @@ class ResourceManager:
         else:
             ppn = self.ppn
 
-        if (nproc < ppn):
+        if nproc < ppn:
             ppn = nproc
 
         # check if partial node allocation is possible
