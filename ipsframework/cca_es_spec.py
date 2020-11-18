@@ -10,6 +10,8 @@ central event service.
 """
 from copy import deepcopy
 
+_proxy = None
+
 
 class EventServiceException(Exception):
     """

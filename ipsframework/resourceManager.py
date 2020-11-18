@@ -35,6 +35,11 @@ class ResourceManager:
         self.CM = None
 
         self.accurateNodes = False
+        self.node_alloc_mode = None
+
+        self.host = None
+
+        self.reporting_file = None
 
         # bookkeeping for allocationa and accounting
         self.nodes = {}

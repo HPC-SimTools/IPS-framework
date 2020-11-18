@@ -45,6 +45,8 @@ class ConfigurationManager:
             self.portal_sim_name = None
             self.sim_root = None
             self.sim_conf = None
+            self.log_file = None
+            self.log_pipe_name = None
             self.config_file = None
             self.conf_file_dir = None
             self.driver_comp = None

@@ -26,6 +26,7 @@ class TaskManager:
         self.data_mgr = None
         self.resource_mgr = None
         self.config_mgr = None
+        self.host = None
         self.comp_registry = configurationManager.ComponentRegistry()
         self.service_methods = ['init_call',
                                 'launch_task',
@@ -71,7 +72,6 @@ class TaskManager:
         self.resource_mgr = resource_mgr
         self.config_mgr = config_mgr
         self.host = self.config_mgr.get_platform_parameter('HOST')
-        self.node_alloc_mode = self.config_mgr.get_platform_parameter('NODE_ALLOCATION_MODE')
         try:
             self.task_launch_cmd = self.config_mgr.get_platform_parameter('MPIRUN')
         except Exception:

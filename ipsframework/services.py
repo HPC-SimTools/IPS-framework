@@ -182,6 +182,9 @@ class ServicesProxy:
         self.sub_flows = {}
         self.binary_fullpath_cache = {}
         self.dask_preload = "dask_preload.py"
+        self.shared_nodes = False
+        self.ppn = 0
+        self.shared_nodes = False
 
     def __initialize__(self, component_ref):
         """
@@ -1953,6 +1956,7 @@ class TaskPool:
         self.futures = None
         self.dask_file_name = None
         self.dask_client = None
+        self.worker_event_logfile = None
 
     def _wait_any_task(self, block=True):
         """

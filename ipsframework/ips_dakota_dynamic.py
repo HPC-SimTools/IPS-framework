@@ -48,14 +48,14 @@ class DakotaDynamic:
         # parse file
         try:
             current_dir = inspect.getfile(inspect.currentframe())
-            (self.platform_fname, self.ipsShareDir) = \
+            (self.platform_fname, ipsShareDir) = \
                 platformspec.get_share_and_platform(self.platform_fname,
                                                     current_dir)
 
-            if self.ipsShareDir:
+            if ipsShareDir:
                 haveComp = False
-                if os.path.exists(os.path.join(self.ipsShareDir, 'component-generic.conf')):
-                    comp_conf_file = os.path.join(self.ipsShareDir, 'component-generic.conf')
+                if os.path.exists(os.path.join(ipsShareDir, 'component-generic.conf')):
+                    comp_conf_file = os.path.join(ipsShareDir, 'component-generic.conf')
                     comp_confgobj = ConfigObj(comp_conf_file, interpolation='template',
                                               file_error=True)
                     haveComp = True
@@ -119,10 +119,10 @@ class DakotaDynamic:
                 match = re.search(r'evaluation_concurrency\s*=\s*\d*', line)
                 if match:
                     conc_tokens = match.group(0).split(' =')
-                    self.batch_size = int(conc_tokens[1])
-                    print('Using evaluation_concurrency = ', self.batch_size)
+                    batch_size = int(conc_tokens[1])
+                    print('Using evaluation_concurrency = ', batch_size)
                 else:
-                    print('Missing evaluation_concurrency spec, using default value of %d' % (self.batch_size))
+                    print('Missing evaluation_concurrency spec, using default value of %d' % (batch_size))
 
         self.master_conf['PORTS'] = {'NAMES': 'DRIVER'}
         self.master_conf['PORTS']['DRIVER'] = {'IMPLEMENTATION': 'DAKOTA_BRIDGE'}
