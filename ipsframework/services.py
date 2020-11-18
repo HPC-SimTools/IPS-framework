@@ -15,8 +15,8 @@ import signal
 import glob
 import weakref
 import inspect
+from configobj import ConfigObj
 from . import messages, ipsutil, component
-from .configobj import ConfigObj
 from .cca_es_spec import initialize_event_service
 from .ips_es_spec import eventManager
 

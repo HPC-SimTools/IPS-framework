@@ -9,7 +9,7 @@ import tempfile
 import logging
 import socket
 from multiprocessing import Queue, Process, set_start_method
-from .configobj import ConfigObj
+from configobj import ConfigObj
 from . import ipsLogging
 from .services import ServicesProxy
 from .componentRegistry import ComponentID, ComponentRegistry

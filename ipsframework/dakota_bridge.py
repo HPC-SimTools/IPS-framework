@@ -6,8 +6,8 @@ import sys
 import select
 import time
 from multiprocessing.connection import Listener
+from configobj import ConfigObj
 from .component import Component
-from .configobj import ConfigObj
 
 
 class Driver(Component):

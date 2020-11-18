@@ -35,6 +35,9 @@ setup(
     description="Integrated Plasma Simulator (IPS) Framework",
     long_description=long_description,
     long_description_content_type="text/markdown",
+    install_requires=[
+        'configobj'
+    ],
     packages=find_packages(),
     entry_points={
         'console_scripts': [

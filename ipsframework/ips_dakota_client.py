@@ -8,7 +8,7 @@ import sys
 import shutil
 import time
 from multiprocessing.connection import Client
-from ipsframework.configobj import ConfigObj
+from configobj import ConfigObj
 
 
 class IPSDakotaClient:
