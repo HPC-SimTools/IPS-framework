@@ -259,6 +259,7 @@ class ResourceManager:
         return tot_cores
 
     # RM getAllocation
+    # pylint: disable=inconsistent-return-statements
     def get_allocation(self, comp_id, nproc, task_id,
                        whole_nodes, whole_socks, task_ppn=0):
         """

@@ -51,7 +51,8 @@ def copyFiles(src_dir, src_file_list, target_dir, prefix='', keep_old=False):
     if use_data_server != "DATA_SERVER_NOT_USED":
         if not remote_copy_fun:
             data_server = Pyro4.Proxy("PYRONAME:DataServer")
-        return data_server.copyFiles(src_dir, src_file_list, target_dir, prefix, keep_old)
+        data_server.copyFiles(src_dir, src_file_list, target_dir, prefix, keep_old)
+        return
 
     try:
         file_list = src_file_list.split()

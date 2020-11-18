@@ -1168,7 +1168,7 @@ class ServicesProxy:
             raise
 
         if num_chkpt == 0:
-            return
+            return None
 
         if (mode not in ['ALL', 'WALLTIME_REGULAR', 'WALLTIME_EXPLICIT',
                          'PHYSTIME_REGULAR', 'PHYSTIME_EXPLICIT']):
