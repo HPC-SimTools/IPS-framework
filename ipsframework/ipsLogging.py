@@ -42,10 +42,9 @@ class IPSLogSocketHandler(logging.handlers.SocketHandler):
         self.my_socket = None
 
     def makeSocket(self):
-        if True:
-            s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-            s.connect(self.port)
-            self.my_socket = s
+        s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        s.connect(self.port)
+        self.my_socket = s
         return self.my_socket
 
 
