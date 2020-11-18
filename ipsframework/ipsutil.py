@@ -68,7 +68,7 @@ def copyFiles(src_dir, src_file_list, target_dir, prefix='', keep_old=False):
                 globbed_file_list += [src_file_full]
             else:
                 globbed_files = glob.glob(src_file_full)
-                if (len(globbed_files) > 0):
+                if len(globbed_files) > 0:
                     globbed_file_list += globbed_files
                 else:
                     raise Exception('No such file : %s' % (src_file_full))
@@ -95,7 +95,7 @@ def copyFiles(src_dir, src_file_list, target_dir, prefix='', keep_old=False):
             os.makedirs(head)
         except OSError as oserr:
             (errno, strerror) = oserr.args
-            if (errno != 17):
+            if errno != 17:
                 print('Error creating directory %s : %s' % (head, strerror))
                 raise
         try:

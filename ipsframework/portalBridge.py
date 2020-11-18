@@ -202,18 +202,18 @@ class PortalBridge(Component):
         except KeyError:
             portal_data["sim_name"] = sim_name
 
-        if (portal_data['eventtype'] == 'IPS_START'):
+        if portal_data['eventtype'] == 'IPS_START':
             sim_root = event_body['sim_root']
             self.init_simulation(sim_name, sim_root)
 
         sim_data = self.sim_map[sim_name]
-        if (portal_data['eventtype'] == 'PORTALBRIDGE_UPDATE_TIMESTAMP'):
+        if portal_data['eventtype'] == 'PORTALBRIDGE_UPDATE_TIMESTAMP':
             sim_data.phys_time_stamp = portal_data['phystimestamp']
             return
         else:
             portal_data['phystimestamp'] = sim_data.phys_time_stamp
 
-        if (portal_data['eventtype'] == 'IPS_SET_MONITOR_URL'):
+        if portal_data['eventtype'] == 'IPS_SET_MONITOR_URL':
             sim_data.monitor_url = portal_data['vizurl']
         elif sim_data.monitor_url:
             portal_data['vizurl'] = sim_data.monitor_url
@@ -226,10 +226,10 @@ class PortalBridge(Component):
         sim_data.counter += 1
         self.counter += 1
 
-        if (portal_data['eventtype'] == 'IPS_END'):
+        if portal_data['eventtype'] == 'IPS_END':
             del self.sim_map[sim_name]
 
-        if (len(self.sim_map) == 0):
+        if len(self.sim_map) == 0:
             if self.childProcess:
                 self.childProcess.stdin.close()
                 self.childProcess.wait()
@@ -245,9 +245,9 @@ class PortalBridge(Component):
         timestamp = ipsutil.getTimeString()
         buf = '%8d %s ' % (sim_data.counter, timestamp)
         for (k, v) in event_data.items():
-            if (len(str(v).strip()) == 0):
+            if len(str(v).strip()) == 0:
                 continue
-            if (' ' in str(v)):
+            if ' ' in str(v):
                 buf += '%s=\'%s\' ' % (k, str(v))
             else:
                 buf += '%s=%s ' % (k, str(v))
@@ -274,10 +274,10 @@ class PortalBridge(Component):
                     self.services.exception("Error writing html file into USER_W3_DIR directory")
                     self.write_to_htmldir = False
         #        self.services.debug('Wrote to monitor file : %s', buf)
-        if (self.portal_url):
+        if self.portal_url:
             webmsg = urllib.parse.urlencode(event_data).encode("utf-8")
             try:
-                if (self.first_event):  # First time, launch sendPost.py daemon
+                if self.first_event:  # First time, launch sendPost.py daemon
                     cmd = os.path.join(sys.path[0], 'sendPost.py')
                     self.childProcess = Popen(cmd, shell=True, bufsize=128,
                                               stdin=PIPE, stdout=PIPE,
@@ -292,7 +292,7 @@ class PortalBridge(Component):
             except Exception as e:
                 self.services.exception('Error transmitting event number %6d to %s : %s',
                                         sim_data.counter, self.portal_url, str(e))
-        if (sim_data.mpo_wid):
+        if sim_data.mpo_wid:
             self.send_mpo_data(event_data, sim_data)
 
     def send_mpo_data(self, event_data, sim_data):
@@ -393,7 +393,7 @@ class PortalBridge(Component):
             del sim_data.mpo_steps[-1]
             return
         try:
-            if (event_type == 'IPS_STAGE_INPUTS'):
+            if event_type == 'IPS_STAGE_INPUTS':
                 r = re.compile(r"^Elapsed time = ([0-9]*\.[0-9]*) Path = ([^ ]*) Files = (.*)")
                 o = r.match(comment)
                 (_, path, files) = o.groups()
@@ -438,7 +438,7 @@ class PortalBridge(Component):
                 step_name = "{0:s} {1:s} {2:d}" \
                     .format(event_data['code'].split('_')[-1], event_type, count)
 
-            if (event_type == 'IPS_STAGE_OUTPUTS'):
+            if event_type == 'IPS_STAGE_OUTPUTS':
                 r = re.compile(r"^Elapsed time = ([0-9]*\.[0-9]*) Path = ([^ ]*) Files = (.*)")
                 o = r.match(comment)
                 (_, path, files) = o.groups()
@@ -450,7 +450,7 @@ class PortalBridge(Component):
                                      name=step_name,
                                      desc="%s" % event_data['comment'])
             self.mpo_name_counter[sim_data.sim_name + event_data['code']] += 1
-            if (event_type == 'IPS_STAGE_OUTPUTS'):
+            if event_type == 'IPS_STAGE_OUTPUTS':
                 glist = [glob.glob(os.path.join(path, f)) for f in files.split()]
                 for file_name in [os.path.basename(f) for f in itertools.chain(*glist)]:
                     """
@@ -503,7 +503,7 @@ class PortalBridge(Component):
         d = datetime.datetime.now()
         date_str = "%s.%03d" % (d.strftime("%Y-%m-%dT%H:%M:%S"), int(d.microsecond / 1000))
         sim_data.portal_runid = "_".join([self.host, "USER", date_str])
-        if (self.runid_url is not None):
+        if self.runid_url is not None:
             self.services.debug('PORTAL_RUNID_URL = %s', str(self.runid_url))
             try:
                 #               raise urllib2.URLError('TEXT')
@@ -526,7 +526,7 @@ class PortalBridge(Component):
         try:
             os.makedirs(sim_log_dir)
         except OSError as oserr:
-            if (oserr.errno != 17):
+            if oserr.errno != 17:
                 self.services.exception('Error creating Simulation Log directory %s : %d %s' %
                                         (sim_log_dir, oserr.errno, oserr.strerror))
                 raise

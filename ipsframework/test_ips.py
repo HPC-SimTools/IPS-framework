@@ -37,9 +37,9 @@ class testIPS(unittest.TestCase):
             # printUsageMessage()
             # return 1
         for arg, value in opts:
-            if (arg == '--config'):
+            if arg == '--config':
                 cfgFile_list.append(value)
-            elif (arg == '--log'):
+            elif arg == '--log':
                 log_file_name = value
                 try:
                     log_file = open(os.path.abspath(log_file_name), 'w')
@@ -48,7 +48,7 @@ class testIPS(unittest.TestCase):
                     # print 'Error writing to log file ' , log_file_name
                     # print str(e)
                     # raise
-            elif (arg == '--platform'):
+            elif arg == '--platform':
                 platform_filename = value
         self.assertFalse(len(cfgFile_list) == 0, 'Empty cfgFile_list')
         self.assertFalse(platform_filename == '', 'No platform config file listed')

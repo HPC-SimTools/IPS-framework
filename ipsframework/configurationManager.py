@@ -89,7 +89,7 @@ class ConfigurationManager:
 
         for conf_file in config_file_list:
             abs_path = os.path.abspath(conf_file)
-            if (abs_path not in self.config_file_list):
+            if abs_path not in self.config_file_list:
                 self.config_file_list.append(abs_path)
             else:
                 print('Ignoring duplicate configuration file ', abs_path)
@@ -298,13 +298,13 @@ class ConfigurationManager:
  in configuration file %s', conf_file)
                 raise
 
-            if (sim_name in sim_name_list):
+            if sim_name in sim_name_list:
                 self.fwk.exception('Error: Duplicate SIM_NAME in configuration files')
                 sys.exit(1)
-            if (sim_root in sim_root_list):
+            if sim_root in sim_root_list:
                 self.fwk.exception('Error: Duplicate SIM_ROOT in configuration files')
                 sys.exit(1)
-            if (log_file in log_file_list):
+            if log_file in log_file_list:
                 self.fwk.exception('Error: Duplicate LOG_FILE in configuration files')
                 sys.exit(1)
             sim_name_list.append(sim_name)
@@ -343,7 +343,7 @@ class ConfigurationManager:
             # SEK: It'd be nice to log to the zip file but I don't understand the handles
 
             # Use first simulation for framework components
-            if (not self.fwk_sim_name):
+            if not self.fwk_sim_name:
                 fwk_sim_conf = conf.dict()
                 fwk_sim_conf['SIM_NAME'] = '_'.join([conf['SIM_NAME'], 'FWK'])
                 fwk_sim = self.SimulationData(fwk_sim_conf['SIM_NAME'])
@@ -360,7 +360,7 @@ class ConfigurationManager:
         self.log_process.start()
 
         for sim_name, sim_data in list(self.sim_map.items()):
-            if (sim_name != self.fwk_sim_name):
+            if sim_name != self.fwk_sim_name:
                 self._initialize_sim(sim_data)
 
         # ***** commenting out portal stuff for now
@@ -391,7 +391,7 @@ class ConfigurationManager:
         runspace_conf['NPROC'] = 1
         runspace_conf['LOG_LEVEL'] = 'WARNING'
         runspace_conf['OS_CWD'] = os.getcwd()
-        if (self.fwk.log_level == logging.DEBUG):
+        if self.fwk.log_level == logging.DEBUG:
             runspace_conf['LOG_LEVEL'] = 'DEBUG'
 
         runspace_component_id = self._create_component(runspace_conf,
@@ -426,7 +426,7 @@ class ConfigurationManager:
             except KeyError:
                 portal_conf['USER'] = self.platform_conf['USER']
             havePortal = True
-            if (self.fwk.log_level == logging.DEBUG):
+            if self.fwk.log_level == logging.DEBUG:
                 portal_conf['LOG_LEVEL'] = 'DEBUG'
 
             try:
@@ -471,7 +471,7 @@ class ConfigurationManager:
         for port in ports_list:
             try:
                 comp_ref = ports_config[port]['IMPLEMENTATION']
-                if (comp_ref.strip() == ''):
+                if comp_ref.strip() == '':
                     continue
                 comp_conf = sim_conf[comp_ref]
             except Exception:
@@ -503,23 +503,23 @@ class ConfigurationManager:
                     comp_conf['BIN_PATH'] = sim_conf['BIN_PATH']
                 else:
                     comp_conf['BIN_PATH'] = comp_conf['BIN_DIR']
-            if (not self.required_fields.issubset(conf_fields)):
+            if not self.required_fields.issubset(conf_fields):
                 msg = 'Error: missing required entries {} in simulation {} component {} configuration section'.format(
                     list(self.required_fields - conf_fields), sim_name, comp_ref)
                 self.fwk.critical(msg)
                 raise RuntimeError(msg)
             component_id = self._create_component(comp_conf, sim_data)
             sim_data.port_map[port] = component_id
-            if (port == 'DRIVER'):
+            if port == 'DRIVER':
                 sim_data.driver_comp = component_id
-            elif (port == 'INIT'):
+            elif port == 'INIT':
                 sim_data.init_comp = component_id
 
-        if (sim_data.driver_comp is None):
+        if sim_data.driver_comp is None:
             msg = 'Missing DRIVER specification in config file for simulation {}'.format(sim_data.sim_name)
             self.fwk.critical(msg)
             raise RuntimeError(msg)
-        if (sim_data.init_comp is None):
+        if sim_data.init_comp is None:
             self.fwk.warning('Missing INIT specification in ' +
                              'config file for simulation %s', sim_data.sim_name)
 
@@ -582,7 +582,7 @@ class ConfigurationManager:
         """
         sim_comps = {}
         for sim_name in list(self.sim_map.keys()):
-            if (sim_name == self.fwk_sim_name):
+            if sim_name == self.fwk_sim_name:
                 continue
             sim_comps[sim_name] = self.get_simulation_components(sim_name)
         return sim_comps
@@ -590,7 +590,7 @@ class ConfigurationManager:
     def get_simulation_components(self, sim_name):
         comp_list = []
         sim_data = self.sim_map[sim_name]
-        if (sim_data.init_comp):
+        if sim_data.init_comp:
             comp_list.append(sim_data.init_comp)
         comp_list.append(sim_data.driver_comp)
         return comp_list
@@ -667,7 +667,7 @@ class ConfigurationManager:
         *target_sim_name*.  If *target_sim_name* is the framework, all
         simulations will get the change.  Return *value*.
         """
-        if (target_sim_name == self.fwk_sim_name):  # apply to all simulations
+        if target_sim_name == self.fwk_sim_name:  # apply to all simulations
             target_sims = list(self.sim_map.keys())
         else:
             target_sims = [target_sim_name]

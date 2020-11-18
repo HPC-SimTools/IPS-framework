@@ -113,7 +113,7 @@ class Component:
         self.services.debug('Running - CompID =  %s',
                             self.component_id.get_serialization())
 
-        if (self.services.profile):
+        if self.services.profile:
             self.services.debug('Instrumenting - CompID =  %s',
                                 self.component_id.get_serialization())
         self.services._init_event_service()
@@ -191,7 +191,7 @@ class Component:
         # print self.services.full_comp_id, ": terminate() method called"
 #        self.services.debug('###(1) %s %s', str(self), str(self.__dict__))
 
-        if (status == Message.SUCCESS):
+        if status == Message.SUCCESS:
             self.services.debug('Calling self.sys_exit(0)')
             self.sys_exit(0)
         else:

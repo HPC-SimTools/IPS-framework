@@ -26,7 +26,7 @@ class ComponentID:
         Return the deserialized version of the component id.
         """
         tokens = comp_id_string.split(ComponentID.delimiter)
-        if (len(tokens) != 3):
+        if len(tokens) != 3:
             print('Invalid serialized component ID : ', comp_id_string)
             sys.exit(1)
         return ComponentID.all_ids[comp_id_string]

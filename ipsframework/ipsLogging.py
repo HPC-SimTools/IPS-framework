@@ -121,7 +121,7 @@ class ipsLogger:
         if (log_file == sys.stdout or log_file is None):
             log_handler = self.stdout_handler
         else:
-            if(log_file.__class__.__name__ == 'TextIOWrapper'):
+            if log_file.__class__.__name__ == 'TextIOWrapper':
                 log_handler = logging.StreamHandler(log_file)
             else:
                 directory = os.path.dirname(os.path.abspath(log_file))
@@ -129,7 +129,7 @@ class ipsLogger:
                     os.makedirs(directory)
                 except OSError as oserr:
                     (errno, strerror) = oserr.args
-                    if (errno != 17):
+                    if errno != 17:
                         print('Error creating directory %s : %s-%s' %
                               (directory, errno, strerror))
                         sys.exit(1)
@@ -170,11 +170,11 @@ class ipsLogger:
                 pass
             else:
                 tokens = msg.split()
-                if (tokens[0] == 'CREATE_SIM'):  # Expecting Message: 'CREATE_SIM  log_pipe_name  log_file
+                if tokens[0] == 'CREATE_SIM':  # Expecting Message: 'CREATE_SIM  log_pipe_name  log_file
                     self.add_sim_log(tokens[1], tokens[2])
                     # print list_fds()
                     # print '*************************************************'
-                elif (tokens[0] == 'END_SIM'):  # Expecting Message 'END_SIM log_pipe_name'
+                elif tokens[0] == 'END_SIM':  # Expecting Message 'END_SIM log_pipe_name'
                     log_pipe_name = tokens[1]
                     # print list_fds()
                     # print '#################################################'

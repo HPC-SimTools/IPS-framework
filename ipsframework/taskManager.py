@@ -190,14 +190,14 @@ class TaskManager:
         call_id = wait_msg.args[0]
         blocking = wait_msg.args[1]
         self.fwk.debug('TM:wait_call() call_id = %s', call_id)
-        if (call_id in list(self.finished_calls.keys())):
+        if call_id in self.finished_calls:
             response_msg = self.finished_calls[call_id][1]
             del self.finished_calls[call_id]
-            if (response_msg.status == messages.Message.FAILURE):
+            if response_msg.status == messages.Message.FAILURE:
                 raise Exception(response_msg.args[0])
             else:
                 return response_msg.args
-        if (not blocking):
+        if not blocking:
             raise IncompleteCallException(call_id)
         else:
             raise BlockedMessageException(wait_msg, '***call %s not finished' % call_id)
@@ -261,7 +261,7 @@ class TaskManager:
             else:
                 (nodelist, ppn, max_ppn, accurateNodes) = retval[1:]
         except InsufficientResourcesException:
-            if (block):
+            if block:
                 raise BlockedMessageException(init_task_msg, '***%s waiting for %d resources' %
                                               (caller_id, nproc))
             else:
@@ -535,7 +535,7 @@ class TaskManager:
                             str(num_nodes), nproc_flag, str(nproc)])
         else:
             self.fwk.exception("invalid task launch command.")
-            raise("invalid task launch command.")
+            raise "invalid task launch command."
 
         cmd_args = ' '.join(cmd_args)
         cmd = ' '.join([cmd, binary, cmd_args])

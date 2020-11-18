@@ -83,7 +83,7 @@ class Driver(Component):
                 event_type = event['eventtype']
                 sim_name = event['SIM_NAME']
                 ok = event['ok']
-                if (event_type == 'IPS_END'):
+                if event_type == 'IPS_END':
                     try:
                         (sim_root, conn) = sim_cache[sim_name]
                     except KeyError:
@@ -95,7 +95,7 @@ class Driver(Component):
                         conn.send(os.path.join(sim_root, 'RESULT'))
                         conn.close()
                         del sim_cache[sim_name]
-            if (not ready_r):
+            if not ready_r:
                 if sim_cache:
                     continue
                 if time.time() - last_simend_time > self.idle_timeout:
@@ -111,7 +111,7 @@ class Driver(Component):
             except Exception as inst:
                 print('%s EXCEPTION in conn.recv(): failed connections = ' % (
                     time.strftime("%b %d %Y %H:%M:%S", time.localtime())), type(inst), str(inst))
-                if (failed_connections > 5):
+                if failed_connections > 5:
                     raise
                 else:
                     failed_connections += 1
@@ -147,7 +147,7 @@ class Driver(Component):
             try:
                 os.makedirs(self.old_master_conf['SIM_ROOT'])
             except OSError as oserr:
-                if (oserr.errno != 17):
+                if oserr.errno != 17:
                     print('Error creating Simulation directory %s : %d %s' %
                           (self.old_master_conf['SIM_ROOT'], oserr.errno, oserr.strerror))
                     raise

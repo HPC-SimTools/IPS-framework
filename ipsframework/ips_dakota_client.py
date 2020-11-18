@@ -64,7 +64,7 @@ class IPSDakotaClient:
             except ValueError:
                 print('Invalid variable specification %s' % (var_spec))
                 raise
-            if (comp == ''):  # This is a global configuration variable
+            if comp == '':  # This is a global configuration variable
                 parameter_list.append(("*", var_name, val))
             else:
                 try:

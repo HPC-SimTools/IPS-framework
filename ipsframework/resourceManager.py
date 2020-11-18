@@ -87,7 +87,7 @@ class ResourceManager:
         try:
             os.makedirs(self.CM.sim_map[self.CM.fwk_sim_name].sim_root)
         except OSError as oserr:
-            if (oserr.errno != 17):
+            if oserr.errno != 17:
                 # self.services.exception('Error creating directory %s : %s',
                 #                       self.CM.sim_map[self.CM.fwk_sim_name].sim_root, oserr.strerror)
                 raise
@@ -305,7 +305,7 @@ class ResourceManager:
         else:
             ppn = self.ppn
 
-        if (nproc < ppn):
+        if nproc < ppn:
             ppn = nproc
 
         # check if partial node allocation is possible

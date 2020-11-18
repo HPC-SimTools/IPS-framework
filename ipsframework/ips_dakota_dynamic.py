@@ -193,7 +193,7 @@ IPS_ROOT/bin or IPS_ROOT/framework/src')
         try:
             os.makedirs(sim_root)
         except OSError as oserr:
-            if (oserr.errno != 17):
+            if oserr.errno != 17:
                 print('Error creating Simulation directory %s : %d %s' %
                       (sim_root, oserr.errno, oserr.strerror))
                 raise
@@ -220,16 +220,16 @@ IPS_ROOT/bin or IPS_ROOT/framework/src')
         fd.close()
 
         ips = which('ips.py', alt_paths)
-        if (not ips):
+        if not ips:
             raise Exception('Error: ips not found in path.')
 
-        if (self.restart_file):
+        if self.restart_file:
             if not os.path.isfile(self.restart_file):
                 raise Exception("Error accessing DAKOTA restart file %s" % (self.restart_file))
 
         cmd = '%s --all --simulation=%s --platform=%s --verbose' % (ips, self.master_conf.filename,
                                                                     os.environ['IPS_DAKOTA_platform'])
-        if (self.log_file):
+        if self.log_file:
             cmd += ' --log=' + self.log_file
 
         if self.debug:
@@ -251,7 +251,7 @@ IPS_ROOT/bin or IPS_ROOT/framework/src')
                       (time.strftime("%b %d %Y %H:%M:%S", time.localtime()),
                        trials), type(inst), str(inst))
                 sys.stdout.flush()
-                if (trials == num_trials - 1):
+                if trials == num_trials - 1:
                     ips_server_proc.kill()
                     raise
                 else:
@@ -283,7 +283,7 @@ IPS_ROOT/bin or IPS_ROOT/framework/src')
                 print('%s  %d ips_dakota_dynamic connecting to IPS dakota bridge' %
                       (time.strftime("%b %d %Y %H:%M:%S", time.localtime()), trials), type(inst), str(inst))
                 sys.stdout.flush()
-                if (trials == num_trials - 1):
+                if trials == num_trials - 1:
                     ips_server_proc.kill()
                     raise
                 else:
@@ -326,17 +326,17 @@ def main(argv=None):
     platform_filename = None
     restart_file = None
     for arg, value in opts:
-        if (arg == '--simulation'):
+        if arg == '--simulation':
             ips_config_file = value
-        elif (arg == '--log'):
+        elif arg == '--log':
             log_file_name = value
-        elif (arg == '--platform'):
+        elif arg == '--platform':
             platform_filename = value
-        elif (arg == '--dakotaconfig'):
+        elif arg == '--dakotaconfig':
             dakota_cfg = value
-        elif (arg == '--restart'):
+        elif arg == '--restart':
             restart_file = value
-        elif (arg == '--debug'):
+        elif arg == '--debug':
             debug = True
 
     if (not ips_config_file or not dakota_cfg):

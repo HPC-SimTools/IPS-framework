@@ -271,9 +271,9 @@ class ServicesProxy:
                 response = self.svc_response_q.get(block, timeout)
                 response_list.append(response)
             except queue.Empty:
-                if (not block):
+                if not block:
                     finish = True
-                elif (len(response_list) > 0):
+                elif len(response_list) > 0:
                     finish = True
         #        dumpAll()
         return response_list
@@ -319,7 +319,7 @@ class ServicesProxy:
                     else:
                         del self.incomplete_calls[msg_id]
                         self.finished_calls[r.request_msg_id] = r
-                        if (r.request_msg_id == msg_id):
+                        if r.request_msg_id == msg_id:
                             keep_going = False
                 # some weird message came through
                 else:
@@ -398,7 +398,7 @@ class ServicesProxy:
         portal_data['walltime'] = '%.2f' % (time.time() - self.component_ref.start_time)
         portal_data['state'] = state
         portal_data['comment'] = comment
-        if (self.monitor_url):
+        if self.monitor_url:
             portal_data['vizurl'] = self.monitor_url.split('//')[-1]
 
         event_data = {}
@@ -1011,7 +1011,7 @@ class ServicesProxy:
                     continue
                 process = self.task_map[task_id][0]
                 retval = process.poll()
-                if (retval is not None):
+                if retval is not None:
                     task_retval = self.wait_task(task_id)
                     ret_dict[task_id] = task_retval
                     running_tasks.remove(task_id)
@@ -1072,7 +1072,7 @@ class ServicesProxy:
         def safe(nums):
             return len(set(str(nums)).difference(set("1234567890-+/*.e "))) == 0
         # generate tlist in regular mode (start, finish, step)
-        if (time_conf['MODE'] == 'REGULAR'):
+        if time_conf['MODE'] == 'REGULAR':
             for entry in ['FINISH', 'START', 'NSTEP']:
                 if not safe(time_conf[entry]):
                     self.exception('Invalid TIME_LOOP value of %s = %s' % (entry, time_conf[entry]))
@@ -1178,9 +1178,9 @@ class ServicesProxy:
         if mode == 'ALL':
             return self._dispatch_checkpoint(time_stamp, comp_id_list, Protect)
 
-        if (mode == 'WALLTIME_REGULAR'):
+        if mode == 'WALLTIME_REGULAR':
             interval = float(chkpt_conf['WALLTIME_INTERVAL'])
-            if (self.cur_time - self.last_ckpt_walltime >= interval):
+            if self.cur_time - self.last_ckpt_walltime >= interval:
                 return self._dispatch_checkpoint(time_stamp, comp_id_list, Protect)
             else:
                 return None
@@ -1202,7 +1202,7 @@ class ServicesProxy:
             pt_start = self.time_loop[0]
             if self.last_ckpt_phystime is None:
                 self.last_ckpt_phystime = pt_start
-            if (pt_current - self.last_ckpt_phystime >= pt_interval):
+            if pt_current - self.last_ckpt_phystime >= pt_interval:
                 return self._dispatch_checkpoint(time_stamp, comp_id_list, Protect)
             else:
                 return None
@@ -1248,7 +1248,7 @@ class ServicesProxy:
         num_chkpt = int(chkpt_conf['NUM_CHECKPOINT'])
         # num_chkpt < 0 mens keep all checkpoints
         # num_chkpt = 0 means no checkpoints
-        if (num_chkpt <= 0):
+        if num_chkpt <= 0:
             return ret_dict
 
         base_dir = os.path.join(sim_root, 'restart')
@@ -1262,7 +1262,7 @@ class ServicesProxy:
             if Protect or (self.chkpt_counter % int(protect_freq) == 0):
                 self.protected_chkpts.append(timeStamp_str)
 
-        if (os.path.isdir(base_dir)):
+        if os.path.isdir(base_dir):
             all_chkpts = [os.path.basename(f) for f in glob.glob(os.path.join(base_dir, '*'))
                           if os.path.isdir(f)]
             prior_runs_chkpts_dirs = [chkpt for chkpt in all_chkpts if chkpt not in self.new_chkpts]
@@ -1493,7 +1493,7 @@ class ServicesProxy:
         try:
             os.makedirs(plasma_dir)
         except OSError as e:
-            if (e.errno != 17):
+            if e.errno != 17:
                 self._send_monitor_event('IPS_STAGE_OUTPUTS',
                                          'Files = ' + str(file_list) +
                                          ' Exception raised : ' + e.strerror,
@@ -1510,14 +1510,14 @@ class ServicesProxy:
         all_plasma_files = []
         for plasma_file in state_files:
             globbed_files = glob.glob(plasma_file)
-            if (len(globbed_files) > 0):
+            if len(globbed_files) > 0:
                 all_plasma_files += globbed_files
 
         for f in all_plasma_files:
             if not os.path.isfile(f):
                 continue
             tokens = f.split('.')
-            if (len(tokens) == 1):
+            if len(tokens) == 1:
                 newName = '_'.join([outprefix + f, self.full_comp_id, str(timeStamp)])
             else:
                 name = '.'.join(tokens[:-1])
@@ -1553,7 +1553,7 @@ class ServicesProxy:
         # end of the sub-simulation. If subflow_name != 'ALL' then get
         # output from only that sub-flow
         subflow_dict = {}
-        if (subflow_name == 'ALL'):
+        if subflow_name == 'ALL':
             subflow_dict = self.sub_flows
         else:
             try:
@@ -1615,7 +1615,7 @@ class ServicesProxy:
         output_dir = os.path.join(sim_root, out_root,
                                   str(timeStamp), 'components',
                                   self.full_comp_id)
-        if (type(file_list).__name__ == 'str'):
+        if type(file_list).__name__ == 'str':
             file_list = file_list.split()
         all_files = sum([glob.glob(f) for f in file_list], [])
         try:
@@ -1640,7 +1640,7 @@ class ServicesProxy:
         try:
             os.makedirs(plasma_dir)
         except OSError as e:
-            if (e.errno != 17):
+            if e.errno != 17:
                 self._send_monitor_event('IPS_STAGE_OUTPUTS',
                                          'Files = ' + str(file_list) +
                                          ' Exception raised : ' + e.strerror,
@@ -1657,14 +1657,14 @@ class ServicesProxy:
                 state_files = self.get_config_param('STATE_FILES').split()
             for plasma_file in state_files:
                 globbed_files = glob.glob(plasma_file)
-                if (len(globbed_files) > 0):
+                if len(globbed_files) > 0:
                     all_plasma_files += globbed_files
 
         for f in all_plasma_files:
             if not os.path.isfile(f):
                 continue
             tokens = f.split('.')
-            if (len(tokens) == 1):
+            if len(tokens) == 1:
                 newName = '_'.join([outprefix + f, self.full_comp_id, str(timeStamp)])
             else:
                 name = '.'.join(tokens[:-1])
@@ -1748,7 +1748,7 @@ class ServicesProxy:
         num_chkpt = int(chkpt_conf['NUM_CHECKPOINT'])
         # num_chkpt < 0 mens keep all checkpoints
         # num_chkpt = 0 means no checkpoints
-        if (num_chkpt == 0):
+        if num_chkpt == 0:
             return
         conf = self.component_ref.config
         base_dir = os.path.join(sim_root, 'restart')
@@ -1972,7 +1972,7 @@ class ServicesProxy:
                                    comp_conf['NAME']])
         out_path = os.path.join(replay_sim_root, out_root)
         comp_dirs = glob.glob(os.path.join(out_path, comp_id_prefix + '_*'))
-        if (len(comp_dirs) != 1):
+        if len(comp_dirs) != 1:
             self.error('Could not find a single component instance implementing port %s',
                        replay_port)
             raise Exception('Could not find a single component instance implementing port %s ' +
@@ -2012,7 +2012,7 @@ class ServicesProxy:
             pass
         for f in prefix_out_files:
             tokens = f.rsplit('.', 1)
-            if (len(tokens) == 1):
+            if len(tokens) == 1:
                 link_name = '_'.join([f, str(timeStamp)])
             else:
                 name = tokens[0]
@@ -2020,7 +2020,7 @@ class ServicesProxy:
                 link_name = '_'.join([name, str(timeStamp)]) + '.' + ext
             sym_link = os.path.join(symlink_dir, link_name)
             try:
-                if (use_sym_link):
+                if use_sym_link:
                     try:
                         os.symlink(sym_link, f)
                     except Exception:
@@ -2062,7 +2062,7 @@ class ServicesProxy:
             # Find config macro for the current file
             macro_name = None
             for (key, value) in self.replay_conf.items():
-                if (f == value):
+                if f == value:
                     macro_name = key
             if not macro_name:
                 raise Exception('Unable to deduce macro name for file %s ' + f)
@@ -2070,7 +2070,7 @@ class ServicesProxy:
 
             # Get name of replay file with embedded outprefix and timestamp
             tokens = f.split('.')
-            if (len(tokens) == 1):
+            if len(tokens) == 1:
                 replay_fname = '_'.join([outprefix + f, replay_comp_id, str(timeStamp)])
             else:
                 name = '.'.join(tokens[:-1])
@@ -2089,11 +2089,11 @@ class ServicesProxy:
                     tmp = replay_file + '.' + str(i)
                     continue
                 break
-            if (tmp):
+            if tmp:
                 replay_file = tmp
 
             try:
-                if (use_sym_link):
+                if use_sym_link:
                     try:
                         os.symlink(replay_file, target_name)
                     except Exception:
@@ -2174,7 +2174,7 @@ class ServicesProxy:
         Produce **debugging** message in simulation log file.  Raise exception for bad formatting.
         """
         try:
-            if (len(args) > 1):
+            if len(args) > 1:
                 msg = args[0] % args[1:]
             else:
                 msg = args[0]
@@ -2187,7 +2187,7 @@ class ServicesProxy:
         Produce **informational** message in simulation log file.  Raise exception for bad formatting.
         """
         try:
-            if (len(args) > 1):
+            if len(args) > 1:
                 msg = args[0] % args[1:]
             else:
                 msg = args[0]
@@ -2200,7 +2200,7 @@ class ServicesProxy:
         Produce **warning** message in simulation log file.  Raise exception for bad formatting.
         """
         try:
-            if (len(args) > 1):
+            if len(args) > 1:
                 msg = args[0] % args[1:]
             else:
                 msg = args[0]
@@ -2213,7 +2213,7 @@ class ServicesProxy:
         Produce **error** message in simulation log file.  Raise exception for bad formatting.
         """
         try:
-            if (len(args) > 1):
+            if len(args) > 1:
                 msg = args[0] % args[1:]
             else:
                 msg = args[0]
@@ -2226,7 +2226,7 @@ class ServicesProxy:
         Produce **exception** message in simulation log file.  Raise exception for bad formatting.
         """
         try:
-            if (len(args) > 1):
+            if len(args) > 1:
                 msg = args[0] % args[1:]
             else:
                 msg = args[0]
@@ -2239,7 +2239,7 @@ class ServicesProxy:
         Produce **critical** message in simulation log file.  Raise exception for bad formatting.
         """
         try:
-            if (len(args) > 1):
+            if len(args) > 1:
                 msg = args[0] % args[1:]
             else:
                 msg = args[0]
@@ -2379,7 +2379,7 @@ class TaskPool:
         """
         Call :py:meth:`TaskPool._wait_any_task` until there are no more *active_tasks*.
         """
-        while (len(self.active_tasks) > 0):
+        while len(self.active_tasks) > 0:
             self._wait_any_task()
 
     def add_task(self, task_name, nproc, working_dir, binary, *args, **keywords):

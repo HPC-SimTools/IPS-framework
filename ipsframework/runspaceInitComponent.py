@@ -62,7 +62,7 @@ class runspaceInitComponent(Component):
             os.makedirs(self.simRootDir)
         except OSError as oserr:
             (errno, strerror) = oserr.args
-            if (errno != 17):
+            if errno != 17:
                 self.services.exception('Error creating directory %s : %s',
                                         self.simRootDir, strerror)
 
@@ -108,7 +108,7 @@ class runspaceInitComponent(Component):
             os.makedirs(simulation_setup)
         except OSError as oserr:
             (errno, strerror) = oserr.args
-            if (errno != 17):
+            if errno != 17:
                 self.services.exception('Error creating directory %s : %s',
                                         simulation_setup, strerror)
 
@@ -132,7 +132,7 @@ class runspaceInitComponent(Component):
                     os.makedirs(workdir)
                 except OSError as oserr:
                     (errno, strerror) = oserr.args
-                    if (errno != 17):
+                    if errno != 17:
                         self.services.exception('Error creating directory %s : %s',
                                                 workdir, strerror)
                         raise
@@ -180,7 +180,7 @@ class runspaceInitComponent(Component):
                 os.makedirs(workdir)
             except OSError as oserr:
                 (errno, strerror) = oserr.args
-                if (errno != 17):
+                if errno != 17:
                     self.services.exception('Error creating directory %s : %s',
                                             workdir, strerror)
                     raise

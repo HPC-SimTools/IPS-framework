@@ -7,7 +7,7 @@ from .messages import Message
 
 
 def get_share_and_platform(platform_file_name, ipsPathName):
-    if (platform_file_name):
+    if platform_file_name:
         return platform_file_name, ''
     else:
         ipsPDir0 = os.path.dirname(ipsPathName)

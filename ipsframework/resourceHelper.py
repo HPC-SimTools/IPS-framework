@@ -30,7 +30,7 @@ def get_qstat_jobinfo():
     command = 'qstat -f %s' % (job_id)
     p = subprocess.Popen(command.split(), stdout=subprocess.PIPE)
     p.wait()
-    if (p.returncode == 0):
+    if p.returncode == 0:
         out = p.stdout.readlines()
         if shell_host == 'stix':
             start_line = -1
@@ -41,10 +41,10 @@ def get_qstat_jobinfo():
                 if line.strip().startswith('exec_host ='):
                     start_line = i
                 if start_line != -1 and end_line == -1:
-                    if ('=' in line):
+                    if '=' in line:
                         end_line = i
                 if line.strip().startswith('Resource_List.nodes = '):
-                    if ('ppn=') in line:
+                    if 'ppn=' in line:
                         ppn = int(line.split('=')[-1])
                     else:
                         ppn = 8
@@ -83,7 +83,7 @@ def get_qstat_jobinfo2():
     command = 'qstat -f %s' % (job_id)
     p = subprocess.Popen(command.split(), stdout=subprocess.PIPE)
     p.wait()
-    if (p.returncode == 0):
+    if p.returncode == 0:
         out = p.stdout.readlines()
         found_start = False
         found_end = False
@@ -135,7 +135,7 @@ def get_checkjob_info():
     job_id = os.getenv('PBS_JOBID', '')
     mixed_nodes = False
     # Test for interactive use on batch platforms
-    if (job_id == ''):
+    if job_id == '':
         return [1], 1
     # run checkjob $PBS_JOBID
     try:
