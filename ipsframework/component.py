@@ -155,7 +155,6 @@ class Component:
         is executed.
         """
         self.services.debug('init() method called')
-        pass
 
     def restart(self, timestamp=0.0, **keywords):
         """
@@ -163,7 +162,6 @@ class Component:
         is executed.
         """
         self.services.debug('restart() method called')
-        pass
 
     def step(self, timestamp=0.0, **keywords):
         """
@@ -171,7 +169,6 @@ class Component:
         is executed.
         """
         self.services.debug('step() method called')
-        pass
 
     def finalize(self, timestamp=0.0, **keywords):
         """
@@ -179,7 +176,6 @@ class Component:
         is executed.
         """
         self.services.debug('finalize() method called')
-        pass
 
     def checkpoint(self, timestamp=0.0, **keywords):
         """
@@ -187,7 +183,6 @@ class Component:
         is executed.
         """
         self.services.debug('checkpoint() method called')
-        pass
 
     def terminate(self, status):
         """

@@ -554,7 +554,6 @@ class PortalBridge(Component):
                 print(e)
                 print("sim_data.mpo_wid = ", sim_data.mpo_wid)
                 sim_data.mpo_wid = None
-                pass
             else:
                 sim_data.mpo_steps = [sim_data.mpo_wid['uid']]
 

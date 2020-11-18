@@ -2381,7 +2381,6 @@ class TaskPool:
         """
         while (len(self.active_tasks) > 0):
             self._wait_any_task()
-        pass
 
     def add_task(self, task_name, nproc, working_dir, binary, *args, **keywords):
         """
