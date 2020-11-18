@@ -172,7 +172,6 @@ class TaskManager:
         self.fwk.debug('TM:call_return() call_id = %s caller_id = %s', call_id, caller_id)
         self.finished_calls[call_id] = (caller_id, response_msg)
         del self.outstanding_calls[call_id]
-        return
 
     def wait_call(self, wait_msg):
         """

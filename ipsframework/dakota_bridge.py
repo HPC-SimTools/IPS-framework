@@ -33,7 +33,6 @@ class Driver(Component):
 
     def init(self, timestamp=0):
         self.services.subscribe('_IPS_DYNAMIC_SIMULATION', "process_event")
-        return
 
     def step(self, timestamp=0):
 
@@ -183,7 +182,6 @@ class Driver(Component):
         listener.close()
         if summary_file is not None:
             summary_file.close()
-        return
 
     def finalize(self, timestamp=0):
         # Driver finalize - nothing to be done
@@ -194,4 +192,3 @@ class Driver(Component):
         self.events_received.append(event_body)
         self.services.debug('In Component: Just received %s', str(event_body))
         self.services.debug('In Component: There are %d events in self.events_received', len(self.events_received))
-        return

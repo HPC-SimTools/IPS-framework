@@ -295,7 +295,6 @@ IPS_ROOT/bin or IPS_ROOT/framework/src')
                 break
 
         ips_server_proc.wait()
-        return
 
 
 def printUsageMessage():

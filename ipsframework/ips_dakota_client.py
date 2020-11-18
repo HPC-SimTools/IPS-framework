@@ -105,7 +105,6 @@ class IPSDakotaClient:
         result_file = conn.recv()
         # print '@@@@@@@@@@@@@@@@@@@@@@@@@ Received :', result_file, str(sys.argv[1:])
         shutil.copy(result_file, self.out_file)
-        return
 
 
 def main(argv=None):

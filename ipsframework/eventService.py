@@ -160,7 +160,6 @@ class EventService:
                 raise EventServiceException("Duplicate subscription request.")
         else:
             raise EventServiceException("Subscriber not recognized.")
-        return None
 
     """
     A subscriber performs a processEvents to learn about events posted to its
@@ -273,13 +272,13 @@ class EventService:
                                  % (listenerKey, subscriptionName), listenerid, subscriberid)
                 else:
                     raise EventServiceException("Listener key not recognized.")
-        return listenerid
         """
         Do not raise exception if subscriberid/subscriptionName turn out to be
         invalid as this can very well happen if subscriber/subscription object
         is garbage collected before its listener object. In such a scenario,
         unregisterSubscriber/removeSubscription will clean up this listener also.
         """
+        return listenerid
 
     """
     removeSubscription is called when a subscription object is being deleted.
@@ -307,13 +306,13 @@ class EventService:
                 del self.subscriberDirectory[subscriberid][subscriptionName]
                 debug.output("Subscriber's subscription to %s removed"
                              % subscriptionName, subscriberid)
-        return listenerList
         """
         Do not raise exception if subscriberid/subscriptionName turn out to be
         invalid as this can very well happen if subscriber object is garbage
         collected before its subscription object. In such a scenario,
         unregisterSubscriber will clean up this subscription as well.
         """
+        return listenerList
 
     """""""""Subscription methods end here"""""""""
 

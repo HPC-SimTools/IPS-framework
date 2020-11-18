@@ -44,8 +44,6 @@ class ComponentID:
         self.serialization = self.get_serialization()
         self.instance_name = self.get_instance_name()
         ComponentID.all_ids[self.serialization] = self
-#        print self.serialization, self.class_name, self.sim_name
-        return
 
     def __str__(self):
         """
@@ -114,7 +112,6 @@ class ComponentRegistry(Singleton):
 
     def __init__(self):
         self.registry = {}
-        return
 
     def get_component_ids(self, sim_name):
         """
@@ -146,7 +143,6 @@ class ComponentRegistry(Singleton):
             print('Error creating component registery entry for ', key,
                   ' : ', str(e))
             raise e
-        return
 
     def removeEntry(self, component_id):
         key = component_id.get_serialization()
@@ -156,7 +152,6 @@ class ComponentRegistry(Singleton):
             print('Error removing component registry entry for ', key,
                   ' : ', str(e))
             raise
-        return
 
     # SIMYAN: this was added to provide an easy way to use the component
     # registry to get a registry entry
@@ -202,4 +197,3 @@ class ComponentRegistry(Singleton):
             print('No registry entry found for ', key)
             raise
         setattr(entry, artifact, value)
-        return

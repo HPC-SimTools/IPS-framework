@@ -11,9 +11,6 @@ import urllib.parse
 import urllib.error
 import os
 from subprocess import Popen, PIPE
-import urllib.request
-import urllib.error
-import urllib.parse
 import time
 from ipsframework import ipsutil
 import inspect
@@ -166,8 +163,6 @@ class PortalBridge(Component):
                     self.services.warning("Unable to create HTML directory - disabling web-visible logging")
                     self.write_to_htmldir = False
 
-        return
-
     def step(self, timestamp=0.0, **keywords):
         """
         Poll for events.
@@ -300,11 +295,8 @@ class PortalBridge(Component):
         if (sim_data.mpo_wid):
             self.send_mpo_data(event_data, sim_data)
 
-        return
-
     def send_mpo_data(self, event_data, sim_data):
         def md5(fname):
-            import hashlib
             "Courtesy of stackoverflow 3431825"
             hash_md5 = hashlib.md5()
             with open(fname, "rb") as f:
