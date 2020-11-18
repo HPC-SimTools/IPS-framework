@@ -31,10 +31,10 @@ class Driver(Component):
         self.out_file = None
         self.idle_timeout = 300
 
-    def init(self, timestamp=0):
+    def init(self, timestamp=0, **keywords):
         self.services.subscribe('_IPS_DYNAMIC_SIMULATION', "process_event")
 
-    def step(self, timestamp=0):
+    def step(self, timestamp=0, **keywords):
 
         services = self.services
         sim_root = services.get_config_param('SIM_ROOT')
@@ -183,7 +183,7 @@ class Driver(Component):
         if summary_file is not None:
             summary_file.close()
 
-    def finalize(self, timestamp=0):
+    def finalize(self, timestamp=0, **keywords):
         # Driver finalize - nothing to be done
         pass
 

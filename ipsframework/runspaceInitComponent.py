@@ -40,7 +40,7 @@ class runspaceInitComponent(Component):
         # print('Created %s' % (self.__class__))
 
     @catch_and_go
-    def init(self, timeStamp):
+    def init(self, timestamp=0.0, **keywords):
         """
         Creates base directory, copies IPS and FacetsComposer input files.
         """
@@ -87,7 +87,7 @@ class runspaceInitComponent(Component):
         ipsutil.copyFiles(self.plat_file_loc, self.platform_file, self.simRootDir)
 
     @catch_and_go
-    def step(self, timestamp=0.0):
+    def step(self, timestamp=0.0, **keywords):
         """
         Copies individual subcomponent input files into working subdirectories.
         """

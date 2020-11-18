@@ -42,7 +42,7 @@ class IPSLogSocketHandler(logging.handlers.SocketHandler):
         self.port = port
         self.my_socket = None
 
-    def makeSocket(self):
+    def makeSocket(self, timeout=1):
         s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
         s.connect(self.port)
         self.my_socket = s
