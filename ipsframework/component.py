@@ -105,9 +105,8 @@ class Component:
             try:
                 os.makedirs(workdir)
             except OSError as oserr:
-                (_, strerror) = oserr.args
                 self.services.exception('Error creating directory %s : %s',
-                                        workdir, strerror)
+                                        workdir, oserr.strerror)
                 raise
             os.chdir(workdir)
         self.services.debug('Running - CompID =  %s',

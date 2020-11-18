@@ -534,9 +534,8 @@ class PortalBridge(Component):
         try:
             sim_data.monitor_file = open(sim_data.monitor_file_name, 'wb', 0)
         except IOError as oserr:
-            (errno, strerror) = oserr.args
             self.services.error("Error opening file %s: error(%s): %s" %
-                                (sim_data.monitor_file_name, errno, strerror))
+                                (sim_data.monitor_file_name, oserr.errno, oserr.strerror))
             self.services.error('Using /dev/null instead')
             sim_data.monitor_file = open('/dev/null', 'w')
         json_fname = sim_data.monitor_file_name.replace('eventlog', 'json')

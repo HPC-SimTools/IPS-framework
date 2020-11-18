@@ -61,10 +61,9 @@ class runspaceInitComponent(Component):
         try:
             os.makedirs(self.simRootDir)
         except OSError as oserr:
-            (errno, strerror) = oserr.args
-            if errno != 17:
+            if oserr.errno != 17:
                 self.services.exception('Error creating directory %s : %s',
-                                        self.simRootDir, strerror)
+                                        self.simRootDir, oserr.strerror)
 
         self.config_files = services.fwk.config_file_list
         self.platform_file = services.fwk.platform_file_name
@@ -107,10 +106,9 @@ class runspaceInitComponent(Component):
         try:
             os.makedirs(simulation_setup)
         except OSError as oserr:
-            (errno, strerror) = oserr.args
-            if errno != 17:
+            if oserr.errno != 17:
                 self.services.exception('Error creating directory %s : %s',
-                                        simulation_setup, strerror)
+                                        simulation_setup, oserr.strerror)
 
         # for each simulation component
         for comp_list in sim_comps.values():
@@ -131,10 +129,9 @@ class runspaceInitComponent(Component):
                 try:
                     os.makedirs(workdir)
                 except OSError as oserr:
-                    (errno, strerror) = oserr.args
-                    if errno != 17:
+                    if oserr.errno != 17:
                         self.services.exception('Error creating directory %s : %s',
-                                                workdir, strerror)
+                                                workdir, oserr.strerror)
                         raise
 
                 # copy the input files into the working directory
@@ -179,8 +176,7 @@ class runspaceInitComponent(Component):
             try:
                 os.makedirs(workdir)
             except OSError as oserr:
-                (errno, strerror) = oserr.args
-                if errno != 17:
+                if oserr.errno != 17:
                     self.services.exception('Error creating directory %s : %s',
-                                            workdir, strerror)
+                                            workdir, oserr.strerror)
                     raise

@@ -136,7 +136,7 @@ def get_checkjob_info():
     mixed_nodes = False
     # Test for interactive use on batch platforms
     if job_id == '':
-        return [1], 1
+        raise Exception('Cannot find PBS_JOBID')
     # run checkjob $PBS_JOBID
     try:
         proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, shell=True)

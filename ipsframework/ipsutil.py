@@ -94,9 +94,8 @@ def copyFiles(src_dir, src_file_list, target_dir, prefix='', keep_old=False):
         try:
             os.makedirs(head)
         except OSError as oserr:
-            (errno, strerror) = oserr.args
-            if errno != 17:
-                print('Error creating directory %s : %s' % (head, strerror))
+            if oserr.errno != 17:
+                print('Error creating directory %s : %s' % (head, oserr.strerror))
                 raise
         try:
             # print 'trying to copy...'
