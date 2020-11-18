@@ -140,8 +140,7 @@ class ResourceManager:
 
             if user_ppn <= self.max_ppn:
                 self.ppn = user_ppn
-                for i in range(len(listOfNodes)):
-                    (node, count) = listOfNodes[i]
+                for i, (node, count) in enumerate(listOfNodes):
                     if count > self.ppn:
                         listOfNodes[i] = (node, self.ppn)
                 self.fwk.warning("Using user set procs per node: %d", user_ppn)
@@ -153,8 +152,7 @@ class ResourceManager:
             try:
                 if user_ppn <= self.max_ppn:
                     self.ppn = user_ppn
-                    for i in range(len(listOfNodes)):
-                        (node, count) = listOfNodes[i]
+                    for i, (node, count) in enumerate(listOfNodes):
                         if count > self.ppn:
                             listOfNodes[i] = (node, self.ppn)
                 else:

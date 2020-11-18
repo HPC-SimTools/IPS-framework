@@ -36,8 +36,7 @@ def get_qstat_jobinfo():
             start_line = -1
             end_line = -1
             ppn = 0
-            for i in range(len(out)):
-                line = out[i]
+            for i, line in enumerate(out):
                 if line.strip().startswith('exec_host ='):
                     start_line = i
                 if start_line != -1 and end_line == -1:
@@ -145,8 +144,8 @@ def get_checkjob_info():
         # for l in lines : print l
         # print '============== lines ======================'
         start = end = 0
-        for k in range(len(lines)):
-            x = lines[k].rstrip()
+        for k, line in enumerate(lines):
+            x = line.rstrip()
             # print x
             if x == "Allocated Nodes:" and start == 0:
                 start = k + 1
@@ -468,8 +467,8 @@ def getResourceList(services, host, partial_nodes=False):
     elif cpn < ppn:
         ppn = cpn
         if not mixed_nodes:
-            for i in range(len(listOfNodes)):
-                name = listOfNodes[i][0]
+            for i, node in enumerate(listOfNodes):
+                name = node[0]
                 listOfNodes[i] = (name, ppn)
     if spn <= 0:
         spn = 1
