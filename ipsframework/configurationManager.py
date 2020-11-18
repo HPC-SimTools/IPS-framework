@@ -671,13 +671,13 @@ class ConfigurationManager:
             target_sims = list(self.sim_map.keys())
         else:
             target_sims = [target_sim_name]
-        for sim_name in target_sims:
-            self.fwk.debug('Setting %s to %s in simulation %s', param, value, sim_name)
+        for other_sim_name in target_sims:
+            self.fwk.debug('Setting %s to %s in simulation %s', param, value, other_sim_name)
             try:
-                sim_data = self.sim_map[sim_name]
+                sim_data = self.sim_map[other_sim_name]
             except KeyError:
-                sim_data = self.finished_sim_map[sim_name]
-            self.fwk.debug('Setting %s to %s in simulation %s', param, value, sim_name)
+                sim_data = self.finished_sim_map[other_sim_name]
+            self.fwk.debug('Setting %s to %s in simulation %s', param, value, other_sim_name)
             sim_conf = sim_data.sim_conf
             sim_conf[param] = value
 

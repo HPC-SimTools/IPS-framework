@@ -128,10 +128,10 @@ class ipsLogger:
                 try:
                     os.makedirs(directory)
                 except OSError as oserr:
-                    (errno, strerror) = oserr.args
-                    if errno != 17:
+                    (errnum, strerror) = oserr.args
+                    if errnum != 17:
                         print('Error creating directory %s : %s-%s' %
-                              (directory, errno, strerror))
+                              (directory, errnum, strerror))
                         sys.exit(1)
                 log_handler = logging.FileHandler(log_file, mode='w')
 

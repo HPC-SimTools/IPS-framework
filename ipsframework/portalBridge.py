@@ -21,8 +21,6 @@ import itertools
 from ipsframework.convert_log_function import convert_logdata_to_html
 import json
 
-ENABLE_MPO = False
-
 
 def configure_mpo():
     global mpo_cert, mpo_api, mpo

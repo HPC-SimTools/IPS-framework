@@ -101,8 +101,8 @@ class TopicManager:
         """
         if oldestPendingEvent > 0:
             del self.eventList[:oldestPendingEvent]
-            for listenerid in list(self.listenerDirectory.keys()):
-                self.listenerDirectory[listenerid] -= oldestPendingEvent
+            for listener_id in self.listenerDirectory:
+                self.listenerDirectory[listener_id] -= oldestPendingEvent
 
     """
     A listener is unregistered by first performing an event cleanup, followed by
@@ -162,8 +162,8 @@ if __name__ == "__main__":
 
     print("-----")
     el = em.getEventListForListener(1)
-    for theEvent in el:
-        print("1:" + str(theEvent))
+    for event in el:
+        print("1:" + str(event))
     print("-----\n")
 
     h0 = {}
@@ -180,16 +180,16 @@ if __name__ == "__main__":
 
     print("-----")
     el = em.getEventListForListener(1)
-    for theEvent in el:
-        print("1:" + str(theEvent))
+    for event in el:
+        print("1:" + str(event))
     print("-----\n")
 
     em.unregisterListener(1)
 
     print("-----")
     el = em.getEventListForListener(2)
-    for theEvent in el:
-        print("2:" + str(theEvent))
+    for event in el:
+        print("2:" + str(event))
     print("-----\n")
 
     em.unregisterListener(2)

@@ -67,5 +67,4 @@ if __name__ == "__main__":
     print("Starting IPS")
     sys.stdout.flush()
     args = '--simulation=sim.conf --simulation=sim2.conf --platform=jaguar.conf'
-    argv = args.split(' ')
-    sys.exit(unittest.main(argv))
+    sys.exit(unittest.main(args.split(' ')))
