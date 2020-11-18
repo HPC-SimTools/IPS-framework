@@ -23,10 +23,14 @@ jobs:
       run: sudo apt-get -y install openmpi-bin libopenmpi-dev
     - name: Build test binaries
       run: pushd . && cd tests/bin/ && mpicc -o parallel_sleep parallel_sleep.c && popd
+    - name: Install IPS (in develop mode)
+      run: python setup.py develop
     - name: Lint with flake8
       run: flake8
     - name: Lint with pylint
       run: pylint ipsframework
+    - name: testing running IPS (--help)
+      run: ips.py --help
     - name: Test with pytest
       run: python setup.py test --addopts --cov
     - name: Upload coverage to Codecov
