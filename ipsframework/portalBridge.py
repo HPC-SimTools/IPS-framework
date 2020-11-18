@@ -371,13 +371,13 @@ class PortalBridge(Component):
             '''
             cached_hash_dict = None
             full_path = os.path.join(path, file_name)
-            hash = hash_file(full_path)
+            md5 = hash_file(full_path)
             cached_hash_dict = self.file_hash_cache[file_name]
             try:
-                cached_hash_dict[hash]
+                cached_hash_dict[md5]
             except KeyError:
                 pass
-            return (None, hash)  # (f_uid, hash)
+            return (None, md5)  # (f_uid, hash)
 
         recordable_events = ['IPS_CALL_BEGIN', 'IPS_STAGE_INPUTS', 'IPS_STAGE_OUTPUTS', 'IPS_CALL_END']
         recordable_mpo_activities = ['IPS_CALL_BEGIN']

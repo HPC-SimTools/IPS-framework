@@ -125,14 +125,14 @@ class ipsLogger:
             if(log_file.__class__.__name__ == 'TextIOWrapper'):
                 log_handler = logging.StreamHandler(log_file)
             else:
-                dir = os.path.dirname(os.path.abspath(log_file))
+                directory = os.path.dirname(os.path.abspath(log_file))
                 try:
-                    os.makedirs(dir)
+                    os.makedirs(directory)
                 except OSError as oserr:
                     (errno, strerror) = oserr.args
                     if (errno != 17):
                         print('Error creating directory %s : %s-%s' %
-                              (dir, errno, strerror))
+                              (directory, errno, strerror))
                         sys.exit(1)
                 log_handler = logging.FileHandler(log_file, mode='w')
 

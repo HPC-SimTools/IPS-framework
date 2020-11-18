@@ -10,12 +10,12 @@ def catch_and_go(func_to_decorate):
     def new_func(*original_args, **original_kwargs):
         # print "Function has been decorated.  Congratulations."
         # Do whatever else you want here
-        object = original_args[0]
+        obj = original_args[0]
         try:
             func_to_decorate(*original_args, **original_kwargs)
         except Exception as e:
             # print '#################', object.__class__.__name__, func_to_decorate.__name__
-            object.services.exception("Exception in call to %s:%s" % (object.__class__.__name__, func_to_decorate.__name__))
+            obj.services.exception("Exception in call to %s:%s" % (obj.__class__.__name__, func_to_decorate.__name__))
             print(e)
             # object.services.exception("Caught exception during component pre-initialization")
 #            raise

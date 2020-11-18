@@ -675,17 +675,17 @@ class Framework:
         IPS simulation sim_name.
         """
         comp_ids = self.comp_registry.get_component_ids(sim_name)
-        for id in comp_ids:
+        for comp_id in comp_ids:
             try:
-                invocation_q = self.comp_registry.getComponentArtifact(id,
+                invocation_q = self.comp_registry.getComponentArtifact(comp_id,
                                                                        'invocation_q')
                 call_id = self.task_manager.get_call_id()
-                msg = MethodInvokeMessage(self.component_id, id, call_id,
+                msg = MethodInvokeMessage(self.component_id, comp_id, call_id,
                                           'terminate', status)
-                self.debug('Sending terminate message to %s', str(id))
+                self.debug('Sending terminate message to %s', str(comp_id))
                 invocation_q.put(msg)
             except Exception as e:
-                self.exception('exception encountered while terminating comp %s', id)
+                self.exception('exception encountered while terminating comp %s', comp_id)
                 print(e)
 
     def terminate_all_sims(self, status=Message.SUCCESS):
