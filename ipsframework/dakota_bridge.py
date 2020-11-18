@@ -3,11 +3,11 @@
 # -------------------------------------------------------------------------------
 import os
 import sys
-from component import Component
-from .configobj import ConfigObj
-from multiprocessing.connection import Listener
 import select
 import time
+from multiprocessing.connection import Listener
+from .component import Component
+from .configobj import ConfigObj
 
 
 class Driver(Component):

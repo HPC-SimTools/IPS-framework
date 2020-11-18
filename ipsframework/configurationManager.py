@@ -1,17 +1,17 @@
 # -------------------------------------------------------------------------------
 # Copyright 2006-2020 UT-Battelle, LLC. See LICENSE for more information.
 # -------------------------------------------------------------------------------
-from .configobj import ConfigObj
 import os
 import sys
 import importlib
-from .services import ServicesProxy
-from .componentRegistry import ComponentID, ComponentRegistry
 import tempfile
-from . import ipsLogging
 import logging
 import socket
 from multiprocessing import Queue, Process
+from .configobj import ConfigObj
+from . import ipsLogging
+from .services import ServicesProxy
+from .componentRegistry import ComponentID, ComponentRegistry
 
 
 class ConfigurationManager:

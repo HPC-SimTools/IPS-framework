@@ -53,15 +53,14 @@
 
 """
 import sys
-
-if sys.version[0] != '3':  # noqa: E402
-    print("IPS can is only compatible with Python 3.5 or higher")
-    sys.exit(1)
-
 import optparse
 import multiprocessing
-from ipsframework import platformspec
 import inspect
+import socket
+import logging
+import os
+import time
+from ipsframework import platformspec
 from ipsframework.messages import Message, ServiceRequestMessage, \
     ServiceResponseMessage, MethodInvokeMessage
 from ipsframework.configurationManager import ConfigurationManager
@@ -69,14 +68,14 @@ from ipsframework.taskManager import TaskManager
 from ipsframework.resourceManager import ResourceManager
 from ipsframework.dataManager import DataManager
 from ipsframework.componentRegistry import ComponentRegistry, ComponentID
-import socket
 from ipsframework.ipsExceptions import BlockedMessageException
 from ipsframework.eventService import EventService
 from ipsframework.cca_es_spec import initialize_event_service
-import logging
 from ipsframework.ips_es_spec import eventManager
-import os
-import time
+
+if sys.version[0] != '3':  # noqa: E402
+    print("IPS can is only compatible with Python 3.5 or higher")
+    sys.exit(1)
 
 
 class Framework:

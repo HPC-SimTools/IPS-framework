@@ -5,10 +5,10 @@
 
 import os
 import sys
-from ipsframework.configobj import ConfigObj
 import shutil
-from multiprocessing.connection import Client
 import time
+from multiprocessing.connection import Client
+from ipsframework.configobj import ConfigObj
 
 
 class IPSDakotaClient:

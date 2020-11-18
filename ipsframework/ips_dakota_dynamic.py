@@ -6,14 +6,14 @@
 import os
 import sys
 import getopt
-from ipsframework import platformspec
 import inspect
-from ipsframework.configobj import ConfigObj
 import subprocess
 import tempfile
 import re
 import time
 from multiprocessing.connection import Client
+from ipsframework.configobj import ConfigObj
+from ipsframework import platformspec
 
 
 def which(program, alt_paths=None):

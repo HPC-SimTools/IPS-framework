@@ -1,7 +1,6 @@
 # -------------------------------------------------------------------------------
 # Copyright 2006-2020 UT-Battelle, LLC. See LICENSE for more information.
 # -------------------------------------------------------------------------------
-from . import messages, ipsutil, ipsLogging, component
 import sys
 import queue
 import os
@@ -9,15 +8,16 @@ import subprocess
 
 import time
 import shutil
-from .cca_es_spec import initialize_event_service
-from .ips_es_spec import eventManager
 import logging
 import logging.handlers
 import signal
-from .configobj import ConfigObj
 import glob
 import weakref
 import inspect
+from . import messages, ipsutil, ipsLogging, component
+from .configobj import ConfigObj
+from .cca_es_spec import initialize_event_service
+from .ips_es_spec import eventManager
 
 
 def launch(binary, task_name, working_dir, *args, **keywords):

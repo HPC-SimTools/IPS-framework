@@ -1,11 +1,11 @@
 # -------------------------------------------------------------------------------
 # Copyright 2006-2020 UT-Battelle, LLC. See LICENSE for more information.
 # -------------------------------------------------------------------------------
-from .messages import Message, MethodResultMessage
 import sys
 import os
 import weakref
 from copy import copy
+from .messages import Message, MethodResultMessage
 
 
 class Component:

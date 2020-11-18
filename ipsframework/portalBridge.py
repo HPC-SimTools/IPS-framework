@@ -4,7 +4,6 @@
 import re
 
 import datetime
-from ipsframework import Component
 import sys
 import urllib.request
 import urllib.parse
@@ -12,29 +11,29 @@ import urllib.error
 import os
 from subprocess import Popen, PIPE
 import time
-from ipsframework import ipsutil
 import inspect
 from collections import defaultdict
 import hashlib
 import glob
 import itertools
-from ipsframework.convert_log_function import convert_logdata_to_html
 import json
+from ipsframework import ipsutil, Component
+from ipsframework.convert_log_function import convert_logdata_to_html
+
+try:
+    from mpo_arg import mpo_methods as mpo
+except ImportError:
+    pass
+mpo_cert = '/home/elwasif/Projects/atom/MPO/MPO Demo User.pem'
+mpo_api = 'https://mpo.psfc.mit.edu/test-api'
 
 
 def configure_mpo():
-    global mpo_cert, mpo_api, mpo
     # Use this if you want to include modules from a subfolder or relative path.
     cmd_subfolder = os.path.realpath(os.path.abspath(os.path.join(os.path.split(
         inspect.getfile(inspect.currentframe()))[0], "/home/elwasif/Projects/atom/MPO/client/python")))
     if cmd_subfolder not in sys.path:
         sys.path.insert(0, cmd_subfolder)
-    try:
-        from mpo_arg import mpo_methods as mpo
-    except ImportError:
-        pass
-    mpo_cert = '/home/elwasif/Projects/atom/MPO/MPO Demo User.pem'
-    mpo_api = 'https://mpo.psfc.mit.edu/test-api'
 
 
 def hash_file(file_name):

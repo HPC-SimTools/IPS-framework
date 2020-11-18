@@ -3,9 +3,9 @@ This file implements several objects that customize logging in the IPS.
 """
 
 import logging
+import logging.handlers
 import sys
 import pickle
-import logging.handlers
 import socketserver
 import struct
 import functools
@@ -15,6 +15,7 @@ import os.path
 import queue
 import errno
 import time
+import select
 
 
 def list_fds():
@@ -143,7 +144,6 @@ class ipsLogger:
         self.log_map[fileno] = (recvr, log_handler, log_pipe_name)
 
     def __run__(self):
-        import select
         time_out = 1.0
         while 1:
             read_set = list(self.log_map.keys())

@@ -2,6 +2,7 @@
 # Copyright 2006-2020 UT-Battelle, LLC. See LICENSE for more information.
 # -------------------------------------------------------------------------------
 import os
+from math import ceil
 from . import messages, configurationManager
 from .ipsExceptions import BlockedMessageException, \
     IncompleteCallException, \
@@ -9,7 +10,6 @@ from .ipsExceptions import BlockedMessageException, \
     BadResourceRequestException, \
     AllocatedNodeDownException, \
     ResourceRequestMismatchException
-from math import ceil
 from .ipsutil import which
 
 # from event_service_spec import PublisherEventService,SubscriberEventService,EventListener,Topic,EventServiceException

@@ -3,8 +3,8 @@
 # -------------------------------------------------------------------------------
 import sys
 import os
-from . import ipsutil
 import subprocess
+from . import ipsutil
 
 # import things to use event service
 # from event_service_spec import PublisherEventService,SubscriberEventService,EventListener,Topic,EventServiceException
