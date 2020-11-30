@@ -486,6 +486,11 @@ class ServicesProxy(object):
         in the base class for components.
         """
         # add anything else to clean up in the services
+        for (p, _, _) in self.task_map.values():
+            try:
+                p.kill()
+            except Exception:
+                pass
         if self.profile:
             ipsTiming.dumpAll('component')
 
