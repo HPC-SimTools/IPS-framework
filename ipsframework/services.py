@@ -416,6 +416,17 @@ class ServicesProxy:
         response = self._get_service_response(msg_id, True)
         return response
 
+    def cleanup(self):
+        """
+        Clean up any state from the services.  Called by the terminate method
+        in the base class for components.
+        """
+        for (p, _, _) in self.task_map.values():
+            try:
+                p.kill()
+            except Exception:
+                pass
+
     def call_nonblocking(self, component_id, method_name, *args, **keywords):
         r"""
         Invoke method *method_name* on component *component_id* with optional

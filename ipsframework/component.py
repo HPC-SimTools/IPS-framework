@@ -189,7 +189,7 @@ class Component:
         """
         # print self.services.full_comp_id, ": terminate() method called"
 #        self.services.debug('###(1) %s %s', str(self), str(self.__dict__))
-
+        self.services.cleanup()
         if status == Message.SUCCESS:
             self.services.debug('Calling self.sys_exit(0)')
             self.sys_exit(0)

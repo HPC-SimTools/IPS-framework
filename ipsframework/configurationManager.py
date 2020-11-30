@@ -707,7 +707,7 @@ class ConfigurationManager:
         self.log_dynamic_sim_queue.put(msg)
         proc_list = sim_data.process_list
         for p in proc_list:
-            # p.terminate()
+            p.terminate()
             p.join()
         try:
             os.remove(sim_data.log_pipe_name)
