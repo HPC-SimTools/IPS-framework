@@ -40,11 +40,7 @@ class ConfigurationManager:
             self.all_comps = []
             self.port_map = {}
             self.component_process = None
-            self.log_file = None
-            self.log_pipe_name = None
-            self.logger = None
             self.process_list = []
-            self.fwk_logger = None
 
     def __init__(self, fwk, config_file_list, platform_file_name):
         """
@@ -336,11 +332,6 @@ class ConfigurationManager:
                 self.fwk.exception('Invalid LOG_LEVEL value %s in config file %s ',
                                    log_level, conf_file)
                 raise
-            socketHandler = ipsLogging.IPSLogSocketHandler(new_sim.log_pipe_name)
-            new_sim.fwk_logger = logging.getLogger(sim_name + '_FRAMEWORK')
-            new_sim.fwk_logger.setLevel(real_log_level)
-            new_sim.fwk_logger.addHandler(socketHandler)
-            # SEK: It'd be nice to log to the zip file but I don't understand the handles
 
             # Use first simulation for framework components
             if not self.fwk_sim_name:

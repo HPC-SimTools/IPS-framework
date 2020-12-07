@@ -9,7 +9,6 @@ import subprocess
 import time
 import shutil
 import logging
-import logging.handlers
 import signal
 import glob
 import weakref
