@@ -9,11 +9,12 @@ import subprocess
 import time
 import shutil
 import logging
+import logging.handlers
 import signal
 import glob
 import weakref
 import inspect
-from . import messages, ipsutil, ipsLogging, component
+from . import messages, ipsutil, component
 from .configobj import ConfigObj
 from .cca_es_spec import initialize_event_service
 from .ips_es_spec import eventManager
@@ -161,7 +162,7 @@ class ServicesProxy:
         #
         # Set up logging path to the IPS logging daemon
         #
-        socketHandler = ipsLogging.IPSLogSocketHandler(self.log_pipe_name)
+        socketHandler = logging.handlers.SocketHandler(self.log_pipe_name, None)
         self.logger = logging.getLogger(self.full_comp_id)
         log_level = 'WARNING'
         try:

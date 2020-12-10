@@ -321,17 +321,6 @@ class ConfigurationManager:
             self.log_daemon.add_sim_log(new_sim.log_pipe_name,
                                         new_sim.log_file)
             self.sim_map[sim_name] = new_sim
-            log_level = 'DEBUG'
-            try:
-                log_level = conf['LOG_LEVEL']
-            except KeyError:
-                pass
-            try:
-                real_log_level = getattr(logging, log_level)
-            except AttributeError:
-                self.fwk.exception('Invalid LOG_LEVEL value %s in config file %s ',
-                                   log_level, conf_file)
-                raise
 
             # Use first simulation for framework components
             if not self.fwk_sim_name:

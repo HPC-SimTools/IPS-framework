@@ -3,13 +3,11 @@ This file implements several objects that customize logging in the IPS.
 """
 
 import logging
-import logging.handlers
 import sys
 import pickle
 import socketserver
 import struct
 import functools
-import socket
 import os
 import os.path
 import queue
@@ -33,20 +31,6 @@ def list_fds():
         ret[int(num)] = path
 
     return ret
-
-
-class IPSLogSocketHandler(logging.handlers.SocketHandler):
-    def __init__(self, port):
-        logging.handlers.SocketHandler.__init__(self, None, None)
-        self.host = None
-        self.port = port
-        self.my_socket = None
-
-    def makeSocket(self, timeout=1):
-        s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-        s.connect(self.port)
-        self.my_socket = s
-        return self.my_socket
 
 
 class myLogRecordStreamHandler(socketserver.StreamRequestHandler):
@@ -135,7 +119,6 @@ class ipsLogger:
                         sys.exit(1)
                 log_handler = logging.FileHandler(log_file, mode='w')
 
-#        log_handler.setLevel(logging.DEBUG)
         log_handler.setFormatter(self.formatter)
         partial_handler = functools.partial(myLogRecordStreamHandler,
                                             handler=log_handler)
