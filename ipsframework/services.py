@@ -2178,7 +2178,7 @@ class ServicesProxy:
         """
         Wrapper for :py:meth:`ServicesProxy.info`.
         """
-        return self.info(args)
+        return self.info(*args)
 
     def debug(self, *args):
         """
@@ -2241,7 +2241,7 @@ class ServicesProxy:
                 msg = args[0] % args[1:]
             else:
                 msg = args[0]
-            self.logger.exception(msg)
+            self.logger.exception(msg, exc_info=False)
         except Exception:
             self.error('Bad format in call to services.exception() ' + str(args))
 
