@@ -83,7 +83,7 @@ def test_framework_simple(tmpdir, capfd):
     assert len(test) == 1
     assert test[0].get_class_name() == 'test_driver'
     assert test[0].get_instance_name().startswith('test@test_driver')
-    # assert test[0].get_seq_num() == 1 # need to find a way to reset static variable
+    assert test[0].get_seq_num() == 1
     assert test[0].get_serialization().startswith('test@test_driver')
     assert test[0].get_sim_name() == 'test'
 
@@ -207,7 +207,7 @@ def test_framework_log_output_debug(tmpdir):
     # remove timestamp
     lines = [line[24:] for line in lines]
 
-    assert len(lines) == 22
+    assert len(lines) == 30
     assert "FRAMEWORK       INFO     log message\n" in lines
     assert "FRAMEWORK       DEBUG    debug message\n" in lines
     assert "FRAMEWORK       INFO     info message\n" in lines

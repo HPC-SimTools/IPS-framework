@@ -59,7 +59,7 @@ def test_helloworld(tmpdir, capfd):
     assert len(hello_world_1) == 1
     assert hello_world_1[0].get_class_name() == 'HelloDriver'
     assert hello_world_1[0].get_instance_name().startswith('Hello_world_1@HelloDriver')
-    # assert hello_world_1[0].get_seq_num() == 1 # need to find a way to reset static variable
+    assert hello_world_1[0].get_seq_num() == 1
     assert hello_world_1[0].get_serialization().startswith('Hello_world_1@HelloDriver')
     assert hello_world_1[0].get_sim_name() == 'Hello_world_1'
 
@@ -109,7 +109,7 @@ def test_helloworld_task_pool(tmpdir, capfd):
     assert len(hello_world_1) == 1
     assert hello_world_1[0].get_class_name() == 'HelloDriver'
     assert hello_world_1[0].get_instance_name().startswith('Hello_world_1@HelloDriver')
-    # assert hello_world_1[0].get_seq_num() == 1 # need to find a way to reset static variable
+    assert hello_world_1[0].get_seq_num() == 1
     assert hello_world_1[0].get_serialization().startswith('Hello_world_1@HelloDriver')
     assert hello_world_1[0].get_sim_name() == 'Hello_world_1'
 
@@ -162,8 +162,8 @@ def test_helloworld_portal(tmpdir, capfd):
 
     fwk_components = framework.config_manager.get_framework_components()
     assert len(fwk_components) == 2
-    assert 'Hello_world_1_FWK@runspaceInitComponent@11' in fwk_components
-    assert 'Hello_world_1_FWK@PortalBridge@12' in fwk_components
+    assert 'Hello_world_1_FWK@runspaceInitComponent@3' in fwk_components
+    assert 'Hello_world_1_FWK@PortalBridge@4' in fwk_components
 
     component_map = framework.config_manager.get_component_map()
 
@@ -173,7 +173,7 @@ def test_helloworld_portal(tmpdir, capfd):
     assert len(hello_world_1) == 1
     assert hello_world_1[0].get_class_name() == 'HelloDriver'
     assert hello_world_1[0].get_instance_name().startswith('Hello_world_1@HelloDriver')
-    # assert hello_world_1[0].get_seq_num() == 1 # need to find a way to reset static variable
+    assert hello_world_1[0].get_seq_num() == 1
     assert hello_world_1[0].get_serialization().startswith('Hello_world_1@HelloDriver')
     assert hello_world_1[0].get_sim_name() == 'Hello_world_1'
 
