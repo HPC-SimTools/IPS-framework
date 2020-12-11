@@ -48,10 +48,10 @@ class myLogRecordStreamHandler(socketserver.StreamRequestHandler):
         followed by the LogRecord in pickle format. Logs the record
         according to whatever policy is configured locally.
         """
-        try:
+        while True:
             chunk = self.connection.recv(4)
             if len(chunk) < 4:
-                return
+                break
             slen = struct.unpack(">L", chunk)[0]
             chunk = self.connection.recv(slen)
             while len(chunk) < slen:
@@ -59,8 +59,6 @@ class myLogRecordStreamHandler(socketserver.StreamRequestHandler):
             obj = self.unPickle(chunk)
             record = logging.makeLogRecord(obj)
             self.handleLogRecord(record)
-        except Exception:
-            pass
 
     def unPickle(self, data):
         return pickle.loads(data)
