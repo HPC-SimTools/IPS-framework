@@ -3,13 +3,11 @@ This file implements several objects that customize logging in the IPS.
 """
 
 import logging
-import logging.handlers
 import sys
 import pickle
 import socketserver
 import struct
 import functools
-import socket
 import os
 import os.path
 import queue
@@ -35,20 +33,6 @@ def list_fds():
     return ret
 
 
-class IPSLogSocketHandler(logging.handlers.SocketHandler):
-    def __init__(self, port):
-        logging.handlers.SocketHandler.__init__(self, None, None)
-        self.host = None
-        self.port = port
-        self.my_socket = None
-
-    def makeSocket(self, timeout=1):
-        s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-        s.connect(self.port)
-        self.my_socket = s
-        return self.my_socket
-
-
 class myLogRecordStreamHandler(socketserver.StreamRequestHandler):
 
     def __init__(self, request, client_address, server, handler):
@@ -64,10 +48,10 @@ class myLogRecordStreamHandler(socketserver.StreamRequestHandler):
         followed by the LogRecord in pickle format. Logs the record
         according to whatever policy is configured locally.
         """
-        try:
+        while True:
             chunk = self.connection.recv(4)
             if len(chunk) < 4:
-                return
+                break
             slen = struct.unpack(">L", chunk)[0]
             chunk = self.connection.recv(slen)
             while len(chunk) < slen:
@@ -75,8 +59,6 @@ class myLogRecordStreamHandler(socketserver.StreamRequestHandler):
             obj = self.unPickle(chunk)
             record = logging.makeLogRecord(obj)
             self.handleLogRecord(record)
-        except Exception:
-            pass
 
     def unPickle(self, data):
         return pickle.loads(data)
@@ -135,7 +117,6 @@ class ipsLogger:
                         sys.exit(1)
                 log_handler = logging.FileHandler(log_file, mode='w')
 
-#        log_handler.setLevel(logging.DEBUG)
         log_handler.setFormatter(self.formatter)
         partial_handler = functools.partial(myLogRecordStreamHandler,
                                             handler=log_handler)

@@ -344,7 +344,7 @@ class Framework:
                 msg = args[0] % args[1:]
             else:
                 msg = args[0]
-            self.logger.exception(msg)
+            self.logger.exception(msg, exc_info=False)
         except Exception:
             self.error('Bad format in call to fwk.exception() ' + str(args))
 

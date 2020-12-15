@@ -1,6 +1,7 @@
 from ipsframework import Framework
 import glob
 import json
+import pytest
 
 
 def write_basic_config_and_platform_files(tmpdir):
@@ -82,7 +83,7 @@ def test_framework_simple(tmpdir, capfd):
     assert len(test) == 1
     assert test[0].get_class_name() == 'test_driver'
     assert test[0].get_instance_name().startswith('test@test_driver')
-    # assert test[0].get_seq_num() == 1 # need to find a way to reset static variable
+    assert test[0].get_seq_num() == 1
     assert test[0].get_serialization().startswith('test@test_driver')
     assert test[0].get_sim_name() == 'test'
 
@@ -111,3 +112,106 @@ def test_framework_simple(tmpdir, capfd):
     captured = capfd.readouterr()
     assert captured.out == ''
     assert captured.err == ''
+
+
+def test_framework_empty_config_list(tmpdir):
+
+    with pytest.raises(ValueError) as excinfo:
+        Framework(config_file_list=[],
+                  log_file_name=str(tmpdir.join('test.log')),
+                  platform_file_name='platform.conf',
+                  debug=None,
+                  verbose_debug=None,
+                  cmd_nodes=0,
+                  cmd_ppn=0)
+
+    assert str(excinfo.value).endswith("Missing config file? Something is very wrong")
+
+    # check output log file
+    with open(str(tmpdir.join('test.log')), 'r') as f:
+        lines = f.readlines()
+
+    # remove timestamp
+    lines = [line[24:] for line in lines]
+
+    assert len(lines) == 3
+    assert "FRAMEWORK       ERROR    Missing config file? Something is very wrong\n" in lines
+    assert "FRAMEWORK       ERROR    Problem initializing managers\n" in lines
+    assert "FRAMEWORK       ERROR    exception encountered while cleaning up config_manager\n" in lines
+
+
+def test_framework_log_output(tmpdir):
+    platform_file, config_file = write_basic_config_and_platform_files(tmpdir)
+
+    framework = Framework(config_file_list=[str(config_file)],
+                          log_file_name=str(tmpdir.join('framework_log_test.log')),
+                          platform_file_name=str(platform_file),
+                          debug=None,
+                          verbose_debug=None,
+                          cmd_nodes=0,
+                          cmd_ppn=0)
+
+    framework.log("log message")
+    framework.debug("debug message")
+    framework.info("info message")
+    framework.warning("warning message")
+    framework.error("error message")
+    framework.exception("exception message")
+    framework.critical("critical message")
+
+    framework.terminate_all_sims()
+
+    # check output log file
+    with open(str(tmpdir.join('framework_log_test.log')), 'r') as f:
+        lines = f.readlines()
+
+    # remove timestamp
+    lines = [line[24:] for line in lines]
+
+    assert len(lines) == 9
+    assert "FRAMEWORK       WARNING  warning message\n" in lines
+    assert "FRAMEWORK       ERROR    error message\n" in lines
+    assert "FRAMEWORK       ERROR    exception message\n" in lines
+    assert "FRAMEWORK       CRITICAL critical message\n" in lines
+
+    assert "FRAMEWORK       INFO     log message\n" not in lines
+    assert "FRAMEWORK       DEBUG    debug message\n" not in lines
+    assert "FRAMEWORK       INFO     info message\n" not in lines
+
+
+def test_framework_log_output_debug(tmpdir):
+    platform_file, config_file = write_basic_config_and_platform_files(tmpdir)
+
+    framework = Framework(config_file_list=[str(config_file)],
+                          log_file_name=str(tmpdir.join('framework_log_debug_test.log')),
+                          platform_file_name=str(platform_file),
+                          debug=True,
+                          verbose_debug=False,
+                          cmd_nodes=0,
+                          cmd_ppn=0)
+
+    framework.log("log message")
+    framework.debug("debug message")
+    framework.info("info message")
+    framework.warning("warning message")
+    framework.error("error message")
+    framework.exception("exception message")
+    framework.critical("critical message")
+
+    framework.terminate_all_sims()
+
+    # check output log file
+    with open(str(tmpdir.join('framework_log_debug_test.log')), 'r') as f:
+        lines = f.readlines()
+
+    # remove timestamp
+    lines = [line[24:] for line in lines]
+
+    assert len(lines) == 30
+    assert "FRAMEWORK       INFO     log message\n" in lines
+    assert "FRAMEWORK       DEBUG    debug message\n" in lines
+    assert "FRAMEWORK       INFO     info message\n" in lines
+    assert "FRAMEWORK       WARNING  warning message\n" in lines
+    assert "FRAMEWORK       ERROR    error message\n" in lines
+    assert "FRAMEWORK       ERROR    exception message\n" in lines
+    assert "FRAMEWORK       CRITICAL critical message\n" in lines

@@ -14,7 +14,7 @@ import signal
 import glob
 import weakref
 import inspect
-from . import messages, ipsutil, ipsLogging, component
+from . import messages, ipsutil, component
 from .configobj import ConfigObj
 from .cca_es_spec import initialize_event_service
 from .ips_es_spec import eventManager
@@ -162,7 +162,7 @@ class ServicesProxy:
         #
         # Set up logging path to the IPS logging daemon
         #
-        socketHandler = ipsLogging.IPSLogSocketHandler(self.log_pipe_name)
+        socketHandler = logging.handlers.SocketHandler(self.log_pipe_name, None)
         self.logger = logging.getLogger(self.full_comp_id)
         log_level = 'WARNING'
         try:
@@ -2178,7 +2178,7 @@ class ServicesProxy:
         """
         Wrapper for :py:meth:`ServicesProxy.info`.
         """
-        return self.info(args)
+        return self.info(*args)
 
     def debug(self, *args):
         """
@@ -2241,7 +2241,7 @@ class ServicesProxy:
                 msg = args[0] % args[1:]
             else:
                 msg = args[0]
-            self.logger.exception(msg)
+            self.logger.exception(msg, exc_info=False)
         except Exception:
             self.error('Bad format in call to services.exception() ' + str(args))
 
