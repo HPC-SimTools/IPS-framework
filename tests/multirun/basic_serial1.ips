@@ -19,7 +19,7 @@ CURRENT_EQDSK =
 USE_PORTAL=False
 
 LOG_FILE = $SIM_ROOT/$SIM_NAME.log
-LOG_LEVEL = DEBUG                   # Possible values: DEBUG, INFO, WARNING, ERROR, CRITICAL
+LOG_LEVEL = INFO                   # Possible values: DEBUG, INFO, WARNING, ERROR, CRITICAL
 
 [PORTS]
    NAMES = DRIVER WORKER1 WORKER2 WORKER3
@@ -148,7 +148,7 @@ LOG_LEVEL = DEBUG                   # Possible values: DEBUG, INFO, WARNING, ERR
 # For MODE = EXPLICIT, the frame work uses the variable VALUES (space separated list of time values)
 
 [TIME_LOOP]
-   MODE = EXPLICIT
+   MODE = REGULAR
    START = 3.5
    FINISH = 3.7
    NSTEP  = 2
