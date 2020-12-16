@@ -38,7 +38,7 @@ class basic_serial1(Component):
             raise Exception('Error accessing physics components')
 
         # ssf - get timeloop for simulation
-        timeloop = [1, 2, 3]     # doesn't work yet..... services.getTimeLoop()
+        timeloop = services.get_time_loop()
         tlist_str = ['%.2f' % t for t in timeloop]
 
         # ssf - call init for each component

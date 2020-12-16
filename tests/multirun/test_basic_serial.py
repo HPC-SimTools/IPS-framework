@@ -44,9 +44,9 @@ def test_basic_serial1(tmpdir, capfd):
     assert captured_out[3] == "small_worker : init() called"
     assert captured_out[5] == "medium_worker : init() called"
     assert captured_out[7] == "large_worker : init() called"
-    assert captured_out[9] == "Current time =  1.00"
-    assert captured_out[10] == "Current time =  2.00"
-    assert captured_out[11] == "Current time =  3.00"
+    assert captured_out[9] == "Current time =  3.50"
+    assert captured_out[10] == "Current time =  3.60"
+    assert captured_out[11] == "Current time =  3.70"
 
     # check files copied and created
     driver_files = [os.path.basename(f) for f in glob.glob(str(tmpdir.join("test_basic_serial1_0/work/drivers_testing_basic_serial1_*/*")))]
@@ -57,10 +57,21 @@ def test_basic_serial1(tmpdir, capfd):
     medium_worker_files = [os.path.basename(f) for f in glob.glob(str(tmpdir.join("test_basic_serial1_0/work/workers_testing_medium_worker_*/*")))]
     large_worker_files = [os.path.basename(f) for f in glob.glob(str(tmpdir.join("test_basic_serial1_0/work/workers_testing_large_worker_*/*")))]
 
-    for outfile in ["my_out1.00", "my_out2.00", "my_out3.00"]:
+    for outfile in ["my_out3.50", "my_out3.60", "my_out3.70"]:
         assert outfile in small_worker_files
         assert outfile in medium_worker_files
         assert outfile in large_worker_files
+
+    # check sim log file
+    with open(str(tmpdir.join("test_basic_serial1_0").join("test_basic_serial1_0.log")), 'r') as f:
+        lines = f.readlines()
+
+    # remove timestamp
+    lines = [line[24:] for line in lines]
+
+    for worker in ["small_worker_2", "medium_worker_3", "large_worker_4"]:
+        for timestamp in ["3.50", "3.60", "3.70"]:
+            assert f'workers_testing_{worker} INFO     Stepping Worker timestamp={timestamp}\n' in lines
 
 
 def test_basic_serial_multi(tmpdir, capfd):
@@ -124,7 +135,29 @@ def test_basic_serial_multi(tmpdir, capfd):
         medium_worker_files = [os.path.basename(f) for f in glob.glob(str(tmpdir.join(f"test_basic_serial{no}_0/work/workers_testing_medium_worker_*/*")))]
         large_worker_files = [os.path.basename(f) for f in glob.glob(str(tmpdir.join(f"test_basic_serial{no}_0/work/workers_testing_large_worker_*/*")))]
 
-        for outfile in ["my_out1.00", "my_out2.00", "my_out3.00"]:
+        for outfile in ["my_out3.50", "my_out3.60", "my_out3.70"]:
             assert outfile in small_worker_files
             assert outfile in medium_worker_files
             assert outfile in large_worker_files
+
+    # check basic_serial1 sim log file
+    with open(str(tmpdir.join("test_basic_serial1_0").join("test_basic_serial1_0.log")), 'r') as f:
+        lines = f.readlines()
+
+    # remove timestamp
+    lines = [line[24:] for line in lines]
+
+    for worker in ["small_worker_2", "medium_worker_3", "large_worker_4"]:
+        for timestamp in ["3.50", "3.60", "3.70"]:
+            assert f'workers_testing_{worker} INFO     Stepping Worker timestamp={timestamp}\n' in lines
+
+    # check basic_serial2 sim log file
+    with open(str(tmpdir.join("test_basic_serial2_0").join("test_basic_serial2_0.log")), 'r') as f:
+        lines = f.readlines()
+
+    # remove timestamp
+    lines = [line[24:] for line in lines]
+
+    for worker in ["small_worker_6", "medium_worker_7", "large_worker_8"]:
+        for timestamp in ["3.40", "3.50", "3.60"]:
+            assert f'workers_testing_{worker} INFO     Stepping Worker timestamp={timestamp}\n' in lines

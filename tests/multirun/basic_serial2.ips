@@ -19,7 +19,7 @@ CURRENT_EQDSK =
 USE_PORTAL=False
 
 LOG_FILE = $SIM_ROOT/$SIM_NAME.log
-LOG_LEVEL = DEBUG                   # Possible values: DEBUG, INFO, WARNING, ERROR, CRITICAL
+LOG_LEVEL = INFO                   # Possible values: DEBUG, INFO, WARNING, ERROR, CRITICAL
 
 [PORTS]
    NAMES = DRIVER WORKER1 WORKER2 WORKER3
@@ -152,4 +152,4 @@ LOG_LEVEL = DEBUG                   # Possible values: DEBUG, INFO, WARNING, ERR
    START = 3.5
    FINISH = 3.7
    NSTEP  = 2
-   VALUES = 3.4 3.5 3.6 3.7 3.8 3.9
+   VALUES = 3.4 3.5 3.6

@@ -18,7 +18,7 @@ class small_worker(Component):
 
     def step(self, timestamp):
         sleep_time = 1
-        self.services.log('Stepping Worker boogity boogity', self.NPROC, self.BIN_PATH)
+        self.services.log('Stepping Worker timestamp=%s', timestamp)
         cwd = self.services.get_working_dir()
         pid = self.services.launch_task(int(self.NPROC),
                                         cwd,
