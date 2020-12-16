@@ -624,6 +624,83 @@ class ConfigurationManager:
         retval = method(sim_name, *msg.args)
         return retval
 
+    def create_simulation(self, sim_name, config_file, override, sub_workflow=False):
+        try:
+            conf = ConfigObj(config_file, interpolation='template',
+                             file_error=True)
+        except IOError:
+            self.fwk.exception('Error opening config file %s: ', config_file)
+            raise
+        except SyntaxError:
+            self.fwk.exception(' Error parsing config file %s: ', config_file)
+            raise
+        parent_sim_name = sim_name
+        parent_sim = self.sim_map[parent_sim_name]
+        # Incorporate environment variables into config file
+        # Use config file entries when duplicates are detected
+        conf_keys = list(conf.keys())
+        for (k, v) in os.environ.items():
+            # Do not include functions from environment
+            if k not in conf_keys and \
+                    not any([x in v for x in '{}()$']):
+                conf[k] = v
+
+        # Allow propagation of entries from platform config file to simulation
+        # config file
+        for keyword in list(self.platform_conf.keys()):
+            if keyword not in list(conf.keys()):
+                conf[keyword] = self.platform_conf[keyword]
+        if override:
+            for kw in list(override.keys()):
+                conf[kw] = override[kw]
+        try:
+            sim_name = conf['SIM_NAME']
+            sim_root = conf['SIM_ROOT']
+            log_file = os.path.abspath(conf['LOG_FILE'])
+        except KeyError:
+            self.fwk.exception('Missing required parameters SIM_NAME, SIM_ROOT or LOG_FILE\
+in configuration file %s', config_file)
+            raise
+        if sim_name in self.sim_name_list:
+            self.fwk.error('Error: Duplicate SIM_NAME %s in configuration files' % (sim_name))
+            raise Exception('Duplicate SIM_NAME %s in configuration files' % (sim_name))
+        if sim_root in self.sim_root_list:
+            self.fwk.exception('Error: Duplicate SIM_ROOT in configuration files')
+            raise Exception('Duplicate SIM_ROOT in configuration files')
+        if log_file in self.log_file_list:
+            self.fwk.exception('Error: Duplicate LOG_FILE in configuration files')
+            raise Exception('Duplicate LOG_FILE in configuration files')
+
+        # Add path to configuration file to simulation configuration in memory
+        if 'SIMULATION_CONFIG_FILE' not in conf:
+            conf['SIMULATION_CONFIG_FILE'] = config_file
+
+        self.sim_name_list.append(sim_name)
+        self.sim_root_list.append(sim_root)
+        self.log_file_list.append(log_file)
+        new_sim = self.SimulationData(sim_name)
+        new_sim.sim_conf = conf
+        new_sim.config_file = config_file
+        new_sim.sim_root = sim_root
+        new_sim.log_file = log_file
+        if not sub_workflow:
+            new_sim.portal_sim_name = sim_name
+            new_sim.log_pipe_name = tempfile.mktemp('.logpipe', 'ips_')
+            self.log_dynamic_sim_queue.put('CREATE_SIM  %s  %s' % (new_sim.log_pipe_name, new_sim.log_file))
+        else:
+            new_sim.portal_sim_name = parent_sim.portal_sim_name
+            new_sim.log_pipe_name = parent_sim.log_pipe_name
+
+        conf['__PORTAL_SIM_NAME'] = new_sim.portal_sim_name
+        # self.log_dynamic_sim_queue.put('CREATE_SIM  %s  %s' % (new_sim.log_pipe_name, new_sim.log_file))
+        self.sim_map[sim_name] = new_sim
+        self._initialize_sim(new_sim)
+
+        if not sub_workflow:
+            self.fwk.initiate_new_simulation(sim_name)
+
+        return (sim_name, new_sim.init_comp, new_sim.driver_comp)
+
     def get_port(self, sim_name, port_name):
         """
         Return a reference to the component from simulation *sim_name*
