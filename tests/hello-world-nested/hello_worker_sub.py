@@ -1,8 +1,8 @@
-#-------------------------------------------------------------------------------
-# Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
-#-------------------------------------------------------------------------------
-
+# -------------------------------------------------------------------------------
+#  Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
+# -------------------------------------------------------------------------------
 from ipsframework import Component
+
 
 class HelloWorker(Component):
     def __init__(self, services, config):
@@ -17,7 +17,7 @@ class HelloWorker(Component):
 
     def step(self, timeStamp=0.0):
         print('Hello from HelloWorker - sub')
-        return
+        self.services.info('Hello from HelloWorker - sub')
 
     def finalize(self, timeStamp=0.0):
         return

@@ -1,8 +1,8 @@
-#-------------------------------------------------------------------------------
-# Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
-#-------------------------------------------------------------------------------
-
+# -------------------------------------------------------------------------------
+#  Copyright 2006-2020 UT-Battelle, LLC. See LICENSE for more information.
+# -------------------------------------------------------------------------------
 from ipsframework import Component
+
 
 class HelloDriver(Component):
     def __init__(self, services, config):
@@ -22,7 +22,7 @@ class HelloDriver(Component):
             self.services.exception('Error accessing worker component')
             raise
         self.services.call(worker_comp, 'step', 0.0)
-        return
         print('made it out of the worker call')
+
     def finalize(self, timeStamp=0.0):
         return

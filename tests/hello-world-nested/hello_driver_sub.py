@@ -1,9 +1,8 @@
-#-------------------------------------------------------------------------------
-# Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
-#-------------------------------------------------------------------------------
-import os
-
+# -------------------------------------------------------------------------------
+#  Copyright 2006-2020 UT-Battelle, LLC. See LICENSE for more information.
+# -------------------------------------------------------------------------------
 from ipsframework import Component
+
 
 class HelloDriver(Component):
     def __init__(self, services, config):
