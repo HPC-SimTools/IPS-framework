@@ -1910,7 +1910,7 @@ class ServicesProxy:
             raise FileNotFoundError("Missing executable file %s in PATH" % bin_name)
         try:
             msg_id = self._invoke_service(self.fwk.component_id,
-                                          'merge_current_state', update_file,
+                                          'merge_current_plasma_state', update_file,
                                           source_plasma_file, logfile, full_path_binary)
             ret_val = self._get_service_response(msg_id, block=True)
         except Exception as e:
