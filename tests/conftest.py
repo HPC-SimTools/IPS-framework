@@ -2,6 +2,10 @@ import pytest
 import psutil
 import os
 from ipsframework.componentRegistry import ComponentID
+from pytest_cov.embed import cleanup_on_sigterm
+
+
+cleanup_on_sigterm()
 
 
 @pytest.fixture(autouse=True)
