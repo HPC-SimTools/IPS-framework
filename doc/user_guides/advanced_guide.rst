@@ -391,7 +391,7 @@ The following services do not fit neatly into any of the other categories, but a
 Data Management
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The data management services are used by the components to manage the data needed and produced by each step, and for the driver to manage the overall simulation data.  There are methods for component local, and simulation global files, as well as replay component file movements.  Fault tolerance services are presented in another section.
+The data management services are used by the components to manage the data needed and produced by each step, and for the driver to manage the overall simulation data.  There are methods for component local, and simulation global files.  Fault tolerance services are presented in another section.
 
 Staging of local (non-shared) files:
 
@@ -410,14 +410,6 @@ Staging of global (plasma state) files:
    :noindex:
 
 .. automethod:: ipsframework.services.ServicesProxy.merge_current_state
-   :noindex:
-
-Staging of replay files:
-
-.. automethod:: ipsframework.services.ServicesProxy.stage_replay_output_files
-   :noindex:
-
-.. automethod:: ipsframework.services.ServicesProxy.stage_replay_plasma_files
    :noindex:
 
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
