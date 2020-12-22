@@ -16,7 +16,7 @@ def copy_config_and_replace(infile, outfile, tmpdir):
 
 
 def test_hello_world_nested(tmpdir, capfd):
-    data_dir = os.path.join(os.path.dirname(__file__), '..', 'hello-world-nested')
+    data_dir = os.path.dirname(__file__)
     copy_config_and_replace(os.path.join(data_dir, "hello_world.config"), tmpdir.join("hello_world.config"), tmpdir)
     copy_config_and_replace(os.path.join(data_dir, "hello_world_sub.config"), tmpdir.join("hello_world_sub.config"), tmpdir)
     shutil.copy(os.path.join(data_dir, "workstation.conf"), tmpdir)
