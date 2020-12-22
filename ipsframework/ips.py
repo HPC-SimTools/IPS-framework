@@ -53,7 +53,7 @@
 
 """
 import sys
-import optparse
+import argparse
 import multiprocessing
 import inspect
 import socket
@@ -705,55 +705,36 @@ class Framework:
             self.exception('exception encountered while cleaning up config_manager')
         # sys.exit(status)
 
-# callback function for options needing a file list
-
-
-def filelist_callback(options, opt_str, values, parser):
-    setattr(parser.values, options.dest, values.split(','))
-
 
 def main(argv=None):
     """
     Check and parse args, create and run the framework.
     """
-    fileopts = "--simulation=SIM_FILE_NAME --platform=PLATFORM_FILE_NAME "
-    miscopts = "[--log=LOG_FILE_NAME] "
-    debugopts = "[--debug] [--verbose] "
-
-    parser = optparse.OptionParser(usage="%prog " + debugopts + fileopts + miscopts)
-    parser.add_option('-d', '--debug', dest='debug', default=False, action='store_true',
-                      help='Turn on debugging')
-    parser.add_option('-v', '--verbose', dest='verbose_debug', default=False, action='store_true',
-                      help='Run IPS verbosely')
-    platform_default = ""
-    try:
-        platform_default = os.environ["IPS_PLATFORM_FILE"]
-    except KeyError:
-        pass
-    else:
+    platform_default = os.environ.get("IPS_PLATFORM_FILE")
+    if platform_default:
         print("IPS using platform file :", platform_default)
-    parser.add_option('-p', '--platform', dest='platform_filename', default=platform_default,
-                      type="string", help='IPS platform configuration file')
-    parser.add_option('-i', '--simulation',
-                      action='callback', callback=filelist_callback,
-                      type="string", help='IPS simulation/config file')
-    parser.add_option('-j', '--config',
-                      action='callback', callback=filelist_callback,
-                      type="string", help='IPS simulation/config file')
-    parser.add_option('-l', '--log', dest='log_file', default='sys.stdout',
-                      type="string", help='IPS Log file')
-    parser.add_option('-n', '--nodes', dest='cmd_nodes', default='0',
-                      type="int", help='Computer nodes')
-    parser.add_option('-o', '--ppn', dest='cmd_ppn', default='0',
-                      type="int", help='Computer processor per nodes')
 
-    options, _ = parser.parse_args()
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--simulation', '-i', '--config', '-j',
+                        required=True,
+                        help='IPS simulation/config file')
+    parser.add_argument('--platform', '-p', dest='platform_filename', default=platform_default,
+                        required=not platform_default,
+                        help='IPS platform configuration file')
+    parser.add_argument('--debug', '-d', default=False, action='store_true',
+                        help='Turn on debugging')
+    parser.add_argument('--verbose', '-v', dest='verbose_debug', default=False, action='store_true',
+                        help='Run IPS verbosely')
+    parser.add_argument('--log', '-l', dest='log_file', default='sys.stdout',
+                        help='IPS Log file')
+    parser.add_argument('--nodes', '-n', dest='cmd_nodes', default='0',
+                        type=int, help='Computer nodes')
+    parser.add_argument('--ppn', '-o', dest='cmd_ppn', default='0',
+                        type=int, help='Computer processor per nodes')
 
-    cfgFile_list = []
-    if options.simulation:
-        cfgFile_list = options.simulation
-    if options.config:
-        cfgFile_list = options.config
+    options = parser.parse_args()
+
+    cfgFile_list = options.simulation.split(',')
 
     try:
         fwk = Framework(cfgFile_list, options.log_file, options.platform_filename,
