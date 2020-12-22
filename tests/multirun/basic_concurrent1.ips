@@ -1,0 +1,93 @@
+OUTPUT_PREFIX =
+
+RUN_COMMENT = testing basic concurrent component simulation capability
+
+RUN_ID = test                       # Indentifier for this simulation run
+TOKAMAK_ID = basic_concurrent1          # Identifier for tokamak simulated
+SHOT_NUMBER = 0                     # Identifier for specific case for this tokamak (not necessarily a number)
+
+SIM_NAME = ${RUN_ID}_${TOKAMAK_ID}_${SHOT_NUMBER}   # Name of current simulation
+SIM_ROOT = $PWD/$SIM_NAME                      # Where to put results from this simulation
+
+SIMULATION_MODE = NORMAL
+
+STATE_WORK_DIR = $SIM_ROOT/work/plasma_state # Where to put plasma state files as the simulation evolves
+CURRENT_STATE =
+PRIOR_STATE =
+NEXT_STATE =
+CURRENT_EQDSK =
+USE_PORTAL=False
+
+LOG_FILE = $SIM_ROOT/$SIM_NAME.log
+LOG_LEVEL = INFO                   # Possible values: DEBUG, INFO, WARNING, ERROR, CRITICAL
+
+[PORTS]
+   NAMES = DRIVER WORKER1 WORKER2 WORKER3
+
+   [[DRIVER]]                                       # REQUIRED Port section
+      IMPLEMENTATION = BASIC_CONCURRENT1
+
+   [[WORKER1]]
+      IMPLEMENTATION = SMALL_WORKER
+
+   [[WORKER2]]
+      IMPLEMENTATION = MEDIUM_WORKER
+
+   [[WORKER3]]
+      IMPLEMENTATION = LARGE_WORKER
+
+# Individual configuration sections
+
+[BASIC_CONCURRENT1]
+    CLASS = drivers
+    SUB_CLASS = testing
+    NAME = basic_concurrent1
+    NPROC = 1
+    BIN_PATH = $IPS_ROOT/tests/components/drivers
+    INPUT_FILES = file1 sfile1 sfile2 ofile1 ofile2
+    OUTPUT_FILES = ofile1 ofile2
+    SCRIPT = $BIN_PATH/basic_concurrent1.py
+
+[SMALL_WORKER]
+    CLASS = workers
+    SUB_CLASS = testing
+    NAME = small_worker
+    NPROC = 1
+    BIN_PATH = $IPS_ROOT/tests/bin
+    BIN = parallel_sleep
+    INPUT_FILES =
+    OUTPUT_FILES = $CURRENT_STATE
+    SCRIPT = $IPS_ROOT/tests/components/workers/small_worker.py
+
+[MEDIUM_WORKER]
+    CLASS = workers
+    SUB_CLASS = testing
+    NAME = medium_worker
+    NPROC = 1
+    BIN_PATH = $IPS_ROOT/tests/bin
+    BIN = parallel_sleep
+    INPUT_FILES =
+    OUTPUT_FILES = $CURRENT_STATE
+    SCRIPT = $IPS_ROOT/tests/components/workers/medium_worker.py
+
+[LARGE_WORKER]
+    CLASS = workers
+    SUB_CLASS = testing
+    NAME = large_worker
+    NPROC = 1
+    BIN_PATH = $IPS_ROOT/tests/bin
+    BIN = parallel_sleep
+    INPUT_FILES =
+    OUTPUT_FILES = $CURRENT_STATE
+    SCRIPT = $IPS_ROOT/tests/components/workers/large_worker.py
+
+# Time loop sepecification (two modes for now) EXPLICIT | REGULAR
+# For MODE = REGULAR, the framework uses the variables START, FINIS, and NSTEP
+# For MODE = EXPLICIT, the frame work uses the variable VALUES (space separated list of time values)
+
+[TIME_LOOP]
+   MODE = REGULAR
+   START = 3.5
+   FINISH = 3.7
+   NSTEP  = 2
+   VALUES = 3.4 3.5 3.6 3.7 3.8 3.9

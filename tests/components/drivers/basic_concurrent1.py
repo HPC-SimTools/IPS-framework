@@ -34,12 +34,12 @@ class basic_concurrent1(Component):
         w3 = self.services.get_port('WORKER3')
 
         # should we do something different here?????  a try block?
-        # if(w1 == None or w2 == None or w3 == None):
-        #    print 'Error accessing physics components'
-        #    raise Exception('Error accessing physics components')
+        if(w1 is None or w2 is None or w3 is None):
+            print('Error accessing physics components')
+            raise Exception('Error accessing physics components')
 
         # ssf - get timeloop for simulation
-        timeloop = [1, 2, 3]     # doesn't work yet..... services.getTimeLoop()
+        timeloop = services.get_time_loop()
         tlist_str = ['%.2f' % t for t in timeloop]
 
         # ssf - call init for each component
