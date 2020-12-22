@@ -38,48 +38,6 @@ LOG_LEVEL = INFO                   # Possible values: DEBUG, INFO, WARNING, ERRO
 
 # Individual configuration sections
 
-# Component sepcification (entries similar for all components)
-# NAME entry MUST match the name of the python class that implements the component
-[BASIC_CONCURRENT1]
-    CLASS = drivers
-    SUB_CLASS = testing
-    NAME = basic_concurrent1
-    NPROC = 1
-    BIN_PATH = $IPS_ROOT/tests/components/drivers
-    INPUT_FILES = file1 sfile1 sfile2 ofile1 ofile2
-    OUTPUT_FILES = ofile1 ofile2  
-    SCRIPT = $BIN_PATH/basic_concurrent1.py
-
-[BASIC_CONCURRENT2]
-    CLASS = drivers
-    SUB_CLASS = testing
-    NAME = basic_concurrent2
-    NPROC = 1
-    BIN_PATH = $IPS_ROOT/tests/components/drivers
-    INPUT_FILES = file1 sfile1 sfile2 ofile1 ofile2
-    OUTPUT_FILES = ofile1 ofile2  
-    SCRIPT = $BIN_PATH/basic_concurrent2.py
-
-[BASIC_CONCURRENT3]
-    CLASS = drivers
-    SUB_CLASS = testing
-    NAME = basic_concurrent3
-    NPROC = 1
-    BIN_PATH = $IPS_ROOT/tests/components/drivers
-    INPUT_FILES = file1 sfile1 sfile2 ofile1 ofile2
-    OUTPUT_FILES = ofile1 ofile2  
-    SCRIPT = $BIN_PATH/basic_concurrent3.py
-
-[BASIC_SERIAL1]
-    CLASS = drivers
-    SUB_CLASS = testing
-    NAME = basic_serial1
-    NPROC = 1
-    BIN_PATH = $IPS_ROOT/tests/components/drivers
-    INPUT_FILES = file1 sfile1 sfile2 ofile1 ofile2
-    OUTPUT_FILES = ofile1 ofile2  
-    SCRIPT = $BIN_PATH/basic_serial1.py
-
 [BASIC_SERIAL2]
     CLASS = drivers
     SUB_CLASS = testing
@@ -89,16 +47,6 @@ LOG_LEVEL = INFO                   # Possible values: DEBUG, INFO, WARNING, ERRO
     INPUT_FILES = file1 sfile1 sfile2 ofile1 ofile2
     OUTPUT_FILES = ofile1 ofile2  
     SCRIPT = $BIN_PATH/basic_serial2.py
-
-[BASIC_SERIAL3]
-    CLASS = drivers
-    SUB_CLASS = testing
-    NAME = basic_serial3
-    NPROC = 1
-    BIN_PATH = $IPS_ROOT/tests/components/drivers
-    INPUT_FILES = file1 sfile1 sfile2 ofile1 ofile2
-    OUTPUT_FILES = ofile1 ofile2  
-    SCRIPT = $BIN_PATH/basic_serial3.py
   
 [SMALL_WORKER]
     CLASS = workers
@@ -132,16 +80,6 @@ LOG_LEVEL = INFO                   # Possible values: DEBUG, INFO, WARNING, ERRO
     INPUT_FILES =
     OUTPUT_FILES = $CURRENT_STATE
     SCRIPT = $IPS_ROOT/tests/components/workers/large_worker.py
-
-[XL_WORKER]
-    CLASS = workers
-    SUB_CLASS = testing
-    NAME = XL_worker
-    NPROC = 1
-    BIN_PATH = $IPS_ROOT/tests/components/workers
-    INPUT_FILES =
-    OUTPUT_FILES = $CURRENT_STATE
-    SCRIPT = $BIN_PATH/XL_worker.py
 
 # Time loop sepecification (two modes for now) EXPLICIT | REGULAR
 # For MODE = REGULAR, the framework uses the variables START, FINIS, and NSTEP
