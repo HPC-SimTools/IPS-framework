@@ -215,3 +215,12 @@ def test_framework_log_output_debug(tmpdir):
     assert "FRAMEWORK       ERROR    error message\n" in lines
     assert "FRAMEWORK       ERROR    exception message\n" in lines
     assert "FRAMEWORK       CRITICAL critical message\n" in lines
+
+
+def test_framework_missing_platform(capfd):
+    with pytest.raises(SystemExit) as excinfo:
+        Framework(config_file_list=[], log_file_name='log')
+    assert excinfo.value.code == 1
+    captured = capfd.readouterr()
+    assert captured.out == 'Need to specify a platform file\n'
+    assert captured.err == ''
