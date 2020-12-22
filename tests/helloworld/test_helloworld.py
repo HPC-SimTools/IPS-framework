@@ -31,7 +31,7 @@ def copy_config_and_replace(infile, outfile, tmpdir, task_pool=False, portal=Fal
 
 
 def test_helloworld(tmpdir, capfd):
-    data_dir = os.path.join(os.path.dirname(__file__), '..', 'helloworld')
+    data_dir = os.path.dirname(__file__)
     copy_config_and_replace(os.path.join(data_dir, "hello_world.ips"), tmpdir.join("hello_world.ips"), tmpdir)
     shutil.copy(os.path.join(data_dir, "platform.conf"), tmpdir)
     shutil.copy(os.path.join(data_dir, "hello_driver.py"), tmpdir)
@@ -83,7 +83,7 @@ def test_helloworld(tmpdir, capfd):
 
 
 def test_helloworld_task_pool(tmpdir, capfd):
-    data_dir = os.path.join(os.path.dirname(__file__), '..', 'helloworld')
+    data_dir = os.path.dirname(__file__)
     copy_config_and_replace(os.path.join(data_dir, "hello_world.ips"), tmpdir.join("hello_world.ips"), tmpdir, task_pool=True)
     shutil.copy(os.path.join(data_dir, "platform.conf"), tmpdir)
     shutil.copy(os.path.join(data_dir, "hello_driver.py"), tmpdir)
@@ -144,7 +144,7 @@ def test_helloworld_task_pool(tmpdir, capfd):
 
 
 def test_helloworld_portal(tmpdir, capfd):
-    data_dir = os.path.join(os.path.dirname(__file__), '..', 'helloworld')
+    data_dir = os.path.dirname(__file__)
     copy_config_and_replace(os.path.join(data_dir, "hello_world.ips"), tmpdir.join("hello_world.ips"), tmpdir, portal=True)
     shutil.copy(os.path.join(data_dir, "platform.conf"), tmpdir)
     shutil.copy(os.path.join(data_dir, "hello_driver.py"), tmpdir)
