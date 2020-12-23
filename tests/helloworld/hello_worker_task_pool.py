@@ -17,7 +17,7 @@ class HelloWorker(Component):
     def step(self, timeStamp=0.0):
         random.seed(1)
         print('Hello from HelloWorker')
-        total_tasks = 10
+        total_tasks = 3
         duration = random.random_integers(1, high=3, size=total_tasks)
 
         bin = '/bin/sleep'
