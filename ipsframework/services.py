@@ -13,8 +13,7 @@ import logging.handlers
 import signal
 import glob
 import weakref
-import inspect
-from . import messages, ipsutil, component
+from . import messages, ipsutil
 from .configobj import ConfigObj
 from .cca_es_spec import initialize_event_service
 from .ips_es_spec import eventManager
@@ -144,7 +143,6 @@ class ServicesProxy:
         self.subflow_count = 0
         self.sub_flows = {}
         self.binary_fullpath_cache = {}
-        self.dask_preload = "dask_preload.py"
 
     def __initialize__(self, component_ref):
         """
@@ -216,22 +214,6 @@ class ServicesProxy:
                 chkpts = glob.glob(os.path.join(self.sim_conf['RESTART_ROOT'], 'restart', '*'))
                 base_dir = sorted(chkpts, key=lambda d: float(os.path.basename(d)))[-1]
                 self.sim_conf['RESTART_TIME'] = os.path.basename(base_dir)
-
-        # Get path to IPS modules and PYTHONPATH
-        pypath = [os.path.dirname(inspect.getabsfile(component))]
-        try:
-            pypath.extend(os.environ["PYTHONPATH"].split(":"))
-        except KeyError:
-            pass
-
-        preload_txt = "import sys;"
-        for d in pypath:
-            preload_txt += f"sys.path.insert(0,'{d}');"
-
-        # print(pypath)
-        # print(preload_txt)
-        self.dask_preload = os.path.join(os.getcwd(), self.dask_preload)
-        open(self.dask_preload, "w").write(preload_txt)
 
     def _init_event_service(self):
         """
@@ -2140,7 +2122,6 @@ class TaskPool:
                                                      "--nprocs", 1,
                                                      "--nthreads", nthreads,
                                                      "--no-dashboard",
-                                                     "--preload", self.services.dask_preload,
                                                      task_ppn=1)
 
         self.dask_client = self.dask.distributed.Client(scheduler_file=self.dask_file_name)
