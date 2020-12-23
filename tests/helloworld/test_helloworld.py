@@ -5,13 +5,16 @@ import json
 import glob
 
 
-def copy_config_and_replace(infile, outfile, tmpdir, task_pool=False, portal=False):
+def copy_config_and_replace(infile, outfile, tmpdir, task_pool=False, portal=False, dask=False):
     with open(infile, "r") as fin:
         with open(outfile, "w") as fout:
             for line in fin:
                 if "hello_driver.py" in line or "hello_worker.py" in line:
                     if task_pool:
-                        fout.write(line.replace("${BIN_PATH}", str(tmpdir)).replace("hello_worker.py", "hello_worker_task_pool.py"))
+                        if dask:
+                            fout.write(line.replace("${BIN_PATH}", str(tmpdir)).replace("hello_worker.py", "hello_worker_task_pool_dask.py"))
+                        else:
+                            fout.write(line.replace("${BIN_PATH}", str(tmpdir)).replace("hello_worker.py", "hello_worker_task_pool.py"))
                     else:
                         fout.write(line.replace("${BIN_PATH}", str(tmpdir)))
                 elif "BIN_PATH" in line:
@@ -141,6 +144,44 @@ def test_helloworld_task_pool(tmpdir, capfd):
     assert captured_out[-3] == 'Active =  0 Finished =  10'
     assert captured_out[-2] == 'HelloDriver: finished worker call'
     assert captured.err == ''
+
+
+def test_helloworld_task_pool_dask(tmpdir, capfd):
+    from ipsframework import TaskPool
+    assert TaskPool.dask is not None
+
+    data_dir = os.path.dirname(__file__)
+    copy_config_and_replace(os.path.join(data_dir, "hello_world.ips"), tmpdir.join("hello_world.ips"), tmpdir, task_pool=True, dask=True)
+    shutil.copy(os.path.join(data_dir, "platform.conf"), tmpdir)
+    shutil.copy(os.path.join(data_dir, "hello_driver.py"), tmpdir)
+    shutil.copy(os.path.join(data_dir, "hello_worker_task_pool_dask.py"), tmpdir)
+
+    framework = Framework(config_file_list=[os.path.join(tmpdir, "hello_world.ips")],
+                          log_file_name=str(tmpdir.join('test.log')),
+                          platform_file_name=os.path.join(tmpdir, "platform.conf"),
+                          debug=None,
+                          verbose_debug=None,
+                          cmd_nodes=0,
+                          cmd_ppn=0)
+
+    framework.run()
+
+    captured = capfd.readouterr()
+    captured_out = captured.out.split('\n')
+
+    assert captured_out[0] == "Created <class 'hello_driver.HelloDriver'>"
+    assert captured_out[1] == "Created <class 'hello_worker_task_pool_dask.HelloWorker'>"
+    assert captured_out[2] == 'HelloDriver: init'
+    assert captured_out[3] == 'HelloDriver: finished worker init call'
+    assert captured_out[4] == 'HelloDriver: beginning step call'
+    assert captured_out[5] == 'Hello from HelloWorker'
+    assert 'ret_val =  10' in captured_out
+
+    exit_status = json.loads(captured_out[-3].replace("'", '"'))
+    assert len(exit_status) == 10
+    for n in range(10):
+        assert f'task_{n}' in exit_status
+        assert exit_status[f'task_{n}'] == 0
 
 
 def test_helloworld_portal(tmpdir, capfd):
