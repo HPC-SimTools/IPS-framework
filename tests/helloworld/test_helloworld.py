@@ -127,11 +127,11 @@ def test_helloworld_task_pool(tmpdir, capfd):
     assert captured_out[3] == 'HelloDriver: finished worker init call'
     assert captured_out[4] == 'HelloDriver: beginning step call'
     assert captured_out[5] == 'Hello from HelloWorker'
-    assert captured_out[6] == 'ret_val =  10'
+    assert captured_out[6] == 'ret_val =  3'
 
     exit_status = json.loads(captured_out[7].replace("'", '"'))
-    assert len(exit_status) == 10
-    for n in range(10):
+    assert len(exit_status) == 3
+    for n in range(3):
         assert f'task_{n}' in exit_status
         assert exit_status[f'task_{n}'] == 0
 
@@ -141,7 +141,7 @@ def test_helloworld_task_pool(tmpdir, capfd):
         if "Nonblock_task" in captured_out[line]:
             assert captured_out[line].endswith("': 0}")
 
-    assert captured_out[-3] == 'Active =  0 Finished =  10'
+    assert captured_out[-3] == 'Active =  0 Finished =  3'
     assert captured_out[-2] == 'HelloDriver: finished worker call'
     assert captured.err == ''
 
