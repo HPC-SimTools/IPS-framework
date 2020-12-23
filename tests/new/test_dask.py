@@ -231,7 +231,7 @@ def test_dask_fake_shifter(tmpdir, monkeypatch):
     assert lines[0].startswith('Running dask-scheduler --no-dashboard --scheduler-file')
     assert lines[0].endswith('--port 0 in shifter\n')
     assert lines[1].startswith('Running dask-worker --scheduler-file')
-    assert lines[1].endswith('dask_preload.py in shifter\n')
+    assert lines[1].endswith('--nprocs 1 --nthreads 0 --no-dashboard in shifter\n')
 
 
 def test_dask_timeout(tmpdir):
