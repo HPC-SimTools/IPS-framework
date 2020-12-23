@@ -175,13 +175,18 @@ def test_helloworld_task_pool_dask(tmpdir, capfd):
     assert captured_out[3] == 'HelloDriver: finished worker init call'
     assert captured_out[4] == 'HelloDriver: beginning step call'
     assert captured_out[5] == 'Hello from HelloWorker'
-    assert 'ret_val =  10' in captured_out
+    assert 'ret_val =  9' in captured_out
+
+    for duration in ("0.2", "0.4", "0.6"):
+        for task in ["myFun", "myMethod"]:
+            assert f'{task}({duration})' in captured_out
 
     exit_status = json.loads(captured_out[-3].replace("'", '"'))
-    assert len(exit_status) == 10
-    for n in range(10):
-        assert f'task_{n}' in exit_status
-        assert exit_status[f'task_{n}'] == 0
+    assert len(exit_status) == 9
+    for n in range(3):
+        for task in ["bin", "meth", "func"]:
+            assert f'{task}_{n}' in exit_status
+            assert exit_status[f'{task}_{n}'] == 0
 
 
 def test_helloworld_portal(tmpdir, capfd):
