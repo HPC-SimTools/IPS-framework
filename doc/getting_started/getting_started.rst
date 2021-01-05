@@ -58,6 +58,16 @@ Building and Setting up Your Environment
 
 .. _installing-ips:
 
+IPS can be installed directly from github with pip
+
+.. code-block:: bash
+
+  pip install git+https://github.com/HPC-SimTools/IPS-framework.git
+  # or
+  python3 -m pip install git+https://github.com/HPC-SimTools/IPS-framework.git
+
+otherwise you can download the source code.
+
 Installing IPS
 --------------
 
