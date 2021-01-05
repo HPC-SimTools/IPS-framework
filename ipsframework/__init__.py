@@ -15,3 +15,7 @@ __all__ = ['Component',
            'TaskPool',
            'Task',
            'TaskManager']
+
+from ._version import get_versions
+__version__ = get_versions()['version']
+del get_versions
