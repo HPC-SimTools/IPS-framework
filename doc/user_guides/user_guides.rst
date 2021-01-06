@@ -24,6 +24,9 @@ This directory has all of the user guides for using the IPS (see the component a
 :doc:`The IPS for Driver and Component Developers<advanced_guide>`:
     This guide contains the elements of components and drivers, suggestions on how to construct a simulation, how to add the new component to a simulation and the repository, as well as, an IPS services guide to have handy when writing components and drivers.  This guide is for components and drivers based on the *generic driver* model.  More sophisticated logic and execution models are covered in the following document.
 
+:doc:`Create a component package<component_package>`
+     This guide shows an example of creating a separate component package, which depends on the ipsframework and can be installed into you python environment. This is also an example of using `MODULE` instead of `SCRIPT` in the component configuration section.
+
 :doc:`Migration from old IPS to new IPS<migration>`
      A guide on converting from the old (up to July 2020) way of doing things to the new way.
 
@@ -39,6 +42,6 @@ This directory has all of the user guides for using the IPS (see the component a
    config_file
    platform
    advanced_guide
+   component_package
    migration
    nersc_conda
-

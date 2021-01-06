@@ -53,20 +53,25 @@ Other Utilities
 .. _ConfigObj: http://configobj.readthedocs.io
 .. _Python: http://python.org
 
+.. _installing-ips:
+
 Building and Setting up Your Environment
 ========================================
-
-.. _installing-ips:
 
 IPS can be installed directly from github with pip
 
 .. code-block:: bash
 
-  pip install git+https://github.com/HPC-SimTools/IPS-framework.git
-  # or
-  python3 -m pip install git+https://github.com/HPC-SimTools/IPS-framework.git
+  python -m pip install git+https://github.com/HPC-SimTools/IPS-framework.git
 
-otherwise you can download the source code.
+otherwise you can download the source code and install from there.
+
+You can install a particular version by, for examples version ``v0.2.0``
+
+.. code-block:: bash
+
+  python -m pip install git+https://github.com/HPC-SimTools/IPS-framework.git@v0.2.0
+
 
 Installing IPS
 --------------
@@ -82,7 +87,7 @@ source directory
 
 .. code-block:: bash
 
-  pip install .
+  python -m pip install .
   # or
   python setup.py install
 
@@ -100,7 +105,7 @@ creates an egg link)
 
   python setup.py develop
   # or
-  pip install -e .
+  python -m pip install -e .
 
 ``ips.py`` should now be installed in your ``PATH`` and you should be
 able to run
