@@ -72,6 +72,7 @@ from ipsframework.ipsExceptions import BlockedMessageException
 from ipsframework.eventService import EventService
 from ipsframework.cca_es_spec import initialize_event_service
 from ipsframework.ips_es_spec import eventManager
+from ipsframework._version import get_versions
 
 if sys.version[0] != '3':  # noqa: E402
     print("IPS can is only compatible with Python 3.5 or higher")
@@ -715,6 +716,7 @@ def main(argv=None):
         print("IPS using platform file :", platform_default)
 
     parser = argparse.ArgumentParser()
+    parser.add_argument('--version', action='version', version="%(prog)s " + get_versions()['version'])
     parser.add_argument('--simulation', '-i', '--config', '-j',
                         required=True,
                         help='IPS simulation/config file')
