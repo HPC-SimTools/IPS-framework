@@ -30,7 +30,7 @@ environment
 
   git clone https://github.com/HPC-SimTools/IPS-framework.git
   cd IPS-framework
-  pip install .
+  python -m pip install .
 
 To leave your environment
 

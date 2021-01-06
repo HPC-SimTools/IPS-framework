@@ -172,6 +172,8 @@ Component definition and configuration is done in this "section."  Each componen
 
 *NAME* - name of the class in the Python script that implements this component.
 
+*MODULE* - module name to use instead of script e.g. ``package.component``, see :doc:`Create a component package<component_package>` for an example.
+
 *NPROC* - number of processes on which to launch tasks.
 
 *BIN_PATH* - path to script and any other helper scripts and binaries.  This is used by the framework and component to find and execute helper scripts and binaries.
