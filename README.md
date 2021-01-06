@@ -26,5 +26,6 @@ python3 setup.py test
 ```
 
 ---
-![CI](https://github.com/HPC-SimTools/IPS-framework/workflows/CI/badge.svg)
+[![CI](https://github.com/HPC-SimTools/IPS-framework/workflows/CI/badge.svg)](https://github.com/HPC-SimTools/IPS-framework/actions)
 [![codecov](https://codecov.io/gh/HPC-SimTools/IPS-framework/branch/master/graph/badge.svg)](https://codecov.io/gh/HPC-SimTools/IPS-framework)
+[![Documentation Status](https://readthedocs.org/projects/ips-framework/badge/?version=latest)](https://ips-framework.readthedocs.io/en/latest/?badge=latest)
