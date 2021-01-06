@@ -112,11 +112,9 @@ Each component is derived from the ``Component`` class, meaning that each IPS co
 ``restart(self, timeStamp=0)``
   This function replaces ``init`` when restarting a simulation from a previous simulation step.  It should read in data from the appropriate files and set up the component so that it is ready to compute the next step.
 
-To create a new component, there are two ways to do it, start from "scratch" by copying and renaming the skeleton component (:download:`skeleton_comp.py <../examples/skeleton_comp.py>`) to your desired location [#]_, or by modifying an existing component (e.g., :download:`example_comp.py <../examples/example_comp.py>`).  When creating your new component, keep in mind that it should be somewhat general and usable in multiple contexts.  In general, for things that change often, you will want to use component configuration variables or input files to drive the logic or set parameters for the tasks.  For more in depth information about how to create components and add them to the build process, see :doc:`Developing Drivers and Components for IPS Simulations <advanced_guide>`.
+To create a new component, there are two ways to do it, start from "scratch" by copying and renaming the skeleton component (:download:`skeleton_comp.py <../examples/skeleton_comp.py>`) to your desired location, or by modifying an existing component (e.g., :download:`example_comp.py <../examples/example_comp.py>`).  When creating your new component, keep in mind that it should be somewhat general and usable in multiple contexts.  In general, for things that change often, you will want to use component configuration variables or input files to drive the logic or set parameters for the tasks.  For more in depth information about how to create components and add them to the build process, see :doc:`Developing Drivers and Components for IPS Simulations <advanced_guide>`.
 
 When changing an existing component that will diverge from the existing version, be sure to create a new version.  If you are editing an existing component to make it better, be sure to document what you changexs.
-
-.. [#] Components are located in the ``ips/components/`` directory and are organized by *port name*, followed by implementation name.  It is also common to put input files and helper scripts in the directory as well.
 
 :::::::::::::::::
 Setup Simulation
@@ -149,15 +147,7 @@ First, the platform on which to run the simulation must be determined.  When cho
 
     * Do you have access to enough hard drive space to store the output of the simulation until you have the time to analyze and condense it?
 
-Once you have chosen a suitable platform, you may build the IPS like so::
-
-  host ~ > cd <path to ips>
-  host ips > . swim.bashrc.<machine_name>
-  host ips > svn up
-  host ips > make clean
-  host ips > cp config/makeconfig.<machine_name> config/makeconfig.local
-  host ips > make
-  host ips > make install
+Once you have chosen a suitable platform, you may install IPS, see :ref:`installing-ips`.
 
 Second, construct input files or edit the appropriate ones for your simulation.  This step is highly dependent on your simulation, but make sure that you check for the following things (and recheck after constructing the configuration file!):
 
@@ -190,7 +180,6 @@ Third, you must construct the configuration file.  It is helpful to start with a
 
     OUTPUT_PREFIX =
 
-    IPS_ROOT = <location of built ips>
     SIM_ROOT = <location of output tree>
 
     RUN_COMMENT = <used by portal to help identify what ran and why>
@@ -200,7 +189,7 @@ Third, you must construct the configuration file.  It is helpful to start with a
     RESTART_TIME =
     RESTART_ROOT = ${SIM_ROOT}
 
-  In this section the simulation is described and key locations are specified.  *RUN_COMMENT* and *TAG*, along with *RUN_ID*, *TOKAMAK_ID*, and *SHOT_NUMBER* are used by the portal to describe this simulation.  *RUN_ID*, *TOKAMAK_ID*, and *SHOT_NUMBER* are commonly used to construct the *SIM_NAME*, which is often used in as the directory name of the *SIM_ROOT*.  The *IPS_ROOT* is the top-level of the IPS source tree that you are using to execute this simulation.  And finally, the *SIMULATION_MODE* and related items identify the simulation as a *NORMAL* or *RESTART* run.
+  In this section the simulation is described and key locations are specified.  *RUN_COMMENT* and *TAG*, along with *RUN_ID*, *TOKAMAK_ID*, and *SHOT_NUMBER* are used by the portal to describe this simulation.  *RUN_ID*, *TOKAMAK_ID*, and *SHOT_NUMBER* are commonly used to construct the *SIM_NAME*, which is often used in as the directory name of the *SIM_ROOT*.  And finally, the *SIMULATION_MODE* and related items identify the simulation as a *NORMAL* or *RESTART* run.
 
 * Logging Section::
 
@@ -275,7 +264,7 @@ Third, you must construct the configuration file.  It is helpful to start with a
         SUB_CLASS = <type of component>
         NAME = <class name of component implementation>
         NPROC = <# of procs for task invocations>
-        BIN_PATH = ${IPS_ROOT}/bin
+        BIN_PATH = <location of binaries>
         INPUT_DIR = ${DATA_TREE_ROOT}/<location of input directory>
             INPUT_FILES = <input files for each step>
             OUTPUT_FILES = <output files to be archived>
@@ -284,7 +273,7 @@ Third, you must construct the configuration file.  It is helpful to start with a
         SCRIPT = ${BIN_PATH}/<component implementation>
         MODULE = <module name to use instead of script e.g. package.component>
 
-  For each component, fill in or modify the entry to match the locations of the input, output, plasma state, and script locations.  Also, be sure to check the *NPROC* entry to suit the problem size and scalability of the executable, and add any component specific entries that the component implementation calls for.  The data tree is a SWIM-public area where simulation input data can be stored.  It allows multiple users to access the same data and have reasonable assurance that they are indeed using the same versions.  On franklin the data tree root is ``/project/projectdirs/m876/data/``, and on stix it is ``/p/swim1/data/``.  The plasma state files must be part of the simulation plasma state.  It may be a subset if there are files that are not needed by the component on each step.  Additional component-specific entries can also appear here to signal a piece of logic or set a data value.
+  For each component, fill in or modify the entry to match the locations of the input, output, plasma state, and script locations.  Also, be sure to check the *NPROC* entry to suit the problem size and scalability of the executable, and add any component specific entries that the component implementation calls for.  It allows multiple users to access the same data and have reasonable assurance that they are indeed using the same versions.  The plasma state files must be part of the simulation plasma state.  It may be a subset if there are files that are not needed by the component on each step.  Additional component-specific entries can also appear here to signal a piece of logic or set a data value.
 
 * Checkpoint Section::
 
@@ -316,7 +305,7 @@ Run Simulation
 
 Now, that you have everything set up, it is time to construct the batch script to launch the IPS.  Just like the configuration files, this is something that tends to be user specific and platform specific, so it is a good idea to keep local copy in a persistant directory on each platform you tend to use for easy modification.
 
-As an example, here is a skeleton of a batch script for Franklin::
+As an example, here is a skeleton of a batch script::
 
   #! /bin/bash
   #PBS -A <project code for accounting>
@@ -328,20 +317,16 @@ As an example, here is a skeleton of a batch script for Franklin::
   #PBS -S /bin/bash                                               
   #PBS -V                                                              
 
-  IPS_ROOT=<location of IPS root>
-  cd $PBS_O_WORKDIR
-  umask=0222
-
-  $IPS_ROOT/bin/ips [--config=<config file>]+ \  
-    		     --platform=$IPS_ROOT/franklin.conf \
-		     --log=<name of log file> \
-		    [--debug]  \
-		    [--nodes=<number of nodes in this allocation>] \
-		    [--ppn=<number of processes per node for this allocation>] 
+  ips.py [--config=<config file>]+ \
+          --platform=platform.conf \
+          --log=<name of log file> \
+         [--debug]  \
+         [--nodes=<number of nodes in this allocation>] \
+         [--ppn=<number of processes per node for this allocation>]
 
 Note that you can only run one instance of the IPS per batch submission, however you may run multiple simulations in the same batch allocation by specifying multiple ``--config=<config file>`` entries on the command line.  Each config file must have a unique file name, and *SIM_ROOT*.  The different simulations will share the resources in the allocation, in many cases improving the resource efficiency, however this may make the execution time of each individual simulation a bit longer due to waiting on resources.
 
-The IPS also needs information about the platform it is running on (``--platform=$IPS_ROOT/franklin.conf``) and a log file (``--logfile=<name of log file>``)for the framework output.  Platform files for commonly used platforms are provided in the top-level of the ips directory.  It is strongly recommended that you use the appropriate one for launching IPS runs.  See :doc:`platform` for more information on how to use or create these files.
+The IPS also needs information about the platform it is running on (``--platform=platform.conf``) and a log file (``--logfile=<name of log file>``)for the framework output.  Platform files for commonly used platforms are provided in the top-level of the ips directory.  It is strongly recommended that you use the appropriate one for launching IPS runs.  See :doc:`platform` for more information on how to use or create these files.
 
 Lastly, there are some optional command line arguments that you may use.  ``--debug`` will turn on debugging information from the framework.  ``--nodes`` and ``--ppn`` allow the user to manually set the number of nodes and processes per node for the framework.  This will override any detection by the framework and should be used with caution.  It is, however, a convenient way to run the ips on a machine without a batch scheduler.
 

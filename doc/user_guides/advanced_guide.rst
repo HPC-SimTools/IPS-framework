@@ -92,56 +92,6 @@ At this point, it might be a good idea to start the documentation of the compone
 
 .. _comp_makefile_sec:
 
-:::::::::::::::
-Makefile
-:::::::::::::::
-
-Once you are satisfied with the implementation of the component, it is time to construct and edit the Makefiles such that the component is built properly by the framework.  The Makefile will build your executables and move scripts to ``${IPS_ROOT}/bin``.
-
-1. If you do not already have a makefile in the directory for your new component, copy the examples (``ips/doc/examples/Makefile`` and ``ips/doc/examples/Makefile.include``) to your component directory.
-
-2. List all executables to be compiled in *EXECUTABLES* and scripts in *SCRIPTS*. ::
-
-     EXECUTABLES = do_toric_init prepare_toric_input process_toric_output \
-		     process_toric_output_mcmd # Ptoric.e Storic.e
-     SCRIPTS = rf_ic_toric.py rf_ic_toric_mcmd.py
-     TARGETS = $(EXECUTABLES)
-
-3. Make targets for each executable.  Do not remove targets *all*, *install*, *clean*, *distclean*, and *.depend*.
-
-4. Add any libraries that are needed to ``ips/config/makeconfig.local``. (This is where *LIBS* and the various fortran flags are defined.)
-
-5. Add component to top-level Makefile.  Toric example::
-
-     TORIC_COMP_DIR=components/rf/toric/src
-     TORIC_COMP=.TORIC
-
-6. Add component dir to *COMPONENT_DIRS*::
-
-     COMPONENTS_DIRS=$(AORSA_COMP_DIR) \
-                     $(TORIC_COMP_DIR) \
-                     $(BERRY_INIT_COMP_DIR) \
-                     $(CHANGE_POWER_COMP_DIR) \
-                     $(BERRY_CQL3D_INIT_COMP_DIR) \
-                     $(CHANGE_POWER_COMP_DIR) \
-                     $(CQL3D_COMP_DIR) \
-                     $(ELWASIF_DRIVER_COMP_DIR) \
-                     ...
-
-7. Add component to *COMPONENTS*::
-
-     COMPONENTS=$(AORSA_COMP) \
-                $(TORIC_COMP) \
-                $(BERRY_AORSA_INIT_COMP) \
-                $(BERRY_CQL3D_INIT_COMP) \
-                $(CHANGE_POWER_COMP) \
-                $(CQL3D_COMP) \
-                $(BERRY_INIT_COMP) \
-                $(ELWASIF_DRIVER_COMP) \
-                ...
-
-Now you should be able to build the IPS with your new component.
-
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Testing and Debugging a Component
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -204,13 +154,13 @@ The following sections of the configuration file may need to be modified.  If yo
          SUB_CLASS =
          NAME = tsc
          NPROC = 1
-         BIN_PATH = ${IPS_ROOT}/bin
-         INPUT_DIR = ${IPS_ROOT}/components/epa/tsc
+         BIN_PATH = /path/to/bin
+         INPUT_DIR = /path/to/components/epa/tsc
          INPUT_FILES = inputa.I09001 sprsina.I09001config_nbi_ITER.dat
          OUTPUT_FILES = outputa tsc.cgm inputa log.tsc ${STATE_FILES}
          SCRIPT = ${BIN_PATH}/epa_nb_iter.py
 
-   The component section starts with a label that matches what is listed as the implementation in the ports section.  These *must* match or else the framework will not find your component and the simulation will fail before it starts (or worse, use the wrong implementation!). *CLASS* and *SUBCLASS* typically refer to the directory hierarchy and are sometimes used to identify the location of the source code and input files.  Note that *NAME* must match the python class name that implements the component.  *NPROC* is the number of *processes* that the binary needs to use when launched on compute nodes.  The *BIN_PATH* will almost always be ``${IPS_ROOT}/bin`` and refers to the location of any binaries you wish to use in your component.  The Makefile will move your component script to ``${IPS_ROOT}/bin`` when you build the IPS, and should do the same to any binaries that are produced from the targets in the Makefile.  If you have pre-built binaries that exist in another location, an additional entry in the component description section may be a convenient place to put it.  *INPUT_DIR*, *INPUT_FILES* and *OUTPUT_FILES* specify the location and names of the input and output files, respectively.  If a subset of plasma states files is all that is required by the component, they are specified here (*STATE_FILES*).  If the entry is omitted, *all* of the plasma state files are used.  This prevents the full set of files to be copied to and from the component's work directory on every step, saving time and space.  Lastly, *SCRIPT* is the Python script that contains the component code, specifically the Python class in *NAME*.  Additionally, any component specific values maybe specified here to control logic or set data values that change often.
+   The component section starts with a label that matches what is listed as the implementation in the ports section.  These *must* match or else the framework will not find your component and the simulation will fail before it starts (or worse, use the wrong implementation!). *CLASS* and *SUBCLASS* typically refer to the directory hierarchy and are sometimes used to identify the location of the source code and input files.  Note that *NAME* must match the python class name that implements the component.  *NPROC* is the number of *processes* that the binary needs to use when launched on compute nodes. If you have pre-built binaries that exist in another location, an additional entry in the component description section may be a convenient place to put it.  *INPUT_DIR*, *INPUT_FILES* and *OUTPUT_FILES* specify the location and names of the input and output files, respectively.  If a subset of plasma states files is all that is required by the component, they are specified here (*STATE_FILES*).  If the entry is omitted, *all* of the plasma state files are used.  This prevents the full set of files to be copied to and from the component's work directory on every step, saving time and space.  Lastly, *SCRIPT* is the Python script that contains the component code, specifically the Python class in *NAME*.  Additionally, any component specific values maybe specified here to control logic or set data values that change often.
 
 4. *Time Loop Section*
 
