@@ -202,7 +202,7 @@ Additional values that are specific to the component may be added as needed, for
       SUB_CLASS = model_epa
       NAME = model_EPA
       NPROC = 1
-      BIN_PATH = ${IPS_ROOT}/bin
+      BIN_PATH = /path/to/bin
       INPUT_DIR = ${DATA_TREE_ROOT}/model_epa/ITER/hy040510/t20.0
           INPUT_STATE_FILE = hy040510_002_ps_epa__tsc_4_20.000.cdf
           INPUT_EQDSK_FILE = hy040510_002_ps_epa__tsc_4_20.000.geq 
@@ -220,8 +220,8 @@ Additional values that are specific to the component may be added as needed, for
       W3_DIR = ${USER_W3_DIR}              # Note this is user specific
       W3_BASEURL = ${USER_W3_BASEURL}      # Note this is user specific
       TEMPLATE_FILE= basic_time_traces.xml 
-      BIN_PATH = ${IPS_ROOT}/bin
-      INPUT_DIR = ${IPS_ROOT}/components/monitor/monitor_4
+      BIN_PATH = /path/to/bin
+      INPUT_DIR = /path/to/components/monitor/monitor_4
       INPUT_FILES = basic_time_traces.xml 
       OUTPUT_FILES = monitor_file.nc
       STATE_FILES = ${CURRENT_STATE}

@@ -359,29 +359,25 @@ The IPS can be run on your laptop or desktop.  Many of the items above are not p
 ---------------------------
 Platform Configuration File
 ---------------------------
-The platform configuration file contains platform specific information that the framework needs.  Typically it does not need to be changed for one user to another or one run to another (except for manual specification of allocation resources).  For *most* of the platforms above, you will find platform configuration files of the form ``ips/<machine name>.conf``.  It is not likely that you will need to change this file, but it is described here for users working on experimental machines, manual specification of resources, and users who need to port the IPS to a new machine.
+The platform configuration file contains platform specific information that the framework needs.  Typically it does not need to be changed for one user to another or one run to another (except for manual specification of allocation resources).  For *most* of the platforms above, you will find platform configuration files of the form ``<machine name>.conf``.  It is not likely that you will need to change this file, but it is described here for users working on experimental machines, manual specification of resources, and users who need to port the IPS to a new machine.
 
 ::
 
-  HOST = franklin
-  MPIRUN = aprun
+  HOST = cori
+  MPIRUN = srun
 
   #######################################
   # resource detection method
   #######################################
-  NODE_DETECTION = checkjob # checkjob | qstat | pbs_env | slurm_env
 
-  #######################################
-  # manual allocation description
-  #######################################
-  TOTAL_PROCS = 16
-  NODES = 4
-  PROCS_PER_NODE = 4
+  NODE_DETECTION = slurm_env # checkjob | qstat | pbs_env | slurm_env
 
   #######################################
   # node topology description
   #######################################
-  CORES_PER_NODE = 4
+
+  PROCS_PER_NODE = 32
+  CORES_PER_NODE = 32
   SOCKETS_PER_NODE = 1
 
   #######################################
@@ -392,7 +388,9 @@ The platform configuration file contains platform specific information that the 
   #   * SHARED : multiple tasks may share a node
   # For single node jobs, this can be overridden allowing multiple
   # tasks per node.
+
   NODE_ALLOCATION_MODE = EXCLUSIVE # SHARED | EXCLUSIVE
+  USE_ACCURATE_NODES = ON
 
 **HOST**
         name of the platform.  Used by the portal.
@@ -443,16 +441,7 @@ The platform configuration file contains platform specific information that the 
 
 .. note : the node allocation and detection values in this file can be overriden by command line options to the ips ``--nodes`` and ``--ppn``.  *Both* values must be specified, otherwise the platform configuration values are used.
 
-Due to the recent changes in the framework regarding resource management, some platforms may not have platform configuration files in the repository.  Below is a list of those that are in the repo and work with the recent changes to the framework.
-
-* franklin
-* hopper
-* odin
-* sif
-* stix [#manual_only]_
-* swim [#manual_only]_
-
-In addition to these files, there is ``ips/workstation.conf``, a sample platform configuration file for a workstation.  It assumes that the workstation:
+A sample platform configuration file for a workstation.  It assumes that the workstation:
 
   * does not have a batch scheduler or resource manager
   * may have multiple cores and sockets
