@@ -7,11 +7,19 @@ package. This is also an example of using ``MODULE`` instead of
 
 The examples will be a simple hello world with one driver and one
 worker. The only requirement of the package is ``ipsframework`` and we
-are using the specific version v0.2.0. It can be simply installed with
+are using the specific version v0.2.1. The ipsframework should be
+automatically installed from pypi when install ipsexamples but you can
+manually install it from pypi with
 
 .. code-block:: bash
 
-    python -m pip install git+https://github.com/HPC-SimTools/IPS-framework.git@v0.2.0
+    python -m pip install ipsframework==0.2.1
+
+Or to install it directly from github you can do
+
+.. code-block:: bash
+
+    python -m pip install git+https://github.com/HPC-SimTools/IPS-framework.git@v0.2.1
 
 To create this project locally, create the following file structure
 
