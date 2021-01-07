@@ -14,7 +14,7 @@ Obtaining, Dependencies, Platforms
 
 The IPS code is currently located on the GitHub repository. In order to checkout a copy, you must have git installed on the machine you will be using. Once you have git you can check out the IPS thusly::
 
-      git clone https://github.com/HPC-SimTools/IPS-framework.git ips
+      git clone https://github.com/HPC-SimTools/IPS-framework.git
 
 Dependencies
 ------------
@@ -58,20 +58,28 @@ Other Utilities
 Building and Setting up Your Environment
 ========================================
 
-IPS can be installed directly from github with pip
+It can be simply installed with
+
+.. code-block:: bash
+
+  python -m pip install ipsframework
+
+The latest development version of IPS can be installed directly from github with pip
 
 .. code-block:: bash
 
   python -m pip install git+https://github.com/HPC-SimTools/IPS-framework.git
 
-otherwise you can download the source code and install from there.
-
-You can install a particular version by, for examples version ``v0.2.0``
+You can install a particular version by, for examples version ``v0.2.1``
 
 .. code-block:: bash
 
-  python -m pip install git+https://github.com/HPC-SimTools/IPS-framework.git@v0.2.0
+  python -m pip install ipsframework==0.2.1
+  # or
+  python -m pip install git+https://github.com/HPC-SimTools/IPS-framework.git@v0.2.1
 
+
+Otherwise you can download the source code and install from there.
 
 Installing IPS
 --------------

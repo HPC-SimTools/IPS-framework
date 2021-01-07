@@ -1,12 +1,26 @@
 # Integrated Plasma Simulator (IPS) Framework
 
-## Installing
+The documentation can be found at
+
+Installation is available via pip:
+
+```
+python3 -m pip install ipsframework
+```
+
+or to install the latest development version from github:
+
+```
+python3 -m pip install git+https://github.com/HPC-SimTools/IPS-framework.git
+```
+
+## Installing from source
 
 ```
 python3 setup.py install
 ```
 
-## Install in develop mode
+### Install in develop mode
 
 ```
 python3 setup.py develop
