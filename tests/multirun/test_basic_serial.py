@@ -2,6 +2,7 @@ from ipsframework import Framework
 import os
 import shutil
 import glob
+import pytest
 
 
 def copy_config_and_replace(infile, srcdir, tmpdir):
@@ -16,6 +17,7 @@ def copy_config_and_replace(infile, srcdir, tmpdir):
                     fout.write(line)
 
 
+@pytest.mark.skipif(not shutil.which('mpirun'), reason="missing mpirun")
 def test_basic_serial1(tmpdir, capfd):
     datadir = os.path.dirname(__file__)
     copy_config_and_replace("basic_serial1.ips", datadir, tmpdir)
@@ -74,6 +76,7 @@ def test_basic_serial1(tmpdir, capfd):
             assert f'workers_testing_{worker} INFO     Stepping Worker timestamp={timestamp}\n' in lines
 
 
+@pytest.mark.skipif(not shutil.which('mpirun'), reason="missing mpirun")
 def test_basic_serial_multi(tmpdir, capfd):
     # This is the same as test_basic_serial1 except that 2 simulation files are use at the same time
     datadir = os.path.dirname(__file__)
@@ -163,6 +166,7 @@ def test_basic_serial_multi(tmpdir, capfd):
             assert f'workers_testing_{worker} INFO     Stepping Worker timestamp={timestamp}\n' in lines
 
 
+@pytest.mark.skipif(not shutil.which('mpirun'), reason="missing mpirun")
 def test_basic_concurrent1(tmpdir, capfd):
     datadir = os.path.dirname(__file__)
     copy_config_and_replace("basic_concurrent1.ips", datadir, tmpdir)
