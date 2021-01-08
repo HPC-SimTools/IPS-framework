@@ -35,6 +35,7 @@ class ConfigurationManager:
             self.sim_root = None
             self.sim_conf = None
             self.config_file = None
+            self.conf_file_dir = None
             self.driver_comp = None
             self.init_comp = None
             self.all_comps = []
