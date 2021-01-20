@@ -7,11 +7,20 @@ import importlib
 import tempfile
 import logging
 import socket
-from multiprocessing import Queue, Process
+from multiprocessing import Queue, Process, set_start_method
 from .configobj import ConfigObj
 from . import ipsLogging
 from .services import ServicesProxy
 from .componentRegistry import ComponentID, ComponentRegistry
+
+# Try using fork for starting subprocesses, this is the default on
+# Linux but not macOS with python >= 3.8
+if sys.platform == 'darwin':
+    try:
+        set_start_method('fork')
+    except RuntimeError:
+        # context can only be set once
+        pass
 
 
 class ConfigurationManager:

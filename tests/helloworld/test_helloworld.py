@@ -3,6 +3,7 @@ import os
 import shutil
 import json
 import glob
+import pytest
 
 
 def copy_config_and_replace(infile, outfile, tmpdir, task_pool=False, portal=False, dask=False):
@@ -147,6 +148,8 @@ def test_helloworld_task_pool(tmpdir, capfd):
 
 
 def test_helloworld_task_pool_dask(tmpdir, capfd):
+    pytest.importorskip("dask")
+    pytest.importorskip("distributed")
     from ipsframework import TaskPool
     assert TaskPool.dask is not None
 
