@@ -11,7 +11,11 @@ class timeloop_driver(Component):
         if mode == "init":
             with open(self.state_file, 'w') as f:
                 f.write(f'{self.component_id} init()\n')
-            self.services.update_state()
+        else:
+            self.services.stage_state()
+            with open(self.state_file, 'a') as f:
+                f.write(f'{self.component_id} restart()\n')
+        self.services.update_state()
 
         for port in self.workers:
             self.services.call(port, mode, timestamp)
