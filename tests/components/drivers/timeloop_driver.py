@@ -2,43 +2,40 @@ from ipsframework import Component
 
 
 class timeloop_driver(Component):
-    def step(self, timestamp=0.0):
-        super().step(timestamp)
+    def init(self, timestamp=0.0):
+        self.state_file = self.services.get_config_param("CURRENT_STATE")
+        self.workers = [self.services.get_port(port) for port in self.services.get_config_param('PORTS')['NAMES'].split() if port not in ('INIT', 'DRIVER')]
 
-        ports = self.services.get_config_param('PORTS')
-        port_names = ports['NAMES'].split()
+        mode = 'restart' if self.services.get_config_param("SIMULATION_MODE").lower() == 'restart' else 'init'
+
+        if mode == "init":
+            with open(self.state_file, 'w') as f:
+                f.write(f'{self.component_id} init()\n')
+            self.services.update_state()
+
+        for port in self.workers:
+            self.services.call(port, mode, timestamp)
+
+    def step(self, timestamp=0.0):
 
         timeloop = self.services.get_time_loop()
 
-        port_dict = {}
-        port_id_list = []
-        for port_name in port_names:
-            if port_name in ["DRIVER"]:
-                continue
-            port = self.services.get_port(port_name)
-            port_dict[port_name] = port
-            port_id_list.append(port)
-
-        for port_name in port_names:
-            if port_name in ['INIT', 'DRIVER']:
-                continue
-            self.services.call(port_dict[port_name], 'init', timeloop[0])
-
         for t in timeloop:
             self.services.update_time_stamp(t)
-            for port_name in port_names:
-                if port_name in ['INIT', 'DRIVER']:
-                    continue
-                self.services.call(port_dict[port_name], 'step', t)
 
-            # self.services.stage_output_files(t, self.OUTPUT_FILES)
-            self.services.checkpoint_components(port_id_list, t)
+            self.services.stage_state()
+            with open(self.state_file, 'a') as f:
+                f.write(f'{self.component_id} step({t})\n')
+            self.services.update_state()
+
+            for port in self.workers:
+                self.services.call(port, 'step', t)
+
+            self.services.checkpoint_components(self.workers, t)
             self.checkpoint(t)
 
-        for port_name in port_names:
-            if port_name in ['INIT', 'DRIVER']:
-                continue
-            self.services.call(port_dict[port_name], 'finalize', timeloop[-1])
+        for port in self.workers:
+            self.services.call(port, 'finalize', timeloop[-1])
 
     def checkpoint(self, timestamp=0.0):
         self.services.log(f'checkpoint({timestamp})')

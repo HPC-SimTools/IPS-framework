@@ -24,6 +24,9 @@ LOG_FILE = {str(tmpdir)}/sim.log
 LOG_LEVEL = INFO
 SIM_ROOT = {str(tmpdir)}
 SIMULATION_MODE = NORMAL
+CURRENT_STATE = ${{SIM_NAME}}_ps.dat
+STATE_FILES = $CURRENT_STATE
+STATE_WORK_DIR = $SIM_ROOT/work/state
 [PORTS]
     NAMES = DRIVER TIMELOOP_COMP
     [[DRIVER]]
@@ -47,7 +50,8 @@ SIMULATION_MODE = NORMAL
     BIN_PATH =
     NPROC = 1
     INPUT_FILES =
-    OUTPUT_FILES =
+    OUTPUT_FILES = w1_1.dat w1_2.dat
+    RESTART_FILES = w1_1.dat $CURRENT_STATE
     SCRIPT =
     MODULE = components.workers.timeloop_comp
 [TIME_LOOP]
@@ -57,7 +61,7 @@ SIMULATION_MODE = NORMAL
     NSTEP = 4
 [CHECKPOINT]
    MODE = ALL
-   NUM_CHECKPOINT = -1
+   NUM_CHECKPOINT = 2
 """
 
     with open(config_file, 'w') as f:
@@ -66,7 +70,7 @@ SIMULATION_MODE = NORMAL
     return platform_file, config_file
 
 
-def test_timeloop(tmpdir, capfd):
+def test_timeloop(tmpdir):
     platform_file, config_file = write_basic_config_and_platform_files(tmpdir)
 
     framework = Framework(config_file_list=[str(config_file)],
@@ -90,3 +94,33 @@ def test_timeloop(tmpdir, capfd):
         assert f"TIMELOOP_COMP__timeloop_comp_2 INFO     step({time})\n" in lines
         for comp in ["TIMELOOP__timeloop_driver_1", "TIMELOOP_COMP__timeloop_comp_2"]:
             assert f"{comp} INFO     checkpoint({time})\n" in lines
+
+    # check output files
+
+    # state file
+    state_files = tmpdir.join("work").join("state").listdir()
+    assert len(state_files) == 1
+    state_file = state_files[0].readlines()
+    assert len(state_file) == 12
+
+    # restart files
+    restart_dir = tmpdir.join("restart")
+    assert len(restart_dir.listdir()) == 2
+    assert restart_dir.join("137.500").join("TIMELOOP_COMP__timeloop_comp").exists()
+    assert restart_dir.join("150.000").join("TIMELOOP_COMP__timeloop_comp").exists()
+
+    # 137.500
+    restart_files = restart_dir.join("137.500").join("TIMELOOP_COMP__timeloop_comp")
+    assert len(restart_files.listdir()) == 2
+    assert restart_files.join("w1_1.dat").exists()
+    assert len(restart_files.join("w1_1.dat").readlines()) == 5
+    assert restart_files.join("test_ps.dat").exists()
+    assert len(restart_files.join("test_ps.dat").readlines()) == 10
+
+    # 150.000
+    restart_files = restart_dir.join("150.000").join("TIMELOOP_COMP__timeloop_comp")
+    assert len(restart_files.listdir()) == 2
+    assert restart_files.join("w1_1.dat").exists()
+    assert len(restart_files.join("w1_1.dat").readlines()) == 6
+    assert restart_files.join("test_ps.dat").exists()
+    assert len(restart_files.join("test_ps.dat").readlines()) == 12
