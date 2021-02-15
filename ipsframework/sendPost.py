@@ -1,38 +1,39 @@
-#! /usr/bin/env python
+#!/usr/bin/env python
 # -------------------------------------------------------------------------------
-# Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
+#  Copyright 2006-2020 UT-Battelle, LLC. See LICENSE for more information.
 # -------------------------------------------------------------------------------
 
 import sys
-import urllib.request
-import urllib.error
-import urllib.parse
+from urllib import request, error
 import socket
 import time
 import traceback
 
-# timeout in seconds
+headers = {'Content-Type': 'application/json'}
 
 
 def sendEncodedMessage(url, msg):
-    global msg_queue
+    if not isinstance(msg, bytes):
+        msg = msg.encode('utf-8')
+
     num_trials = 2
     trial = 0
     delay = [0.4, 0.8, 1.2]
 
-    while (trial < num_trials):
+    while trial < num_trials:
         try:
-            f = urllib.request.urlopen(url, msg)
-        except (urllib.error.URLError):
+            req = request.Request(url, data=msg, headers=headers, method='POST')
+            resp = request.urlopen(req)
+        except error.URLError:
             trial += 1
             if trial > num_trials:
                 open('PORTAL.err', 'a').write('%s\n' % (msg))
             else:
-                time.sleep(delay[trial - 1])
+                time.sleep(delay[trial-1])
         else:
             break
     try:
-        f.close()
+        resp.close()
     except Exception:
         pass
 
@@ -43,15 +44,15 @@ if __name__ == "__main__":
     """
     timeout = 3
     socket.setdefaulttimeout(timeout)
-    error_f = open("sendpost.err", 'a')
+    error_f = open("sendpost.err", 'w')
     line = '   '
-    while (line != ''):
+    while True:
         try:
             line = sys.stdin.readline().rstrip('\n')
+            if line == '':
+                break
             tokens = line.split(' ', 1)
-            url = tokens[0]
-            msg = tokens[1]
-            sendEncodedMessage(url, msg)
+            sendEncodedMessage(tokens[0], tokens[1])
         except Exception:
             traceback.print_exc(file=error_f)
     sys.exit(0)
