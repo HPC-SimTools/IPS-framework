@@ -14,30 +14,7 @@ import time
 from multiprocessing.connection import Client
 from ipsframework.configobj import ConfigObj
 from ipsframework import platformspec
-
-
-def which(program, alt_paths=None):
-    def is_exe(fpath):
-        return os.path.exists(fpath) and os.access(fpath, os.X_OK)
-
-    fpath, _ = os.path.split(program)
-    if fpath:
-        if is_exe(program):
-            return program
-    else:
-        for path in os.environ["PATH"].split(os.pathsep):
-            exe_file = os.path.join(path, program)
-            if is_exe(exe_file):
-                return exe_file
-
-        # Trust locations in platform file over those in environment path
-        if alt_paths:
-            for path in alt_paths:
-                exe_file = os.path.join(path, program)
-                if is_exe(exe_file):
-                    return exe_file
-
-    return None
+from ipsframework.ipsutil import which
 
 
 class DakotaDynamic:
@@ -212,9 +189,9 @@ IPS_ROOT/bin or IPS_ROOT/framework/src')
         os.environ['IPS_DAKOTA_runid'] = str(os.getpid())
         os.environ['IPS_DAKOTA_SOCKET_ADDRESS'] = sock_address
 
-        fd = open(new_dakota_config, 'w')
-        [fd.write('%s\n' % (line)) for line in self.dakota_conf]
-        fd.close()
+        with open(new_dakota_config, 'w') as fd:
+            for line in self.dakota_conf:
+                fd.write('%s\n' % (line))
 
         ips = which('ips.py', alt_paths)
         if not ips:

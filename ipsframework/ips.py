@@ -333,6 +333,8 @@ class Framework:
             else:
                 msg = args[0]
             self.logger.error(msg)
+        except AttributeError:
+            raise RuntimeError("logger is not initialized")
         except Exception:
             self.error('Bad format in call to fwk.error() ' + str(args))
 

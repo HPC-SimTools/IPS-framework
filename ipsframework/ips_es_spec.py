@@ -6,7 +6,7 @@ from .cca_es_spec import EventListener, PublisherEventService, SubscriberEventSe
 
 class myEventListener(EventListener):
     def __init__(self, callback_method):
-        super(myEventListener, self).__init__()
+        super().__init__()
         self.callback_method = callback_method
 
     def processEvent(self, topicName, theEvent):

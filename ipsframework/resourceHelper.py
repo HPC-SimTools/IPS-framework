@@ -245,7 +245,7 @@ def get_slurm_info():
     except Exception:
         raise
 
-    if nproc > 0 and nproc < len(nodes) * max_p:
+    if 0 < nproc < len(nodes) * max_p:
         mixed_nodes = True
         nodes[-1][1] = nproc % max_p
 
@@ -272,7 +272,7 @@ def get_pbs_info():
                 node_dict[core] += 1
             except KeyError:
                 node_dict[core] = 1
-        listOfNodes = [(k, v) for k, v in list(node_dict.items())]
+        listOfNodes = list(node_dict.items())
         max_p = max(node_dict.values())
         mixed_nodes = (max_p != min(node_dict.values()))
         return len(listOfNodes), max_p, mixed_nodes, listOfNodes
@@ -370,7 +370,7 @@ def getResourceList(services, host, partial_nodes=False):
                     if ppn == 0:
                         ppn = 1
                     if not listOfNodes:
-                        for n in num_nodes:
+                        for n in range(num_nodes):
                             listOfNodes.append(("dummynode%d" % n, ppn))
                     else:
                         accurateNodes = True

@@ -989,7 +989,7 @@ class ServicesProxy:
 
         """
         ret_dict = {}
-        running_tasks = [task_id for task_id in task_id_list]
+        running_tasks = list(task_id_list)
         for task_id in task_id_list:
             try:
                 process = self.task_map[task_id][0]
@@ -1183,8 +1183,7 @@ class ServicesProxy:
 
             wt_values = [float(t) for t in wt_values]
             for t in wt_values:
-                if ((elapsed_time >= t) and
-                        (self.last_ckpt_walltime - self.start_time < t)):
+                if elapsed_time >= t > self.last_ckpt_walltime - self.start_time:
                     return self._dispatch_checkpoint(time_stamp, comp_id_list, Protect)
             return None
         elif mode == 'PHYSTIME_REGULAR':
@@ -1344,8 +1343,8 @@ class ServicesProxy:
         elapsed_time = time.time() - start_time
         self._send_monitor_event(eventType='IPS_STAGE_INPUTS',
                                  comment='Elapsed time = %.3f Path = %s Files = %s' %
-                                         (elapsed_time, os.path.abspath(inputDir),
-                                          str(input_file_list)))
+                                 (elapsed_time, os.path.abspath(inputDir),
+                                  str(input_file_list)))
 
     def stage_subflow_output_files(self, subflow_name='ALL'):
         # Gather outputs from sub-workflows. Sub-workflow output

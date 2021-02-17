@@ -18,8 +18,7 @@ def parse_log_line(line):
     val_dict['event_time'] = tokens[1]
 
     start = {s: line.find(s) + len(s + "=") for s in field_names}
-    end = {s: line.find("'", start[s] + 1) if line[start[s]] == "'" else
-           line.find(" ", start[s] + 1) for s in field_names}
+    end = {s: line.find("'", start[s] + 1) if line[start[s]] == "'" else line.find(" ", start[s] + 1) for s in field_names}
     for k in end:
         if end[k] == -1:
             end[k] = len(line)

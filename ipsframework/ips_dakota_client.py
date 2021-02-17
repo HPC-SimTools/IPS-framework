@@ -21,7 +21,6 @@ class IPSDakotaClient:
         self.sim_root = None
         self.sim_name = None
         self.sim_logfile = None
-        self.sweep_spec = None
         self.in_file = in_file
         self.out_file = out_file
 

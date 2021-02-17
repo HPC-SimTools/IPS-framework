@@ -82,7 +82,7 @@ class LogRecordSocketReceiver(socketserver.ThreadingUnixStreamServer):
     """simple TCP socket-based logging receiver suitable for testing.
     """
 
-    allow_reuse_address = 1
+    allow_reuse_address = True
 
     def __init__(self, log_pipe,
                  handler=myLogRecordStreamHandler):

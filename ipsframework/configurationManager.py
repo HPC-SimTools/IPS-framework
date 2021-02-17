@@ -246,7 +246,7 @@ class ConfigurationManager:
 
                 # Allow simulation file to override platform values
                 # and then put all platform values into simulation map
-                for key in self.platform_conf.keys():
+                for key in self.platform_conf:
                     if key in conf_keys and key not in os.environ.keys():
                         self.platform_conf[key] = conf[key]
                     if key not in conf_keys:
