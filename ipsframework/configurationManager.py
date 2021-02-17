@@ -157,12 +157,8 @@ class ConfigurationManager:
             self.platform_conf = ConfigObj(self.platform_file,
                                            interpolation='template',
                                            file_error=True)
-        except IOError:
+        except (IOError, SyntaxError):
             self.fwk.exception('Error opening config file: %s',
-                               self.platform_file)
-            raise
-        except SyntaxError:
-            self.fwk.exception('Error parsing config file: %s',
                                self.platform_file)
             raise
         # get mandatory values
@@ -202,10 +198,7 @@ class ConfigurationManager:
                     and not any([x in v for x in '{}()$']):
                 self.platform_conf[k] = v
 
-        try:
-            mpirun_version = self.platform_conf['MPIRUN_VERSION']
-        except KeyError:
-            mpirun_version = 'OpenMPI-generic'
+        mpirun_version = self.platform_conf.get('MPIRUN_VERSION', 'OpenMPI-generic')
 
         # node allocation mode describes how node allocation should be handled
         # in the IPS.
@@ -221,39 +214,17 @@ class ConfigurationManager:
             self.fwk.exception("missing value or bad type for NODE_ALLOCATION_MODE.  expected 'EXCLUSIVE' or 'SHARED'.")
             raise
 
-        try:
-            uan_val = self.platform_conf['USE_ACCURATE_NODES'].upper()
-            if uan_val in ['OFF', 'FALSE']:
-                use_accurate_nodes = False
-            else:
-                use_accurate_nodes = True
-        except Exception:
+        uan_val = self.platform_conf.get('USE_ACCURATE_NODES', 'ON').upper()
+        if uan_val in ['OFF', 'FALSE']:
+            use_accurate_nodes = False
+        else:
             use_accurate_nodes = True
 
-        try:
-            user_def_tprocs = int(self.platform_conf['TOTAL_PROCS'])
-        except KeyError:
-            user_def_tprocs = 0
-
-        try:
-            user_def_nodes = int(self.platform_conf['NODES'])
-        except KeyError:
-            user_def_nodes = 0
-
-        try:
-            user_def_ppn = int(self.platform_conf['PROCS_PER_NODE'])
-        except KeyError:
-            user_def_ppn = 0
-
-        try:
-            user_def_cpn = int(self.platform_conf['CORES_PER_NODE'])
-        except KeyError:
-            user_def_cpn = 0
-
-        try:
-            user_def_spn = int(self.platform_conf['SOCKETS_PER_NODE'])
-        except KeyError:
-            user_def_spn = 0
+        user_def_tprocs = int(self.platform_conf.get('TOTAL_PROCS', 0))
+        user_def_nodes = int(self.platform_conf.get('NODES', 0))
+        user_def_ppn = int(self.platform_conf.get('PROCS_PER_NODE', 0))
+        user_def_cpn = int(self.platform_conf.get('CORES_PER_NODE', 0))
+        user_def_spn = int(self.platform_conf.get('SOCKETS_PER_NODE', 0))
 
         self.platform_conf['TOTAL_PROCS'] = user_def_tprocs
         self.platform_conf['NODES'] = user_def_nodes
@@ -285,11 +256,8 @@ class ConfigurationManager:
                     if key not in conf_keys:
                         conf[key] = self.platform_conf[key]
 
-            except IOError:
+            except (IOError, SyntaxError):
                 self.fwk.exception('Error opening config file %s: ', conf_file)
-                raise
-            except SyntaxError:
-                self.fwk.exception('Error parsing config file %s: ', conf_file)
                 raise
             except Exception:
                 self.fwk.exception('Error(s) during parsing of supplied config file %s: ', conf_file)
@@ -349,7 +317,7 @@ class ConfigurationManager:
         self.log_process = Process(target=self.log_daemon.__run__)
         self.log_process.start()
 
-        for sim_name, sim_data in list(self.sim_map.items()):
+        for sim_name, sim_data in self.sim_map.items():
             if sim_name != self.fwk_sim_name:
                 self._initialize_sim(sim_data)
 
@@ -716,7 +684,6 @@ in configuration file %s', config_file)
         Return a reference to the component from simulation *sim_name*
         implementing port *port_name*.
         """
-        # print sim_name, port_name
         sim_data = self.sim_map[sim_name]
         comp_id = sim_data.port_map[port_name]
         return comp_id
