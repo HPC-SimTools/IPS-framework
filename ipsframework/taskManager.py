@@ -23,7 +23,6 @@ class TaskManager:
     # TM __init__
 
     def __init__(self, fwk):
-        # print "\nDEBUG: TM __init__"
         # ref to framework
         self.fwk = fwk
         self.event_mgr = None
@@ -52,14 +51,6 @@ class TaskManager:
         self.outstanding_calls = {}
         self.finished_calls = {}
         self.mpicmd = None  # USed only for CCM on edison
-        # anything needed for pub/sub thru ES
-        # -------------------------------
-        #     set up publisher
-        # -------------------------------
-        # create publisher event service object
-        # self.publisherES = PublisherEventService()
-        # get a topic to publish on
-        # self.myTopic = self.publisherES.getTopic("test")
 
     # this is where messages are received and then something smart happens
     def process_service_request(self, msg):
@@ -69,7 +60,6 @@ class TaskManager:
         """
         self.fwk.debug('Task Manager received message: %s', str(msg.__dict__))
         method = getattr(self, msg.target_method)
-#        retval = method(sim_name, *msg.args)
         retval = method(msg)
         return retval
 
@@ -91,11 +81,8 @@ class TaskManager:
             print('Error accessing platform parameter MPIRUN')
             raise
 
-        # print "\nDEBUG: TM initialize"
         # do later - subscribe to events, set up event publishing structure
-        # print "DEBUG: subscribe to events"
         # publish "TM initialized" event
-        # print "DEBUG: publish 'TM initialized' event"
 
     def get_call_id(self):
         """
@@ -151,11 +138,9 @@ class TaskManager:
                                                   callee_id,
                                                   call_id,
                                                   method_name, *args, **keywords)
-        # print invoke_msg
         invocation_q = self.comp_registry.getComponentArtifact(callee_id,
                                                                'invocation_q')
         invocation_q.put(invoke_msg)
-#        print 'TM:init_call() ', call_id, caller_id, callee_id
         if manage_return:
             self.outstanding_calls[call_id] = (caller_id, None)
         return call_id
@@ -253,7 +238,6 @@ class TaskManager:
                                                       wnodes,
                                                       wsocks,
                                                       task_ppn=tppn)
-            # print 'RM: get_allocation() returned %s', str(retval)
             self.fwk.debug('RM: get_allocation() returned %s', str(retval))
             partial_node = retval[0]
             if partial_node:
@@ -308,7 +292,6 @@ class TaskManager:
         task_data = self.curr_task_table[task_id]
         task_data['launch_cmd'] = cmd
         task_data['env_update'] = env_update
-        # print "done with init_task"
         return (task_id, cmd, env_update)
 
     def build_launch_cmd(self, nproc, binary, cmd_args, working_dir, ppn,
@@ -330,7 +313,6 @@ class TaskManager:
          * core_list - used for creating host file with process to core mappings
         """
         # set up launch command
-        # print 'build_launch_cmd(', nproc, binary, cmd_args, ppn, max_ppn, nodes, accurateNodes, partial_nodes,')'
         env_update = None
         nproc_flag = ''
         smp_node = len(self.resource_mgr.nodes) == 1
@@ -457,13 +439,8 @@ class TaskManager:
                 if accurateNodes:
                     nlist_flag = '-L'
                     num_nodes = len(nodes.split(','))
-                    # print 'num_nodes = ', num_nodes
                     ppn = int(ceil(float(nproc) / num_nodes))
-                    # print 'ppn = ', ppn
                     per_numa = int(ceil(float(ppn) / num_numanodes))
-                    # print 'per_numa = ' , per_numa
-                    # print 'num_numanodes = ', num_numanodes
-                    # print 'num_cores / num_numanodes', num_cores / num_numanodes
                     if per_numa == num_cores / num_numanodes:
 
                         cmd = ' '.join([self.task_launch_cmd,
@@ -498,7 +475,7 @@ class TaskManager:
                                         nproc_flag, str(nproc),
                                         ppn_flag, str(ppn),
                                         by_numanode_flag, str(per_numa)])
-            else:  # self.host == 'franklin'
+            else:
                 if accurateNodes:
                     nlist_flag = '-L'
                     cmd = ' '.join([self.task_launch_cmd,
@@ -527,7 +504,6 @@ class TaskManager:
             cmd = ' '.join([self.task_launch_cmd,
                             proc_flag])
         elif self.task_launch_cmd == 'srun':
-            # print 'now here'
             nproc_flag = '-n'
             nnodes_flag = '-N'
             num_nodes = len(nodes.split(','))
@@ -640,25 +616,15 @@ class TaskManager:
 
         1. *task_data*: return code of task
         """
-        # print "in finish task"
         task_id = finish_task_msg.args[0]
         task_data = finish_task_msg.args[1]
-        # try:  # For node selection file that could be deleted if need be
-        #    node_file = self.curr_task_table[task_id]['node_file']
-        # except:
-        #    pass
         try:
             self.resource_mgr.release_allocation(task_id, task_data)
-#            self.curr_task_table[task_id]['status'] = 'finished'
-#            self.curr_task_table[task_id]['ret_data'] = task_data
             del self.curr_task_table[task_id]
-            # os.remove('_gen_rf_' + str(task_id))
         except AllocatedNodeDownException:
             del self.curr_task_table[task_id]
             return 1
         except Exception:
             print('Error finishing task ', task_id)
             raise
-#        if node_file:
-#            os.remove(node_file)
         return 0

@@ -96,9 +96,7 @@ def get_qstat_jobinfo2():
             elif found_start and not found_end:
                 lines += line.strip()
 
-        # print lines
         lines = lines.split('=')[1].strip()
-        # print lines
         ppn = 1
         nodes = []
         ndata = []
@@ -110,15 +108,7 @@ def get_qstat_jobinfo2():
             else:
                 i = nodes.index(node_name)
                 ndata[i][1].append(procid)
-        # print ndata
         ppn = max([len(p[1]) for p in ndata])
-        # width = [l.strip() for l in out if 'Resource_List.mppwidth' in l]
-        # mpp_npp = [l.strip() for l in out if 'Resource_List.mppnppn' in l]
-        # num_procs  = int(width[0].split('=')[1])
-        # if len(mpp_npp) > 0:
-        #    ppn = int(mpp_npp[0].split('=')[1])
-        # num_nodes = int(ceil(float(num_procs)/float(ppn)))
-        # return num_nodes, ppn, False, []
         return len(ndata), ppn, False, ndata
     else:
         raise Exception('Error in call to qstat')
@@ -140,30 +130,20 @@ def get_checkjob_info():
     try:
         proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, shell=True)
         lines = [line.strip() for line in proc.stdout.readlines()]
-        # print '============== lines ======================'
-        # for l in lines : print l
-        # print '============== lines ======================'
         start = end = 0
         for k, line in enumerate(lines):
             x = line.rstrip()
-            # print x
             if x == "Allocated Nodes:" and start == 0:
                 start = k + 1
-                # print ' start = ', start
             elif x == '' and start > 0 and end == 0:
                 end = k
-                # print ' end = ', end
-                # print lines[start:end]
             if x.find("Total Requested Tasks:") > -1:
                 _, b = x.split(":")
                 b = b.strip()
                 tot_procs = int(b)
-        # print "total procs", tot_procs
         for line in lines[start:end + 1]:
-            # print '@@@@@@@', line
             if line.strip() != "":
                 data_lines.append(line.strip())
-        # print '%%%%%%%%%%%%%%%%', data_lines
     except Exception as e:
         print(e)
         raise e
@@ -178,22 +158,16 @@ def get_checkjob_info():
             [list of comma separated node_ids and node_id ranges]*tasks_per_node
     """
     if data_lines[0].find(":") > -1:
-        # print '------------ CASE 1'
         # small node number format
         try:
             for j in data_lines:
-                # print j
                 j = j[1:len(j) - 1]  # strip off first [ and last ]
-                # print j
                 pairs = j.split('][')
-                # print pairs
                 for i in pairs:
                     ndata.append(i.split(':'))
             # parse allocated nodes data [nid:nprocs]...
             for (m, p) in ndata:
-                # m,p = n.split(':')
                 nodes.append(m)
-                # print '##############', nodes
         except Exception as e:
             print('problem parsing - small format')
             raise e
@@ -204,22 +178,15 @@ def get_checkjob_info():
             data = ""
             # put the whole thing on one line
             data = "".join(data_lines)
-            # print "one line: ", data
             nodes_str, p = data.split("*")
-            # print "split the tasks_per_node: ", nodes_str
             nodes_str = nodes_str.strip("[]")
-            # print "strip brackets: ", nodes_str
             ranges = nodes_str.split(",")
-            # print "ranges: ", ranges
             for r in ranges:
                 if r.find("-") > -1:
                     # this is a range
                     ss, es = r.split("-")
-                    # print ss
-                    # print es
                     s = int(ss)
                     e = int(es)
-                    # print range(s,e)
                     for i in range(s, e + 1):
                         nodes.append(str(i))
                 else:
@@ -232,14 +199,11 @@ def get_checkjob_info():
     else:
         # TODO: make this into a real exception type
         raise Exception("could not parse resource data")
-    # print nodes, p, tot_procs
     if abs(len(nodes) * int(p) - tot_procs) > 1:
         print('len(nodes) = %d  p = %d  tot_procs = %d' % (len(nodes), int(p), tot_procs))
         print("something wrong with parsing - node count*cores does not match task count")
         raise Exception("something wrong with parsing - node count*cores does not match task count")
-    # print(nodes, int(p), mixed_nodes, ndata)
     return nodes, int(p), mixed_nodes, ndata
-#    return nodes, int(p)
 
 
 def get_slurm_info():
@@ -265,7 +229,6 @@ def get_slurm_info():
             ppn = os.environ['SLURM_JOB_TASKS_PER_NODE']
             ppn = int(ppn.split("(")[0])
         except Exception:
-            # print "can't find ppn"
             raise
     max_p = ppn
     try:
@@ -282,43 +245,8 @@ def get_slurm_info():
     except Exception:
         raise
 
-    # try:
-    #     # parse node list for node names
-    #     if nodelist.find('[') > -1:
-    #         for nlist in nodelist.split(','):
-    #             # there is more than one node, need to parse list
-    #             try:
-    #                 n, r = nlist.split('[')
-    #             except ValueError:  # Entry is not a range, but a single node
-    #                 nodes.append((nlist, ppn))
-    #                 continue
-    #
-    #             r = r.strip(']')
-    #             if '-' in r:
-    #                 b, e = r.split("-")
-    #                 frmt_str = n + "%0" + str(len(e)) + "d"
-    #             else:
-    #                 b, e = r, None
-    #                 frmt_str = n + "%0" + str(len(b)) + "d"
-    #             if e:
-    #                 nodes.extend([(frmt_str % k, ppn) for k in range(int(b), int(e) + 1)])
-    #             else:
-    #                 nodes.append((frmt_str % int(b), ppn))
-    #
-    #     elif nodelist.find(',') > -1:
-    #         nodes.extend([(k, ppn) for k in nodelist.split(',')])
-    #     else:
-    #         nodes.append((nodelist, ppn))
-    #
-    # except Exception:
-    #     # print "problems parsing slurm_nodelist"
-    #     raise
-
     if nproc > 0 and nproc < len(nodes) * max_p:
         mixed_nodes = True
-        # print nproc
-        # print max_p
-        # print nodes[-1][1]
         nodes[-1][1] = nproc % max_p
 
     return len(nodes), max_p, mixed_nodes, nodes
@@ -336,7 +264,6 @@ def get_pbs_info():
         # core_list is a misnomer, it is a list of (repeated) node names
         # where the node names are repeated for each process they can service
         core_list_all = [line.strip() for line in open(node_file, 'r').readlines()]
-        # core_list = [c for c in core_list_all if c != core_list_all[0]]
         core_list = core_list_all
         node_dict = {}
         for core in core_list:
@@ -378,7 +305,6 @@ def manual_detection(services):
     for n in range(num_nodes):
         listOfNodes.append(("dummynode%d" % n, ppn))
     if tot_procs < num_nodes * (ppn - 1):
-        # raise InvalidResourceSettingsException("total procs and nodes mismatch", tot_procs, num_nodes)
         n = listOfNodes[-1][0]
         listOfNodes[-1] = (n, tot_procs % ppn)
     return num_nodes, ppn, False, listOfNodes
@@ -476,8 +402,4 @@ def getResourceList(services, host, partial_nodes=False):
         raise InvalidResourceSettingsException("spn > cpn", spn, cpn)
     elif cpn % spn != 0:
         raise InvalidResourceSettingsException("spn not divisible by cpn", spn, cpn)
-    # if cpn < ppn:
-    #    cpn = ppn
-    # return list of node names
-    # print(listOfNodes, cpn, spn, ppn, accurateNodes)
     return listOfNodes, cpn, spn, ppn, accurateNodes

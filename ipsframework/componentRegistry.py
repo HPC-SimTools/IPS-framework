@@ -117,12 +117,7 @@ class ComponentRegistry(Singleton):
         """
         Return all of the component ids associated with sim *sim_name*
         """
-#        ids = []
-#        for i in self.registry.keys():
-#           comp_id = ComponentID.deserialize(i)
-#            if (comp_id.get_sim_name() == sim_name):
-#                ids.append(comp_id)
-        ids = [ComponentID.deserialize(i) for i in list(self.registry.keys())
+        ids = [ComponentID.deserialize(i) for i in self.registry
                if ComponentID.deserialize(i).get_sim_name() == sim_name]
         return ids
 

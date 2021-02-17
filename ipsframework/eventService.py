@@ -40,10 +40,6 @@ class EventService:
         """
 
         """ Singleton pattern """
-        # self.__dict__["topicDirectory"] = EventService.topicDirectory
-        # self.__dict__["subscriberDirectory"] = EventService.subscriberDirectory
-        # self.__dict__["numSubscribers"] = EventService.numSubscribers
-        # self.__dict__["numListeners"] = EventService.numListeners
 
         self.topicDirectory = {}
         self.subscriberDirectory = {}

@@ -40,7 +40,6 @@ class IPSDakotaClient:
         """
         # parse file
         try:
-            # print 'self.config_file = ', self.config_file
             self.old_master_conf = ConfigObj(self.config_file, interpolation='template', file_error=True)
         except (IOError, SyntaxError):
             raise
@@ -81,11 +80,9 @@ class IPSDakotaClient:
 
         server_address = os.environ['IPS_DAKOTA_SOCKET_ADDRESS']
 
-        # print '###########################', server_address, str(sys.argv)
         num_trials = 10
         for trials in range(num_trials):
             try:
-                # print 'Connecting to dakota_bridge : ', str(sys.argv[1:])
                 conn = Client(str(server_address), 'AF_UNIX')
             except Exception:
                 print('%s: %d Failed to connect to %s: %s' %
@@ -98,12 +95,9 @@ class IPSDakotaClient:
                     time.sleep(trials)
             else:
                 break
-        # print 'SUCCESS Connecting to dakota_bridge : ', str(sys.argv[1:])
         sys.stdout.flush()
         conn.send(parameter_list)
-        # print 'SUCCESS Sending to dakota_bridge : ', str(sys.argv[1:])
         result_file = conn.recv()
-        # print '@@@@@@@@@@@@@@@@@@@@@@@@@ Received :', result_file, str(sys.argv[1:])
         shutil.copy(result_file, self.out_file)
 
 

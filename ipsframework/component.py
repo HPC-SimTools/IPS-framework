@@ -24,7 +24,7 @@ class Component:
         self.config = config
         self.start_time = 0.0
         self.sys_exit = None
-        for i in list(config.keys()):
+        for i in config.keys():
             try:
                 setattr(self, i, config[i])
             except Exception as e:
@@ -187,8 +187,6 @@ class Component:
         """
         Clean up services and call :py:obj:`sys_exit`.
         """
-        # print self.services.full_comp_id, ": terminate() method called"
-#        self.services.debug('###(1) %s %s', str(self), str(self.__dict__))
         self.services.cleanup()
         if status == Message.SUCCESS:
             self.services.debug('Calling self.sys_exit(0)')

@@ -113,9 +113,7 @@ class Node:
                     if k >= procs:
                         break
         else:
-            # print "<3<3<3"
             for sock in self.sockets:
-                # print procs - k
                 if sock.avail_cores > procs - k:
                     slots.extend(sock.allocate(whole_sockets, tid, o,
                                                procs - k))

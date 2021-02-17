@@ -99,9 +99,6 @@ def copyFiles(src_dir, src_file_list, target_dir, prefix='', keep_old=False):
                 print('Error creating directory %s : %s' % (head, oserr.strerror))
                 raise
         try:
-            # print 'trying to copy...'
-            # print 'src_file =', src_file
-            # print 'target_file =', target_file
             shutil.copy(src_file, target_file)
         except Exception:
             raise

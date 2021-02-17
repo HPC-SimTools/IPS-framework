@@ -118,7 +118,6 @@ class DakotaDynamic:
 
         new_dakota_config = self.dakota_cfg + '.resolved'
         comp_vars = {}
-#        print self.dakota_conf
         for line in self.dakota_conf:
             if not line:
                 continue
@@ -137,7 +136,6 @@ class DakotaDynamic:
             elif tokens[0] == 'analysis_driver':
                 raw_prog = line.split('=')[1]
                 prog = raw_prog.strip(' "\'')
-#                print raw_prog, prog
                 exec_prog = which(prog, alt_paths)
                 if not exec_prog:
                     raise Exception('Error: analysis driver %s not found in path' % prog)
@@ -213,7 +211,6 @@ IPS_ROOT/bin or IPS_ROOT/framework/src')
         os.environ['IPS_DAKOTA_config'] = os.path.abspath(self.config_template)
         os.environ['IPS_DAKOTA_runid'] = str(os.getpid())
         os.environ['IPS_DAKOTA_SOCKET_ADDRESS'] = sock_address
-        # print '%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%', sock_address
 
         fd = open(new_dakota_config, 'w')
         [fd.write('%s\n' % (line)) for line in self.dakota_conf]

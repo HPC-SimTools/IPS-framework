@@ -104,7 +104,6 @@ class Driver(Component):
                     continue
 
             conn = listener.accept()
-            # print '%s Accepted a new connection: ' % (time.strftime("%b %d %Y %H:%M:%S", time.localtime())), str (conn), dir(conn)
 
             try:
                 msg = conn.recv()

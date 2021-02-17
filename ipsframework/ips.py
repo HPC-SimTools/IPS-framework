@@ -501,7 +501,6 @@ class Framework:
                 msg = msg_list.pop(0)
                 self.debug('Framework sending message %s ', msg.__dict__)
                 call_id = self.task_manager.init_call(msg, manage_return=False)
-#                print call_id, msg.__dict__
                 self.call_queue_map[call_id] = msg_list
                 self.outstanding_calls_list.append(call_id)
         except Exception:
@@ -510,7 +509,6 @@ class Framework:
             raise
 
         while len(self.outstanding_calls_list) > 0:
-            # print self.outstanding_calls_list
             if self.verbose_debug:
                 self.debug("Framework waiting for message")
             # get new messages
@@ -696,7 +694,6 @@ class Framework:
         IPS simulation.
         """
         sim_names = self.config_manager.get_sim_names()
-        # print 'Terminating ', sim_names
         for sim in sim_names:
             self.send_terminate_msg(sim, status)
         time.sleep(1)

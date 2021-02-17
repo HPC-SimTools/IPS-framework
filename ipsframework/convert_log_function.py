@@ -34,7 +34,6 @@ def parse_log_line(line):
 def convert_logdata_to_html(lines):
     if type(lines).__name__ == 'str':
         lines = [line for line in lines.split('\n') if line != '']
-    # lines.reverse()
     tokens = []
     for line in lines:
         if 'IPS_RESOURCE_ALLOC' not in line and 'IPS_START' not in line and 'IPS_END' not in line:

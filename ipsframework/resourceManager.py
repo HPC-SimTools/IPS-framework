@@ -88,8 +88,6 @@ class ResourceManager:
             os.makedirs(self.CM.sim_map[self.CM.fwk_sim_name].sim_root)
         except OSError as oserr:
             if oserr.errno != 17:
-                # self.services.exception('Error creating directory %s : %s',
-                #                       self.CM.sim_map[self.CM.fwk_sim_name].sim_root, oserr.strerror)
                 raise
 
         self.reporting_file = open(rfile_name, "w")
@@ -119,7 +117,6 @@ class ResourceManager:
                 listOfNodes, self.cores_per_node, self.sockets_per_node,  \
                     self.max_ppn, self.accurateNodes = \
                     getResourceList(self.CM, self.host)
-                # print "SSSSSSSSSSSSSSSSSS", self.cores_per_node, self.sockets_per_node, self.max_ppn
                 self.fwk.warning('RM: listOfNodes = %s', str(listOfNodes))
                 self.fwk.warning('RM: max_ppn = %d ', int(self.max_ppn))
                 if self.accurateNodes is True and not self.CM.get_platform_parameter('USE_ACCURATE_NODES'):
@@ -166,7 +163,6 @@ class ResourceManager:
             # -----------------------------------
             # set cores/sockets per socket/node
             # -----------------------------------
-            # print ">>>> CPN %d --- SPN %d" % (self.cores_per_node, self.sockets_per_node)
             if (self.cores_per_node % self.sockets_per_node) == 0:
                 self.cores_per_socket = self.cores_per_node // self.sockets_per_node
             else:
@@ -245,7 +241,6 @@ class ResourceManager:
         tot_cores = 0
         for n, p in listOfNodes:
             if n not in self.nodes:
-                # print(n, self.sockets_per_node, self.cores_per_node,)
                 self.nodes.update({n: Node(n, self.sockets_per_node,
                                            self.cores_per_node, p)})
                 self.num_nodes += 1
@@ -313,11 +308,6 @@ class ResourceManager:
                 self.fwk.warning("No partial node allocation available on this platform, using whole nodes instead.")
             whole_nodes = True
             whole_socks = True
-#        if len(self.nodes) == 1:
-#            if whole_nodes or whole_socks:
-#                self.fwk.warning("No whole node or socket allocation available on this platform, sharing nodes instead.")
-#            whole_nodes = False
-#            whole_socks = False
 
         # Are there enough cores to satisfy the request?
         # Returns the list of nodes that fit the bill
@@ -373,7 +363,6 @@ class ResourceManager:
                         if node.avail_cores > 0:
                             to_alloc = min([ppn, node.avail_cores,
                                             nproc - alloc_procs])
-                            # print "&&&&& allocate task_id %d node %s %d cores" % (task_id, n, to_alloc)
                             procs, cores = node.allocate(whole_nodes,
                                                          whole_socks,
                                                          task_id, comp_id,
@@ -525,7 +514,6 @@ class ResourceManager:
         is possible to eventually satisfy the request.  Exception raised if
         the request can never be fulfilled.
         """
-        # print "++++++++++++++++"
         nodes = []
         k = 0
         try:
@@ -605,4 +593,3 @@ class ResourceManager:
                           'data': 'A resource event has occured'})
         eventBody.update(info)
         # send event on topic
-        # self.myTopic.sendEvent(eventName, eventBody)

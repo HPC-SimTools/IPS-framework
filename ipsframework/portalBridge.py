@@ -146,7 +146,6 @@ class PortalBridge(Component):
         except Exception:
             self.services.warning("Missing USER_W3_DIR configuration - disabling web-visible logging")
             self.write_to_htmldir = False
-        # print "Missing USER_W3_DIR configuration"
         else:
             if self.html_dir.strip() == '':
                 self.services.warning("Empty USER_W3_DIR configuration - disabling web-visible logging")
@@ -191,7 +190,6 @@ class PortalBridge(Component):
         Process a single event *theEvent* on topic *topicName*.
         """
         event_body = theEvent.getBody()
-        #        self.services.debug('Processing : %s -- %s ', topicName, str(event_body))
         sim_name = event_body['sim_name']
         portal_data = event_body['portal_data']
         try:
@@ -252,7 +250,6 @@ class PortalBridge(Component):
         sim_data.monitor_file.write(bytes(buf, encoding='UTF-8'))
         sim_data.bigbuf += buf
 
-        # json.dump(event_data, sim_data.json_monitor_file, indent=3);
         buf = json.dumps(event_data)
         sim_data.json_monitor_file.write("%s\n" % buf)
 
@@ -270,7 +267,6 @@ class PortalBridge(Component):
                 except Exception:
                     self.services.exception("Error writing html file into USER_W3_DIR directory")
                     self.write_to_htmldir = False
-        #        self.services.debug('Wrote to monitor file : %s', buf)
         if self.portal_url:
             webmsg = urllib.parse.urlencode(event_data).encode("utf-8")
             try:
@@ -279,12 +275,9 @@ class PortalBridge(Component):
                     self.childProcess = Popen(cmd, shell=True, bufsize=128,
                                               stdin=PIPE, stdout=PIPE,
                                               stderr=PIPE, close_fds=True)
-                    # self.childProcess = popen2.Popen3(cmd, bufsize=128)
                     self.first_event = False
                 self.childProcess.stdin.write('%s %s\n' %
                                               (self.portal_url, webmsg))
-                #                self.services.debug('Wrote event to sendPost.py buffer : %s',
-                #                                    str(event_data))
                 self.childProcess.stdin.flush()
             except Exception as e:
                 self.services.exception('Error transmitting event number %6d to %s : %s',
@@ -328,12 +321,10 @@ class PortalBridge(Component):
             # api search results are sorted by time
             # Note, check this with eqdsk dataobject in test-api
             print('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%')
-            # print (is_checksum)
             print(len(is_checksum), file, parent)
             print('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%')
 
             if len(is_checksum) > 0:
-                # print (len(is_checksum))
                 # uid is chosen to be first occurrence
                 # parent_uid is uid of object metadata is attached to.
                 file_uid = is_checksum[0]['parent_uid']
@@ -419,10 +410,6 @@ class PortalBridge(Component):
                                                 shortname=file_name,
                                                 longdesc="An input file")
                     inp_objs.append(mpo_data_obj['uid'])
-                    # print "### File = %s  mpo_data_obj['uid'] = %s" % \
-                    #      (file_name, mpo_data_obj['uid'])
-                    # if not f_uid:
-                    #    self.file_hash_cache[file_name][f_hash] = mpo_data_obj['uid']
 
             if event_type == 'IPS_STAGE_INPUTS' and not inp_objs:
                 return
@@ -473,11 +460,6 @@ class PortalBridge(Component):
                                                 os.path.join(path, file_name),
                                                 shortname=file_name,
                                                 longdesc="An output file")
-                    # print self.file_hash
-                    # print "### File = %s  f_uid = %s  mpo_data_obj['uid'] = %s" % \
-                    #      (file_name, f_uid, mpo_data_obj['uid'])
-                    # if not f_uid:
-                    #    self.file_hash_cache[file_name][f_hash] = mpo_data_obj['uid']
 
         except Exception as e:
             print("*************", e)
@@ -496,14 +478,12 @@ class PortalBridge(Component):
         sim_data.sim_name = sim_name
         sim_data.sim_root = sim_root
 
-        # sim_data.portal_runid = str(uuid.uuid4())
         d = datetime.datetime.now()
         date_str = "%s.%03d" % (d.strftime("%Y-%m-%dT%H:%M:%S"), int(d.microsecond / 1000))
         sim_data.portal_runid = "_".join([self.host, "USER", date_str])
         if self.runid_url is not None:
             self.services.debug('PORTAL_RUNID_URL = %s', str(self.runid_url))
             try:
-                #               raise urllib2.URLError('TEXT')
                 f = urllib.request.urlopen(self.runid_url, None, 10)
                 sim_data.portal_runid = f.read().strip()
             except (urllib.error.URLError) as e:
