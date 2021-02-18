@@ -7,10 +7,9 @@ IPS
 
 Framework
 ---------
-.. autoclass:: Framework
+.. autoclass:: ipsframework.Framework
    :members:
    :undoc-members:
-
 
 Data Manager
 ------------

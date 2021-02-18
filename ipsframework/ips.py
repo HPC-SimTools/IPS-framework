@@ -3,7 +3,6 @@
 # Copyright 2006-2020 UT-Battelle, LLC. See LICENSE for more information.
 # -------------------------------------------------------------------------------
 """
-   # local version
    The Integrated Plasma Simulator (IPS) Framework. This framework enables
    loose, file-based coupling of certain class of nuclear fusion simulation
    codes.
@@ -80,53 +79,51 @@ if sys.version[0] != '3':  # noqa: E402
 
 
 class Framework:
-    # added compset_list for list of components to load config files for
+    """Create an IPS Framework Instance to coordinate the execution of IPS simulations
+
+    The Framework performs the following main tasks:
+
+      * Initialize the different IPS managers that perform the bulk of the framework functionality
+      * Manage communication queues, and route service requests from simulation
+        components to appropriate managers.
+      * Provide logging services to IPS managers.
+      * Perfrom shutdown procedure on exit
+
+    :param config_file_list: A list of simulation configuration files to be used
+            in the simulaion. Each simulation configuration file must have the following
+            parameters
+
+            * *SIM_ROOT*    The root directory for the simulation
+            * *SIM_NAME*    A name that identifies the simulation
+            * *LOG_FILE*    The name of a log file that is used to capture logging and error information for this simulation.
+
+            *SIM_ROOT*, *SIM_NAME*, and *LOG_FILE* must be unique across simulations.
+    :type config_file_list: list
+
+    :param log_file_name: A file name where Framework logging messages are placed.
+    :type log_file_list: str
+
+    :param platform_file_name: The name of the platform
+            configuration file used in the simulation.  If not
+            specified it will try to find the one installed in the
+            share directory.
+    :type platform_file_name: str
+
+    :param debug: A flag indicating whether framework debugging messages are enabled (default = False)
+    :type debug: bool
+
+    :param verbose_debug: A flag adding more verbose framework debugging (default = False)
+    :type verbose_debug: bool
+
+    :param cmd_nodes: Computer nodes (default = 0)
+    :type cmd_nodes: int
+
+    :param cmd_ppn: Computer processor per nodes (default = 0)
+    :type cmd_ppn: int
+    """
     def __init__(self, config_file_list, log_file_name, platform_file_name=None,
                  debug=False, verbose_debug=False, cmd_nodes=0, cmd_ppn=0):
-        """
-        Create an IPS Framework Instance to coordinate the execution of IPS simulations
-
-        The Framework performs the following main tasks:
-
-          * Initialize the different IPS managers that perform the bulk of the framework functionality
-          * Manage communication queues, and route service requests from simulation
-            components to appropriate managers.
-          * Provide logging services to IPS managers.
-          * Perfrom shutdown procedure on exit
-
-        Args:
-            config_file_list: [list] A list of simulation configuration files to be used
-                in the simulaion. Each simulation configuration file must have the following
-                parameters
-
-                * *SIM_ROOT*    The root directory for the simulation
-                * *SIM_NAME*    A name that identifies the simulation
-                * *LOG_FILE*    The name of a log file that is used to capture logging and error information
-                                 for this simulation.
-
-                *SIM_ROOT*, *SIM_NAME*, and *LOG_FILE* must be unique across simulations.
-            log_file_name: [file] A file name where Framework logging messages are placed.
-            platform_file_name: [string] The name of the platform
-               configuration file used in the simulation.  If not specified it will try to find the
-               one installed in the share directory.
-            compset_list: [list] Other path information can be found in the
-               component-<component_name>.conf file in the share directory.  You can pass in
-               compset_list to use this file.
-               These files must contain
-
-                  * *BIN_PATH*   Location of component scripts
-                  * *INPUT_DIR*  Location of input files
-
-                If you are using  multiple files, then it is recommended to duplicate these
-                variables with a name spacing string to allow for a simulation file to use the
-                multiple locations.
-                If component list is not specified, then it is assumed that these variables are
-                defined in the platform.conf file (backward compatibility).
-            debug: [boolean] A flag indicating whether framework debugging messages are enabled (default = False)
-            verbose_debug: [boolean] A flag adding more verbose framework debugging (default = False)
-
-        """
-
+        # added compset_list for list of components to load config files for
         # command line option
         self.log_file_name = log_file_name
         if log_file_name == 'sys.stdout':
@@ -211,8 +208,8 @@ class Framework:
 
     def get_inq(self):
         """
-        Return handle to the Framework's input queue object
-         (`multiprocessing.Queue <http://docs.python.org/library/multiprocessing.html>`_)
+        :return: handle to the Framework's input queue object
+        :rtype: :class:`multiprocessing.Queue`
         """
         return self.in_queue
 
@@ -221,9 +218,10 @@ class Framework:
         Register a call back method to handle a list of framework service
         invocations.
 
-          * *handler*: a Python callable object that takes a :py:obj:`messages.ServiceRequestMessage`.
-          * *service_list*: a list of service names to call *handler* when invoked by components.
-             The service name must match the *target_method* parameter in ``messages.ServiceRequestMessage``.
+        :param service_list: a list of service names to call *handler* when invoked by components.
+             The service name must match the *target_method* parameter in :class:`messages.ServiceRequestMessage`.
+
+        :param handler: a Python callable object that takes a :class:`messages.ServiceRequestMessage`.
 
         """
         for svc in service_list:
@@ -232,12 +230,12 @@ class Framework:
     def _dispatch_service_request(self, msg):
         """
         Find and execute handler that corresponds to the *target_method* of
-        *msg*, a :py:obj:`messages.ServiceRequestMessage` object.  If handler
+        *msg*, a :class:`messages.ServiceRequestMessage` object.  If handler
         not found an exception is raised.  The return value from the handler
         method is conveyed to the caller along the appropriate queue in a
-        :py:obj:`messages.ServiceResponseMessage`.  All exceptions are passed
+        :class:`messages.ServiceResponseMessage`.  All exceptions are passed
         on to the caller, except for the
-        :py:obj:`ipsException.BlockedMessageException`, which causes the
+        :class:`ipsExceptions.BlockedMessageException`, which causes the
         message to be blocked until the request can be satisfied.
         """
         method_name = msg.target_method
@@ -392,8 +390,11 @@ class Framework:
         invocations to that component.
 
         When all method invocations have been dispatched (or aborted),
-        :py:meth:`Framework.terminate_sim` is called to trigger normal
+        :meth:`configurationManager.ConfigurationManager.terminate_sim` is called to trigger normal
         termination of all component processes.
+
+        :return: Success status
+        :rtype: bool
         """
         try:
             fwk_comps = self.config_manager.get_framework_components()
@@ -626,11 +627,16 @@ class Framework:
         self.event_manager.publish(topic_name, 'IPS_DYNAMIC_SIM', event_data)
 
     def send_terminate_msg(self, sim_name, status=Message.SUCCESS):
-        """
-        Invoke terminate(status) on components in a simulation
+        """This method remotely invokes the method
+        :meth:`component.Component.terminate` on all componnets in the
+        IPS simulation ``sim_name``.
 
-        This method remotely invokes the method C{terminate()} on all componnets in the
-        IPS simulation sim_name.
+        :param sim_name: The simulation name from which all the components are terminated
+        :type sim_name: str
+
+        :param status: message status, defaults to :obj:`messages.Message.SUCCESS`
+        :type status: :obj:`messages.Message.SUCCESS`, :obj:`messages.Message.FAILURE`
+
         """
         comp_ids = self.comp_registry.get_component_ids(sim_name)
         for comp_id in comp_ids:
@@ -647,11 +653,15 @@ class Framework:
                 print(e)
 
     def terminate_all_sims(self, status=Message.SUCCESS):
-        """
-        Terminate all active component instances.
+        """Terminate all active component instances.
 
-        This method remotely invokes the method C{terminate()} on all componnets in the
+        This method remotely invokes the method
+        :meth:`component.Component.terminate` on all componnets in the
         IPS simulation.
+
+        :param status: message status, defaults to :obj:`messages.Message.SUCCESS`
+        :type status: :obj:`messages.Message.SUCCESS`, :obj:`messages.Message.FAILURE`
+
         """
         sim_names = self.config_manager.get_sim_names()
         for sim in sim_names:
