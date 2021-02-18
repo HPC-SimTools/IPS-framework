@@ -277,89 +277,47 @@ class Framework:
         response_q.put(response_msg)
         return
 
-    def log(self, *args):
+    def log(self, msg, *args):
         """
-        Wrapper for :py:meth:`Framework.info`.
+        Wrapper for :meth:`Framework.info`.
         """
-        return self.info(*args)
+        return self.info(msg, *args)
 
-    def debug(self, *args):
+    def debug(self, msg, *args):
         """
-        Produce **debugging** message in simulation log file.  Raise exception for bad formatting.
+        Produce **debugging** message in simulation log file. See :func:`logging.debug` for usage.
         """
+        self.logger.debug(msg, *args)
 
-        try:
-            if len(args) > 1:
-                msg = args[0] % args[1:]
-            else:
-                msg = args[0]
-            self.logger.debug(msg)
-        except Exception:
-            self.error('Bad format in call to fwk.debug() ' + str(args))
+    def info(self, msg, *args):
+        """
+        Produce **informational** message in simulation log file. See :func:`logging.info` for usage.
+        """
+        self.logger.info(msg, *args)
 
-    def info(self, *args):
+    def warning(self, msg, *args):
         """
-        Produce **informational** message in simulation log file.  Raise exception for bad formatting.
+        Produce **warning** message in simulation log file. See :func:`logging.warning` for usage.
         """
-        try:
-            if len(args) > 1:
-                msg = args[0] % args[1:]
-            else:
-                msg = args[0]
-            self.logger.info(msg)
-        except Exception:
-            self.error('Bad format in call to fwk.info() ' + str(args))
+        self.logger.warning(msg, *args)
 
-    def warning(self, *args):
+    def error(self, msg, *args):
         """
-        Produce **warning** message in simulation log file.  Raise exception for bad formatting.
+        Produce **error** message in simulation log file. See :func:`logging.error` for usage.
         """
-        try:
-            if len(args) > 1:
-                msg = args[0] % args[1:]
-            else:
-                msg = args[0]
-            self.logger.warning(msg)
-        except Exception:
-            self.error('Bad format in call to fwk.warning() ' + str(args))
+        self.logger.error(msg, *args)
 
-    def error(self, *args):
+    def exception(self, msg, *args):
         """
-        Produce **error** message in simulation log file.  Raise exception for bad formatting.
+        Produce **exception** message in simulation log file. See :func:`logging.exception` for usage.
         """
-        try:
-            if len(args) > 1:
-                msg = args[0] % args[1:]
-            else:
-                msg = args[0]
-            self.logger.error(msg)
-        except AttributeError:
-            raise RuntimeError("logger is not initialized")
-        except Exception:
-            self.error('Bad format in call to fwk.error() ' + str(args))
+        self.logger.exception(msg, *args, exc_info=False)
 
-    def exception(self, *args):
+    def critical(self, msg, *args):
         """
-        Produce **exception** message in simulation log file.  Raise exception for bad formatting.
+        Produce **critical** message in simulation log file. See :func:`logging.critical` for usage.
         """
-        try:
-            if len(args) > 1:
-                msg = args[0] % args[1:]
-            else:
-                msg = args[0]
-            self.logger.exception(msg, exc_info=False)
-        except Exception:
-            self.error('Bad format in call to fwk.exception() ' + str(args))
-
-    def critical(self, *args):
-        """
-        Produce **critical** message in simulation log file.  Raise exception for bad formatting.
-        """
-        try:
-            self.logger.critical(*args)
-        except Exception:
-            print('error in Framework.critical', args)
-            raise
+        self.logger.critical(msg, *args)
 
     def _invoke_framework_comps(self, fwk_comps, method_name):
         """

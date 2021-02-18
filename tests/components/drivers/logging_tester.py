@@ -18,6 +18,8 @@ class logging_tester(Component):
     def step(self, timestamp):
         for log_type in log_types:
             getattr(self.services, log_type)(f'step msg: {log_type}')
+            # with string formatting arguments
+            getattr(self.services, log_type)(f'step msg: {log_type} timestamp=%d %s', timestamp, 'test')
 
     def finalize(self, timestamp):
         for log_type in log_types:

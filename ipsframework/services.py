@@ -1781,91 +1781,47 @@ class ServicesProxy:
         return self._send_monitor_event(eventType=event_type,
                                         comment=event_comment)
 
-    def log(self, *args):
+    def log(self, msg, *args):
         """
-        Wrapper for :py:meth:`ServicesProxy.info`.
+        Wrapper for :meth:`ServicesProxy.info`.
         """
-        return self.info(*args)
+        return self.info(msg, *args)
 
-    def debug(self, *args):
+    def debug(self, msg, *args):
         """
-        Produce **debugging** message in simulation log file.  Raise exception for bad formatting.
+        Produce **debugging** message in simulation log file. See :func:`logging.debug` for usage.
         """
-        try:
-            if len(args) > 1:
-                msg = args[0] % args[1:]
-            else:
-                msg = args[0]
-            self.logger.debug(msg)
-        except Exception:
-            self.error('Bad format in call to services.debug() ' + str(args))
+        self.logger.debug(msg, *args)
 
-    def info(self, *args):
+    def info(self, msg, *args):
         """
-        Produce **informational** message in simulation log file.  Raise exception for bad formatting.
+        Produce **informational** message in simulation log file. See :func:`logging.info` for usage.
         """
-        try:
-            if len(args) > 1:
-                msg = args[0] % args[1:]
-            else:
-                msg = args[0]
-            self.logger.info(msg)
-        except Exception:
-            self.error('Bad format in call to services.info() ' + str(args))
+        self.logger.info(msg, *args)
 
-    def warning(self, *args):
+    def warning(self, msg, *args):
         """
-        Produce **warning** message in simulation log file.  Raise exception for bad formatting.
+        Produce **warning** message in simulation log file. See :func:`logging.warning` for usage.
         """
-        try:
-            if len(args) > 1:
-                msg = args[0] % args[1:]
-            else:
-                msg = args[0]
-            self.logger.warning(msg)
-        except Exception:
-            self.error('Bad format in call to services.warning() ' + str(args))
+        self.logger.warning(msg, *args)
 
-    def error(self, *args):
+    def error(self, msg, *args):
         """
-        Produce **error** message in simulation log file.  Raise exception for bad formatting.
+        Produce **error** message in simulation log file. See :func:`logging.error` for usage.
         """
-        try:
-            if len(args) > 1:
-                msg = args[0] % args[1:]
-            else:
-                msg = args[0]
-            self.logger.error(msg)
-        except AttributeError:
-            raise RuntimeError("logger is not initialized")
-        except Exception:
-            self.error('Bad format in call to services.error() ' + str(args))
+        self.logger.error(msg, *args)
 
-    def exception(self, *args):
+    def exception(self, msg, *args):
         """
-        Produce **exception** message in simulation log file.  Raise exception for bad formatting.
+        Produce **exception** message in simulation log file. See :func:`logging.exception` for usage.
         """
-        try:
-            if len(args) > 1:
-                msg = args[0] % args[1:]
-            else:
-                msg = args[0]
-            self.logger.exception(msg, exc_info=False)
-        except Exception:
-            self.error('Bad format in call to services.exception() ' + str(args))
+        self.logger.exception(msg, *args, exc_info=False)
 
-    def critical(self, *args):
+    def critical(self, msg, *args):
         """
-        Produce **critical** message in simulation log file.  Raise exception for bad formatting.
+        Produce **critical** message in simulation log file. See :func:`logging.critical` for usage.
         """
-        try:
-            if len(args) > 1:
-                msg = args[0] % args[1:]
-            else:
-                msg = args[0]
-            self.logger.critical(msg)
-        except Exception:
-            self.error('Bad format in call to services.critical() ' + str(args))
+        self.logger.critical(msg, *args)
 
     def create_task_pool(self, task_pool_name):
         """

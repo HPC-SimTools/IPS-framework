@@ -87,6 +87,12 @@ def test_component_logging(tmpdir, capfd):
         for log_type in ["log", "debug", "info"]:
             assert f'{component_id} {map_log_to_level[log_type]:8} {method} msg: {log_type}\n' not in lines
 
+    # check message formatting with arguments
+    for log_type in ["warning", "error", "exception", "critical"]:
+        assert f'{component_id} {map_log_to_level[log_type]:8} step msg: {log_type} timestamp=0 test\n' in lines
+    for log_type in ["log", "debug", "info"]:
+        assert f'{component_id} {map_log_to_level[log_type]:8} step msg: {log_type} timestamp=0 test\n' not in lines
+
 
 def test_component_logging_debug(tmpdir):
     platform_file, config_file = write_basic_config_and_platform_files(tmpdir, debug=True)
@@ -122,3 +128,7 @@ def test_component_logging_debug(tmpdir):
     for method in ["init", "step", "finalize"]:
         for log_type in ["log", "debug", "info", "warning", "error", "exception", "critical"]:
             assert f'{component_id} {map_log_to_level[log_type]:8} {method} msg: {log_type}\n' in lines
+
+    # check message formatting with arguments
+    for log_type in ["log", "debug", "info", "warning", "error", "exception", "critical"]:
+        assert f'{component_id} {map_log_to_level[log_type]:8} step msg: {log_type} timestamp=0 test\n' in lines
