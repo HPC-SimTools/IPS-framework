@@ -120,10 +120,6 @@ class ConfigurationManager:
         self.finished_sim_map = {}
         self.fwk_sim_name = None  # "Fake" simconf for framework components
         self.fwk_components = []  # List of framework specific components
-        # create publisher event service object
-        # self.publisherES = PublisherEventService()
-        # get a topic to publish on
-        # self.myTopic = self.publisherES.getTopic("test")
         self.myTopic = None
         self.log_daemon = ipsLogging.ipsLogger(self.log_dynamic_sim_queue)
         self.log_process = None
@@ -157,12 +153,8 @@ class ConfigurationManager:
             self.platform_conf = ConfigObj(self.platform_file,
                                            interpolation='template',
                                            file_error=True)
-        except IOError:
+        except (IOError, SyntaxError):
             self.fwk.exception('Error opening config file: %s',
-                               self.platform_file)
-            raise
-        except SyntaxError:
-            self.fwk.exception('Error parsing config file: %s',
                                self.platform_file)
             raise
         # get mandatory values
@@ -202,10 +194,7 @@ class ConfigurationManager:
                     and not any([x in v for x in '{}()$']):
                 self.platform_conf[k] = v
 
-        try:
-            mpirun_version = self.platform_conf['MPIRUN_VERSION']
-        except KeyError:
-            mpirun_version = 'OpenMPI-generic'
+        mpirun_version = self.platform_conf.get('MPIRUN_VERSION', 'OpenMPI-generic')
 
         # node allocation mode describes how node allocation should be handled
         # in the IPS.
@@ -221,39 +210,17 @@ class ConfigurationManager:
             self.fwk.exception("missing value or bad type for NODE_ALLOCATION_MODE.  expected 'EXCLUSIVE' or 'SHARED'.")
             raise
 
-        try:
-            uan_val = self.platform_conf['USE_ACCURATE_NODES'].upper()
-            if uan_val in ['OFF', 'FALSE']:
-                use_accurate_nodes = False
-            else:
-                use_accurate_nodes = True
-        except Exception:
+        uan_val = self.platform_conf.get('USE_ACCURATE_NODES', 'ON').upper()
+        if uan_val in ['OFF', 'FALSE']:
+            use_accurate_nodes = False
+        else:
             use_accurate_nodes = True
 
-        try:
-            user_def_tprocs = int(self.platform_conf['TOTAL_PROCS'])
-        except KeyError:
-            user_def_tprocs = 0
-
-        try:
-            user_def_nodes = int(self.platform_conf['NODES'])
-        except KeyError:
-            user_def_nodes = 0
-
-        try:
-            user_def_ppn = int(self.platform_conf['PROCS_PER_NODE'])
-        except KeyError:
-            user_def_ppn = 0
-
-        try:
-            user_def_cpn = int(self.platform_conf['CORES_PER_NODE'])
-        except KeyError:
-            user_def_cpn = 0
-
-        try:
-            user_def_spn = int(self.platform_conf['SOCKETS_PER_NODE'])
-        except KeyError:
-            user_def_spn = 0
+        user_def_tprocs = int(self.platform_conf.get('TOTAL_PROCS', 0))
+        user_def_nodes = int(self.platform_conf.get('NODES', 0))
+        user_def_ppn = int(self.platform_conf.get('PROCS_PER_NODE', 0))
+        user_def_cpn = int(self.platform_conf.get('CORES_PER_NODE', 0))
+        user_def_spn = int(self.platform_conf.get('SOCKETS_PER_NODE', 0))
 
         self.platform_conf['TOTAL_PROCS'] = user_def_tprocs
         self.platform_conf['NODES'] = user_def_nodes
@@ -279,17 +246,14 @@ class ConfigurationManager:
 
                 # Allow simulation file to override platform values
                 # and then put all platform values into simulation map
-                for key in list(self.platform_conf.keys()):
-                    if key in conf_keys and key not in list(os.environ.keys()):
+                for key in self.platform_conf:
+                    if key in conf_keys and key not in os.environ.keys():
                         self.platform_conf[key] = conf[key]
                     if key not in conf_keys:
                         conf[key] = self.platform_conf[key]
 
-            except IOError:
+            except (IOError, SyntaxError):
                 self.fwk.exception('Error opening config file %s: ', conf_file)
-                raise
-            except SyntaxError:
-                self.fwk.exception('Error parsing config file %s: ', conf_file)
                 raise
             except Exception:
                 self.fwk.exception('Error(s) during parsing of supplied config file %s: ', conf_file)
@@ -349,7 +313,7 @@ class ConfigurationManager:
         self.log_process = Process(target=self.log_daemon.__run__)
         self.log_process.start()
 
-        for sim_name, sim_data in list(self.sim_map.items()):
+        for sim_name, sim_data in self.sim_map.items():
             if sim_name != self.fwk_sim_name:
                 self._initialize_sim(sim_data)
 
@@ -571,7 +535,7 @@ class ConfigurationManager:
         references.  (May only be the driver, and init (if present)???)
         """
         sim_comps = {}
-        for sim_name in list(self.sim_map.keys()):
+        for sim_name in self.sim_map:
             if sim_name == self.fwk_sim_name:
                 continue
             sim_comps[sim_name] = self.get_simulation_components(sim_name)
@@ -587,7 +551,7 @@ class ConfigurationManager:
 
     def get_all_simulation_components_map(self):
         sim_comps = {name: self.sim_map[name].all_comps[:]
-                     for name in list(self.sim_map.keys())}
+                     for name in self.sim_map}
         del sim_comps[self.fwk_sim_name]
         return sim_comps
 
@@ -607,7 +571,6 @@ class ConfigurationManager:
             sim_data = self.sim_map[sim_name]
         except KeyError:
             sim_data = self.finished_sim_map[sim_name]
-        # self.fwk.debug('CONFIG VALUES =  %s', str(sim_data.sim_conf))
         try:
             val = sim_data.sim_conf[param]
         except KeyError:
@@ -702,7 +665,6 @@ in configuration file %s', config_file)
             new_sim.log_pipe_name = parent_sim.log_pipe_name
 
         conf['__PORTAL_SIM_NAME'] = new_sim.portal_sim_name
-        # self.log_dynamic_sim_queue.put('CREATE_SIM  %s  %s' % (new_sim.log_pipe_name, new_sim.log_file))
         self.sim_map[sim_name] = new_sim
         self._initialize_sim(new_sim)
 
@@ -716,7 +678,6 @@ in configuration file %s', config_file)
         Return a reference to the component from simulation *sim_name*
         implementing port *port_name*.
         """
-        # print sim_name, port_name
         sim_data = self.sim_map[sim_name]
         comp_id = sim_data.port_map[port_name]
         return comp_id
@@ -747,8 +708,6 @@ in configuration file %s', config_file)
             self.fwk.debug('Setting %s to %s in simulation %s', param, value, other_sim_name)
             sim_conf = sim_data.sim_conf
             sim_conf[param] = value
-
-        # self.fwk.debug('CONFIG VALUES =  %s', str(sim_data.sim_conf))
 
         return value
 

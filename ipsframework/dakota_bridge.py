@@ -19,14 +19,11 @@ class Driver(Component):
         self.socket_address = ''
         self.log_file = None
         self.config_file = None
-        self.platform_fname = None
         self.debug = None
-        self.platform_conf = None
         self.old_master_conf = None
         self.sim_root = None
         self.sim_name = None
         self.sim_logfile = None
-        self.sweep_spec = None
         self.in_file = None
         self.out_file = None
         self.idle_timeout = 300
@@ -104,7 +101,6 @@ class Driver(Component):
                     continue
 
             conn = listener.accept()
-            # print '%s Accepted a new connection: ' % (time.strftime("%b %d %Y %H:%M:%S", time.localtime())), str (conn), dir(conn)
 
             try:
                 msg = conn.recv()

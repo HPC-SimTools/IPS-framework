@@ -18,8 +18,7 @@ def parse_log_line(line):
     val_dict['event_time'] = tokens[1]
 
     start = {s: line.find(s) + len(s + "=") for s in field_names}
-    end = {s: line.find("'", start[s] + 1) if line[start[s]] == "'" else
-           line.find(" ", start[s] + 1) for s in field_names}
+    end = {s: line.find("'", start[s] + 1) if line[start[s]] == "'" else line.find(" ", start[s] + 1) for s in field_names}
     for k in end:
         if end[k] == -1:
             end[k] = len(line)
@@ -34,7 +33,6 @@ def parse_log_line(line):
 def convert_logdata_to_html(lines):
     if type(lines).__name__ == 'str':
         lines = [line for line in lines.split('\n') if line != '']
-    # lines.reverse()
     tokens = []
     for line in lines:
         if 'IPS_RESOURCE_ALLOC' not in line and 'IPS_START' not in line and 'IPS_END' not in line:

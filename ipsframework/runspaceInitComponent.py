@@ -8,17 +8,13 @@ from ipsframework import ipsutil
 
 def catch_and_go(func_to_decorate):
     def new_func(*original_args, **original_kwargs):
-        # print "Function has been decorated.  Congratulations."
         # Do whatever else you want here
         obj = original_args[0]
         try:
             func_to_decorate(*original_args, **original_kwargs)
         except Exception as e:
-            # print '#################', object.__class__.__name__, func_to_decorate.__name__
             obj.services.exception("Exception in call to %s:%s" % (obj.__class__.__name__, func_to_decorate.__name__))
             print(e)
-            # object.services.exception("Caught exception during component pre-initialization")
-#            raise
     return new_func
 
 
@@ -37,7 +33,6 @@ class runspaceInitComponent(Component):
         # get the simRootDir
         self.simRootDir = services.get_config_param('SIM_ROOT')
         self.cwd = self.config['OS_CWD']
-        # print('Created %s' % (self.__class__))
 
     @catch_and_go
     def init(self, timestamp=0.0, **keywords):
@@ -92,8 +87,6 @@ class runspaceInitComponent(Component):
         Copies individual subcomponent input files into working subdirectories.
         """
 
-        # print('runspaceInitComponent.step() called')
-
         services = self.services
 
         # sim_comps = services.fwk.config_manager.get_component_map()
@@ -122,8 +115,6 @@ class runspaceInitComponent(Component):
 
                 # compose the workdir name
                 workdir = os.path.join(self.simRootDir, 'work', full_comp_id)
-
-                # print 'workdir = ', workdir
 
                 # make the working directory
                 try:

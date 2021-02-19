@@ -3,6 +3,9 @@
 # paths.
 ignore=utils,six.py,configobj.py,_version.py
 
+[FORMAT]
+max-line-length=160
+
 [MESSAGES CONTROL]
 
 # Disable the message, report, category or checker with the given id(s). You
@@ -120,21 +123,14 @@ disable=print-statement,
         pointless-string-statement,
         protected-access,
         global-variable-undefined,
-        chained-comparison,
         eval-used,
         unused-argument,
-        super-init-not-called,
         too-few-public-methods,
-        unnecessary-comprehension,
         non-parent-init-called,
         subprocess-popen-preexec-fn,
         global-variable-not-assigned,
-        expression-not-assigned,
         dangerous-default-value,
         duplicate-code,
         global-statement,
         empty-docstring,
-        bad-continuation,
-        raise-missing-from,
-        super-with-arguments,
-        line-too-long
+        raise-missing-from

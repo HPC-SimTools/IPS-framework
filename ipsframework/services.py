@@ -60,7 +60,6 @@ def launch(binary, task_name, working_dir, *args, **keywords):
     ret_val = None
     if isinstance(binary, str):
         cmd = f"{binary} {' '.join(map(str, args))}"
-        # print(f"{asctime()} {task_name} running {cmd} on {myid} in {working_dir}", args, keywords)
         cmd_lst = cmd.split()
         process = subprocess.Popen(cmd_lst, stdout=task_stdout,
                                    stderr=task_stderr,
@@ -81,7 +80,6 @@ def launch(binary, task_name, working_dir, *args, **keywords):
             print(f"Task {task_name} timed out after {timeout} Seconds")
             os.killpg(process.pid, signal.SIGKILL)
             ret_val = -1
-        # print(f"{asctime()} {task_name} : {args} Done on {myid}")
     else:
         ret_val = binary(*args)
 
@@ -167,18 +165,14 @@ class ServicesProxy:
         log_level = 'WARNING'
         try:
             log_level = conf['LOG_LEVEL']
-            # print 'Setting log_level to ', log_level, 'From component config'
         except KeyError:
             try:
                 log_level = self.sim_conf['LOG_LEVEL']
-                # print 'Setting log_level to ', log_level, 'From master config'
             except KeyError:
                 pass
         try:
             real_log_level = getattr(logging, log_level)
-            # print 'Setting real log level to ', real_log_level
         except AttributeError:
-            # print 'Invalid LOG_LEVEL value :', log_level
             raise
         self.logger.setLevel(real_log_level)
         self.logger.addHandler(socketHandler)
@@ -228,8 +222,6 @@ class ServicesProxy:
         for d in pypath:
             preload_txt += f"sys.path.insert(0,'{d}');"
 
-        # print(pypath)
-        # print(preload_txt)
         self.dask_preload = os.path.join(os.getcwd(), self.dask_preload)
         open(self.dask_preload, "w").write(preload_txt)
 
@@ -275,7 +267,6 @@ class ServicesProxy:
                     finish = True
                 elif len(response_list) > 0:
                     finish = True
-        #        dumpAll()
         return response_list
 
     def _wait_msg_response(self, msg_id, block=True):
@@ -287,7 +278,6 @@ class ServicesProxy:
         :py:meth:`messages.ServiceResponseMessage` when available, otherwise
         ``None``.
         """
-        # print 'in _wait_msg_response'
         if msg_id in list(self.finished_calls.keys()):
             response = self.finished_calls[msg_id]
             del self.finished_calls[msg_id]
@@ -365,7 +355,6 @@ class ServicesProxy:
         on to the component.  If the status of the response is failure
         (``Message.FAILURE``), then the exception body is raised.
         """
-        # print "in _get_service_response"
         self.debug('_get_service_response(%s)', str(msg_id))
         response = self._wait_msg_response(msg_id, block)
         self.debug('_get_service_response(%s), response = %s', str(msg_id), str(response))
@@ -580,7 +569,6 @@ class ServicesProxy:
 
         try:
             whole_nodes = keywords['whole_nodes']
-            # print ">>>> value of whole_nodes", whole_nodes
         except Exception:
             if self.shared_nodes:
                 whole_nodes = False
@@ -589,14 +577,12 @@ class ServicesProxy:
 
         try:
             whole_socks = keywords['whole_sockets']
-            # print ">>>> value of whole_socks", whole_socks
         except Exception:
             if self.shared_nodes:
                 whole_socks = False
             else:
                 whole_socks = True
 
-        # print "about to call init task"
         try:
             # SIMYAN: added working_dir to component method invocation
             msg_id = self._invoke_service(self.fwk.component_id,
@@ -605,7 +591,6 @@ class ServicesProxy:
                                           whole_nodes, whole_socks, *args)
             (task_id, command, env_update) = self._get_service_response(msg_id, block=True)
         except Exception:
-            # self.exception('Error initiating task %s %s on %d nodes' %  (binary, str(args), int(nproc)))
             raise
 
         log_filename = None
@@ -667,76 +652,6 @@ class ServicesProxy:
         self.task_map[task_id] = (process, time.time(), timeout)
         return task_id  # process.pid
 
-    def launch_task_resilient(self, nproc, working_dir, binary, *args, **keywords):
-        """
-        **not used**
-        """
-        task_ppn = self.ppn
-        try:
-            task_ppn = keywords['task_ppn']
-        except Exception:
-            pass
-
-        block = True
-        try:
-            block = keywords['block']
-        except Exception:
-            pass
-        wnodes = keywords['whole_nodes']
-        wsocks = keywords['whole_sockets']
-
-        try:
-            # SIMYAN: added working_dir to component method invocation
-            msg_id = self._invoke_service(self.fwk.component_id,
-                                          'init_task', nproc, binary,
-                                          working_dir, task_ppn,
-                                          block, wnodes, wsocks, *args)
-            (task_id, command, env_update) = self._get_service_response(msg_id, block=True)
-        except Exception:
-            self.exception('Error initiating task %s %s on %d nodes' %
-                           (binary, str(args), int(nproc)))
-            raise
-
-        log_filename = None
-        try:
-            log_filename = keywords['logfile']
-        except KeyError:
-            pass
-
-        task_stdout = sys.stdout
-        if log_filename:
-            try:
-                task_stdout = open(log_filename, 'w')
-            except Exception:
-                self.exception('Error opening log file %s : using stdout', log_filename)
-
-        cmd_lst = command.split(' ')
-        try:
-            self.debug('Launching command : %s', command)
-            if env_update:
-                new_env = os.environ
-                new_env.update(env_update)
-                process = subprocess.Popen(cmd_lst, stdout=task_stdout,
-                                           stderr=subprocess.STDOUT,
-                                           cwd=working_dir,
-                                           env=new_env)
-            else:
-                process = subprocess.Popen(cmd_lst, stdout=task_stdout,
-                                           stderr=subprocess.STDOUT,
-                                           cwd=working_dir)
-        except Exception:
-            self.exception('Error executing command : %s', command)
-            raise
-        self._send_monitor_event('IPS_LAUNCH_TASK', 'Target = ' + command +
-                                 ', task_id = ' + str(task_id))
-
-        # FIXME: process Monitoring Command : ps --no-headers -o pid,state pid1
-        # pid2 pid3 ...
-
-        self.task_map[task_id] = (process, time.time(), nproc, working_dir, binary,
-                                  args, keywords)
-        return task_id  # process.pid
-
     def launch_task_pool(self, task_pool_name, launch_interval=0.0):
         """
         Construct messages to task manager to launch each task.
@@ -747,7 +662,6 @@ class ServicesProxy:
         queued_tasks = task_pool.queued_tasks
         submit_dict = {}
         for (task_name, task) in queued_tasks.items():
-            # (nproc, working_dir, binary, args, keywords) = queued_tasks[task_name]
             task_ppn = self.ppn
             try:
                 task_ppn = task.keywords['task_ppn']
@@ -783,7 +697,6 @@ class ServicesProxy:
         for task_name in list(allocated_tasks.keys()):
             if launch_interval > 0:
                 time.sleep(launch_interval)
-            # (nproc, working_dir, binary, args, keywords) = queued_tasks[task_name]
             task = queued_tasks[task_name]
             (task_id, command, env_update) = allocated_tasks[task_name]
             tag = 'None'
@@ -855,7 +768,6 @@ class ServicesProxy:
             process, _, _ = self.task_map[task_id]
             # TODO: process and start_time will have to be accessed as shown
             #      below if this task can be relaunched to support FT...
-            # process, start_time = self.task_map[task_id][0], self.task_map[task_id][1]
         except KeyError:
             self.exception('Error: unrecognizable task_id = %s ', task_id)
             raise  # do we really want to raise an error or just return?
@@ -897,7 +809,6 @@ class ServicesProxy:
             process, start_time, timeout = self.task_map[task_id]
             # TODO: process and start_time will have to be accessed as shown
             #      below if this task can be relaunched to support FT...
-            # process, start_time = self.task_map[task_id][0], self.task_map[task_id][1]
         except KeyError:
             self.exception('Error: unrecognizable task_id = %s ', task_id)
             raise
@@ -921,7 +832,6 @@ class ServicesProxy:
         task.
 
         """
-        # print "in wait task"
         try:
             process, start_time, _ = self.task_map[task_id]
         except KeyError:
@@ -957,48 +867,6 @@ class ServicesProxy:
             raise
         return task_retval
 
-    def wait_task_resilient(self, task_id):
-        """
-        **not used**
-        """
-        try:
-            process, start_time, nproc, working_dir, binary, args, keywords = self.task_map[task_id]
-        except KeyError:
-            self.exception('Error: unrecognizable task_id = %s ', str(task_id))
-            raise
-        task_retval = process.wait()
-        self._send_monitor_event('IPS_TASK_END', 'task_id = %s  elapsed time = %.2f S' %
-                                 (str(task_id), time.time() - start_time))
-
-        del self.task_map[task_id]
-        try:
-            msg_id = self._invoke_service(self.fwk.component_id,
-                                          'finish_task', task_id, task_retval)
-            retval = self._get_service_response(msg_id, block=True)
-        except Exception:
-            self.exception('Error finalizing task  %s', task_id)
-            raise
-
-        if task_retval == 0:
-            if retval == 0:
-                self.debug('Successful execution and no FTB trace.')
-            elif retval == 1:
-                self.debug('Successful execution and FTB trace.')
-        else:
-            if retval == 0:
-                self.error('Unsuccessful execution and no FTB trace.')
-                raise Exception('Execution failed presumably due to application error.')
-            elif retval == 1:
-                self.exception('Unsuccessful execution and FTB trace.')
-                if ('relaunch' not in keywords) or (keywords['relaunch'] != 'N'):
-                    relaunch_task_id = self.launch_task_resilient(nproc, working_dir, binary, args, keywords)
-                    self.debug('Relaunched failed task.')
-                    return self.wait_task_resilient(relaunch_task_id)
-                else:
-                    self.debug('Task failed but was not relaunched.')
-
-        return task_retval
-
     def wait_tasklist(self, task_id_list, block=True):
         """
         Check the status of a list of tasks.  If *block* is ``True``, return a
@@ -1009,7 +877,7 @@ class ServicesProxy:
 
         """
         ret_dict = {}
-        running_tasks = [task_id for task_id in task_id_list]
+        running_tasks = list(task_id_list)
         for task_id in task_id_list:
             try:
                 process = self.task_map[task_id][0]
@@ -1203,8 +1071,7 @@ class ServicesProxy:
 
             wt_values = [float(t) for t in wt_values]
             for t in wt_values:
-                if ((elapsed_time >= t) and
-                        (self.last_ckpt_walltime - self.start_time < t)):
+                if elapsed_time >= t > self.last_ckpt_walltime - self.start_time:
                     return self._dispatch_checkpoint(time_stamp, comp_id_list, Protect)
             return None
         elif mode == 'PHYSTIME_REGULAR':
@@ -1218,13 +1085,11 @@ class ServicesProxy:
             else:
                 return None
         elif mode == 'PHYSTIME_EXPLICIT':
-            # print ">>>>>>> chkpt_conf['PHYSTIME_VALUES'] = ", chkpt_conf['PHYSTIME_VALUES']
             try:
                 pt_values = chkpt_conf['PHYSTIME_VALUES'].split()
             except AttributeError:
                 pt_values = chkpt_conf['PHYSTIME_VALUES']
             pt_values = [float(t) for t in pt_values]
-            # print ">>>>>>> pt_values = ", pt_values
             pt_current = float(time_stamp)
             for pt in pt_values:
                 if pt_current >= pt > self.last_ckpt_phystime:
@@ -1280,10 +1145,6 @@ class ServicesProxy:
             purge_candidates = sorted(prior_runs_chkpts_dirs, key=float)
             purge_candidates += [chkpt for chkpt in self.new_chkpts if (chkpt in all_chkpts and
                                                                         chkpt not in self.protected_chkpts)]
-            #            self.debug('CHECKPOINT: all_chkpts = %s', str(all_chkpts))
-            #            self.debug('CHECKPOINT: purge_candidates = %s', str(purge_candidates))
-            #            self.debug('CHECKPOINT: protected_chkpts = %s', str(self.protected_chkpts))
-            #            self.debug('CHECKPOINT: ***********************')
             while len(purge_candidates) > num_chkpt:
                 obsolete_chkpt = purge_candidates.pop(0)
                 chkpt_dir = os.path.join(base_dir, obsolete_chkpt)
@@ -1338,11 +1199,6 @@ class ServicesProxy:
         targetdir = os.path.join(simroot, 'simulation_setup',
                                  self.full_comp_id)
         try:
-            # print 'inputDir =', inputDir
-            # print 'input_file_list =', input_file_list
-            # print 'targetdir =', targetdir
-            # print 'outprefix =', outprefix
-
             ipsutil.copyFiles(inputDir, input_file_list, targetdir, outprefix)
         except Exception as e:
             self._send_monitor_event('IPS_STAGE_INPUTS',
@@ -1357,7 +1213,6 @@ class ServicesProxy:
             for c in comps:
                 input_dir = old_conf[c]['INPUT_DIR']
                 input_files = old_conf[c]['INPUT_FILES']
-                # print('---- Staging inputs for %s:%s' % (name, c))
                 input_target_dir = os.path.join(os.getcwd(), c)
                 try:
                     os.mkdir(input_target_dir)
@@ -1376,8 +1231,8 @@ class ServicesProxy:
         elapsed_time = time.time() - start_time
         self._send_monitor_event(eventType='IPS_STAGE_INPUTS',
                                  comment='Elapsed time = %.3f Path = %s Files = %s' %
-                                         (elapsed_time, os.path.abspath(inputDir),
-                                          str(input_file_list)))
+                                 (elapsed_time, os.path.abspath(inputDir),
+                                  str(input_file_list)))
 
     def stage_subflow_output_files(self, subflow_name='ALL'):
         # Gather outputs from sub-workflows. Sub-workflow output
@@ -1402,7 +1257,6 @@ class ServicesProxy:
                                       '_'.join([driver['CLASS'], driver['SUB_CLASS'],
                                                 driver['NAME'],
                                                 str(driver_comp.get_seq_num())]))
-            # print '################',  output_dir
             output_files = driver['OUTPUT_FILES']
             try:
                 ipsutil.copyFiles(output_dir, output_files, self.get_working_dir(), keep_old=False)
@@ -1815,91 +1669,47 @@ class ServicesProxy:
         return self._send_monitor_event(eventType=event_type,
                                         comment=event_comment)
 
-    def log(self, *args):
+    def log(self, msg, *args):
         """
-        Wrapper for :py:meth:`ServicesProxy.info`.
+        Wrapper for :meth:`ServicesProxy.info`.
         """
-        return self.info(*args)
+        return self.info(msg, *args)
 
-    def debug(self, *args):
+    def debug(self, msg, *args):
         """
-        Produce **debugging** message in simulation log file.  Raise exception for bad formatting.
+        Produce **debugging** message in simulation log file. See :func:`logging.debug` for usage.
         """
-        try:
-            if len(args) > 1:
-                msg = args[0] % args[1:]
-            else:
-                msg = args[0]
-            self.logger.debug(msg)
-        except Exception:
-            self.error('Bad format in call to services.debug() ' + str(args))
+        self.logger.debug(msg, *args)
 
-    def info(self, *args):
+    def info(self, msg, *args):
         """
-        Produce **informational** message in simulation log file.  Raise exception for bad formatting.
+        Produce **informational** message in simulation log file. See :func:`logging.info` for usage.
         """
-        try:
-            if len(args) > 1:
-                msg = args[0] % args[1:]
-            else:
-                msg = args[0]
-            self.logger.info(msg)
-        except Exception:
-            self.error('Bad format in call to services.info() ' + str(args))
+        self.logger.info(msg, *args)
 
-    def warning(self, *args):
+    def warning(self, msg, *args):
         """
-        Produce **warning** message in simulation log file.  Raise exception for bad formatting.
+        Produce **warning** message in simulation log file. See :func:`logging.warning` for usage.
         """
-        try:
-            if len(args) > 1:
-                msg = args[0] % args[1:]
-            else:
-                msg = args[0]
-            self.logger.warning(msg)
-        except Exception:
-            self.error('Bad format in call to services.warning() ' + str(args))
+        self.logger.warning(msg, *args)
 
-    def error(self, *args):
+    def error(self, msg, *args):
         """
-        Produce **error** message in simulation log file.  Raise exception for bad formatting.
+        Produce **error** message in simulation log file. See :func:`logging.error` for usage.
         """
-        try:
-            if len(args) > 1:
-                msg = args[0] % args[1:]
-            else:
-                msg = args[0]
-            self.logger.error(msg)
-        except AttributeError:
-            raise RuntimeError("logger is not initialized")
-        except Exception:
-            self.error('Bad format in call to services.error() ' + str(args))
+        self.logger.error(msg, *args)
 
-    def exception(self, *args):
+    def exception(self, msg, *args):
         """
-        Produce **exception** message in simulation log file.  Raise exception for bad formatting.
+        Produce **exception** message in simulation log file. See :func:`logging.exception` for usage.
         """
-        try:
-            if len(args) > 1:
-                msg = args[0] % args[1:]
-            else:
-                msg = args[0]
-            self.logger.exception(msg, exc_info=False)
-        except Exception:
-            self.error('Bad format in call to services.exception() ' + str(args))
+        self.logger.exception(msg, *args, exc_info=False)
 
-    def critical(self, *args):
+    def critical(self, msg, *args):
         """
-        Produce **critical** message in simulation log file.  Raise exception for bad formatting.
+        Produce **critical** message in simulation log file. See :func:`logging.critical` for usage.
         """
-        try:
-            if len(args) > 1:
-                msg = args[0] % args[1:]
-            else:
-                msg = args[0]
-            self.logger.critical(msg)
-        except Exception:
-            self.error('Bad format in call to services.critical() ' + str(args))
+        self.logger.critical(msg, *args)
 
     def create_task_pool(self, task_pool_name):
         """
@@ -2116,7 +1926,6 @@ class TaskPool:
             else:
                 self.services.binary_fullpath_cache[binary] = binary_fullpath
 
-        # print("####", binary_fullpath, args)
         keywords['keywords']['block'] = False
 
         self.serial_pool = self.serial_pool and (nproc == 1)
@@ -2149,7 +1958,6 @@ class TaskPool:
         launch.__module__ = "__main__"
         self.futures = []
         for k, v in self.queued_tasks.items():
-            # print(k,v, v.binary, v.args)
             try:
                 log_filename = v.keywords["logfile"]
             except KeyError:

@@ -10,6 +10,7 @@ class BlockedMessageException(Exception):
     """
 
     def __init__(self, msg, reason):
+        super().__init__(msg)
         self.msg = msg
         self.reason = reason
         self.args = (msg, reason)
@@ -24,6 +25,7 @@ class IncompleteCallException(Exception):
     """
 
     def __init__(self, callID):
+        super().__init__()
         self.callID = callID
         self.args = (callID,)
 
@@ -37,6 +39,7 @@ class AllocatedNodeDownException(Exception):
     """
 
     def __init__(self, identifier, tid, comp_id):
+        super().__init__()
         self.node = identifier
         self.tid = tid
         self.component = comp_id
@@ -51,6 +54,7 @@ class NonexistentResourceException(Exception):
     """
 
     def __init__(self, identifier):
+        super().__init__()
         self.thing = identifier
 
     def __str__(self):
@@ -63,6 +67,7 @@ class InsufficientResourcesException(Exception):
     """
 
     def __init__(self, caller_id, tid, request, deficit):
+        super().__init__()
         self.caller_id = caller_id
         self.task_id = tid
         self.request = request
@@ -82,6 +87,7 @@ class ResourceRequestMismatchException(Exception):
     """
 
     def __init__(self, caller_id, tid, nproc, ppn, max_procs, max_ppn):
+        super().__init__()
         self.caller_id = caller_id
         self.task_id = tid
         self.nproc = nproc
@@ -102,6 +108,7 @@ class InvalidResourceSettingsException(Exception):
     """
 
     def __init__(self, t, spn, cpn):
+        super().__init__()
         self.type = t
         self.spn = spn
         self.cpn = cpn
@@ -125,6 +132,7 @@ class BadResourceRequestException(Exception):
     """
 
     def __init__(self, caller_id, tid, request, deficit):
+        super().__init__()
         self.caller_id = caller_id
         self.task_id = tid
         self.request = request
@@ -143,6 +151,7 @@ class ReleaseMismatchException(Exception):
     """
 
     def __init__(self, caller_id, tid, old_alc, old_avc, new_alc, new_avc):
+        super().__init__()
         self.caller_id = caller_id
         self.tid = tid
         self.old_alc = old_alc

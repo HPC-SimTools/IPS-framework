@@ -6,9 +6,6 @@ import os
 import subprocess
 from . import ipsutil
 
-# import things to use event service
-# from event_service_spec import PublisherEventService,SubscriberEventService,EventListener,Topic,EventServiceException
-
 
 class DataManager:
     """
@@ -25,10 +22,6 @@ class DataManager:
         self.RM = None
         self.CM = None
         self.host = self.fwk.host
-        # create publisher event service object
-        # self.publisherES = PublisherEventService()
-        # get a topic to publish on
-        # self.myTopic = self.publisherES.getTopic("test")
         self.myTopic = None
         self.outPrefix = ""
         self.simroot = ""
