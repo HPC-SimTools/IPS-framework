@@ -7,7 +7,7 @@ IPS
 
 Framework
 ---------
-.. autoclass:: ipsframework.Framework
+.. autoclass:: ipsframework.ips.Framework
    :members:
    :undoc-members:
 
@@ -64,16 +64,6 @@ Configuration Manager
 Services
 --------
 .. automodule:: ipsframework.services
-
-.. autoclass:: ServicesProxy
-   :members:
-   :undoc-members:
-
-.. autoclass:: Task
-   :members:
-   :undoc-members:
-
-.. autoclass:: TaskPool
    :members:
    :undoc-members:
 
