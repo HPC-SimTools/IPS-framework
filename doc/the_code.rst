@@ -55,6 +55,13 @@ Component
    :members:
    :undoc-members:
 
+Component Registry
+------------------
+
+.. automodule:: ipsframework.componentRegistry
+   :members:
+   :undoc-members:
+
 Configuration Manager
 ---------------------
 .. automodule:: ipsframework.configurationManager

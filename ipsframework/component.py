@@ -1,6 +1,7 @@
 # -------------------------------------------------------------------------------
 # Copyright 2006-2020 UT-Battelle, LLC. See LICENSE for more information.
 # -------------------------------------------------------------------------------
+"""IPS Framework Component"""
 import sys
 import os
 import weakref
@@ -12,6 +13,12 @@ class Component:
     """
     Base class for all IPS components.  Common set up, connection and
     invocation actions are implemented here.
+
+    :param services: service proxy to communicate with framework
+    :type services: :class:`~ipsframework.services.ServicesProxy`
+
+    :param config: configuration dictionary for this component
+    :type config: dict
     """
 
     def __init__(self, services, config):
