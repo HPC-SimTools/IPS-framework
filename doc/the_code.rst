@@ -23,7 +23,6 @@ Task Manager
 .. automodule:: ipsframework.taskManager
    :members:
    :undoc-members:
-   :exclude-members: launch_task_resilient, wait_task_resilient
 
 Resource Manager
 ----------------

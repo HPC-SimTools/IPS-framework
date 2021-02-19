@@ -652,76 +652,6 @@ class ServicesProxy:
         self.task_map[task_id] = (process, time.time(), timeout)
         return task_id  # process.pid
 
-    def launch_task_resilient(self, nproc, working_dir, binary, *args, **keywords):
-        """
-        **not used**
-        """
-        task_ppn = self.ppn
-        try:
-            task_ppn = keywords['task_ppn']
-        except Exception:
-            pass
-
-        block = True
-        try:
-            block = keywords['block']
-        except Exception:
-            pass
-        wnodes = keywords['whole_nodes']
-        wsocks = keywords['whole_sockets']
-
-        try:
-            # SIMYAN: added working_dir to component method invocation
-            msg_id = self._invoke_service(self.fwk.component_id,
-                                          'init_task', nproc, binary,
-                                          working_dir, task_ppn,
-                                          block, wnodes, wsocks, *args)
-            (task_id, command, env_update) = self._get_service_response(msg_id, block=True)
-        except Exception:
-            self.exception('Error initiating task %s %s on %d nodes' %
-                           (binary, str(args), int(nproc)))
-            raise
-
-        log_filename = None
-        try:
-            log_filename = keywords['logfile']
-        except KeyError:
-            pass
-
-        task_stdout = sys.stdout
-        if log_filename:
-            try:
-                task_stdout = open(log_filename, 'w')
-            except Exception:
-                self.exception('Error opening log file %s : using stdout', log_filename)
-
-        cmd_lst = command.split(' ')
-        try:
-            self.debug('Launching command : %s', command)
-            if env_update:
-                new_env = os.environ
-                new_env.update(env_update)
-                process = subprocess.Popen(cmd_lst, stdout=task_stdout,
-                                           stderr=subprocess.STDOUT,
-                                           cwd=working_dir,
-                                           env=new_env)
-            else:
-                process = subprocess.Popen(cmd_lst, stdout=task_stdout,
-                                           stderr=subprocess.STDOUT,
-                                           cwd=working_dir)
-        except Exception:
-            self.exception('Error executing command : %s', command)
-            raise
-        self._send_monitor_event('IPS_LAUNCH_TASK', 'Target = ' + command +
-                                 ', task_id = ' + str(task_id))
-
-        # FIXME: process Monitoring Command : ps --no-headers -o pid,state pid1
-        # pid2 pid3 ...
-
-        self.task_map[task_id] = (process, time.time(), nproc, working_dir, binary,
-                                  args, keywords)
-        return task_id  # process.pid
-
     def launch_task_pool(self, task_pool_name, launch_interval=0.0):
         """
         Construct messages to task manager to launch each task.
@@ -935,48 +865,6 @@ class ServicesProxy:
         except Exception:
             self.exception('Error finalizing task  %s', task_id)
             raise
-        return task_retval
-
-    def wait_task_resilient(self, task_id):
-        """
-        **not used**
-        """
-        try:
-            process, start_time, nproc, working_dir, binary, args, keywords = self.task_map[task_id]
-        except KeyError:
-            self.exception('Error: unrecognizable task_id = %s ', str(task_id))
-            raise
-        task_retval = process.wait()
-        self._send_monitor_event('IPS_TASK_END', 'task_id = %s  elapsed time = %.2f S' %
-                                 (str(task_id), time.time() - start_time))
-
-        del self.task_map[task_id]
-        try:
-            msg_id = self._invoke_service(self.fwk.component_id,
-                                          'finish_task', task_id, task_retval)
-            retval = self._get_service_response(msg_id, block=True)
-        except Exception:
-            self.exception('Error finalizing task  %s', task_id)
-            raise
-
-        if task_retval == 0:
-            if retval == 0:
-                self.debug('Successful execution and no FTB trace.')
-            elif retval == 1:
-                self.debug('Successful execution and FTB trace.')
-        else:
-            if retval == 0:
-                self.error('Unsuccessful execution and no FTB trace.')
-                raise Exception('Execution failed presumably due to application error.')
-            elif retval == 1:
-                self.exception('Unsuccessful execution and FTB trace.')
-                if ('relaunch' not in keywords) or (keywords['relaunch'] != 'N'):
-                    relaunch_task_id = self.launch_task_resilient(nproc, working_dir, binary, args, keywords)
-                    self.debug('Relaunched failed task.')
-                    return self.wait_task_resilient(relaunch_task_id)
-                else:
-                    self.debug('Task failed but was not relaunched.')
-
         return task_retval
 
     def wait_tasklist(self, task_id_list, block=True):
