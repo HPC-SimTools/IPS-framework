@@ -1,3 +1,4 @@
+"""IPS Framework"""
 from .component import Component
 from .configurationManager import ConfigurationManager
 from .dataManager import DataManager
