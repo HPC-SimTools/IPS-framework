@@ -4,6 +4,7 @@
 import os
 import sys
 import importlib
+import importlib.util
 import tempfile
 import logging
 import socket
@@ -191,7 +192,7 @@ class ConfigurationManager:
         plat_keys = list(self.platform_conf.keys())
         for (k, v) in os.environ.items():
             if k not in plat_keys \
-                    and not any([x in v for x in '{}()$']):
+                    and not any(x in v for x in '{}()$'):
                 self.platform_conf[k] = v
 
         mpirun_version = self.platform_conf.get('MPIRUN_VERSION', 'OpenMPI-generic')
@@ -241,7 +242,7 @@ class ConfigurationManager:
                 # giving precedence to config file definitions in case of duplicates
                 conf_keys = list(conf.keys())
                 for (k, v) in os.environ.items():
-                    if k not in conf_keys and not any([x in v for x in '{}()$']):
+                    if k not in conf_keys and not any(x in v for x in '{}()$'):
                         conf[k] = v
 
                 # Allow simulation file to override platform values
@@ -615,7 +616,7 @@ class ConfigurationManager:
         for (k, v) in os.environ.items():
             # Do not include functions from environment
             if k not in conf_keys and \
-                    not any([x in v for x in '{}()$']):
+                    not any(x in v for x in '{}()$'):
                 conf[k] = v
 
         # Allow propagation of entries from platform config file to simulation
