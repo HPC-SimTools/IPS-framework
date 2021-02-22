@@ -4,6 +4,7 @@
 import os
 import sys
 import importlib
+import importlib.util
 import tempfile
 import logging
 import socket
