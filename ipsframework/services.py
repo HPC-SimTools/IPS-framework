@@ -1264,6 +1264,8 @@ class ServicesProxy:
 
             ${SIM_ROOT}/work/$CLASS_${SUB_CLASS}_$NAME_<instance_num>
 
+        :return: working directory
+        :rtype: str
         """
         if self.workdir == '':
             self.workdir = os.path.join(self.sim_conf['SIM_ROOT'], 'work',
@@ -1277,6 +1279,11 @@ class ServicesProxy:
         (as obtained via a call to :py:meth:`ServicesProxy.get_working_dir`). Input files
         are assumed to be originally located in the directory variable
         *INPUT_DIR* in the component configuration section.
+
+        File are copied using :func:`ipsframework.ipsutil.copyFiles`.
+
+        :param input_file_list: input files can space seperated string or iterable of strings
+        :type input_file_list: str or Iterable of str
         """
         start_time = time.time()
         workdir = self.get_working_dir()
@@ -2007,6 +2014,15 @@ class TaskPool:
         """
         Create :py:obj:`Task` object and add to *queued_tasks* of the task
         pool.  Raise exception if task name already exists in task pool.
+
+        :param task_name: unique task name
+        :type task_name: str
+        :param nproc: number of process to run task with
+        :type nproc: int
+        :param working_dir: change to this directory before launching task
+        :type working_dir: str
+        :param binary: full path to executable to launch
+        :type binary: str
         """
         if task_name in self.queued_tasks:
             raise Exception('Duplicate task name %s in task pool' % task_name)
@@ -2034,12 +2050,18 @@ class TaskPool:
                                             **keywords["keywords"])
 
     def submit_dask_tasks(self, block=True, dask_nodes=1, dask_ppn=None):
-        """Launch tasks in *queued_tasks*.  Finished tasks are handled before
-        launching new ones.  If *block* is ``True``, the number of
-        tasks submited is returned after all tasks have been launched
-        and completed.  If *block* is ``False`` the number of tasks
-        that can immediately be launched is returned.
+        """Launch tasks in *queued_tasks* using dask.  Finished tasks are
+        handled before launching new ones.  If *block* is ``True``,
+        the number of tasks submited is returned after all tasks have
+        been launched and completed.  If *block* is ``False`` the
+        number of tasks that can immediately be launched is returned.
 
+        :param block: If True then wait for task to complete, default True
+        :type block: bool
+        :param dask_nodes: Number of task nodes, default 1
+        :type dask_nodes: int
+        :param dask_ppn:  Number of processes per node, default None
+        :type dask_ppn: int
         """
         services: ServicesProxy = self.services
         self.dask_file_name = os.path.join(os.getcwd(),
@@ -2086,12 +2108,26 @@ class TaskPool:
         return len(self.futures)
 
     def submit_tasks(self, block=True, use_dask=False, dask_nodes=1, dask_ppn=None, launch_interval=0.0):
-        """
-        Launch tasks in *queued_tasks*.  Finished tasks are handled before
-        launching new ones.  If *block* is ``True``, the number of tasks
-        submited is returned after all tasks have been launched and
-        completed.  If *block* is ``False`` the number of tasks that can
-        immediately be launched is returned.
+        """Launch tasks in *queued_tasks*.  Finished tasks are handled before
+        launching new ones.  If *block* is ``True``, the number of
+        tasks submited is returned after all tasks have been launched
+        and completed.  If *block* is ``False`` the number of tasks
+        that can immediately be launched is returned.
+
+        If ``use_dask==True`` then the tasks are launched with
+        :meth:`submit_dask_tasks`.
+
+        :param block: If True then wait for task to complete, default True
+        :type block: bool
+        :param use_dask: If True then use dask to launch tasks, default False
+        :type use_dask: bool
+        :param dask_nodes: Number of task nodes, only used it ``use_dask==True``
+        :type dask_nodes: int
+        :param dask_ppn:  Number of processes per node, only used it ``use_dask==True``
+        :type dask_ppn: int
+        :param launch_internal: time to wait between launching tasks, default 0.0
+        :type launch_internal: float
+
         """
 
         if TaskPool.dask and self.serial_pool and use_dask:
@@ -2122,6 +2158,8 @@ class TaskPool:
         """Return a dictionary of exit status values for all dask tasks that
         have finished since the last time finished tasks were polled.
 
+        :return: dict mapping task name to exit status
+        :rtype: dict
         """
         result = self.dask_client.gather(self.futures)
         self.dask_client.shutdown()
@@ -2141,6 +2179,9 @@ class TaskPool:
         """
         Return a dictionary of exit status values for all tasks that have
         finished since the last time finished tasks were polled.
+
+        :return: dict mapping task name to exit status
+        :rtype: dict
         """
         if self.dask_pool:
             return self.get_dask_finished_tasks_status()
@@ -2175,12 +2216,16 @@ class Task:
     r"""
     Container for task information:
 
-    * *name*: task name
-    * *nproc*: number of processes the task needs
-    * *working_dir*: location to launch task from
-    * *binary*: full path to executable to launch
-    * *\*args*: arguments for *binary*
-    * *\*\*keywords*: keyword arguments for launching the task.  See :py:meth:`ServicesProxy.launch_task` for details.
+    :param name: task name
+    :type name: str
+    :param nproc: number of processes the task needs
+    :type nproc: int
+    :param working_dir: location to launch task from
+    :type working_dir: str
+    :param binary: full path to executable to launch
+    :type binary: str
+    :param \*args: arguments for *binary*
+    :param \*\*keywords: keyword arguments for launching the task.  See :py:meth:`ServicesProxy.launch_task` for details.
     """
 
     def __init__(self, task_name, nproc, working_dir, binary, *args, **keywords):

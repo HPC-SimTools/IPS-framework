@@ -73,6 +73,7 @@ Services
 .. automodule:: ipsframework.services
    :members:
    :undoc-members:
+   :exclude-members: dask, distributed
 
 Other Utilities
 ---------------
