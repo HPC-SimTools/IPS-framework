@@ -7,7 +7,7 @@ IPS
 
 Framework
 ---------
-.. autoclass:: ipsframework.Framework
+.. autoclass:: ipsframework.ips.Framework
    :members:
    :undoc-members:
 
@@ -55,6 +55,13 @@ Component
    :members:
    :undoc-members:
 
+Component Registry
+------------------
+
+.. automodule:: ipsframework.componentRegistry
+   :members:
+   :undoc-members:
+
 Configuration Manager
 ---------------------
 .. automodule:: ipsframework.configurationManager
@@ -64,18 +71,9 @@ Configuration Manager
 Services
 --------
 .. automodule:: ipsframework.services
-
-.. autoclass:: ServicesProxy
    :members:
    :undoc-members:
-
-.. autoclass:: Task
-   :members:
-   :undoc-members:
-
-.. autoclass:: TaskPool
-   :members:
-   :undoc-members:
+   :exclude-members: dask, distributed
 
 Other Utilities
 ---------------

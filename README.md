@@ -1,6 +1,6 @@
 # Integrated Plasma Simulator (IPS) Framework
 
-The documentation can be found at
+The documentation can be found at https://ips-framework.readthedocs.io
 
 Installation is available via pip:
 

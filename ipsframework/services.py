@@ -1,6 +1,7 @@
 # -------------------------------------------------------------------------------
 # Copyright 2006-2020 UT-Battelle, LLC. See LICENSE for more information.
 # -------------------------------------------------------------------------------
+"""IPS Services"""
 import sys
 import queue
 import os
@@ -21,6 +22,11 @@ from .ips_es_spec import eventManager
 
 
 def launch(binary, task_name, working_dir, *args, **keywords):
+    """This is used by
+    :meth:`TaskPool.submit_dask_tasks` as the
+    input to :meth:`dask.distributed.Client.submit`.
+
+    """
     os.chdir(working_dir)
     task_stdout = sys.stdout
     try:
@@ -87,29 +93,38 @@ def launch(binary, task_name, working_dir, *args, **keywords):
 
 
 class ServicesProxy:
+    """The *ServicesProxy* object is responsible for marshalling
+    invocations of framework services to the framework process using a
+    shared queue.  The queue is shared among all components in a
+    simulation. The results from framework services invocations are
+    received via another, component-specific "framework response"
+    queue.
+
+    Create a new ServicesProxy object
+
+    :param fwk: Enclosing IPS simulation framework
+    :type fwk: :class:`ipsframework.ips.Framework`
+
+    :param fwk_in_q: Framework input message queue - shared among all
+                service objects
+    :type fwk_in_q: :class:`multiprocessing.Queue`
+
+    :param svc_response_q: Service response message queue - one per
+                      service object.
+    :type svc_response_q: :class:`multiprocessing.Queue`
+
+    :param sim_conf: Simulation configuration dictionary, contains
+                data from the simulation configuration file merged
+                with the platform configuration file.
+    :type sim_conf: dict
+
+    :param log_pipe_name: Name of logging pipe for use by the IPS
+                     logging daemon.
+    :type log_pipe_name: str
+
+    """
 
     def __init__(self, fwk, fwk_in_q, svc_response_q, sim_conf, log_pipe_name):
-        """
-        The *ServicesProxy* object is responsible for marshalling invocations
-        of framework services to the framework process using a shared queue.
-        The queue is shared among all components in a simulation. The results
-        from framework services invocations are received via another,
-        component-specific "framework response" queue.
-
-        Create a new ServicesProxy object
-
-        *fwk*: Enclosing IPS simulation framework, of type
-               :py:meth:`ips.Framework`
-        *fwk_in_q*: Framework input message queue - shared among all service
-                    objects
-        *svc_response_q*: Service response message queue - one per service
-                          object.
-        *sim_conf*: Simulation configuration dictionary, contains data from
-                    the simulation configuration file merged with the platform
-                    configuration file.
-        *log_pipe_name*: Name of logging pipe for use by the IPS logging
-                         daemon.
-        """
         self.pid = 0
         self.fwk = fwk
         self.fwk_in_q = fwk_in_q
@@ -398,7 +413,11 @@ class ServicesProxy:
 
     def get_port(self, port_name):
         """
-        Return a reference to the component implementing port *port_name*.
+        :param port_name: port name
+        :type port_name: str
+
+        :return: Return a reference to the component implementing port *port_name*.
+        :rtype: :class:`ipsframework.componentRegistry.ComponentID`
         """
         msg_id = self._invoke_service(self.fwk.component_id,
                                       'get_port', port_name)
@@ -406,9 +425,9 @@ class ServicesProxy:
         return response
 
     def cleanup(self):
-        """
-        Clean up any state from the services.  Called by the terminate method
-        in the base class for components.
+        """Clean up any state from the services. Called by the terminate
+        method in the base class for components.
+
         """
         for (p, _, _) in self.task_map.values():
             try:
@@ -417,9 +436,17 @@ class ServicesProxy:
                 pass
 
     def call_nonblocking(self, component_id, method_name, *args, **keywords):
-        r"""
-        Invoke method *method_name* on component *component_id* with optional
-        arguments *\*args*.  Return *call_id*.
+        r"""Invoke method *method_name* on component *component_id* with
+        optional arguments *\*args*. Will not wait until finished.
+
+        :param component_id: Component ID of requested component
+        :type component_id: :class:`~ipsframework.componentRegistry.ComponentID`
+
+        :param method_name: component method to call, e.g. ``init`` or ``step``
+        :type method_name: str
+
+        :return: call_id
+        :rtype: int
         """
         target_class = component_id.get_class_name()
         target_seqnum = component_id.get_seq_num()
@@ -439,21 +466,34 @@ class ServicesProxy:
         return call_id
 
     def call(self, component_id, method_name, *args, **keywords):
-        r"""
-        Invoke method *method_name* on component *component_id* with optional
-        arguments *\*args*.  Return result from invoking the method.
+        r"""Invoke method *method_name* on component *component_id* with
+        optional arguments *\*args*. Will wait until call is
+        finished. Return result from invoking the method.
+
+        :param component_id: Component ID of requested component
+        :type component_id: :class:`~ipsframework.componentRegistry.ComponentID`
+
+        :param method_name: component method to call, e.g. ``init`` or ``step``
+        :type method_name: str
+
+        :return: service response message arguments
+
         """
         call_id = self.call_nonblocking(component_id, method_name, *args, **keywords)
         retval = self.wait_call(call_id, block=True)
         return retval
 
     def wait_call(self, call_id, block=True):
-        """
-        If *block* is ``True``, return when the call has completed with the
-        return code from the call.
-        If *block* is ``False``, raise
-        :py:exc:`ipsExceptions.IncompleteCallException` if the call has not
-        completed, and the return value is it has.
+        """If *block* is ``True``, return when the call has completed with
+        the return code from the call.  If *block* is ``False``, raise
+        :exc:`~ipsframework.ipsExceptions.IncompleteCallException` if
+        the call has not completed, and the return value is it has.
+
+        :param call_id: call ID
+        :type call_id: int
+
+        :return: service response message arguments
+
         """
         try:
             (target, method_name, args) = self.call_targets[call_id]
@@ -472,12 +512,19 @@ class ServicesProxy:
         return response
 
     def wait_call_list(self, call_id_list, block=True):
-        """
-        Check the status of each of the call in *call_id_list*.  If *block* is
-        ``True``, return when *all* calls are finished.  If *block* is
-        ``False``, raise :py:exc:`ipsExceptions.IncompleteCallException` if
-        *any* of the calls have not completed, otherwise return.  The return
-        value is a dictionary of *call_ids* and return values.
+        """Check the status of each of the call in *call_id_list*.  If
+        *block* is ``True``, return when *all* calls are finished.  If
+        *block* is ``False``, raise
+        :exc:`~ipsframework.ipsExceptions.IncompleteCallException` if
+        *any* of the calls have not completed, otherwise return.  The
+        return value is a dictionary of *call_ids* and return values.
+
+        :param call_id_list: list of call ID's
+        :type call_id_list: list of int
+
+        :return: dict of call_id and return value
+        :rtype: dict
+
         """
         ret_map = {}
         caught_exceptions = []
@@ -524,14 +571,26 @@ class ServicesProxy:
 
         Return *task_id* if successful.  May raise exceptions related to
         opening the logfile, being unable to obtain enough resources to launch
-        the task (:exc:`ipsExceptions.InsufficientResourcesException`), bad
+        the task (:exc:`~ipsframework.ipsExceptions.InsufficientResourcesException`), bad
         task launch request
-        (:exc:`ipsExceptions.ResourceRequestMismatchException`,
-        :exc:`ipsExceptions.BadResourceRequestException`) or problems
+        (:exc:`~ipsframework.ipsExceptions.ResourceRequestMismatchException`,
+        :exc:`~ipsframework.ipsExceptions.BadResourceRequestException`) or problems
         executing the command. These exceptions may be used to retry launching
         the task as appropriate.
 
         .. note :: This is a nonblocking function, users must use a version of :py:meth:`ServicesProxy.wait_task` to get result.
+
+        :param nproc: number of processes
+        :type nproc: int
+
+        :param working_dir: change to this directory before launching task
+        :type working_dir: str
+
+        :param binary: command to execute, can include arguments or can be pass in with *\*args*
+        :type binary: str
+
+        :return: task_id (PID)
+        :rtype: int
 
         """
         args = tuple(str(a) for a in args)
@@ -549,23 +608,9 @@ class ServicesProxy:
         else:
             self.binary_fullpath_cache[binary] = binary_fullpath
 
-        task_ppn = self.ppn
-        try:
-            task_ppn = keywords['task_ppn']
-        except Exception:
-            pass
-
-        block = True
-        try:
-            block = keywords['block']
-        except Exception:
-            pass
-
-        tag = 'None'
-        try:
-            tag = keywords['tag']
-        except Exception:
-            pass
+        task_ppn = keywords.get('task_ppn', self.ppn)
+        block = keywords.get('block', True)
+        tag = keywords.get('tag', 'None')
 
         try:
             whole_nodes = keywords['whole_nodes']
@@ -593,17 +638,8 @@ class ServicesProxy:
         except Exception:
             raise
 
-        log_filename = None
-        try:
-            log_filename = keywords['logfile']
-        except KeyError:
-            pass
-
-        timeout = 1.e9
-        try:
-            timeout = keywords["timeout"]
-        except KeyError:
-            pass
+        log_filename = keywords.get('logfile')
+        timeout = keywords.get("timeout", 1.e9)
 
         task_stdout = sys.stdout
         if log_filename:
@@ -653,9 +689,18 @@ class ServicesProxy:
         return task_id  # process.pid
 
     def launch_task_pool(self, task_pool_name, launch_interval=0.0):
-        """
-        Construct messages to task manager to launch each task.
-        Used by :py:class:`TaskPool` to launch tasks in a task_pool.
+        """Construct messages to task manager to launch each task in task
+        pool.  Used by :py:class:`TaskPool` to launch tasks in a
+        task_pool.
+
+        :param task_pool_name: name of task pool
+        :type task_pool_name: str
+
+        :param launch_internal: time to wait between launching tasks, default 0.0
+        :type launch_internal: float
+
+        :return: activate task, dictionary mapping task_name to task_id
+        :rtype: dict
         """
 
         task_pool = self.task_pools[task_pool_name]
@@ -761,8 +806,15 @@ class ServicesProxy:
         return active_tasks
 
     def kill_task(self, task_id):
-        """
-        Kill launched task *task_id*.  Return if successful.  Raises exceptions if the task or process cannot be found or killed successfully.
+        """Kill launched task *task_id*.  Return if successful.  Raises
+        exceptions if the task or process cannot be found or killed
+        successfully.
+
+        :param task_id: task ID
+        :type task_id: int
+
+        :return: if successfully killed
+        :rtype: bool
         """
         try:
             process, _, _ = self.task_map[task_id]
@@ -804,6 +856,10 @@ class ServicesProxy:
         ``None`` is returned.  A *KeyError* exception may be raised if
         the task is not found.
 
+        :param task_id: task ID (PID)
+        :type task_id: int
+
+        :return: return value of task if finished else None
         """
         try:
             process, start_time, timeout = self.task_map[task_id]
@@ -831,6 +887,16 @@ class ServicesProxy:
         task is not found, or if there are problems finalizing the
         task.
 
+        :param task_id: task ID (PID)
+        :type task_id: int
+
+        :param timeout: maximum time to wait for task to finsih, default -1 (no timeout)
+        :type timeout: float
+
+        :param delay: time to wait before checking if task has timed-out
+        :type delay: float
+
+        :return: return value of task
         """
         try:
             process, start_time, _ = self.task_map[task_id]
@@ -868,13 +934,21 @@ class ServicesProxy:
         return task_retval
 
     def wait_tasklist(self, task_id_list, block=True):
-        """
-        Check the status of a list of tasks.  If *block* is ``True``, return a
-        dictionary of return values when *all* tasks have completed.  If
-        *block* is ``False``, return a dictionary containing entries for each
-        *completed* task.  Note that the dictionary may be empty.  Raise
-        *KeyError* exception if *task_id* not found.
+        """Check the status of a list of tasks.  If ``block`` is ``True``,
+        return a dictionary of return values when *all* tasks have
+        completed.  If ``block`` is ``False``, return a dictionary
+        containing entries for each *completed* task.  Note that the
+        dictionary may be empty.  Raise :class:`KeyError` exception if
+        ``task_id`` not found.
 
+        :param task_id_list: list of task_id's (PID's) to wait until completed
+        :type task_id_list: list of int
+
+        :param block: if to wait until all task finsh
+        :type block: bool
+
+        :return: dict of task_id and return value
+        :rtype: dict
         """
         ret_dict = {}
         running_tasks = list(task_id_list)
@@ -901,8 +975,17 @@ class ServicesProxy:
 
     def get_config_param(self, param, silent=False):
         """
-        Return the value of the configuration parameter *param*.  Raise
-        exception if not found.
+        Return the value of the configuration parameter ``param``.  Raise
+        exception if not found and silent is False.
+
+        :param param: The paramater requested from simulation config
+        :type param: str
+
+        :param silent: If True and paramater isn't found then exception is not raised, default False
+        :type silent: bool
+
+        :return: dictionary of given parameter from configuration
+        :rtype: dict
         """
         try:
             val = self.sim_conf[param]
@@ -918,10 +1001,19 @@ class ServicesProxy:
         return val
 
     def set_config_param(self, param, value, target_sim_name=None):
-        """
-        Set configuration parameter *param* to *value*.  Raise exceptions if
-        the parameter cannot be changed or if there are problems setting the
-        value.
+        """Set configuration parameter *param* to *value*.  Raise exceptions
+        if the parameter cannot be changed or if there are problems
+        setting the value. This tell the framework to call
+        :meth:`ipsframework.configurationManager.ConfigurationManager.set_config_parameter`
+        to change the parameter.
+
+        :param param: The paramater requested from simulation config
+        :type param: str
+
+        :param value: The value to set the parameter
+
+        :return: return value from setting parameter
+
         """
         if target_sim_name is None:
             sim_name = self.sim_name
@@ -941,6 +1033,9 @@ class ServicesProxy:
     def get_time_loop(self):
         """
         Return the list of times as specified in the configuration file.
+
+        :return: list of times
+        :rtype: list of float
         """
         if self.time_loop is not None:
             return self.time_loop
@@ -1169,6 +1264,8 @@ class ServicesProxy:
 
             ${SIM_ROOT}/work/$CLASS_${SUB_CLASS}_$NAME_<instance_num>
 
+        :return: working directory
+        :rtype: str
         """
         if self.workdir == '':
             self.workdir = os.path.join(self.sim_conf['SIM_ROOT'], 'work',
@@ -1182,6 +1279,11 @@ class ServicesProxy:
         (as obtained via a call to :py:meth:`ServicesProxy.get_working_dir`). Input files
         are assumed to be originally located in the directory variable
         *INPUT_DIR* in the component configuration section.
+
+        File are copied using :func:`ipsframework.ipsutil.copyFiles`.
+
+        :param input_file_list: input files can space seperated string or iterable of strings
+        :type input_file_list: str or Iterable of str
         """
         start_time = time.time()
         workdir = self.get_working_dir()
@@ -1235,11 +1337,13 @@ class ServicesProxy:
                                   str(input_file_list)))
 
     def stage_subflow_output_files(self, subflow_name='ALL'):
-        # Gather outputs from sub-workflows. Sub-workflow output
-        # is defined to be the output files from its DRIVER component
-        # as they exist in the sub-workflow driver's work area at the
-        # end of the sub-simulation. If subflow_name != 'ALL' then get
-        # output from only that sub-flow
+        """Gather outputs from sub-workflows. Sub-workflow output is defined
+        to be the output files from its DRIVER component as they exist
+        in the sub-workflow driver's work area at the end of the
+        sub-simulation. If subflow_name != 'ALL' then get output from
+        only that sub-flow
+
+        """
         subflow_dict = {}
         if subflow_name == 'ALL':
             subflow_dict = self.sub_flows
@@ -1761,6 +1865,9 @@ class ServicesProxy:
         del self.task_pools[task_pool_name]
 
     def create_sub_workflow(self, sub_name, config_file, override=None, input_dir=None):
+        """Create sub-workflow
+
+        """
 
         if not override:
             override = {}
@@ -1817,6 +1924,7 @@ class ServicesProxy:
         return (sim_name, init_comp, driver_comp)
 
     def create_simulation(self, config_file, override):
+        """Create simulation"""
         return self._create_simulation(config_file, override, sub_workflow=False)[0]
 
     def _create_simulation(self, config_file, override, sub_workflow=False):
@@ -1906,6 +2014,15 @@ class TaskPool:
         """
         Create :py:obj:`Task` object and add to *queued_tasks* of the task
         pool.  Raise exception if task name already exists in task pool.
+
+        :param task_name: unique task name
+        :type task_name: str
+        :param nproc: number of process to run task with
+        :type nproc: int
+        :param working_dir: change to this directory before launching task
+        :type working_dir: str
+        :param binary: full path to executable to launch
+        :type binary: str
         """
         if task_name in self.queued_tasks:
             raise Exception('Duplicate task name %s in task pool' % task_name)
@@ -1933,6 +2050,19 @@ class TaskPool:
                                             **keywords["keywords"])
 
     def submit_dask_tasks(self, block=True, dask_nodes=1, dask_ppn=None):
+        """Launch tasks in *queued_tasks* using dask.  Finished tasks are
+        handled before launching new ones.  If *block* is ``True``,
+        the number of tasks submited is returned after all tasks have
+        been launched and completed.  If *block* is ``False`` the
+        number of tasks that can immediately be launched is returned.
+
+        :param block: If True then wait for task to complete, default True
+        :type block: bool
+        :param dask_nodes: Number of task nodes, default 1
+        :type dask_nodes: int
+        :param dask_ppn:  Number of processes per node, default None
+        :type dask_ppn: int
+        """
         services: ServicesProxy = self.services
         self.dask_file_name = os.path.join(os.getcwd(),
                                            f".{self.name}_dask_shed_{time.time()}.json")
@@ -1978,12 +2108,26 @@ class TaskPool:
         return len(self.futures)
 
     def submit_tasks(self, block=True, use_dask=False, dask_nodes=1, dask_ppn=None, launch_interval=0.0):
-        """
-        Launch tasks in *queued_tasks*.  Finished tasks are handled before
-        launching new ones.  If *block* is ``True``, the number of tasks
-        submited is returned after all tasks have been launched and
-        completed.  If *block* is ``False`` the number of tasks that can
-        immediately be launched is returned.
+        """Launch tasks in *queued_tasks*.  Finished tasks are handled before
+        launching new ones.  If *block* is ``True``, the number of
+        tasks submited is returned after all tasks have been launched
+        and completed.  If *block* is ``False`` the number of tasks
+        that can immediately be launched is returned.
+
+        If ``use_dask==True`` then the tasks are launched with
+        :meth:`submit_dask_tasks`.
+
+        :param block: If True then wait for task to complete, default True
+        :type block: bool
+        :param use_dask: If True then use dask to launch tasks, default False
+        :type use_dask: bool
+        :param dask_nodes: Number of task nodes, only used it ``use_dask==True``
+        :type dask_nodes: int
+        :param dask_ppn:  Number of processes per node, only used it ``use_dask==True``
+        :type dask_ppn: int
+        :param launch_internal: time to wait between launching tasks, default 0.0
+        :type launch_internal: float
+
         """
 
         if TaskPool.dask and self.serial_pool and use_dask:
@@ -2011,6 +2155,12 @@ class TaskPool:
         return submit_count
 
     def get_dask_finished_tasks_status(self):
+        """Return a dictionary of exit status values for all dask tasks that
+        have finished since the last time finished tasks were polled.
+
+        :return: dict mapping task name to exit status
+        :rtype: dict
+        """
         result = self.dask_client.gather(self.futures)
         self.dask_client.shutdown()
         self.dask_client.close()
@@ -2029,6 +2179,9 @@ class TaskPool:
         """
         Return a dictionary of exit status values for all tasks that have
         finished since the last time finished tasks were polled.
+
+        :return: dict mapping task name to exit status
+        :rtype: dict
         """
         if self.dask_pool:
             return self.get_dask_finished_tasks_status()
@@ -2063,12 +2216,16 @@ class Task:
     r"""
     Container for task information:
 
-    * *name*: task name
-    * *nproc*: number of processes the task needs
-    * *working_dir*: location to launch task from
-    * *binary*: full path to executable to launch
-    * *\*args*: arguments for *binary*
-    * *\*\*keywords*: keyword arguments for launching the task.  See :py:meth:`ServicesProxy.launch_task` for details.
+    :param name: task name
+    :type name: str
+    :param nproc: number of processes the task needs
+    :type nproc: int
+    :param working_dir: location to launch task from
+    :type working_dir: str
+    :param binary: full path to executable to launch
+    :type binary: str
+    :param \*args: arguments for *binary*
+    :param \*\*keywords: keyword arguments for launching the task.  See :py:meth:`ServicesProxy.launch_task` for details.
     """
 
     def __init__(self, task_name, nproc, working_dir, binary, *args, **keywords):

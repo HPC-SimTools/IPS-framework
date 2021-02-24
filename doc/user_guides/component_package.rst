@@ -6,20 +6,19 @@ package. This is also an example of using ``MODULE`` instead of
 ``SCRIPT`` in the component configuration section.
 
 The examples will be a simple hello world with one driver and one
-worker. The only requirement of the package is ``ipsframework`` and we
-are using the specific version v0.2.1. The ipsframework should be
-automatically installed from pypi when install ipsexamples but you can
-manually install it from pypi with
+worker. The only requirement of the package is ``ipsframework``. The
+ipsframework should be automatically installed from pypi when install
+ipsexamples but you can manually install it from pypi with
 
 .. code-block:: bash
 
-    python -m pip install ipsframework==0.2.1
+    python -m pip install ipsframework
 
 Or to install it directly from github you can do
 
 .. code-block:: bash
 
-    python -m pip install git+https://github.com/HPC-SimTools/IPS-framework.git@v0.2.1
+    python -m pip install git+https://github.com/HPC-SimTools/IPS-framework.git
 
 To create this project locally, create the following file structure
 

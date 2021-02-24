@@ -101,7 +101,7 @@ class Framework:
     :type config_file_list: list
 
     :param log_file_name: A file name where Framework logging messages are placed.
-    :type log_file_list: str
+    :type log_file_name: str
 
     :param platform_file_name: The name of the platform
             configuration file used in the simulation.  If not
