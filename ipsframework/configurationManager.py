@@ -278,6 +278,8 @@ class ConfigurationManager:
             if log_file in log_file_list:
                 self.fwk.exception('Error: Duplicate LOG_FILE in configuration files')
                 sys.exit(1)
+            if 'SIMULATION_CONFIG_FILE' not in conf:
+                conf['SIMULATION_CONFIG_FILE'] = conf_file
             sim_name_list.append(sim_name)
             sim_root_list.append(sim_root)
             log_file_list.append(log_file)
