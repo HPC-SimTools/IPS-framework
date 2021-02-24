@@ -6,6 +6,11 @@ NERSC recommends the use of anaconda environments to mange python
 installs, see `Brief introduction to Python at NERSC
 <https://docs.nersc.gov/development/languages/python/overview/>`_.
 
+There is a conda environment already constructed and maintained for
+the *atom* project created using the `shareable environment`_
+method. You can activate it by running ``source
+/global/common/software/atom/cori/ips-framework-new/bin/activate``.
+
 Creating you own conda environment
 ----------------------------------
 
@@ -52,6 +57,8 @@ environment to run use, see `Running Python in a batch job
   module load python
   source activate my_ips_env
   ips.py --config=simulation.config --platform=platform.conf
+
+.. _shareable environment:
 
 Creating a shareable environment on /global/common/software
 -----------------------------------------------------------
