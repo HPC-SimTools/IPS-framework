@@ -217,17 +217,11 @@ class ConfigurationManager:
         else:
             use_accurate_nodes = True
 
-        user_def_tprocs = int(self.platform_conf.get('TOTAL_PROCS', 0))
-        user_def_nodes = int(self.platform_conf.get('NODES', 0))
-        user_def_ppn = int(self.platform_conf.get('PROCS_PER_NODE', 0))
-        user_def_cpn = int(self.platform_conf.get('CORES_PER_NODE', 0))
-        user_def_spn = int(self.platform_conf.get('SOCKETS_PER_NODE', 0))
-
-        self.platform_conf['TOTAL_PROCS'] = user_def_tprocs
-        self.platform_conf['NODES'] = user_def_nodes
-        self.platform_conf['PROCS_PER_NODE'] = user_def_ppn
-        self.platform_conf['CORES_PER_NODE'] = user_def_cpn
-        self.platform_conf['SOCKETS_PER_NODE'] = user_def_spn
+        self.platform_conf['TOTAL_PROCS'] = int(self.platform_conf.get('TOTAL_PROCS', 0))
+        self.platform_conf['NODES'] = int(self.platform_conf.get('NODES', 0))
+        self.platform_conf['PROCS_PER_NODE'] = int(self.platform_conf.get('PROCS_PER_NODE', 0))
+        self.platform_conf['CORES_PER_NODE'] = int(self.platform_conf.get('CORES_PER_NODE', 0))
+        self.platform_conf['SOCKETS_PER_NODE'] = int(self.platform_conf.get('SOCKETS_PER_NODE', 0))
         self.platform_conf['USE_ACCURATE_NODES'] = use_accurate_nodes
         self.platform_conf['MPIRUN_VERSION'] = mpirun_version
 
@@ -252,6 +246,10 @@ class ConfigurationManager:
                         self.platform_conf[key] = conf[key]
                     if key not in conf_keys:
                         conf[key] = self.platform_conf[key]
+
+                # Override platform value for PORTAL_URL if in simulation
+                if 'PORTAL_URL' in conf_keys:
+                    self.platform_conf['PORTAL_URL'] = conf['PORTAL_URL']
 
             except (IOError, SyntaxError):
                 self.fwk.exception('Error opening config file %s: ', conf_file)
@@ -382,20 +380,14 @@ class ConfigurationManager:
                 portal_conf['USER'] = self.sim_map[self.fwk_sim_name].sim_conf['USER']
             except KeyError:
                 portal_conf['USER'] = self.platform_conf['USER']
-            havePortal = True
             if self.fwk.log_level == logging.DEBUG:
                 portal_conf['LOG_LEVEL'] = 'DEBUG'
 
-            try:
-                portal_conf['PORTAL_URL'] = self.get_platform_parameter('PORTAL_URL', silent=True)
-                portal_conf['RUNID_URL'] = self.get_platform_parameter('RUNID_URL', silent=True)
-            except KeyError:
-                havePortal = False
+            portal_conf['PORTAL_URL'] = self.get_platform_parameter('PORTAL_URL', silent=True)
 
-            if havePortal:
-                component_id = self._create_component(portal_conf,
-                                                      self.sim_map[self.fwk_sim_name])
-                self.fwk_components.append(component_id)
+            component_id = self._create_component(portal_conf,
+                                                  self.sim_map[self.fwk_sim_name])
+            self.fwk_components.append(component_id)
 
     def _initialize_sim(self, sim_data):
         """
