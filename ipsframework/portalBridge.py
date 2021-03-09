@@ -5,9 +5,6 @@ import re
 
 import datetime
 import sys
-import urllib.request
-import urllib.parse
-import urllib.error
 import os
 from subprocess import Popen, PIPE
 import time
@@ -17,6 +14,7 @@ import hashlib
 import glob
 import itertools
 import json
+import shutil
 from ipsframework import ipsutil, Component
 from ipsframework.convert_log_function import convert_logdata_to_html
 
@@ -88,7 +86,6 @@ class PortalBridge(Component):
         self.startTime = self.curTime
         self.services = services
         self.sim_map = {}
-        self.runid_url = None
         self.portal_url = None
         self.done = False
         self.first_event = True
@@ -109,14 +106,10 @@ class PortalBridge(Component):
         Try to connect to the portal, subscribe to *_IPS_MONITOR* events and
         register callback :py:meth:`.process_event`.
         """
-        # try:
-        #     self.portal_url = self.PORTAL_URL
-        # except AttributeError:
-        #     pass
-        # try:
-        #     self.runid_url = self.RUNID_URL
-        # except AttributeError:
-        #     pass
+        try:
+            self.portal_url = self.PORTAL_URL
+        except AttributeError:
+            pass
         self.host = self.services.get_config_param('HOST')
         self.services.subscribe('_IPS_MONITOR', "process_event")
         try:
@@ -268,16 +261,17 @@ class PortalBridge(Component):
                     self.services.exception("Error writing html file into USER_W3_DIR directory")
                     self.write_to_htmldir = False
         if self.portal_url:
-            webmsg = urllib.parse.urlencode(event_data).encode("utf-8")
+            webmsg = json.dumps(event_data)
             try:
                 if self.first_event:  # First time, launch sendPost.py daemon
-                    cmd = os.path.join(sys.path[0], 'sendPost.py')
-                    self.childProcess = Popen(cmd, shell=True, bufsize=128,
+                    cmd = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'sendPost.py')
+                    python_exec = shutil.which('python')
+                    self.childProcess = Popen([python_exec, cmd], bufsize=128,
                                               stdin=PIPE, stdout=PIPE,
                                               stderr=PIPE, close_fds=True)
                     self.first_event = False
-                self.childProcess.stdin.write('%s %s\n' %
-                                              (self.portal_url, webmsg))
+                self.childProcess.stdin.write(('%s %s\n' %
+                                               (self.portal_url, webmsg)).encode())
                 self.childProcess.stdin.flush()
             except Exception as e:
                 self.services.exception('Error transmitting event number %6d to %s : %s',
@@ -481,15 +475,6 @@ class PortalBridge(Component):
         d = datetime.datetime.now()
         date_str = "%s.%03d" % (d.strftime("%Y-%m-%dT%H:%M:%S"), int(d.microsecond / 1000))
         sim_data.portal_runid = "_".join([self.host, "USER", date_str])
-        if self.runid_url is not None:
-            self.services.debug('PORTAL_RUNID_URL = %s', str(self.runid_url))
-            try:
-                f = urllib.request.urlopen(self.runid_url, None, 10)
-                sim_data.portal_runid = f.read().strip()
-            except (urllib.error.URLError) as e:
-                self.services.error('Error obtaining runID from service at %s : %s' %
-                                    (self.runid_url, str(e)))
-                self.services.error('Using a datetime instead')
         try:
             self.services.set_config_param('PORTAL_RUNID', sim_data.portal_runid,
                                            target_sim_name=sim_name)
