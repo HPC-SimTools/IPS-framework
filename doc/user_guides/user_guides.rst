@@ -35,6 +35,9 @@ This directory has all of the user guides for using the IPS (see the component a
 
 .. **User Guides Table of Contents**
 
+:doc:`Using the IPS Portal<portal_guides>`
+     How to setup simulation to use the IPS portal.
+
 .. toctree::
    :maxdepth: 1
 
@@ -45,3 +48,4 @@ This directory has all of the user guides for using the IPS (see the component a
    component_package
    migration
    nersc_conda
+   portal_guides
