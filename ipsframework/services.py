@@ -1951,10 +1951,9 @@ class TaskPool:
         distributed: dask.distributed = __import__("dask.distributed",
                                                    fromlist=[None])
     except ImportError:
-        pass
+        dask = None
+        distributed = None
     else:
-        dask_scheduler = None
-        dask_worker = None
         dask_scheduler = shutil.which("dask-scheduler")
         dask_worker = shutil.which("dask-worker")
         if not dask_scheduler or not dask_worker:
