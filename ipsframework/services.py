@@ -44,22 +44,14 @@ def launch(binary, task_name, working_dir, *args, **keywords):
     else:
         try:
             task_stderr = open(err_filename, "w")
-        except Exception:
+        except OSError:
             pass
 
-    task_env = {}
-    try:
-        task_env = keywords["task_env"]
-    except Exception:
-        pass
+    task_env = keywords.get("task_env", {})
     new_env = os.environ.copy()
     new_env.update(task_env)
 
-    timeout = 1.e9
-    try:
-        timeout = float(keywords["timeout"])
-    except Exception:
-        pass
+    timeout = float(keywords.get("timeout", 1.e9))
 
     print(f"Task {task_name} timeout = {timeout}")
 
@@ -72,17 +64,10 @@ def launch(binary, task_name, working_dir, *args, **keywords):
                                    cwd=working_dir,
                                    preexec_fn=os.setsid,
                                    env=new_env)
-        start = time.time()
-        while time.time() - start < timeout:
-            print(f"Task {task_name} going to sleep")
-            time.sleep(1.0)
-            print(f"Task {task_name} Woke up")
-            ret_val = process.poll()
-            if ret_val is None:
-                continue
-            else:
-                break
-        else:               # Time out for process execution
+        try:
+            ret_val = process.wait(timeout)
+            print(f"Task {task_name} finished")
+        except subprocess.TimeoutExpired:
             print(f"Task {task_name} timed out after {timeout} Seconds")
             os.killpg(process.pid, signal.SIGKILL)
             ret_val = -1
@@ -207,10 +192,7 @@ class ServicesProxy:
                 self.fwk.exception("Bad 'NODE_ALLOCATION_MODE' value %s" % pn_compconf)
                 raise Exception("Bad 'NODE_ALLOCATION_MODE' value %s")
         except Exception:
-            if self.sim_conf['NODE_ALLOCATION_MODE'] == 'SHARED':
-                self.shared_nodes = True
-            else:
-                self.shared_nodes = False
+            self.shared_nodes = self.sim_conf['NODE_ALLOCATION_MODE'] == 'SHARED'
 
         # ------------------
         # set component ppn
@@ -612,21 +594,8 @@ class ServicesProxy:
         block = keywords.get('block', True)
         tag = keywords.get('tag', 'None')
 
-        try:
-            whole_nodes = keywords['whole_nodes']
-        except Exception:
-            if self.shared_nodes:
-                whole_nodes = False
-            else:
-                whole_nodes = True
-
-        try:
-            whole_socks = keywords['whole_sockets']
-        except Exception:
-            if self.shared_nodes:
-                whole_socks = False
-            else:
-                whole_socks = True
+        whole_nodes = keywords.get('whole_nodes', not self.shared_nodes)
+        whole_socks = keywords.get('whole_sockets', not self.shared_nodes)
 
         try:
             # SIMYAN: added working_dir to component method invocation
@@ -707,25 +676,9 @@ class ServicesProxy:
         queued_tasks = task_pool.queued_tasks
         submit_dict = {}
         for (task_name, task) in queued_tasks.items():
-            task_ppn = self.ppn
-            try:
-                task_ppn = task.keywords['task_ppn']
-            except Exception:
-                pass
-            try:
-                wnodes = task.keywords['whole_nodes']
-            except Exception:
-                if self.shared_nodes:
-                    wnodes = False
-                else:
-                    wnodes = True
-            try:
-                wsocks = task.keywords['whole_sockets']
-            except Exception:
-                if self.shared_nodes:
-                    wsocks = False
-                else:
-                    wsocks = True
+            task_ppn = task.keywords.get('task_ppn', self.ppn)
+            wnodes = task.keywords.get('whole_nodes', not self.shared_nodes)
+            wsocks = task.keywords.get('whole_sockets', not self.shared_nodes)
             submit_dict[task_name] = (task.nproc, task.working_dir,
                                       task.binary, task.args,
                                       task_ppn, wnodes, wsocks)
@@ -744,23 +697,12 @@ class ServicesProxy:
                 time.sleep(launch_interval)
             task = queued_tasks[task_name]
             (task_id, command, env_update) = allocated_tasks[task_name]
-            tag = 'None'
-            try:
-                tag = task.keywords['tag']
-            except KeyError:
-                pass
 
-            log_filename = None
-            try:
-                log_filename = task.keywords['logfile']
-            except KeyError:
-                pass
+            tag = task.keywords.get('tag', 'None')
 
-            timeout = 1.e9
-            try:
-                timeout = task.keywords["timeout"]
-            except KeyError:
-                pass
+            log_filename = task.keywords.get('logfile')
+
+            timeout = task.keywords.get("timeout", 1.e9)
 
             task_stdout = sys.stdout
             if log_filename:
@@ -2049,13 +1991,9 @@ class TaskPool:
                                             **keywords["keywords"])
 
     def submit_dask_tasks(self, block=True, dask_nodes=1, dask_ppn=None):
-        """Launch tasks in *queued_tasks* using dask.  Finished tasks are
-        handled before launching new ones.  If *block* is ``True``,
-        the number of tasks submited is returned after all tasks have
-        been launched and completed.  If *block* is ``False`` the
-        number of tasks that can immediately be launched is returned.
+        """Launch tasks in *queued_tasks* using dask.
 
-        :param block: If True then wait for task to complete, default True
+        :param block: Unused, this will always return after tasks are submitted
         :type block: bool
         :param dask_nodes: Number of task nodes, default 1
         :type dask_nodes: int
@@ -2086,22 +2024,13 @@ class TaskPool:
         self.dask_client = self.dask.distributed.Client(scheduler_file=self.dask_file_name)
         launch.__module__ = "__main__"
         self.futures = []
-        for k, v in self.queued_tasks.items():
-            try:
-                log_filename = v.keywords["logfile"]
-            except KeyError:
-                pass
-            else:
-                if not os.path.isabs(log_filename):
-                    full_path = os.path.join(os.getcwd(), log_filename)
-                    v.keywords["logfile"] = full_path
-
+        for task_name, task in self.queued_tasks.items():
             self.futures.append(self.dask_client.submit(launch,
-                                                        v.binary,
-                                                        k,
-                                                        v.working_dir,
-                                                        *v.args,
-                                                        **v.keywords))
+                                                        task.binary,
+                                                        task_name,
+                                                        task.working_dir,
+                                                        *task.args,
+                                                        **task.keywords))
         self.active_tasks = self.queued_tasks
         self.queued_tasks = {}
         return len(self.futures)
@@ -2129,9 +2058,14 @@ class TaskPool:
 
         """
 
-        if TaskPool.dask and self.serial_pool and use_dask:
-            self.dask_pool = True
-            return self.submit_dask_tasks(block, dask_nodes, dask_ppn)
+        if use_dask:
+            if TaskPool.dask and self.serial_pool:
+                self.dask_pool = True
+                return self.submit_dask_tasks(block, dask_nodes, dask_ppn)
+            elif not TaskPool.dask:
+                self.services.warning("Requested use_dask but cannot because import dask failed")
+            elif not self.serial_pool:
+                self.services.warning("Requested use_dask but cannot because multiple processors requested")
 
         submit_count = 0
         # Make sure any finished tasks are handled before attempting to submit
