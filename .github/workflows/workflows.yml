@@ -34,6 +34,6 @@ jobs:
     - name: testing showing IPS version (--version)
       run: ips.py --version
     - name: Test with pytest
-      run: python setup.py test --addopts --cov
+      run: python setup.py test --addopts "--cov --cov-config=setup.cfg"
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v1
