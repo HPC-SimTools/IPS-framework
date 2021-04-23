@@ -786,9 +786,10 @@ class ServicesProxy:
         """
         Kill all tasks associated with this component.
         """
-        while len(self.task_map) > 0:
+        task_id_list = list(self.task_map)
+        for task_id in task_id_list:
             try:
-                self.kill_task(self.task_map[0])
+                self.kill_task(task_id)
             except Exception:
                 raise
 
