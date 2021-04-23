@@ -370,7 +370,7 @@ class TaskManager:
                             ppn_groups.update({len(cl): [n]})
                     cmdlets = []
                     envlets = []
-                    bin_n_args = binary + ' '.join(cmd_args)
+                    bin_n_args = ' '.join([binary, *cmd_args])
                     for p, ns in list(ppn_groups.items()):
                         cmdlets.append(' '.join([','.join(ns), str(p),
                                                  bin_n_args]))
@@ -388,7 +388,7 @@ class TaskManager:
                     env_update = {'MPI_DSM_CPULIST': ':'.join(envlets)}
                     return cmd, env_update
                 else:
-                    cmd = ' '.join([self.task_launch_cmd, ppn, binary,
+                    cmd = ' '.join([self.task_launch_cmd, str(ppn), binary,
                                     ' '.join(cmd_args)])
 
         # --------------------------------------
