@@ -166,12 +166,11 @@ IPS_ROOT/bin or IPS_ROOT/framework/src')
 
         sim_root = self.template_conf['SIM_ROOT']
         try:
-            os.makedirs(sim_root)
+            os.makedirs(sim_root, exist_ok=True)
         except OSError as oserr:
-            if oserr.errno != 17:
-                print('Error creating Simulation directory %s : %d %s' %
-                      (sim_root, oserr.errno, oserr.strerror))
-                raise
+            print('Error creating Simulation directory %s : %d %s' %
+                  (sim_root, oserr.errno, oserr.strerror))
+            raise
 
         for (k, v) in self.template_conf.items():
             if k not in list(self.master_conf.keys()):

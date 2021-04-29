@@ -141,12 +141,11 @@ class Driver(Component):
             self.old_master_conf['OUT_REDIRECT_FNAME'] = fname
             print('Redirecting stdout for %s to %s ' % (self.old_master_conf['SIM_NAME'], fname))
             try:
-                os.makedirs(self.old_master_conf['SIM_ROOT'])
+                os.makedirs(self.old_master_conf['SIM_ROOT'], exist_ok=True)
             except OSError as oserr:
-                if oserr.errno != 17:
-                    print('Error creating Simulation directory %s : %d %s' %
-                          (self.old_master_conf['SIM_ROOT'], oserr.errno, oserr.strerror))
-                    raise
+                print('Error creating Simulation directory %s : %d %s' %
+                      (self.old_master_conf['SIM_ROOT'], oserr.errno, oserr.strerror))
+                raise
             if first_sim:
                 summary_file = open(os.path.join(self.sim_root, 'SIMULATION_LIST.%s' % (dakota_runid)), 'a', 1)
 

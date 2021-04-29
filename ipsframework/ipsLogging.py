@@ -109,12 +109,11 @@ class ipsLogger:
             else:
                 directory = os.path.dirname(os.path.abspath(log_file))
                 try:
-                    os.makedirs(directory)
+                    os.makedirs(directory, exist_ok=True)
                 except OSError as oserr:
-                    if oserr.errno != 17:
-                        print('Error creating directory %s : %s-%s' %
-                              (directory, oserr.errno, oserr.strerror))
-                        sys.exit(1)
+                    print('Error creating directory %s : %s-%s' %
+                          (directory, oserr.errno, oserr.strerror))
+                    sys.exit(1)
                 log_handler = logging.FileHandler(log_file, mode='w')
 
         log_handler.setFormatter(self.formatter)

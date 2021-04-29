@@ -486,12 +486,11 @@ class PortalBridge(Component):
             sim_data.sim_root = os.environ['IPS_INITIAL_CWD']
         sim_log_dir = os.path.join(sim_data.sim_root, 'simulation_log')
         try:
-            os.makedirs(sim_log_dir)
+            os.makedirs(sim_log_dir, exist_ok=True)
         except OSError as oserr:
-            if oserr.errno != 17:
-                self.services.exception('Error creating Simulation Log directory %s : %d %s' %
-                                        (sim_log_dir, oserr.errno, oserr.strerror))
-                raise
+            self.services.exception('Error creating Simulation Log directory %s : %d %s' %
+                                    (sim_log_dir, oserr.errno, oserr.strerror))
+            raise
 
         sim_data.monitor_file_name = os.path.join(sim_log_dir,
                                                   sim_data.sim_name + '_' + sim_data.portal_runid + '.eventlog')

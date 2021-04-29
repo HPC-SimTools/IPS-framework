@@ -54,11 +54,10 @@ class runspaceInitComponent(Component):
 
         # try making the simulation root directory
         try:
-            os.makedirs(self.simRootDir)
+            os.makedirs(self.simRootDir, exist_ok=True)
         except OSError as oserr:
-            if oserr.errno != 17:
-                self.services.exception('Error creating directory %s : %s',
-                                        self.simRootDir, oserr.strerror)
+            self.services.exception('Error creating directory %s : %s',
+                                    self.simRootDir, oserr.strerror)
 
         self.config_files = services.fwk.config_file_list
         self.platform_file = services.fwk.platform_file_name
@@ -97,11 +96,10 @@ class runspaceInitComponent(Component):
 
         # make the simulation_setup directory for scripts
         try:
-            os.makedirs(simulation_setup)
+            os.makedirs(simulation_setup, exist_ok=True)
         except OSError as oserr:
-            if oserr.errno != 17:
-                self.services.exception('Error creating directory %s : %s',
-                                        simulation_setup, oserr.strerror)
+            self.services.exception('Error creating directory %s : %s',
+                                    simulation_setup, oserr.strerror)
 
         # for each simulation component
         for comp_list in sim_comps.values():
@@ -118,12 +116,11 @@ class runspaceInitComponent(Component):
 
                 # make the working directory
                 try:
-                    os.makedirs(workdir)
+                    os.makedirs(workdir, exist_ok=True)
                 except OSError as oserr:
-                    if oserr.errno != 17:
-                        self.services.exception('Error creating directory %s : %s',
-                                                workdir, oserr.strerror)
-                        raise
+                    self.services.exception('Error creating directory %s : %s',
+                                            workdir, oserr.strerror)
+                    raise
 
                 # copy the input files into the working directory
                 try:
@@ -165,9 +162,8 @@ class runspaceInitComponent(Component):
 
             # create the working directory for this component
             try:
-                os.makedirs(workdir)
+                os.makedirs(workdir, exist_ok=True)
             except OSError as oserr:
-                if oserr.errno != 17:
-                    self.services.exception('Error creating directory %s : %s',
-                                            workdir, oserr.strerror)
-                    raise
+                self.services.exception('Error creating directory %s : %s',
+                                        workdir, oserr.strerror)
+                raise

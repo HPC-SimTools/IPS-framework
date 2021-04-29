@@ -133,4 +133,5 @@ disable=print-statement,
         duplicate-code,
         global-statement,
         empty-docstring,
-        raise-missing-from
+        raise-missing-from,
+        consider-using-with
