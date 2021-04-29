@@ -93,11 +93,10 @@ def copyFiles(src_dir, src_file_list, target_dir, prefix='', keep_old=False):
 
         (head, _) = os.path.split(os.path.abspath(target_file))
         try:
-            os.makedirs(head)
+            os.makedirs(head, exist_ok=True)
         except OSError as oserr:
-            if oserr.errno != 17:
-                print('Error creating directory %s : %s' % (head, oserr.strerror))
-                raise
+            print('Error creating directory %s : %s' % (head, oserr.strerror))
+            raise
         try:
             shutil.copy(src_file, target_file)
         except Exception:

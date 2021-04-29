@@ -1258,11 +1258,7 @@ class ServicesProxy:
                 input_dir = old_conf[c]['INPUT_DIR']
                 input_files = old_conf[c]['INPUT_FILES']
                 input_target_dir = os.path.join(os.getcwd(), c)
-                try:
-                    os.mkdir(input_target_dir)
-                except OSError as e:
-                    if e.errno != 17:
-                        raise
+                os.makedirs(input_target_dir, exist_ok=True)
                 try:
                     ipsutil.copyFiles(input_dir, input_files, input_target_dir)
                 except Exception as e:
@@ -1371,16 +1367,15 @@ class ServicesProxy:
                                   'simulation_results',
                                   'plasma_state')
         try:
-            os.makedirs(plasma_dir)
+            os.makedirs(plasma_dir, exist_ok=True)
         except OSError as e:
-            if e.errno != 17:
-                self._send_monitor_event('IPS_STAGE_OUTPUTS',
-                                         'Files = ' + str(file_list) +
-                                         ' Exception raised : ' + e.strerror,
-                                         ok='False')
-                self.exception('Error creating directory %s : %d-%s',
-                               plasma_dir, e.errno, e.strerror)
-                raise
+            self._send_monitor_event('IPS_STAGE_OUTPUTS',
+                                     'Files = ' + str(file_list) +
+                                     ' Exception raised : ' + e.strerror,
+                                     ok='False')
+            self.exception('Error creating directory %s : %d-%s',
+                           plasma_dir, e.errno, e.strerror)
+            raise
 
         all_plasma_files = []
         if save_plasma_state:
@@ -1427,12 +1422,11 @@ class ServicesProxy:
 
         symlink_dir = os.path.join(sim_root, out_root, self.full_comp_id)
         try:
-            os.makedirs(symlink_dir)
+            os.makedirs(symlink_dir, exist_ok=True)
         except OSError as e:
-            if e.errno != 17:
-                self.exception('Error creating directory %s : %s',
-                               symlink_dir, e.strerror)
-                raise
+            self.exception('Error creating directory %s : %s',
+                           symlink_dir, e.strerror)
+            raise
 
         all_files = sum([glob.glob(f) for f in file_list], [])
 

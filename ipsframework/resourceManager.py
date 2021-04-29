@@ -84,11 +84,7 @@ class ResourceManager:
 
         rfile_name = os.path.join(self.CM.sim_map[self.CM.fwk_sim_name].sim_root, "resource_usage")
         # SIMYAN: try to safely make the directory...
-        try:
-            os.makedirs(self.CM.sim_map[self.CM.fwk_sim_name].sim_root)
-        except OSError as oserr:
-            if oserr.errno != 17:
-                raise
+        os.makedirs(self.CM.sim_map[self.CM.fwk_sim_name].sim_root, exist_ok=True)
 
         self.reporting_file = open(rfile_name, "w")
 
