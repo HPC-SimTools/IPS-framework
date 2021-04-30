@@ -4,10 +4,9 @@ import shutil
 from unittest import mock
 
 
-@mock.patch('ipsframework.ips.Framework')
-def test_build_launch_cmd_fail(MockFramework):
+def test_build_launch_cmd_fail():
 
-    tm = TaskManager(MockFramework)
+    tm = TaskManager(mock.Mock())
 
     # test eval
     tm.task_launch_cmd = 'launch_me'
@@ -26,10 +25,9 @@ def test_build_launch_cmd_fail(MockFramework):
                             task_id=None)
 
 
-@mock.patch('ipsframework.ips.Framework')
-def test_build_launch_cmd_eval(MockFramework):
+def test_build_launch_cmd_eval():
 
-    tm = TaskManager(MockFramework)
+    tm = TaskManager(mock.Mock())
 
     # test eval
     tm.task_launch_cmd = 'eval'
@@ -63,10 +61,9 @@ def test_build_launch_cmd_eval(MockFramework):
 
 
 @pytest.mark.skipif(not shutil.which('mpirun'), reason="missing mpirun")
-@mock.patch('ipsframework.ips.Framework')
-def test_build_launch_cmd_mpirun(MockFramework):
+def test_build_launch_cmd_mpirun():
 
-    tm = TaskManager(MockFramework)
+    tm = TaskManager(mock.Mock())
 
     # test eval
     tm.task_launch_cmd = 'mpirun'
@@ -145,10 +142,9 @@ def test_build_launch_cmd_mpirun(MockFramework):
     assert cmd == ('mpirun n1 2 executable 13 42 : n2 1 executable 13 42', {'MPI_DSM_CPULIST': '1,16:4'})
 
 
-@mock.patch('ipsframework.ips.Framework')
-def test_build_launch_cmd_mpiexec(MockFramework):
+def test_build_launch_cmd_mpiexec():
 
-    tm = TaskManager(MockFramework)
+    tm = TaskManager(mock.Mock())
 
     # test eval
     tm.task_launch_cmd = 'mpiexec'
@@ -210,10 +206,9 @@ def test_build_launch_cmd_mpiexec(MockFramework):
     assert cmd == ('mpiexec --host n1,n2 -n 1 -npernode None executable 13 42', None)
 
 
-@mock.patch('ipsframework.ips.Framework')
-def test_build_launch_cmd_aprun(MockFramework):
+def test_build_launch_cmd_aprun():
 
-    tm = TaskManager(MockFramework)
+    tm = TaskManager(mock.Mock())
 
     # test eval
     tm.task_launch_cmd = 'aprun'
@@ -275,10 +270,9 @@ def test_build_launch_cmd_aprun(MockFramework):
     assert cmd == ('aprun -n 1 -N 1 -S 1 -L n1,n2 executable 13 42', None)
 
 
-@mock.patch('ipsframework.ips.Framework')
-def test_build_launch_cmd_numactl(MockFramework):
+def test_build_launch_cmd_numactl():
 
-    tm = TaskManager(MockFramework)
+    tm = TaskManager(mock.Mock())
 
     # test eval
     tm.task_launch_cmd = 'numactl'
@@ -311,10 +305,9 @@ def test_build_launch_cmd_numactl(MockFramework):
     assert cmd == ('numactl --physcpubind= executable 13 42', None)
 
 
-@mock.patch('ipsframework.ips.Framework')
-def test_build_launch_cmd_srun(MockFramework):
+def test_build_launch_cmd_srun():
 
-    tm = TaskManager(MockFramework)
+    tm = TaskManager(mock.Mock())
 
     # test eval
     tm.task_launch_cmd = 'srun'

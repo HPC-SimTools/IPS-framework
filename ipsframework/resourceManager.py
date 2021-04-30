@@ -93,7 +93,7 @@ class ResourceManager:
         # -------------------------------
         if cmd_nodes != 0 and cmd_ppn != 0:
             # use cmd resource specification
-            self.host = "override_%s" % os.environ['HOST']
+            self.host = "override_%s" % self.CM.get_platform_parameter('HOST')
             self.max_ppn = cmd_ppn
             self.cores_per_node = int(cmd_ppn)
             self.ppn = int(cmd_ppn)
