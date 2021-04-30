@@ -273,7 +273,6 @@ class Framework:
         response_q = self.comp_registry.getComponentArtifact(comp_id,
                                                              'svc_response_q')
         response_q.put(response_msg)
-        return
 
     def log(self, msg, *args):
         """
