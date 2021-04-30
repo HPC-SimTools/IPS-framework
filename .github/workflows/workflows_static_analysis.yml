@@ -1,0 +1,28 @@
+name: Static Analysis
+
+on: [push, pull_request]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.8
+    - name: Install python testing dependencies
+      run: pip install flake8 pylint bandit dodgy pyroma
+    - name: flake8
+      run: flake8
+    - name: pylint
+      run: pylint ipsframework
+    - name: bandit
+      run: bandit -lll ipsframework/*.py
+    - name: dodgy
+      run: dodgy
+    - name: pyroma
+      run: pyroma .

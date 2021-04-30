@@ -18,17 +18,13 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
     - name: Install python testing dependencies
-      run: pip install pytest-runner pytest-cov flake8 pylint psutil numpy dask distributed
+      run: pip install pytest-runner pytest-cov psutil numpy dask distributed
     - name: Install mpi testing dependencies
       run: sudo apt-get update && sudo apt-get -y install openmpi-bin libopenmpi-dev
     - name: Build test binaries
       run: pushd . && cd tests/bin/ && mpicc -o parallel_sleep parallel_sleep.c && popd
     - name: Install IPS (in develop mode)
       run: python setup.py develop
-    - name: Lint with flake8
-      run: flake8
-    - name: Lint with pylint
-      run: pylint ipsframework
     - name: testing running IPS (--help)
       run: ips.py --help
     - name: testing showing IPS version (--version)
