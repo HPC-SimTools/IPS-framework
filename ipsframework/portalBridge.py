@@ -224,7 +224,6 @@ class PortalBridge(Component):
             self.done = True
             self.services.debug('No more simulation to monitor - exiting')
             time.sleep(1)
-        return
 
     def send_event(self, sim_data, event_data):
         """
@@ -518,4 +517,3 @@ class PortalBridge(Component):
                 sim_data.mpo_steps = [sim_data.mpo_wid['uid']]
 
         self.sim_map[sim_data.sim_name] = sim_data
-        return

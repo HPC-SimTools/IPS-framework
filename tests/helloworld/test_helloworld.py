@@ -6,18 +6,12 @@ import glob
 import pytest
 
 
-def copy_config_and_replace(infile, outfile, tmpdir, task_pool=False, portal=False, dask=False):
+def copy_config_and_replace(infile, outfile, tmpdir, worker="hello_worker.py", portal=False):
     with open(infile, "r") as fin:
         with open(outfile, "w") as fout:
             for line in fin:
                 if "hello_driver.py" in line or "hello_worker.py" in line:
-                    if task_pool:
-                        if dask:
-                            fout.write(line.replace("${BIN_PATH}", str(tmpdir)).replace("hello_worker.py", "hello_worker_task_pool_dask.py"))
-                        else:
-                            fout.write(line.replace("${BIN_PATH}", str(tmpdir)).replace("hello_worker.py", "hello_worker_task_pool.py"))
-                    else:
-                        fout.write(line.replace("${BIN_PATH}", str(tmpdir)))
+                    fout.write(line.replace("${BIN_PATH}", str(tmpdir)).replace("hello_worker.py", worker))
                 elif "BIN_PATH" in line:
                     fout.write(line.replace("${IPS_ROOT}/tests/helloworld", ""))
                 elif line.startswith("SIM_ROOT"):
@@ -86,9 +80,68 @@ def test_helloworld(tmpdir, capfd):
     assert not os.path.exists(tmpdir.join("www"))
 
 
+def test_helloworld_launch_task(tmpdir, capfd):
+    data_dir = os.path.dirname(__file__)
+    copy_config_and_replace(os.path.join(data_dir, "hello_world.ips"), tmpdir.join("hello_world.ips"), tmpdir, worker="hello_worker_launch_task.py")
+    shutil.copy(os.path.join(data_dir, "platform.conf"), tmpdir)
+    shutil.copy(os.path.join(data_dir, "hello_driver.py"), tmpdir)
+    shutil.copy(os.path.join(data_dir, "hello_worker_launch_task.py"), tmpdir)
+
+    framework = Framework(config_file_list=[os.path.join(tmpdir, "hello_world.ips")],
+                          log_file_name=str(tmpdir.join('test.log')),
+                          platform_file_name=os.path.join(tmpdir, "platform.conf"),
+                          debug=None,
+                          verbose_debug=None,
+                          cmd_nodes=0,
+                          cmd_ppn=0)
+
+    assert framework.log_file_name.endswith('test.log')
+
+    fwk_components = framework.config_manager.get_framework_components()
+    assert len(fwk_components) == 1
+    assert 'Hello_world_1_FWK@runspaceInitComponent@3' in fwk_components
+
+    component_map = framework.config_manager.get_component_map()
+
+    assert len(component_map) == 1
+    assert 'Hello_world_1' in component_map
+    hello_world_1 = component_map['Hello_world_1']
+    assert len(hello_world_1) == 1
+    assert hello_world_1[0].get_class_name() == 'HelloDriver'
+    assert hello_world_1[0].get_instance_name().startswith('Hello_world_1@HelloDriver')
+    assert hello_world_1[0].get_seq_num() == 1
+    assert hello_world_1[0].get_serialization().startswith('Hello_world_1@HelloDriver')
+    assert hello_world_1[0].get_sim_name() == 'Hello_world_1'
+
+    framework.run()
+
+    captured = capfd.readouterr()
+
+    captured_out = captured.out.split('\n')
+    assert captured_out[0] == "Created <class 'hello_driver.HelloDriver'>"
+    assert captured_out[1] == 'HelloDriver: init'
+    assert captured_out[2] == 'HelloDriver: finished worker init call'
+    assert captured_out[3] == 'HelloDriver: beginning step call'
+    assert captured_out[4] == 'Hello from HelloWorker'
+    assert captured_out[5] == 'Starting tasks = 0'
+    assert captured_out[6] == 'Number of tasks = 1'
+    assert captured_out[7] == 'wait_task ret_val = 0'
+    assert captured_out[8] == 'Number of tasks = 2'
+    assert captured_out[9] == 'wait_tasklist ret_val = {2: 0, 3: 0}'
+    assert captured_out[10] == 'Number of tasks = 0'
+    assert captured_out[11] == 'Number of tasks = 1'
+    assert captured_out[12] == 'kill_task'
+    assert captured_out[13] == 'Number of tasks = 0'
+    assert captured_out[14] == 'Number of tasks = 2'
+    assert captured_out[15] == 'kill_all_tasks'
+    assert captured_out[16] == 'Number of tasks = 0'
+    assert captured_out[17] == 'HelloDriver: finished worker call'
+    assert captured.err == ''
+
+
 def test_helloworld_task_pool(tmpdir, capfd):
     data_dir = os.path.dirname(__file__)
-    copy_config_and_replace(os.path.join(data_dir, "hello_world.ips"), tmpdir.join("hello_world.ips"), tmpdir, task_pool=True)
+    copy_config_and_replace(os.path.join(data_dir, "hello_world.ips"), tmpdir.join("hello_world.ips"), tmpdir, worker="hello_worker_task_pool.py")
     shutil.copy(os.path.join(data_dir, "platform.conf"), tmpdir)
     shutil.copy(os.path.join(data_dir, "hello_driver.py"), tmpdir)
     shutil.copy(os.path.join(data_dir, "hello_worker_task_pool.py"), tmpdir)
@@ -154,7 +207,7 @@ def test_helloworld_task_pool_dask(tmpdir, capfd):
     assert TaskPool.dask is not None
 
     data_dir = os.path.dirname(__file__)
-    copy_config_and_replace(os.path.join(data_dir, "hello_world.ips"), tmpdir.join("hello_world.ips"), tmpdir, task_pool=True, dask=True)
+    copy_config_and_replace(os.path.join(data_dir, "hello_world.ips"), tmpdir.join("hello_world.ips"), tmpdir, worker="hello_worker_task_pool_dask.py")
     shutil.copy(os.path.join(data_dir, "platform.conf"), tmpdir)
     shutil.copy(os.path.join(data_dir, "hello_driver.py"), tmpdir)
     shutil.copy(os.path.join(data_dir, "hello_worker_task_pool_dask.py"), tmpdir)

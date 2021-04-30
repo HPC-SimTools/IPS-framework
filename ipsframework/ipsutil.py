@@ -34,8 +34,6 @@ def which(program, alt_paths=None):
                 if is_exe(exe_file):
                     return exe_file
 
-    return None
-
 
 def copyFiles(src_dir, src_file_list, target_dir, prefix='', keep_old=False):
     """
