@@ -209,7 +209,7 @@ IPS_ROOT/bin or IPS_ROOT/framework/src')
             cmd += '  --debug'
 
         print('cmd =', cmd)
-        ips_server_proc = subprocess.Popen(cmd, shell=True)
+        ips_server_proc = subprocess.Popen(cmd)
         print('%s  Launched IPS' % (time.strftime("%b %d %Y %H:%M:%S", time.localtime())))
         sys.stdout.flush()
         msg = {'SIMSTATUS': 'START'}
@@ -240,7 +240,7 @@ IPS_ROOT/bin or IPS_ROOT/framework/src')
         else:
             command = 'dakota %s ' % new_dakota_config
         dakota_logfile = open('dakota_%s.log' % (str(os.getpid())), 'w')
-        proc = subprocess.Popen(command, shell=True, stdout=dakota_logfile, stderr=subprocess.STDOUT)
+        proc = subprocess.Popen(command, stdout=dakota_logfile, stderr=subprocess.STDOUT)
         print('%s  Launched DAKOTA' % (time.strftime("%b %d %Y %H:%M:%S", time.localtime())))
         sys.stdout.flush()
         proc.wait()

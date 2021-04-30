@@ -25,4 +25,4 @@ jobs:
     - name: dodgy
       run: dodgy
     - name: pyroma
-      run: pyroma .
+      run: pyroma -n 7 .
