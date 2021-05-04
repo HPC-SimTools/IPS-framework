@@ -24,7 +24,7 @@ void my_fail(int ftype){
         x = NULL;
         printf("%d", *x);
         break;
-    case 1:                  // divde by zero                                                                                                              
+    case 1:                  // divide by zero                                                                                                              
         printf("fail type is divide by zero\n");
         x = y / 0;
         break;

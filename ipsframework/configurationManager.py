@@ -87,8 +87,8 @@ class ConfigurationManager:
                 self.stream.write(data)
                 self.stream.flush()
 
-            def writelines(self, datas):
-                self.stream.writelines(datas)
+            def writelines(self, data):
+                self.stream.writelines(data)
                 self.stream.flush()
 
             def __getattr__(self, attr):
@@ -353,7 +353,7 @@ class ConfigurationManager:
                                                        self.sim_map[self.fwk_sim_name])
         self.fwk_components.append(runspace_component_id)
 
-        # SIMYAN: set up The Portal bridge, allowing for an absense of a portal
+        # SIMYAN: set up The Portal bridge, allowing for an absence of a portal
         use_portal = True
         if 'USE_PORTAL' in self.sim_map[self.fwk_sim_name].sim_conf:
             use_portal = self.sim_map[self.fwk_sim_name].sim_conf['USE_PORTAL']

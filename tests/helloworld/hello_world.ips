@@ -1,6 +1,6 @@
 # Simulation specific data -------------------------------------------------------------------------
 
-RUN_ID = Hello_world                   # Indentifier for this simulation run
+RUN_ID = Hello_world                   # Identifier for this simulation run
 TOKAMAK_ID = TEST
 SHOT_NUMBER = 1                  # Numerical identifier for specific case
 
@@ -92,7 +92,7 @@ STATE_FILES = ${CURRENT_STATE}
     SCRIPT = ${BIN_PATH}/hello_worker.py
 
 
-# Time loop sepecification (two modes for now) EXPLICIT | REGULAR
+# Time loop specification (two modes for now) EXPLICIT | REGULAR
 # For MODE = REGULAR, the framework uses the variables START, FINISH, and NSTEP
 # For MODE = EXPLICIT, the frame work uses the variable VALUES (space separated list of time values)
 

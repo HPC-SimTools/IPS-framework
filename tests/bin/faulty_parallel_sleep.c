@@ -17,7 +17,7 @@ void my_fail(int ftype){
     int x = 7364;
     int y = 937493;
     switch(ftype){
-    case 1:                  // divde by zero
+    case 1:                  // divide by zero
         printf("fail type is divide by zero\n");
         x = y / 0;
         break;

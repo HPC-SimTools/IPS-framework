@@ -439,7 +439,7 @@ The platform configuration file contains platform specific information that the 
    value to make sense.
 
 
-.. note : the node allocation and detection values in this file can be overriden by command line options to the ips ``--nodes`` and ``--ppn``.  *Both* values must be specified, otherwise the platform configuration values are used.
+.. note : the node allocation and detection values in this file can be overridden by command line options to the ips ``--nodes`` and ``--ppn``.  *Both* values must be specified, otherwise the platform configuration values are used.
 
 A sample platform configuration file for a workstation.  It assumes that the workstation:
 
