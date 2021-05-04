@@ -15,7 +15,7 @@ jobs:
       with:
         python-version: 3.8
     - name: Install python testing dependencies
-      run: pip install flake8 pylint bandit dodgy pyroma
+      run: pip install flake8 pylint bandit dodgy pyroma codespell
     - name: flake8
       run: flake8
     - name: pylint
@@ -26,3 +26,5 @@ jobs:
       run: dodgy
     - name: pyroma
       run: pyroma -n 7 .
+    - name: codespell
+      run: codespell
