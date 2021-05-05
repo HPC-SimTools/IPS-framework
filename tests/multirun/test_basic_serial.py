@@ -17,7 +17,7 @@ def copy_config_and_replace(infile, srcdir, tmpdir):
                     fout.write(line)
 
 
-@pytest.mark.skipif(not shutil.which('mpirun'), reason="missing mpirun")
+@pytest.mark.skipif(not shutil.which('mpirun'), reason="requires mpirun")
 def test_basic_serial1(tmpdir, capfd):
     datadir = os.path.dirname(__file__)
     copy_config_and_replace("basic_serial1.ips", datadir, tmpdir)
@@ -64,6 +64,18 @@ def test_basic_serial1(tmpdir, capfd):
         assert outfile in medium_worker_files
         assert outfile in large_worker_files
 
+    # check contents of my_out files
+    for outfile in ["my_out3.50", "my_out3.60", "my_out3.70"]:
+        for worker in ["workers_testing_small_worker_2", "workers_testing_medium_worker_3"]:
+            with open(str(tmpdir.join("test_basic_serial1_0/work").join(worker).join(outfile)), 'r') as f:
+                lines = f.readlines()
+            assert "results = ['Rank 0 slept for 1.0 seconds']\n" in lines
+
+        worker = "workers_testing_large_worker_4"
+        with open(str(tmpdir.join("test_basic_serial1_0/work").join(worker).join(outfile)), 'r') as f:
+            lines = f.readlines()
+        assert "results = ['Rank 0 slept for 1.0 seconds', 'Rank 1 slept for 1.0 seconds']\n" in lines
+
     # check sim log file
     with open(str(tmpdir.join("test_basic_serial1_0").join("test_basic_serial1_0.log")), 'r') as f:
         lines = f.readlines()
@@ -76,7 +88,7 @@ def test_basic_serial1(tmpdir, capfd):
             assert f'workers_testing_{worker} INFO     Stepping Worker timestamp={timestamp}\n' in lines
 
 
-@pytest.mark.skipif(not shutil.which('mpirun'), reason="missing mpirun")
+@pytest.mark.skipif(not shutil.which('mpirun'), reason="requires mpirun")
 def test_basic_serial_multi(tmpdir, capfd):
     # This is the same as test_basic_serial1 except that 2 simulation files are use at the same time
     datadir = os.path.dirname(__file__)
@@ -143,6 +155,29 @@ def test_basic_serial_multi(tmpdir, capfd):
             assert outfile in medium_worker_files
             assert outfile in large_worker_files
 
+    # check contents of my_out files
+    for outfile in ["my_out3.50", "my_out3.60", "my_out3.70"]:
+        for worker in ["workers_testing_small_worker_2", "workers_testing_medium_worker_3"]:
+            with open(str(tmpdir.join("test_basic_serial1_0/work").join(worker).join(outfile)), 'r') as f:
+                lines = f.readlines()
+            assert "results = ['Rank 0 slept for 1.0 seconds']\n" in lines
+
+        worker = "workers_testing_large_worker_4"
+        with open(str(tmpdir.join("test_basic_serial1_0/work").join(worker).join(outfile)), 'r') as f:
+            lines = f.readlines()
+        assert "results = ['Rank 0 slept for 1.0 seconds', 'Rank 1 slept for 1.0 seconds']\n" in lines
+
+    for outfile in ["my_out3.40", "my_out3.50", "my_out3.60"]:
+        for worker in ["workers_testing_small_worker_6", "workers_testing_medium_worker_7"]:
+            with open(str(tmpdir.join("test_basic_serial2_0/work").join(worker).join(outfile)), 'r') as f:
+                lines = f.readlines()
+            assert "results = ['Rank 0 slept for 1.0 seconds']\n" in lines
+
+        worker = "workers_testing_large_worker_8"
+        with open(str(tmpdir.join("test_basic_serial2_0/work").join(worker).join(outfile)), 'r') as f:
+            lines = f.readlines()
+        assert "results = ['Rank 0 slept for 1.0 seconds', 'Rank 1 slept for 1.0 seconds']\n" in lines
+
     # check basic_serial1 sim log file
     with open(str(tmpdir.join("test_basic_serial1_0").join("test_basic_serial1_0.log")), 'r') as f:
         lines = f.readlines()
@@ -166,7 +201,7 @@ def test_basic_serial_multi(tmpdir, capfd):
             assert f'workers_testing_{worker} INFO     Stepping Worker timestamp={timestamp}\n' in lines
 
 
-@pytest.mark.skipif(not shutil.which('mpirun'), reason="missing mpirun")
+@pytest.mark.skipif(not shutil.which('mpirun'), reason="requires mpirun")
 def test_basic_concurrent1(tmpdir, capfd):
     datadir = os.path.dirname(__file__)
     copy_config_and_replace("basic_concurrent1.ips", datadir, tmpdir)
@@ -212,6 +247,18 @@ def test_basic_concurrent1(tmpdir, capfd):
         assert outfile in small_worker_files
         assert outfile in medium_worker_files
         assert outfile in large_worker_files
+
+    # check contents of my_out files
+    for outfile in ["my_out3.50", "my_out3.60", "my_out3.70"]:
+        for worker in ["workers_testing_small_worker_2", "workers_testing_medium_worker_3"]:
+            with open(str(tmpdir.join("test_basic_concurrent1_0/work").join(worker).join(outfile)), 'r') as f:
+                lines = f.readlines()
+            assert "results = ['Rank 0 slept for 1.0 seconds']\n" in lines
+
+        worker = "workers_testing_large_worker_4"
+        with open(str(tmpdir.join("test_basic_concurrent1_0/work").join(worker).join(outfile)), 'r') as f:
+            lines = f.readlines()
+        assert "results = ['Rank 0 slept for 1.0 seconds', 'Rank 1 slept for 1.0 seconds']\n" in lines
 
     # check sim log file
     with open(str(tmpdir.join("test_basic_concurrent1_0").join("test_basic_concurrent1_0.log")), 'r') as f:
