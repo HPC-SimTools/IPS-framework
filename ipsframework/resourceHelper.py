@@ -128,7 +128,7 @@ def get_checkjob_info():
         raise Exception('Cannot find PBS_JOBID')
     # run checkjob $PBS_JOBID
     try:
-        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, shell=True)
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE)
         lines = [line.strip() for line in proc.stdout.readlines()]
         start = end = 0
         for k, line in enumerate(lines):

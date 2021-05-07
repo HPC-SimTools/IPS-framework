@@ -303,7 +303,7 @@ Lastly, double-check that your input files and config file are both self-consist
 Run Simulation
 ::::::::::::::::::::::::::::::::::
 
-Now, that you have everything set up, it is time to construct the batch script to launch the IPS.  Just like the configuration files, this is something that tends to be user specific and platform specific, so it is a good idea to keep local copy in a persistant directory on each platform you tend to use for easy modification.
+Now, that you have everything set up, it is time to construct the batch script to launch the IPS.  Just like the configuration files, this is something that tends to be user specific and platform specific, so it is a good idea to keep local copy in a persistent directory on each platform you tend to use for easy modification.
 
 As an example, here is a skeleton of a batch script::
 

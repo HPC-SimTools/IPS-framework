@@ -118,7 +118,7 @@ class TestTmCase:
         #    - init call message is consumed - implied... no way to confirm
         #    - invocation message is created - check
         #    - invocation message is placed on the component's queue - check (well, it isn't empty)
-        #    - call_id is generated - imbedded in above tests
+        #    - call_id is generated - embedded in above tests
         #    - call_id is returned - check
         # if you ar not working on jaguar or viz/mhd, this will give you 10 dummy nodes
         host = socket.gethostname()
@@ -198,7 +198,7 @@ class TestTmCase:
         test_tm.wait_call(ccas_msg_blocking)
 
         # ----------------------------------------
-        #   call completed and errors occured
+        #   call completed and errors occurred
         # ----------------------------------------
         test_tm.finished_calls[call_id] = ('driver', response_failure)
 

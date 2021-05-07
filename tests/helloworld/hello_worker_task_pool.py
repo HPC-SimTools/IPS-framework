@@ -3,7 +3,6 @@
 # -------------------------------------------------------------------------------
 
 from ipsframework import Component
-from numpy import random
 
 
 class HelloWorker(Component):
@@ -15,10 +14,9 @@ class HelloWorker(Component):
         return
 
     def step(self, timeStamp=0.0):
-        random.seed(1)
         print('Hello from HelloWorker')
         total_tasks = 3
-        duration = random.random_integers(1, high=3, size=total_tasks)
+        duration = list(range(total_tasks))
 
         bin = '/bin/sleep'
         cwd = self.services.get_working_dir()

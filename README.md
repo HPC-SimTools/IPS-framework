@@ -33,10 +33,19 @@ ips.py --help
 ips.py --config=simulation.config --platform=platform.conf
 ```
 
-## To run the tests (requires pytest)
+## To run the tests
+
+Requires `pytest` and `psutil`. Optional dependencies are
+`dask`/`distributed` and `mpirun`, to run all tests.
 
 ```
-python3 setup.py test
+pytest
+```
+
+To run test showing code coverage, install `pytest-cov` and run
+
+```
+pytest --cov
 ```
 
 ---

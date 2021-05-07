@@ -2,7 +2,7 @@ OUTPUT_PREFIX =
 
 RUN_COMMENT = testing basic concurrent component simulation capability
 
-RUN_ID = test                       # Indentifier for this simulation run
+RUN_ID = test                       # Identifier for this simulation run
 TOKAMAK_ID = basic_concurrent1          # Identifier for tokamak simulated
 SHOT_NUMBER = 0                     # Identifier for specific case for this tokamak (not necessarily a number)
 
@@ -81,7 +81,7 @@ LOG_LEVEL = INFO                   # Possible values: DEBUG, INFO, WARNING, ERRO
     OUTPUT_FILES = $CURRENT_STATE
     SCRIPT = $IPS_ROOT/tests/components/workers/large_worker.py
 
-# Time loop sepecification (two modes for now) EXPLICIT | REGULAR
+# Time loop specification (two modes for now) EXPLICIT | REGULAR
 # For MODE = REGULAR, the framework uses the variables START, FINIS, and NSTEP
 # For MODE = EXPLICIT, the frame work uses the variable VALUES (space separated list of time values)
 

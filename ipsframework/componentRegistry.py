@@ -135,7 +135,7 @@ class ComponentRegistry(Singleton):
         try:
             self.registry[key] = value
         except KeyError as e:
-            print('Error creating component registery entry for ', key,
+            print('Error creating component registry entry for ', key,
                   ' : ', str(e))
             raise e
 

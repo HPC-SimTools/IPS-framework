@@ -83,7 +83,7 @@ __author__ = 'Philippe Lagadec'
 
 # Colors: http://www.w3.org/TR/html4/types.html#type-color
 
-# Columns alignement and style, one of the oldest and trickiest bugs in Mozilla:
+# Columns alignment and style, one of the oldest and trickiest bugs in Mozilla:
 # https://bugzilla.mozilla.org/show_bug.cgi?id=915
 
 
@@ -106,7 +106,7 @@ class TableCell (object):
     - header: bool, false for a normal data cell (TD), true for a header cell (TH)
     - bgcolor: str, background color
     - width: str, width
-    - align: str, horizontal alignement (left, center, right, justify or char)
+    - align: str, horizontal alignment (left, center, right, justify or char)
     - char: str, alignment character, decimal point if not specified
     - charoff: str, see HTML specs
     - valign: str, vertical alignment (top|middle|bottom|baseline)
@@ -297,7 +297,7 @@ class Table (object):
             for width in self.col_width:
                 result += '  <COL width="%s">\n' % width
         # The following code would also generate column attributes for style
-        # and alignement according to HTML4 specs,
+        # and alignment according to HTML4 specs,
         # BUT it is not supported completely (only width) on Mozilla Firefox:
         # see https://bugzilla.mozilla.org/show_bug.cgi?id=915
 # n_cols = max(len(self.col_styles), len(self.col_width),

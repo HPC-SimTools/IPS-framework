@@ -99,7 +99,7 @@ def test_checkpoint_components_num_checkpoint(tmpdir):
     servicesProxy._send_monitor_event.assert_called_with('IPS_CHECKPOINT_END',
                                                          'Components = []')
 
-    # there should be every second fron 12 and the 3 last non-protected checkpoints
+    # there should be every second from 12 and the 3 last non-protected checkpoints
     assert len(restart_dir.listdir()) == 8
     restart_checkpoints = [d.basename for d in restart_dir.listdir()]
     for n in (12, 14, 15, 16, 17, 18, 19, 20):

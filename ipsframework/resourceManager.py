@@ -272,7 +272,7 @@ class ResourceManager:
           * *max_ppn*: processes that can be launched
           * *accurateNodes*: ``True`` if *nodes* uses the actual names of the nodes, ``False`` otherwise.
 
-        Aguments:
+        Arguments:
 
           * *nproc*: the number of requested processes (int)
           * *comp_id*: component identifier, must be unique with respect to the framework (string)
@@ -445,7 +445,7 @@ class ResourceManager:
         except Exception:
             self.fwk.exception("problem in RM.check_whole_node_cap")
             raise
-        # check to see if it is possible to satify the request
+        # check to see if it is possible to satisfy the request
         tot_cap = 0
         for n in list(self.nodes.values()):
             tot_cap += min([ppn, n.total_cores])
@@ -489,7 +489,7 @@ class ResourceManager:
         except Exception:
             self.fwk.exception("problem in RM.check_whole_sock_cap")
             raise
-        # check to see if it is possible to satify the request
+        # check to see if it is possible to satisfy the request
         tot_cap = 0
         for n in list(self.nodes.values()):
             tot_cap += min([ppn, n.total_cores])
@@ -536,7 +536,7 @@ class ResourceManager:
         except Exception:
             self.fwk.exception("problem in RM.check_core_cap")
             raise
-        # check to see if it is possible to satify the request
+        # check to see if it is possible to satisfy the request
         tot_cap = 0
         for n in list(self.nodes.values()):
             tot_cap += min([ppn, n.total_cores])

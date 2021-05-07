@@ -36,7 +36,7 @@
       R. Bramley, J. Breslau, M. Chance, J. Chen, M. Choi, W. Elwasif,
       G. Fu, R. Harvey, E. Jaeger, S. Jardin, T. Jenkins, D. Keyes,
       S. Klasky, S. Kruger, L. Ku, V. Lynch, D. McCune, J. Ramos, D. Schissel,
-      D. Schnack, and J. Wright, *Simulation of Wave Interations with MHD*,
+      D. Schnack, and J. Wright, *Simulation of Wave Interactions with MHD*,
       in Rick Stevens, editor, SciDAC 2008, 14-17 July 2008, Washington, USA,
       volume 125 of Journal of Physics: Conference Series, page 012039,
       Institute of Physics, 2008.
@@ -87,7 +87,7 @@ class Framework:
       * Manage communication queues, and route service requests from simulation
         components to appropriate managers.
       * Provide logging services to IPS managers.
-      * Perfrom shutdown procedure on exit
+      * Perform shutdown procedure on exit
 
     :param config_file_list: A list of simulation configuration files to be used
             in the simulaion. Each simulation configuration file must have the following
@@ -451,7 +451,7 @@ class Framework:
                         outstanding_sim_calls[sim_name] = msg_list
 
         except Exception:
-            self.exception('encountered exception during fwk.run() genration of call messages')
+            self.exception('encountered exception during fwk.run() generation of call messages')
             self.terminate_all_sims(status=Message.FAILURE)
             return False
 

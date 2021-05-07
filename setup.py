@@ -32,7 +32,13 @@ setup(
     version=versioneer.get_version(),
     cmdclass=versioneer.get_cmdclass(),
     url="https://ips-framework.readthedocs.io",
+    project_urls={
+        'Documentation': 'https://ips-framework.readthedocs.io',
+        'Source': 'https://github.com/HPC-SimTools/IPS-framework',
+        'Tracker': 'https://github.com/HPC-SimTools/IPS-framework/issues',
+    },
     description="Integrated Plasma Simulator (IPS) Framework",
+    license='BSD',
     long_description=long_description,
     long_description_content_type="text/markdown",
     packages=find_packages(),
@@ -43,8 +49,13 @@ setup(
     },
     classifiers=[
         "Programming Language :: Python :: 3",
+        'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.8',
+        'Programming Language :: Python :: 3.9',
         "License :: OSI Approved :: BSD License",
         "Operating System :: OS Independent",
     ],
-    python_requires='>=3.6'
+    python_requires='>=3.6',
+    zip_safe=True
 )

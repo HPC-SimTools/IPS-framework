@@ -833,7 +833,7 @@ class ServicesProxy:
         :param task_id: task ID (PID)
         :type task_id: int
 
-        :param timeout: maximum time to wait for task to finsih, default -1 (no timeout)
+        :param timeout: maximum time to wait for task to finish, default -1 (no timeout)
         :type timeout: float
 
         :param delay: time to wait before checking if task has timed-out
@@ -887,7 +887,7 @@ class ServicesProxy:
         :param task_id_list: list of task_id's (PID's) to wait until completed
         :type task_id_list: list of int
 
-        :param block: if to wait until all task finsh
+        :param block: if to wait until all task finish
         :type block: bool
 
         :return: dict of task_id and return value
@@ -921,10 +921,10 @@ class ServicesProxy:
         Return the value of the configuration parameter ``param``.  Raise
         exception if not found and silent is False.
 
-        :param param: The paramater requested from simulation config
+        :param param: The parameter requested from simulation config
         :type param: str
 
-        :param silent: If True and paramater isn't found then exception is not raised, default False
+        :param silent: If True and parameter isn't found then exception is not raised, default False
         :type silent: bool
 
         :return: dictionary of given parameter from configuration
@@ -950,7 +950,7 @@ class ServicesProxy:
         :meth:`ipsframework.configurationManager.ConfigurationManager.set_config_parameter`
         to change the parameter.
 
-        :param param: The paramater requested from simulation config
+        :param param: The parameter requested from simulation config
         :type param: str
 
         :param value: The value to set the parameter
@@ -1020,7 +1020,7 @@ class ServicesProxy:
         Possible *MODE* options are:
 
         ALL:
-            Checkpint everytime the call is made (equivalent to always setting
+            Checkpint every time the call is made (equivalent to always setting
             Force =True)
         WALLTIME_REGULAR:
             checkpoints are saved upon invocation of the service call
@@ -1225,7 +1225,7 @@ class ServicesProxy:
 
         File are copied using :func:`ipsframework.ipsutil.copyFiles`.
 
-        :param input_file_list: input files can space seperated string or iterable of strings
+        :param input_file_list: input files can space separated string or iterable of strings
         :type input_file_list: str or Iterable of str
         """
         start_time = time.time()
@@ -2033,7 +2033,7 @@ class TaskPool:
     def submit_tasks(self, block=True, use_dask=False, dask_nodes=1, dask_ppn=None, launch_interval=0.0):
         """Launch tasks in *queued_tasks*.  Finished tasks are handled before
         launching new ones.  If *block* is ``True``, the number of
-        tasks submited is returned after all tasks have been launched
+        tasks submitted is returned after all tasks have been launched
         and completed.  If *block* is ``False`` the number of tasks
         that can immediately be launched is returned.
 
