@@ -6,6 +6,7 @@ import sys
 import queue
 import os
 import subprocess
+import threading
 
 import time
 import shutil
@@ -29,7 +30,12 @@ def launch(binary, task_name, working_dir, *args, **keywords):
     input to :meth:`dask.distributed.Client.submit`.
 
     """
-    from distributed import get_worker  # pylint: disable=import-outside-toplevel
+    from dask.distributed import get_worker  # pylint: disable=import-outside-toplevel
+
+    worker = get_worker()
+    if not hasattr(worker, 'lock'):
+        worker.lock = threading.Lock()
+
     worker_name = get_worker().name.replace("tcp://", "")
     start_time = time.time()
     os.chdir(working_dir)
@@ -72,9 +78,10 @@ def launch(binary, task_name, working_dir, *args, **keywords):
     ret_val = None
     if isinstance(binary, str):
         cmd = f"{binary} {' '.join(map(str, args))}"
-        print(json.dumps({"event_type": "IPS_LAUNCH_DASK_TASK_POOL", "event_time": time.time(),
-                          "event_comment": f"task_name = {task_name}, Target = {cmd}"}),
-              file=worker_event_log)
+        with worker.lock:
+            print(json.dumps({"event_type": "IPS_LAUNCH_DASK_TASK_POOL", "event_time": time.time(),
+                              "event_comment": f"task_name = {task_name}, Target = {cmd}"}),
+                  file=worker_event_log)
 
         cmd_lst = cmd.split()
         process = subprocess.Popen(cmd_lst, stdout=task_stdout,
@@ -86,25 +93,29 @@ def launch(binary, task_name, working_dir, *args, **keywords):
             ret_val = process.wait(timeout)
             print(f"Task {task_name} finished")
             finish_time = time.time()
-            print(json.dumps({"event_type": "IPS_TASK_END", "event_time": finish_time,
-                              "event_comment": f"task_name = {task_name}, elasped time = {finish_time - start_time:.2f}s"}),
-                  file=worker_event_log)
+            with worker.lock:
+                print(json.dumps({"event_type": "IPS_TASK_END", "event_time": finish_time,
+                                  "event_comment": f"task_name = {task_name}, elasped time = {finish_time - start_time:.2f}s"}),
+                      file=worker_event_log)
         except subprocess.TimeoutExpired:
             print(f"Task {task_name} timed out after {timeout} Seconds")
-            print(json.dumps({"event_type": "IPS_TASK_END", "event_time": time.time(),
-                              "event_comment": f"task_name = {task_name}, timed-out after {timeout}s"}),
-                  file=worker_event_log)
+            with worker.lock:
+                print(json.dumps({"event_type": "IPS_TASK_END", "event_time": time.time(),
+                                  "event_comment": f"task_name = {task_name}, timed-out after {timeout}s"}),
+                      file=worker_event_log)
             os.killpg(process.pid, signal.SIGKILL)
             ret_val = -1
     else:
-        print(json.dumps({"event_type": "IPS_LAUNCH_DASK_TASK_POOL", "event_time": time.time(),
-                          "event_comment": f"task_name = {task_name}, Target = {binary.__name__}({','.join(map(str, args))})"}),
-              file=worker_event_log)
+        with worker.lock:
+            print(json.dumps({"event_type": "IPS_LAUNCH_DASK_TASK_POOL", "event_time": time.time(),
+                              "event_comment": f"task_name = {task_name}, Target = {binary.__name__}({','.join(map(str, args))})"}),
+                  file=worker_event_log)
         ret_val = binary(*args)
         finish_time = time.time()
-        print(json.dumps({"event_type": "IPS_TASK_END", "event_time": finish_time,
-                          "event_comment": f"task_name = {task_name}, elasped time = {finish_time - start_time:.2f}s"}),
-              file=worker_event_log)
+        with worker.lock:
+            print(json.dumps({"event_type": "IPS_TASK_END", "event_time": finish_time,
+                              "event_comment": f"task_name = {task_name}, elasped time = {finish_time - start_time:.2f}s"}),
+                  file=worker_event_log)
 
     return task_name, ret_val
 
