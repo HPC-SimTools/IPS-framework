@@ -34,9 +34,13 @@ def launch(binary, task_name, working_dir, *args, **keywords):
     start_time = time.time()
     os.chdir(working_dir)
 
-    event_logfile = keywords["worker_event_logfile"].format(worker_name)
-
-    worker_event_log = open(event_logfile, 'a')
+    worker_event_log = sys.stdout
+    try:
+        event_logfile = keywords["worker_event_logfile"].format(worker_name)
+    except (KeyError, AttributeError):
+        pass
+    else:
+        worker_event_log = open(event_logfile, 'a')
 
     task_stdout = sys.stdout
     try:
@@ -2051,8 +2055,11 @@ class TaskPool:
 
         self.dask_client = self.dask.distributed.Client(scheduler_file=self.dask_file_name)
 
-        # remove and existing log files
-        self.worker_event_logfile = services.sim_name + '_' + services.get_config_param("PORTAL_RUNID") + '_' + self.name + '_{}.json'
+        try:
+            self.worker_event_logfile = services.sim_name + '_' + services.get_config_param("PORTAL_RUNID") + '_' + self.name + '_{}.json'
+        except KeyError:
+            # USE_PORTAL == False
+            self.worker_event_logfile = None
 
         launch.__module__ = "__main__"
         self.futures = []
@@ -2132,31 +2139,32 @@ class TaskPool:
         self.dask_client.shutdown()
         self.dask_client.close()
         time.sleep(1)
-        try:
-            events = []
-            for worker in worker_names:
-                filename = self.worker_event_logfile.format(worker.replace("tcp://", ""))
-                try:
-                    lines = open(filename).readlines()
-                except IOError:
-                    self.services.exception('Error opening dask worker log file: %s', filename)
-                else:
-                    # convert to dict and sort by event_time
-                    for line in lines:
-                        try:
-                            events.append(json.loads(line.strip()))
-                        except json.decoder.JSONDecodeError:
-                            self.services.exception('Error reading line %s from dask worker log file: %s', line.strip(), filename)
+        if self.worker_event_logfile is not None:
+            try:
+                events = []
+                for worker in worker_names:
+                    filename = self.worker_event_logfile.format(worker.replace("tcp://", ""))
+                    try:
+                        lines = open(filename).readlines()
+                    except IOError:
+                        self.services.exception('Error opening dask worker log file: %s', filename)
+                    else:
+                        # convert to dict and sort by event_time
+                        for line in lines:
+                            try:
+                                events.append(json.loads(line.strip()))
+                            except json.decoder.JSONDecodeError:
+                                self.services.exception('Error reading line %s from dask worker log file: %s', line.strip(), filename)
 
-            events.sort(key=itemgetter('event_time'))
-            for event in events:
-                self.services.send_portal_event(**event)
-        except Exception as e:
-            # If it fails for any other reason, make sure we can continue
-            self.services.exception('Error while reading dask worker log files: %s', str(e))
-        else:
-            for worker in worker_names:
-                os.remove(self.worker_event_logfile.format(worker.replace("tcp://", "")))
+                events.sort(key=itemgetter('event_time'))
+                for event in events:
+                    self.services.send_portal_event(**event)
+            except Exception as e:
+                # If it fails for any other reason, make sure we can continue
+                self.services.exception('Error while reading dask worker log files: %s', str(e))
+            else:
+                for worker in worker_names:
+                    os.remove(self.worker_event_logfile.format(worker.replace("tcp://", "")))
 
         self.finished_tasks = {}
         self.active_tasks = {}
