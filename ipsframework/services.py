@@ -6,6 +6,7 @@ import sys
 import queue
 import os
 import subprocess
+import threading
 
 import time
 import shutil
@@ -13,8 +14,10 @@ import logging
 import logging.handlers
 import signal
 import glob
+import json
 import weakref
 import inspect
+from operator import itemgetter
 from . import messages, ipsutil, component
 from .configobj import ConfigObj
 from .cca_es_spec import initialize_event_service
@@ -27,37 +30,58 @@ def launch(binary, task_name, working_dir, *args, **keywords):
     input to :meth:`dask.distributed.Client.submit`.
 
     """
+    from dask.distributed import get_worker  # pylint: disable=import-outside-toplevel
+
+    worker = get_worker()
+    if not hasattr(worker, 'lock'):
+        worker.lock = threading.Lock()
+
+    worker_name = ''.join(c for c in get_worker().name if c.isalnum())
+
+    start_time = time.time()
     os.chdir(working_dir)
-    task_stdout = sys.stdout
+
+    worker_event_log = sys.stdout
     try:
-        log_filename = keywords["logfile"]
-    except KeyError:
+        event_logfile = keywords["worker_event_logfile"].format(worker_name)
+    except (KeyError, AttributeError):
         pass
     else:
-        task_stdout = open(log_filename, "w")
-
-    task_stderr = subprocess.STDOUT
-    try:
-        err_filename = keywords["errfile"]
-    except KeyError:
-        pass
-    else:
-        try:
-            task_stderr = open(err_filename, "w")
-        except OSError:
-            pass
-
-    task_env = keywords.get("task_env", {})
-    new_env = os.environ.copy()
-    new_env.update(task_env)
-
-    timeout = float(keywords.get("timeout", 1.e9))
-
-    print(f"Task {task_name} timeout = {timeout}")
+        worker_event_log = open(event_logfile, 'a')
 
     ret_val = None
     if isinstance(binary, str):
+        task_stdout = sys.stdout
+        try:
+            log_filename = keywords["logfile"]
+        except KeyError:
+            pass
+        else:
+            task_stdout = open(log_filename, "w")
+
+        task_stderr = subprocess.STDOUT
+        try:
+            err_filename = keywords["errfile"]
+        except KeyError:
+            pass
+        else:
+            try:
+                task_stderr = open(err_filename, "w")
+            except OSError:
+                pass
+
+        task_env = keywords.get("task_env", {})
+        new_env = os.environ.copy()
+        new_env.update(task_env)
+
+        timeout = float(keywords.get("timeout", 1.e9))
+
         cmd = f"{binary} {' '.join(map(str, args))}"
+        with worker.lock:
+            print(json.dumps({"event_type": "IPS_LAUNCH_DASK_TASK_POOL", "event_time": time.time(),
+                              "event_comment": f"task_name = {task_name}, Target = {cmd}"}),
+                  file=worker_event_log)
+
         cmd_lst = cmd.split()
         process = subprocess.Popen(cmd_lst, stdout=task_stdout,
                                    stderr=task_stderr,
@@ -66,13 +90,29 @@ def launch(binary, task_name, working_dir, *args, **keywords):
                                    env=new_env)
         try:
             ret_val = process.wait(timeout)
-            print(f"Task {task_name} finished")
+            finish_time = time.time()
+            with worker.lock:
+                print(json.dumps({"event_type": "IPS_TASK_END", "event_time": finish_time,
+                                  "event_comment": f"task_name = {task_name}, elasped time = {finish_time - start_time:.2f}s"}),
+                      file=worker_event_log)
         except subprocess.TimeoutExpired:
-            print(f"Task {task_name} timed out after {timeout} Seconds")
+            with worker.lock:
+                print(json.dumps({"event_type": "IPS_TASK_END", "event_time": time.time(),
+                                  "event_comment": f"task_name = {task_name}, timed-out after {timeout}s"}),
+                      file=worker_event_log)
             os.killpg(process.pid, signal.SIGKILL)
             ret_val = -1
     else:
+        with worker.lock:
+            print(json.dumps({"event_type": "IPS_LAUNCH_DASK_TASK_POOL", "event_time": time.time(),
+                              "event_comment": f"task_name = {task_name}, Target = {binary.__name__}({','.join(map(str, args))})"}),
+                  file=worker_event_log)
         ret_val = binary(*args)
+        finish_time = time.time()
+        with worker.lock:
+            print(json.dumps({"event_type": "IPS_TASK_END", "event_time": finish_time,
+                              "event_comment": f"task_name = {task_name}, elasped time = {finish_time - start_time:.2f}s"}),
+                  file=worker_event_log)
 
     return task_name, ret_val
 
@@ -369,7 +409,8 @@ class ServicesProxy:
                             eventType='',
                             comment='',
                             ok='True',
-                            state='Running'):
+                            state='Running',
+                            event_time=None):
         """
         Construct and send an event populated with the component's
         information, *eventType*, *comment*, *ok*, *state*, and a wall time
@@ -381,7 +422,9 @@ class ServicesProxy:
                                         self.component_ref.NAME])
         portal_data['eventtype'] = eventType
         portal_data['ok'] = ok
-        portal_data['walltime'] = '%.2f' % (time.time() - self.component_ref.start_time)
+        if event_time is None:
+            event_time = time.time()
+        portal_data['walltime'] = '%.2f' % (event_time - self.component_ref.start_time)
         portal_data['state'] = state
         portal_data['comment'] = comment
         if self.monitor_url:
@@ -1703,12 +1746,14 @@ class ServicesProxy:
 
     def send_portal_event(self,
                           event_type="COMPONENT_EVENT",
-                          event_comment=""):
+                          event_comment="",
+                          event_time=None):
         """
         Send event to web portal.
         """
         return self._send_monitor_event(eventType=event_type,
-                                        comment=event_comment)
+                                        comment=event_comment,
+                                        event_time=event_time)
 
     def log(self, msg, *args):
         """
@@ -2017,6 +2062,13 @@ class TaskPool:
                                                      task_ppn=1)
 
         self.dask_client = self.dask.distributed.Client(scheduler_file=self.dask_file_name)
+
+        try:
+            self.worker_event_logfile = services.sim_name + '_' + services.get_config_param("PORTAL_RUNID") + '_' + self.name + '_{}.json'
+        except KeyError:
+            # USE_PORTAL == False
+            self.worker_event_logfile = None
+
         launch.__module__ = "__main__"
         self.futures = []
         for task_name, task in self.queued_tasks.items():
@@ -2025,7 +2077,8 @@ class TaskPool:
                                                         task_name,
                                                         task.working_dir,
                                                         *task.args,
-                                                        **task.keywords))
+                                                        **task.keywords,
+                                                        worker_event_logfile=self.worker_event_logfile))
         self.active_tasks = self.queued_tasks
         self.queued_tasks = {}
         return len(self.futures)
@@ -2090,9 +2143,37 @@ class TaskPool:
         :rtype: dict
         """
         result = self.dask_client.gather(self.futures)
+        worker_names = [''.join(c for c in worker['name'] if c.isalnum()) for worker in self.dask_client.scheduler_info()['workers'].values()]
         self.dask_client.shutdown()
         self.dask_client.close()
         time.sleep(1)
+        if self.worker_event_logfile is not None:
+            try:
+                events = []
+                for worker in worker_names:
+                    filename = self.worker_event_logfile.format(worker)
+                    try:
+                        lines = open(filename).readlines()
+                    except IOError:
+                        self.services.exception('Error opening dask worker log file: %s', filename)
+                    else:
+                        # convert to dict and sort by event_time
+                        for line in lines:
+                            try:
+                                events.append(json.loads(line.strip()))
+                            except json.decoder.JSONDecodeError:
+                                self.services.exception('Error reading line %s from dask worker log file: %s', line.strip(), filename)
+
+                events.sort(key=itemgetter('event_time'))
+                for event in events:
+                    self.services.send_portal_event(**event)
+            except Exception as e:
+                # If it fails for any other reason, make sure we can continue
+                self.services.exception('Error while reading dask worker log files: %s', str(e))
+            else:
+                for worker in worker_names:
+                    os.remove(self.worker_event_logfile.format(worker))
+
         self.finished_tasks = {}
         self.active_tasks = {}
         self.services.wait_task(self.dask_workers_tid)

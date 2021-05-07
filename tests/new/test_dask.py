@@ -1,4 +1,6 @@
 import pytest
+import glob
+import json
 from ipsframework import Framework
 
 
@@ -94,6 +96,26 @@ def test_dask(tmpdir):
     for i in range(4):
         assert log.format(f"task_{i} 0") in lines
 
+    # check simulation_log, make sure it includes events from dask tasks
+    json_files = glob.glob(str(tmpdir.join("simulation_log").join("*.json")))
+    assert len(json_files) == 1
+    with open(json_files[0], 'r') as json_file:
+        lines = json_file.readlines()
+    lines = [json.loads(line.strip()) for line in lines]
+    assert len(lines) == 22
+
+    eventtypes = [e.get('eventtype') for e in lines]
+    assert eventtypes.count('IPS_LAUNCH_DASK_TASK_POOL') == 4
+    assert eventtypes.count('IPS_TASK_END') == 5
+
+    launch_dask_comments = [e.get('comment') for e in lines if e.get('eventtype') == "IPS_LAUNCH_DASK_TASK_POOL"]
+    for task in range(4):
+        assert f'task_name = task_{task}, Target = /bin/sleep 1' in launch_dask_comments
+
+    task_end_comments = [e.get('comment')[:-4] for e in lines if e.get('eventtype') == "IPS_TASK_END"]
+    for task in range(4):
+        assert f'task_name = task_{task}, elasped time = 1' in task_end_comments
+
 
 def test_dask_timeout(tmpdir):
     pytest.importorskip("dask")
@@ -124,6 +146,26 @@ def test_dask_timeout(tmpdir):
     # task timeouted and return -1
     for i in range(4):
         assert log.format(f"task_{i} -1") in lines
+
+    # check simulation_log, make sure it includes events from dask tasks
+    json_files = glob.glob(str(tmpdir.join("simulation_log").join("*.json")))
+    assert len(json_files) == 1
+    with open(json_files[0], 'r') as json_file:
+        lines = json_file.readlines()
+    lines = [json.loads(line.strip()) for line in lines]
+    assert len(lines) == 22
+
+    eventtypes = [e.get('eventtype') for e in lines]
+    assert eventtypes.count('IPS_LAUNCH_DASK_TASK_POOL') == 4
+    assert eventtypes.count('IPS_TASK_END') == 5
+
+    launch_dask_comments = [e.get('comment') for e in lines if e.get('eventtype') == "IPS_LAUNCH_DASK_TASK_POOL"]
+    for task in range(4):
+        assert f'task_name = task_{task}, Target = /bin/sleep 100' in launch_dask_comments
+
+    task_end_comments = [e.get('comment') for e in lines if e.get('eventtype') == "IPS_TASK_END"]
+    for task in range(4):
+        assert f'task_name = task_{task}, timed-out after 1.0s' in task_end_comments
 
 
 def test_dask_nproc(tmpdir):
