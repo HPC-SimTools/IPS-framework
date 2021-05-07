@@ -6,6 +6,7 @@ import sys
 import importlib
 import importlib.util
 import tempfile
+import uuid
 import logging
 import socket
 from multiprocessing import Queue, Process, set_start_method
@@ -291,7 +292,7 @@ class ConfigurationManager:
             new_sim.conf_file_dir = os.path.dirname(os.path.abspath(conf_file))
             new_sim.sim_root = sim_root
             new_sim.log_file = log_file
-            new_sim.log_pipe_name = tempfile.mktemp('.logpipe', 'ips_')
+            new_sim.log_pipe_name = f'{tempfile.gettempdir()}/ips_{uuid.uuid4()}.logpipe'
 
             self.log_daemon.add_sim_log(new_sim.log_pipe_name,
                                         new_sim.log_file)
@@ -305,7 +306,7 @@ class ConfigurationManager:
                 fwk_sim.sim_conf = fwk_sim_conf
                 fwk_sim.sim_root = new_sim.sim_root
                 fwk_sim.log_file = self.fwk.log_file  # sys.stdout
-                fwk_sim.log_pipe_name = tempfile.mktemp('.logpipe', 'ips_')
+                fwk_sim.log_pipe_name = f'{tempfile.gettempdir()}/ips_{uuid.uuid4()}.logpipe'
                 fwk_sim_conf['LOG_LEVEL'] = 'DEBUG'
                 self.log_daemon.add_sim_log(fwk_sim.log_pipe_name, fwk_sim.log_file)
                 self.fwk_sim_name = fwk_sim_conf['SIM_NAME']
@@ -653,7 +654,7 @@ in configuration file %s', config_file)
         new_sim.log_file = log_file
         if not sub_workflow:
             new_sim.portal_sim_name = sim_name
-            new_sim.log_pipe_name = tempfile.mktemp('.logpipe', 'ips_')
+            new_sim.log_pipe_name = f'{tempfile.gettempdir()}/ips_{uuid.uuid4()}.logpipe'
             self.log_dynamic_sim_queue.put('CREATE_SIM  %s  %s' % (new_sim.log_pipe_name, new_sim.log_file))
         else:
             new_sim.portal_sim_name = parent_sim.portal_sim_name
