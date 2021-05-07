@@ -18,7 +18,7 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
     - name: Install python testing dependencies
-      run: pip install pytest-runner pytest-cov psutil dask distributed
+      run: pip install pytest-cov psutil dask distributed
     - name: Install mpi testing dependencies
       run: sudo apt-get update && sudo apt-get -y install openmpi-bin libopenmpi-dev
     - name: Build test binaries
@@ -30,6 +30,6 @@ jobs:
     - name: testing showing IPS version (--version)
       run: ips.py --version
     - name: Test with pytest
-      run: python setup.py test --addopts "--cov --cov-config=setup.cfg"
+      run: pytest --cov --cov-config=setup.cfg
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v1
