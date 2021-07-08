@@ -18,18 +18,22 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
     - name: Install python testing dependencies
-      run: pip install pytest-cov psutil dask distributed
+      run: python -m pip install pytest-cov pytest-timeout psutil
+    # Don't install dask with python 3.6, there is an issue with the version of click installed
+    - name: Install dask
+      if: ${{ matrix.python-version > 3.6 }}
+      run: python -m pip install dask distributed
     - name: Install mpi testing dependencies
       run: sudo apt-get update && sudo apt-get -y install openmpi-bin libopenmpi-dev
     - name: Build test binaries
       run: pushd . && cd tests/bin/ && mpicc -o parallel_sleep parallel_sleep.c && popd
     - name: Install IPS (in develop mode)
-      run: python setup.py develop
+      run: python -m pip install -e .
     - name: testing running IPS (--help)
       run: ips.py --help
     - name: testing showing IPS version (--version)
       run: ips.py --version
     - name: Test with pytest
-      run: pytest --cov --cov-config=setup.cfg
+      run: python -m pytest --cov --cov-config=setup.cfg --verbose --timeout=60
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v1

@@ -135,8 +135,8 @@ class TopicManager:
     def printEventsAndListeners(self):
         string = ":::::::::\n" + "List of events:"
         i = 0
-        for i in range(len(self.eventList)):
-            string += "\n" + str(i) + "---" + str(self.eventList[i])
+        for i, e in enumerate(self.eventList):
+            string += "\n" + str(i) + "---" + str(e)
         string += "\n\n" + "List of listeners:"
         debug.output(string)
         sortedKeys = sorted(self.listenerDirectory.keys())

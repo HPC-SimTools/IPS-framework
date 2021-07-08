@@ -435,7 +435,7 @@ The platform configuration file contains platform specific information that the 
 
 .. [#manual_alloc_node] Only used if manual allocation is specified,
    or if no detection mechanism is specified and none of the other
-   mechansims work first.  It is the *users* responsibility for this
+   mechanisms work first.  It is the *users* responsibility for this
    value to make sense.
 
 
