@@ -78,7 +78,7 @@ def launch(binary, task_name, working_dir, *args, **keywords):
 
         cmd = f"{binary} {' '.join(map(str, args))}"
         with worker.lock:
-            print(json.dumps({"event_type": "IPS_LAUNCH_DASK_TASK_POOL", "event_time": time.time(),
+            print(json.dumps({"event_type": "IPS_LAUNCH_DASK_TASK", "event_time": time.time(),
                               "event_comment": f"task_name = {task_name}, Target = {cmd}"}),
                   file=worker_event_log)
 
@@ -104,7 +104,7 @@ def launch(binary, task_name, working_dir, *args, **keywords):
             ret_val = -1
     else:
         with worker.lock:
-            print(json.dumps({"event_type": "IPS_LAUNCH_DASK_TASK_POOL", "event_time": time.time(),
+            print(json.dumps({"event_type": "IPS_LAUNCH_DASK_TASK", "event_time": time.time(),
                               "event_comment": f"task_name = {task_name}, Target = {binary.__name__}({','.join(map(str, args))})"}),
                   file=worker_event_log)
         ret_val = binary(*args)
