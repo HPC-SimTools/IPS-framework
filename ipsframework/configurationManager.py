@@ -546,8 +546,7 @@ class ConfigurationManager:
         return comp_list
 
     def get_all_simulation_components_map(self):
-        sim_comps = {name: self.sim_map[name].all_comps[:]
-                     for name in self.sim_map}
+        sim_comps = {name: sim_map.all_comps[:] for name, sim_map in self.sim_map.items()}
         del sim_comps[self.fwk_sim_name]
         return sim_comps
 

@@ -5,25 +5,25 @@ The documentation can be found at https://ips-framework.readthedocs.io
 Installation is available via pip:
 
 ```
-python3 -m pip install ipsframework
+python -m pip install ipsframework
 ```
 
 or to install the latest development version from github:
 
 ```
-python3 -m pip install git+https://github.com/HPC-SimTools/IPS-framework.git
+python -m pip install git+https://github.com/HPC-SimTools/IPS-framework.git
 ```
 
 ## Installing from source
 
 ```
-python3 setup.py install
+python -m pip install .
 ```
 
 ### Install in develop mode
 
 ```
-python3 setup.py develop
+python -m pip install -e .
 ```
 
 ## Running IPS
@@ -39,16 +39,16 @@ Requires `pytest` and `psutil`. Optional dependencies are
 `dask`/`distributed` and `mpirun`, to run all tests.
 
 ```
-pytest
+python -m pytest
 ```
 
 To run test showing code coverage, install `pytest-cov` and run
 
 ```
-pytest --cov
+python -m pytest --cov
 ```
 
 ---
 [![CI](https://github.com/HPC-SimTools/IPS-framework/workflows/CI/badge.svg)](https://github.com/HPC-SimTools/IPS-framework/actions)
-[![codecov](https://codecov.io/gh/HPC-SimTools/IPS-framework/branch/master/graph/badge.svg)](https://codecov.io/gh/HPC-SimTools/IPS-framework)
+[![codecov](https://codecov.io/gh/HPC-SimTools/IPS-framework/branch/main/graph/badge.svg)](https://codecov.io/gh/HPC-SimTools/IPS-framework)
 [![Documentation Status](https://readthedocs.org/projects/ips-framework/badge/?version=latest)](https://ips-framework.readthedocs.io/en/latest/?badge=latest)
