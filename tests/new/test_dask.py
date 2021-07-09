@@ -105,10 +105,10 @@ def test_dask(tmpdir):
     assert len(lines) == 22
 
     eventtypes = [e.get('eventtype') for e in lines]
-    assert eventtypes.count('IPS_LAUNCH_DASK_TASK_POOL') == 4
+    assert eventtypes.count('IPS_LAUNCH_DASK_TASK') == 4
     assert eventtypes.count('IPS_TASK_END') == 5
 
-    launch_dask_comments = [e.get('comment') for e in lines if e.get('eventtype') == "IPS_LAUNCH_DASK_TASK_POOL"]
+    launch_dask_comments = [e.get('comment') for e in lines if e.get('eventtype') == "IPS_LAUNCH_DASK_TASK"]
     for task in range(4):
         assert f'task_name = task_{task}, Target = /bin/sleep 1' in launch_dask_comments
 
@@ -156,10 +156,10 @@ def test_dask_timeout(tmpdir):
     assert len(lines) == 22
 
     eventtypes = [e.get('eventtype') for e in lines]
-    assert eventtypes.count('IPS_LAUNCH_DASK_TASK_POOL') == 4
+    assert eventtypes.count('IPS_LAUNCH_DASK_TASK') == 4
     assert eventtypes.count('IPS_TASK_END') == 5
 
-    launch_dask_comments = [e.get('comment') for e in lines if e.get('eventtype') == "IPS_LAUNCH_DASK_TASK_POOL"]
+    launch_dask_comments = [e.get('comment') for e in lines if e.get('eventtype') == "IPS_LAUNCH_DASK_TASK"]
     for task in range(4):
         assert f'task_name = task_{task}, Target = /bin/sleep 100' in launch_dask_comments
 
