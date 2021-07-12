@@ -10,6 +10,14 @@ jobs:
     strategy:
       matrix:
         python-version: [3.6, 3.7, 3.8, 3.9]
+        dask-version: ['2021.07.0']
+        include:
+          # same as NERSC Cori module python/3.7-anaconda-2019.10
+          - python-version: 3.7
+            dask-version: '2.5.2'
+          # same as NERSC Cori module python/3.8-anaconda-2020.11
+          - python-version: 3.8
+            dask-version: '2.30.0'
 
     steps:
     - uses: actions/checkout@v2
@@ -19,10 +27,13 @@ jobs:
         python-version: ${{ matrix.python-version }}
     - name: Install python testing dependencies
       run: python -m pip install pytest-cov pytest-timeout psutil
-    # Don't install dask with python 3.6, there is an issue with the version of click installed
-    - name: Install dask
-      if: ${{ matrix.python-version > 3.6 }}
-      run: python -m pip install dask distributed
+    # There is an issue with click 8 for dask < 2021.05 dask/dask#7658
+    - name: Install dask ${{ matrix.dask-version }} with click<8
+      if: ${{ matrix.python-version > 3.6 && matrix.dask-version < '2021.05.0' }}
+      run: python -m pip install dask==${{ matrix.dask-version }} distributed==${{ matrix.dask-version }} "click<8" msgpack==0.6.2
+    - name: Install dask ${{ matrix.dask-version }}
+      if: ${{ matrix.python-version > 3.6 && matrix.dask-version >= '2021.05.0' }}
+      run: python -m pip install dask==${{ matrix.dask-version }} distributed==${{ matrix.dask-version }}
     - name: Install mpi testing dependencies
       run: sudo apt-get update && sudo apt-get -y install openmpi-bin libopenmpi-dev
     - name: Build test binaries

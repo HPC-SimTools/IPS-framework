@@ -1930,8 +1930,7 @@ class TaskPool:
     distributed = None
     try:
         dask: dask = __import__("dask")
-        distributed: dask.distributed = __import__("dask.distributed",
-                                                   fromlist=[None])
+        distributed: dask.distributed = __import__("dask.distributed")
     except ImportError:
         dask = None
         distributed = None

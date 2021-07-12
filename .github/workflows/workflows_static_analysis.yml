@@ -15,7 +15,7 @@ jobs:
       with:
         python-version: 3.8
     - name: Install python testing dependencies
-      run: pip install flake8 pylint bandit dodgy pyroma codespell dask distributed
+      run: pip install flake8==3.9.2 pylint==2.9.3 bandit==1.7.0 dodgy==0.2.1 pyroma==3.2 codespell==2.1.0 dask distributed
     - name: flake8
       run: flake8
     - name: pylint
