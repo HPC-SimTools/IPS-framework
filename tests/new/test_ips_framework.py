@@ -207,7 +207,7 @@ def test_framework_log_output_debug(tmpdir):
     # remove timestamp
     lines = [line[24:] for line in lines]
 
-    assert len(lines) == 30
+    assert len(lines) == 28
     assert "FRAMEWORK       INFO     log message\n" in lines
     assert "FRAMEWORK       DEBUG    debug message\n" in lines
     assert "FRAMEWORK       INFO     info message\n" in lines

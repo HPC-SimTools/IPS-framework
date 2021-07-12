@@ -105,17 +105,12 @@ class Component:
         workdir = self.services.get_working_dir()
 
         try:
-            os.chdir(workdir)
-        except OSError:
-            self.services.debug('Working directory %s does not exist - will attempt creation',
-                                workdir)
-            try:
-                os.makedirs(workdir)
-            except OSError as oserr:
-                self.services.exception('Error creating directory %s : %s',
-                                        workdir, oserr.strerror)
-                raise
-            os.chdir(workdir)
+            os.makedirs(workdir, exist_ok=True)
+        except OSError as oserr:
+            self.services.exception('Error creating directory %s : %s',
+                                    workdir, oserr.strerror)
+            raise
+        os.chdir(workdir)
         self.services.debug('Running - CompID =  %s',
                             self.component_id.get_serialization())
 
