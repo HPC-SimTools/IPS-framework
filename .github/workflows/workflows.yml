@@ -35,9 +35,9 @@ jobs:
       if: ${{ matrix.python-version > 3.6 && matrix.dask-version >= '2021.05.0' }}
       run: python -m pip install dask==${{ matrix.dask-version }} distributed==${{ matrix.dask-version }}
     - name: Install mpi testing dependencies
-      run: sudo apt-get update && sudo apt-get -y install openmpi-bin libopenmpi-dev
-    - name: Build test binaries
-      run: pushd . && cd tests/bin/ && mpicc -o parallel_sleep parallel_sleep.c && popd
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libopenmpi-dev python3-mpi4py
     - name: Install IPS (in develop mode)
       run: python -m pip install -e .
     - name: testing running IPS (--help)
