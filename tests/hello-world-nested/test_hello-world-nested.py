@@ -38,13 +38,14 @@ def test_hello_world_nested(tmpdir, capfd):
     captured = capfd.readouterr()
 
     captured_out = captured.out.split('\n')
-    assert captured_out[0] == "Created <class 'hello_driver.HelloDriver'>"
-    assert captured_out[1] == "Created <class 'hello_worker.HelloWorker'>"
-    assert captured_out[2] == "Hello from HelloWorker - new1"
-    assert captured_out[3] == "Created <class 'hello_driver_sub.HelloDriver'>"
-    assert captured_out[4] == "Created <class 'hello_worker_sub.HelloWorker'>"
-    assert captured_out[5] == "Hello from HelloWorker - sub"
-    assert captured_out[6] == "made it out of the worker call"
+    assert captured_out[0].startswith("Starting IPS")
+    assert captured_out[1] == "Created <class 'hello_driver.HelloDriver'>"
+    assert captured_out[2] == "Created <class 'hello_worker.HelloWorker'>"
+    assert captured_out[3] == "Hello from HelloWorker - new1"
+    assert captured_out[4] == "Created <class 'hello_driver_sub.HelloDriver'>"
+    assert captured_out[5] == "Created <class 'hello_worker_sub.HelloWorker'>"
+    assert captured_out[6] == "Hello from HelloWorker - sub"
+    assert captured_out[7] == "made it out of the worker call"
     assert captured.err == ''
 
     # check sim log file

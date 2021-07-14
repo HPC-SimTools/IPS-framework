@@ -57,7 +57,7 @@ SIMULATION_MODE = NORMAL
     return platform_file, config_file
 
 
-def test_component_logging(tmpdir, capfd):
+def test_component_logging(tmpdir):
     platform_file, config_file = write_basic_config_and_platform_files(tmpdir)
 
     framework = Framework(config_file_list=[str(config_file)],

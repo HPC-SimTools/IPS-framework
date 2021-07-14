@@ -110,7 +110,7 @@ def test_framework_simple(tmpdir, capfd):
         assert event['sim_name'] == 'test'
 
     captured = capfd.readouterr()
-    assert captured.out == ''
+    assert captured.out.startswith('Starting IPS')
     assert captured.err == ''
 
 
@@ -222,5 +222,5 @@ def test_framework_missing_platform(capfd):
         Framework(config_file_list=[], log_file_name='log')
     assert excinfo.value.code == 1
     captured = capfd.readouterr()
-    assert captured.out == 'Need to specify a platform file\n'
+    assert captured.out.endswith('Need to specify a platform file\n')
     assert captured.err == ''
