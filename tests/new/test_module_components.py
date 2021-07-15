@@ -89,6 +89,7 @@ def test_using_module_components(tmpdir, capfd):
     captured = capfd.readouterr()
 
     captured_out = captured.out.split('\n')
-    assert captured_out[0] == "Created <class 'helloworld.hello_driver.HelloDriver'>"
-    assert captured_out[1] == "Created <class 'helloworld.hello_worker.HelloWorker'>"
+    assert captured_out[0].startswith("Starting IPS")
+    assert captured_out[1] == "Created <class 'helloworld.hello_driver.HelloDriver'>"
+    assert captured_out[2] == "Created <class 'helloworld.hello_worker.HelloWorker'>"
     assert captured.err == ''

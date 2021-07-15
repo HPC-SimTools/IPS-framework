@@ -66,13 +66,14 @@ def test_helloworld(tmpdir, capfd):
     captured = capfd.readouterr()
 
     captured_out = captured.out.split('\n')
-    assert captured_out[0] == "Created <class 'hello_driver.HelloDriver'>"
-    assert captured_out[1] == "Created <class 'hello_worker.HelloWorker'>"
-    assert captured_out[2] == 'HelloDriver: init'
-    assert captured_out[3] == 'HelloDriver: finished worker init call'
-    assert captured_out[4] == 'HelloDriver: beginning step call'
-    assert captured_out[5] == 'Hello from HelloWorker'
-    assert captured_out[6] == 'HelloDriver: finished worker call'
+    assert captured_out[0].startswith("Starting IPS")
+    assert captured_out[1] == "Created <class 'hello_driver.HelloDriver'>"
+    assert captured_out[2] == "Created <class 'hello_worker.HelloWorker'>"
+    assert captured_out[3] == 'HelloDriver: init'
+    assert captured_out[4] == 'HelloDriver: finished worker init call'
+    assert captured_out[5] == 'HelloDriver: beginning step call'
+    assert captured_out[6] == 'Hello from HelloWorker'
+    assert captured_out[7] == 'HelloDriver: finished worker call'
     assert captured.err == ''
 
     # check that portal didn't write anything since USE_PORTAL=False
@@ -118,24 +119,25 @@ def test_helloworld_launch_task(tmpdir, capfd):
     captured = capfd.readouterr()
 
     captured_out = captured.out.split('\n')
-    assert captured_out[0] == "Created <class 'hello_driver.HelloDriver'>"
-    assert captured_out[1] == 'HelloDriver: init'
-    assert captured_out[2] == 'HelloDriver: finished worker init call'
-    assert captured_out[3] == 'HelloDriver: beginning step call'
-    assert captured_out[4] == 'Hello from HelloWorker'
-    assert captured_out[5] == 'Starting tasks = 0'
-    assert captured_out[6] == 'Number of tasks = 1'
-    assert captured_out[7] == 'wait_task ret_val = 0'
-    assert captured_out[8] == 'Number of tasks = 2'
-    assert captured_out[9] == 'wait_tasklist ret_val = {2: 0, 3: 0}'
-    assert captured_out[10] == 'Number of tasks = 0'
-    assert captured_out[11] == 'Number of tasks = 1'
-    assert captured_out[12] == 'kill_task'
-    assert captured_out[13] == 'Number of tasks = 0'
-    assert captured_out[14] == 'Number of tasks = 2'
-    assert captured_out[15] == 'kill_all_tasks'
-    assert captured_out[16] == 'Number of tasks = 0'
-    assert captured_out[17] == 'HelloDriver: finished worker call'
+    assert captured_out[0].startswith("Starting IPS")
+    assert captured_out[1] == "Created <class 'hello_driver.HelloDriver'>"
+    assert captured_out[2] == 'HelloDriver: init'
+    assert captured_out[3] == 'HelloDriver: finished worker init call'
+    assert captured_out[4] == 'HelloDriver: beginning step call'
+    assert captured_out[5] == 'Hello from HelloWorker'
+    assert captured_out[6] == 'Starting tasks = 0'
+    assert captured_out[7] == 'Number of tasks = 1'
+    assert captured_out[8] == 'wait_task ret_val = 0'
+    assert captured_out[9] == 'Number of tasks = 2'
+    assert captured_out[10] == 'wait_tasklist ret_val = {2: 0, 3: 0}'
+    assert captured_out[11] == 'Number of tasks = 0'
+    assert captured_out[12] == 'Number of tasks = 1'
+    assert captured_out[13] == 'kill_task'
+    assert captured_out[14] == 'Number of tasks = 0'
+    assert captured_out[15] == 'Number of tasks = 2'
+    assert captured_out[16] == 'kill_all_tasks'
+    assert captured_out[17] == 'Number of tasks = 0'
+    assert captured_out[18] == 'HelloDriver: finished worker call'
     assert captured.err == ''
 
 
@@ -175,21 +177,22 @@ def test_helloworld_task_pool(tmpdir, capfd):
     captured = capfd.readouterr()
     captured_out = captured.out.split('\n')
 
-    assert captured_out[0] == "Created <class 'hello_driver.HelloDriver'>"
-    assert captured_out[1] == "Created <class 'hello_worker_task_pool.HelloWorker'>"
-    assert captured_out[2] == 'HelloDriver: init'
-    assert captured_out[3] == 'HelloDriver: finished worker init call'
-    assert captured_out[4] == 'HelloDriver: beginning step call'
-    assert captured_out[5] == 'Hello from HelloWorker'
-    assert captured_out[6] == 'ret_val =  3'
+    assert captured_out[0].startswith("Starting IPS")
+    assert captured_out[1] == "Created <class 'hello_driver.HelloDriver'>"
+    assert captured_out[2] == "Created <class 'hello_worker_task_pool.HelloWorker'>"
+    assert captured_out[3] == 'HelloDriver: init'
+    assert captured_out[4] == 'HelloDriver: finished worker init call'
+    assert captured_out[5] == 'HelloDriver: beginning step call'
+    assert captured_out[6] == 'Hello from HelloWorker'
+    assert captured_out[7] == 'ret_val =  3'
 
-    exit_status = json.loads(captured_out[7].replace("'", '"'))
+    exit_status = json.loads(captured_out[8].replace("'", '"'))
     assert len(exit_status) == 3
     for n in range(3):
         assert f'task_{n}' in exit_status
         assert exit_status[f'task_{n}'] == 0
 
-    assert captured_out[8] == "====== Non Blocking "
+    assert captured_out[9] == "====== Non Blocking "
 
     for line in range(9, len(captured_out) - 2):
         if "Nonblock_task" in captured_out[line]:
@@ -225,12 +228,13 @@ def test_helloworld_task_pool_dask(tmpdir, capfd):
     captured = capfd.readouterr()
     captured_out = captured.out.split('\n')
 
-    assert captured_out[0] == "Created <class 'hello_driver.HelloDriver'>"
-    assert captured_out[1] == "Created <class 'hello_worker_task_pool_dask.HelloWorker'>"
-    assert captured_out[2] == 'HelloDriver: init'
-    assert captured_out[3] == 'HelloDriver: finished worker init call'
-    assert captured_out[4] == 'HelloDriver: beginning step call'
-    assert captured_out[5] == 'Hello from HelloWorker'
+    assert captured_out[0].startswith("Starting IPS")
+    assert captured_out[1] == "Created <class 'hello_driver.HelloDriver'>"
+    assert captured_out[2] == "Created <class 'hello_worker_task_pool_dask.HelloWorker'>"
+    assert captured_out[3] == 'HelloDriver: init'
+    assert captured_out[4] == 'HelloDriver: finished worker init call'
+    assert captured_out[5] == 'HelloDriver: beginning step call'
+    assert captured_out[6] == 'Hello from HelloWorker'
     assert 'ret_val =  9' in captured_out
 
     for duration in ("0.2", "0.4", "0.6"):
@@ -284,13 +288,14 @@ def test_helloworld_portal(tmpdir, capfd):
     captured = capfd.readouterr()
 
     captured_out = captured.out.split('\n')
-    assert captured_out[0] == "Created <class 'hello_driver.HelloDriver'>"
-    assert captured_out[1] == "Created <class 'hello_worker.HelloWorker'>"
-    assert captured_out[2] == 'HelloDriver: init'
-    assert captured_out[3] == 'HelloDriver: finished worker init call'
-    assert captured_out[4] == 'HelloDriver: beginning step call'
-    assert captured_out[5] == 'Hello from HelloWorker'
-    assert captured_out[6] == 'HelloDriver: finished worker call'
+    assert captured_out[0].startswith("Starting IPS")
+    assert captured_out[1] == "Created <class 'hello_driver.HelloDriver'>"
+    assert captured_out[2] == "Created <class 'hello_worker.HelloWorker'>"
+    assert captured_out[3] == 'HelloDriver: init'
+    assert captured_out[4] == 'HelloDriver: finished worker init call'
+    assert captured_out[5] == 'HelloDriver: beginning step call'
+    assert captured_out[6] == 'Hello from HelloWorker'
+    assert captured_out[7] == 'HelloDriver: finished worker call'
     assert captured.err == ''
 
     # check that portal created output folders

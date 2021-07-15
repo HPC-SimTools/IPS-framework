@@ -125,6 +125,9 @@ class Framework:
                  debug=False, verbose_debug=False, cmd_nodes=0, cmd_ppn=0):
         # added compset_list for list of components to load config files for
         # command line option
+        print("Starting IPS", get_versions()['version'])
+        os.environ['IPS_INITIAL_CWD'] = os.getcwd()
+
         self.log_file_name = log_file_name
         if log_file_name == 'sys.stdout':
             self.log_file = sys.stdout
@@ -601,6 +604,7 @@ class Framework:
                 pass
             portal_data['startat'] = time.strftime('%Y-%m-%d|%H:%M:%S%Z',
                                                    time.localtime(self.start_time))
+            portal_data['ips_version'] = get_versions()['version']
         elif eventType == 'IPS_END':
             portal_data['state'] = 'Completed'
             portal_data['stopat'] = time.strftime('%Y-%m-%d|%H:%M:%S%Z',
@@ -677,6 +681,8 @@ def main(argv=None):
     """
     Check and parse args, create and run the framework.
     """
+    sys.stdout.flush()
+
     platform_default = os.environ.get("IPS_PLATFORM_FILE")
     if platform_default:
         print("IPS using platform file :", platform_default)
@@ -716,7 +722,4 @@ def main(argv=None):
 
 
 if __name__ == "__main__":
-    print("Starting IPS")
-    sys.stdout.flush()
-    os.environ['IPS_INITIAL_CWD'] = os.getcwd()
     sys.exit(main())
