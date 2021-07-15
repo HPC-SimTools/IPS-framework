@@ -8,7 +8,6 @@ from .ipsExceptions import BlockedMessageException, \
     IncompleteCallException, \
     InsufficientResourcesException, \
     BadResourceRequestException, \
-    AllocatedNodeDownException, \
     ResourceRequestMismatchException
 from .ipsutil import which
 
@@ -621,9 +620,6 @@ class TaskManager:
         try:
             self.resource_mgr.release_allocation(task_id, task_data)
             del self.curr_task_table[task_id]
-        except AllocatedNodeDownException:
-            del self.curr_task_table[task_id]
-            return 1
         except Exception:
             print('Error finishing task ', task_id)
             raise
