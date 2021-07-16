@@ -26,7 +26,7 @@ mpo_cert = '/home/elwasif/Projects/atom/MPO/MPO Demo User.pem'
 mpo_api = 'https://mpo.psfc.mit.edu/test-api'
 
 
-def configure_mpo():
+def configure_mpo():  # pragma: no cover
     # Use this if you want to include modules from a subfolder or relative path.
     cmd_subfolder = os.path.realpath(os.path.abspath(os.path.join(os.path.split(
         inspect.getfile(inspect.currentframe()))[0], "/home/elwasif/Projects/atom/MPO/client/python")))
@@ -34,7 +34,7 @@ def configure_mpo():
         sys.path.insert(0, cmd_subfolder)
 
 
-def hash_file(file_name):
+def hash_file(file_name):  # pragma: no cover
     '''
     Return the MD5 hash of a file
     :rtype: str
@@ -119,13 +119,13 @@ class PortalBridge(Component):
         else:
             self.dump_freq = freq
 
-        try:
+        try:  # pragma: no cover
             ENABLE_MPO = os.environ['ENABLE_MPO']
         except KeyError:
             ENABLE_MPO = False
         else:
             ENABLE_MPO = True
-        if ENABLE_MPO:
+        if ENABLE_MPO:  # pragma: no cover
             configure_mpo()
             try:
                 self.mpo = mpo(api_url=mpo_api, cert=mpo_cert, debug=True)
@@ -169,15 +169,6 @@ class PortalBridge(Component):
             except Exception:
                 pass
 
-    def get_elapsed_time(self):
-        """
-        Return total elapsed time since simulation started in seconds
-        (including a possible fraction)
-        """
-        self.curTime = time.localtime()
-        delta_t = time.mktime(self.curTime) - time.mktime(self.startTime)
-        return delta_t
-
     def process_event(self, topicName, theEvent):
         """
         Process a single event *theEvent* on topic *topicName*.
@@ -206,7 +197,6 @@ class PortalBridge(Component):
         elif sim_data.monitor_url:
             portal_data['vizurl'] = sim_data.monitor_url
 
-        #        portal_data['walltime'] = int(self.get_elapsed_time())
         portal_data['portal_runid'] = sim_data.portal_runid
         portal_data['seqnum'] = sim_data.counter
 
@@ -278,7 +268,7 @@ class PortalBridge(Component):
         if sim_data.mpo_wid:
             self.send_mpo_data(event_data, sim_data)
 
-    def send_mpo_data(self, event_data, sim_data):
+    def send_mpo_data(self, event_data, sim_data):  # pragma: no cover
         def md5(fname):
             "Courtesy of stackoverflow 3431825"
             hash_md5 = hashlib.md5()
@@ -344,24 +334,6 @@ class PortalBridge(Component):
                 dataobject = full_dataobject
             return dataobject
 
-        """
-        def get_file_uid(path, file_name):
-            '''
-            Get file_name's cached MPO uid if seen before in simulation
-            :param file_name: Full path to file
-            :return: tuple (MPO uid if found, None if not found, file_hash)
-            '''
-            cached_hash_dict = None
-            full_path = os.path.join(path, file_name)
-            md5 = hash_file(full_path)
-            cached_hash_dict = self.file_hash_cache[file_name]
-            try:
-                cached_hash_dict[md5]
-            except KeyError:
-                pass
-            return (None, md5)  # (f_uid, hash)
-        """
-
         recordable_events = ['IPS_CALL_BEGIN', 'IPS_STAGE_INPUTS', 'IPS_STAGE_OUTPUTS', 'IPS_CALL_END']
         recordable_mpo_activities = ['IPS_CALL_BEGIN']
         comment = event_data['comment']
@@ -380,23 +352,6 @@ class PortalBridge(Component):
                 (_, path, files) = o.groups()
                 glist = [glob.glob(os.path.join(path, f)) for f in files.split()]
                 for file_name in [os.path.basename(f) for f in itertools.chain(*glist)]:
-                    """
-                    (f_uid, f_hash) = get_file_uid(path, file_name)
-                    f_uid = False
-                    if f_uid:
-                        mpo_data_obj = self.mpo.add(workflow_ID=sim_data.mpo_wid,
-                                                    parentobj_ID=sim_data.mpo_wid['uid'],
-                                                    name=file_name,
-                                                    desc="An input file",
-                                                    uri='file:' + os.path.join(path, file_name),
-                                                    uid=f_uid)
-                    else:
-                        mpo_data_obj = self.mpo.add(workflow_ID=sim_data.mpo_wid,
-                                                    parentobj_ID=sim_data.mpo_wid['uid'],
-                                                    name=file_name,
-                                                    desc="An input file",
-                                                    uri='file:' + os.path.join(path, file_name))
-                    """
                     mpo_data_obj = mpo_add_file(sim_data.mpo_wid,
                                                 sim_data.mpo_wid['uid'],
                                                 os.path.join(path, file_name),
@@ -503,7 +458,7 @@ class PortalBridge(Component):
         json_fname = sim_data.monitor_file_name.replace('eventlog', 'json')
         sim_data.json_monitor_file = open(json_fname, 'w')
 
-        if self.mpo:
+        if self.mpo:  # pragma: no cover
             try:
                 sim_data.mpo_wid = self.mpo.init(name="SWIM Workflow " + os.environ["USER"],
                                                  desc=sim_data.sim_name,

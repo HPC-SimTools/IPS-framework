@@ -86,8 +86,6 @@ class EventListener:
         method, but currently serves to check the correct operation of the
         event service.
         """
-        # TODO: To be deleted#
-        _proxy._processEvent(self.listenerid, topicName, theEvent)
 
 
 class Topic:

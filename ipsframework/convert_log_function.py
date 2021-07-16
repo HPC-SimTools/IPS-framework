@@ -43,8 +43,3 @@ def convert_logdata_to_html(lines):
 
     html_page = HTML.table(tokens, header_row=header)
     return html_page
-
-
-def convert_log_to_html(fname):
-    lines = open(fname).readlines()
-    return convert_logdata_to_html(lines)

@@ -328,15 +328,7 @@ class ServicesProxy:
             # get new messages, block until something interesting comes along
             responses = self._get_incoming_responses(block)
             for r in responses:
-                # time to die!
-                if r.__class__ == messages.ExitMessage:
-                    self.debug('%s Exiting', str(self.component_ref.component_id))
-                    if r.status == messages.Message.SUCCESS:
-                        sys.exit(0)
-                    else:
-                        sys.exit(1)
-                # response to my message
-                elif r.__class__ == messages.ServiceResponseMessage:
+                if r.__class__ == messages.ServiceResponseMessage:
                     if (r.request_msg_id not in
                             list(self.incomplete_calls.keys())):
                         self.error('Mismatched service response msg_id %s',

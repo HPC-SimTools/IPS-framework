@@ -47,12 +47,11 @@ class EventService:
         self.numListeners = 0
         self.fwk = fwk
         if fwk:
-            # TODO: Remove _processEvent
             service_methods = ['getTopic', 'existsTopic', 'registerSubscriber',
                                'unregisterSubscriber', 'getSubscription',
                                'processEvents', 'sendEvent', 'createListener',
                                'registerEventListener', 'unregisterEventListener',
-                               'removeSubscription', '_processEvent']
+                               'removeSubscription']
             fwk.register_service_handler(service_methods,
                                          getattr(self, 'process_service_request'))
 
@@ -324,15 +323,5 @@ class EventService:
         topicList = []
         topicList.append(listenerKey)
         return topicList
-
-    """
-    This is overridden by the listener's processEvent definition and is here
-    to ease development.
-    """
-    # To be deleted#
-
-    def _processEvent(self, listenerid, topicName, theEvent):
-        debug.output("Listener has processed event %s sent to topic %s"
-                     % (theEvent, topicName), listenerid)
 
     """""""""Methods internal to the event service end here"""""""""
