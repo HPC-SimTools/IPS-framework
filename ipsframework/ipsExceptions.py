@@ -91,8 +91,6 @@ class InvalidResourceSettingsException(Exception):
             return "%s socket per node count (%d) greater than core per node count (%d)." % (preamble, self.spn, self.cpn)
         elif self.type == "spn not divisible by cpn":
             return "%s socket per node count (%d) not divisible by core per node count (%d)." % (preamble, self.spn, self.cpn)
-        elif self.type == "total procs and nodes mismatch":
-            return "%s values for total procs (%d) and nodes (%d) do not make sense." % (preamble, self.spn, self.cpn)
         else:
             return "%s unknown error" % (preamble)
 
