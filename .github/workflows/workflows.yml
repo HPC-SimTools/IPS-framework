@@ -5,18 +5,23 @@ on: [push, pull_request]
 jobs:
   build:
 
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+
     timeout-minutes: 10
+
     strategy:
       matrix:
+        os: [ubuntu-latest, macos-latest]
         python-version: [3.6, 3.7, 3.8, 3.9]
         dask-version: ['2021.07.0']
         include:
           # same as NERSC Cori module python/3.7-anaconda-2019.10
-          - python-version: 3.7
+          - os: ubuntu-latest
+            python-version: 3.7
             dask-version: '2.5.2'
           # same as NERSC Cori module python/3.8-anaconda-2020.11
-          - python-version: 3.8
+          - os: ubuntu-latest
+            python-version: 3.8
             dask-version: '2.30.0'
 
     steps:
@@ -35,6 +40,7 @@ jobs:
       if: ${{ matrix.python-version > 3.6 && matrix.dask-version >= '2021.05.0' }}
       run: python -m pip install dask==${{ matrix.dask-version }} distributed==${{ matrix.dask-version }}
     - name: Install mpi testing dependencies
+      if: ${{ matrix.os == 'ubuntu-latest' }}
       run: |
         sudo apt-get update
         sudo apt-get install -y libopenmpi-dev python3-mpi4py
