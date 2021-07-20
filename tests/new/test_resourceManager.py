@@ -278,3 +278,35 @@ def test_allocations(tmpdir):
         assert lines[6] == "core: 1  - available"
         assert lines[7] == "core: 2  - available"
         assert lines[8] == "core: 3  - available"
+
+    rm.get_allocation(comp_id='comp1',
+                      nproc=2,
+                      task_id=9,
+                      whole_nodes=False,
+                      whole_socks=True)
+
+    with io.StringIO() as output:
+        rm.nodes['dummy_node0'].print_sockets(output)
+        lines = [s.strip() for s in output.getvalue().split('\n')]
+        assert lines[0] == "socket: 0"
+        assert lines[1] == "availablilty: 0"
+        assert lines[2] == "task ids: [9]"
+        assert lines[3] == "owners: ['comp1']"
+        assert lines[4] == "cores: 4"
+        assert lines[5] == "core: 0  - task_id: 9  - owner: comp1"
+        assert lines[6] == "core: 1  - task_id: 9  - owner: comp1"
+        assert lines[7] == "core: 2  - task_id: 9  - owner: comp1"
+        assert lines[8] == "core: 3  - task_id: 9  - owner: comp1"
+
+    with io.StringIO() as output:
+        rm.nodes['dummy_node1'].print_sockets(output)
+        lines = [s.strip() for s in output.getvalue().split('\n')]
+        assert lines[0] == "socket: 0"
+        assert lines[1] == "availablilty: 4"
+        assert lines[2] == "task ids: []"
+        assert lines[3] == "owners: []"
+        assert lines[4] == "cores: 4"
+        assert lines[5] == "core: 0  - available"
+        assert lines[6] == "core: 1  - available"
+        assert lines[7] == "core: 2  - available"
+        assert lines[8] == "core: 3  - available"
