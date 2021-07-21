@@ -201,7 +201,12 @@ def test_helloworld_task_pool(tmpdir, capfd):
         if "Nonblock_task" in captured_out[line]:
             assert captured_out[line].endswith("': 0}")
 
-    assert captured_out[-3] == 'Active =  0 Finished =  3'
+    assert captured_out[-5] == 'Active =  0 Finished =  3'
+
+    # output from remove_task_pool
+    assert captured_out[-4] == 'ret_val =  2'
+    assert captured_out[-3] == "KeyError('pool')"
+
     assert captured_out[-2] == 'HelloDriver: finished worker call'
     assert captured.err == ''
 

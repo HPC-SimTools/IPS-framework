@@ -165,6 +165,17 @@ def test_timeloop_checkpoint_restart(tmpdir):
     assert restart_files.join("test_ps.dat").exists()
     assert len(restart_files.join("test_ps.dat").readlines()) == 18
 
+    # check output from services.stage_output_files
+
+    results_dir = tmpdir.join("simulation_results")
+    assert len(results_dir.listdir()) == 8
+
+    for time in ["100.0", "112.5", "125.0", "137.5", "150.0"]:
+        assert results_dir.join('TIMELOOP_COMP__timeloop_comp_2').join(f'w1_1_{time}.dat').exists()
+        assert results_dir.join('TIMELOOP_COMP__timeloop_comp_2').join(f'w1_2_{time}.dat').exists()
+        assert results_dir.join('TIMELOOP_COMP2__timeloop_comp_3').join(f'w2_1_{time}.dat').exists()
+        assert results_dir.join('TIMELOOP_COMP2__timeloop_comp_3').join(f'w2_2_{time}.dat').exists()
+
     # Now do SIMULATION_MODE=RESTART
 
     platform_file, restart_config_file = write_basic_config_and_platform_files(tmpdir, restart=True)
@@ -253,3 +264,14 @@ def test_timeloop_checkpoint_restart(tmpdir):
     assert len(work_files.join("TIMELOOP_COMP2__timeloop_comp_9").join("w2_1.dat").readlines()) == 11
     assert len(work_files.join("TIMELOOP_COMP2__timeloop_comp_9").join("w2_2.dat").readlines()) == 5
     assert len(work_files.join("TIMELOOP_COMP2__timeloop_comp_9").join("test_ps.dat").readlines()) == 33
+
+    # check output from services.stage_output_files
+
+    results_dir = tmpdir.join("simulation_results")
+    assert len(results_dir.listdir()) == 14
+
+    for time in ["162.5", "175.0", "187.5", "200.0"]:
+        assert results_dir.join('TIMELOOP_COMP__timeloop_comp_8').join(f'w1_1_{time}.dat').exists()
+        assert results_dir.join('TIMELOOP_COMP__timeloop_comp_8').join(f'w1_2_{time}.dat').exists()
+        assert results_dir.join('TIMELOOP_COMP2__timeloop_comp_9').join(f'w2_1_{time}.dat').exists()
+        assert results_dir.join('TIMELOOP_COMP2__timeloop_comp_9').join(f'w2_2_{time}.dat').exists()

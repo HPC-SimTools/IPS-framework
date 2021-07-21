@@ -1838,13 +1838,11 @@ class ServicesProxy:
         task_pool.terminate_tasks()
         del self.task_pools[task_pool_name]
 
-    def create_sub_workflow(self, sub_name, config_file, override=None, input_dir=None):
+    def create_sub_workflow(self, sub_name, config_file, override={}, input_dir=None):
         """Create sub-workflow
 
         """
 
-        if not override:
-            override = {}
         if sub_name in list(self.sub_flows.keys()):
             self.exception("Duplicate sub flow name")
             raise Exception("Duplicate sub flow name")

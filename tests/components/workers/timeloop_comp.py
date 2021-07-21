@@ -34,6 +34,7 @@ class timeloop_comp(Component):
             with open(output_file, 'a') as f:
                 f.write(f'{self.component_id} step({timestamp})\n')
         self.services.update_state()
+        self.services.stage_output_files(timestamp, self.OUTPUT_FILES)
 
     def checkpoint(self, timestamp=0.0):
         self.services.log(f'checkpoint({timestamp})')
