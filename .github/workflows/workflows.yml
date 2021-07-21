@@ -51,6 +51,6 @@ jobs:
     - name: testing showing IPS version (--version)
       run: ips.py --version
     - name: Test with pytest
-      run: python -m pytest --cov --cov-config=setup.cfg --verbose --timeout=60
+      run: python -m pytest --cov --verbose --timeout=60
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v1
