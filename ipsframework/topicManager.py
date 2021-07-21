@@ -1,5 +1,5 @@
 # -------------------------------------------------------------------------------
-# Copyright 2006-2020 UT-Battelle, LLC. See LICENSE for more information.
+# Copyright 2006-2021 UT-Battelle, LLC. See LICENSE for more information.
 # -------------------------------------------------------------------------------
 """
 This file hosts the TopicManager class that manages the set of events and
@@ -152,44 +152,3 @@ class TopicManager:
 
     def getEventStats(self):
         return self.maxPendingEvents
-
-
-if __name__ == "__main__":
-    em = TopicManager()
-
-    em.registerListener(1)
-    em.registerListener(2)
-
-    print("-----")
-    el = em.getEventListForListener(1)
-    for event in el:
-        print("1:" + str(event))
-    print("-----\n")
-
-    h0 = {}
-    h0[0] = 0
-    b0 = {}
-    b0["zero"] = "zero"
-    em.sendEvent(Event(h0, b0))
-
-    h1 = {}
-    h1[1] = 1
-    b1 = {}
-    b1["one"] = "one"
-    em.sendEvent(Event(h1, b1))
-
-    print("-----")
-    el = em.getEventListForListener(1)
-    for event in el:
-        print("1:" + str(event))
-    print("-----\n")
-
-    em.unregisterListener(1)
-
-    print("-----")
-    el = em.getEventListForListener(2)
-    for event in el:
-        print("2:" + str(event))
-    print("-----\n")
-
-    em.unregisterListener(2)

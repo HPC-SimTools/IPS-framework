@@ -11,26 +11,8 @@ import functools
 import os
 import os.path
 import queue
-import errno
 import time
 import select
-
-
-def list_fds():
-    """List process currently open FDs and their target """
-    ret = {}
-    base = '/proc/self/fd'
-    for num in os.listdir(base):
-        path = None
-        try:
-            path = os.readlink(os.path.join(base, num))
-        except OSError as err:
-            # Last FD is always the "listdir" one (which may be closed)
-            if err.errno != errno.ENOENT:
-                raise
-        ret[int(num)] = path
-
-    return ret
 
 
 class myLogRecordStreamHandler(socketserver.StreamRequestHandler):

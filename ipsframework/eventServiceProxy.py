@@ -1,5 +1,5 @@
 # -------------------------------------------------------------------------------
-# Copyright 2006-2020 UT-Battelle, LLC. See LICENSE for more information.
+# Copyright 2006-2021 UT-Battelle, LLC. See LICENSE for more information.
 # -------------------------------------------------------------------------------
 
 
@@ -95,10 +95,6 @@ class EventServiceFwkProxy(EventServiceProxy):
         if listenerid in self.listenerDirectory:
             del self.listenerDirectory[listenerid]
 
-    # TODO: To be deleted#
-    def _processEvent(self, listenerid, topicName, theEvent):
-        self.event_service._processEvent(listenerid, topicName, theEvent)
-
 
 # TODO: Is services.py the right placeholder for this class?#
 class EventServiceCmpProxy(EventServiceProxy):
@@ -178,9 +174,3 @@ class EventServiceCmpProxy(EventServiceProxy):
     def _removeEventListener(self, listenerid):
         if listenerid in self.listenerDirectory:
             del self.listenerDirectory[listenerid]
-
-    # TODO: To be deleted#
-    def _processEvent(self, listenerid, topicName, theEvent):
-        msg_id = self.service_proxy._invoke_service(self.service_proxy.fwk.component_id,
-                                                    '_processEvent', listenerid, topicName, theEvent)
-        self.service_proxy._get_service_response(msg_id, True)

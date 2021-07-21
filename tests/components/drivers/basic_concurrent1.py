@@ -1,5 +1,5 @@
 # -------------------------------------------------------------------------------
-# Copyright 2006-2020 UT-Battelle, LLC. See LICENSE for more information.
+# Copyright 2006-2021 UT-Battelle, LLC. See LICENSE for more information.
 # -------------------------------------------------------------------------------
 """
 This test driver tests the basic functionality of a serial simulation.
@@ -10,6 +10,7 @@ always pass.
 """
 
 from ipsframework import Component
+from ipsframework.ipsExceptions import IncompleteCallException
 
 
 class basic_concurrent1(Component):
@@ -59,6 +60,11 @@ class basic_concurrent1(Component):
             services.call(w1, 'step', t)
             w2_call_id = services.call_nonblocking(w2, 'step', t)
             w3_call_id = services.call_nonblocking(w3, 'step', t)
+
+            try:
+                services.wait_call_list([w2_call_id, w3_call_id], block=False)
+            except IncompleteCallException as e:
+                print(str(e))
 
             services.wait_call_list([w2_call_id, w3_call_id])
 

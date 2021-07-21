@@ -1,14 +1,16 @@
 # -------------------------------------------------------------------------------
-# Copyright 2006-2020 UT-Battelle, LLC. See LICENSE for more information.
+# Copyright 2006-2021 UT-Battelle, LLC. See LICENSE for more information.
 # -------------------------------------------------------------------------------
 import sys
 
 
-class Singleton:
-    def __new__(cls, *param, **keywords):
-        if '_the_instance' not in cls.__dict__:
-            cls._the_instance = object.__new__(cls)
-        return cls._the_instance
+class SingletonMeta(type):
+    __instances = {}
+
+    def __call__(cls, *args, **kwargs):
+        if cls not in cls.__instances:
+            cls.__instances[cls] = super(SingletonMeta, cls).__call__(*args, **kwargs)
+        return cls.__instances[cls]
 
 
 class ComponentID:
@@ -95,7 +97,7 @@ class ComponentID:
         return self.seq_num
 
 
-class ComponentRegistry(Singleton):
+class ComponentRegistry(metaclass=SingletonMeta):
 
     class RegistryEntry:
         """

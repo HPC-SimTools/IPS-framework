@@ -1,5 +1,5 @@
 # -------------------------------------------------------------------------------
-# Copyright 2006-2020 UT-Battelle, LLC. See LICENSE for more information.
+# Copyright 2006-2021 UT-Battelle, LLC. See LICENSE for more information.
 # -------------------------------------------------------------------------------
 import os
 from math import ceil
@@ -8,11 +8,8 @@ from .ipsExceptions import BlockedMessageException, \
     IncompleteCallException, \
     InsufficientResourcesException, \
     BadResourceRequestException, \
-    AllocatedNodeDownException, \
     ResourceRequestMismatchException
 from .ipsutil import which
-
-# from event_service_spec import PublisherEventService,SubscriberEventService,EventListener,Topic,EventServiceException
 
 
 class TaskManager:
@@ -621,9 +618,6 @@ class TaskManager:
         try:
             self.resource_mgr.release_allocation(task_id, task_data)
             del self.curr_task_table[task_id]
-        except AllocatedNodeDownException:
-            del self.curr_task_table[task_id]
-            return 1
         except Exception:
             print('Error finishing task ', task_id)
             raise

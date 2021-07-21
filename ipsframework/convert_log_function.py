@@ -1,5 +1,5 @@
 # -------------------------------------------------------------------------------
-# Copyright 2006-2020 UT-Battelle, LLC. See LICENSE for more information.
+# Copyright 2006-2021 UT-Battelle, LLC. See LICENSE for more information.
 # -------------------------------------------------------------------------------
 from ipsframework.utils import HTML
 
@@ -43,8 +43,3 @@ def convert_logdata_to_html(lines):
 
     html_page = HTML.table(tokens, header_row=header)
     return html_page
-
-
-def convert_log_to_html(fname):
-    lines = open(fname).readlines()
-    return convert_logdata_to_html(lines)

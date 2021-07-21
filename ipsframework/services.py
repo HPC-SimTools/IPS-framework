@@ -1,5 +1,5 @@
 # -------------------------------------------------------------------------------
-# Copyright 2006-2020 UT-Battelle, LLC. See LICENSE for more information.
+# Copyright 2006-2021 UT-Battelle, LLC. See LICENSE for more information.
 # -------------------------------------------------------------------------------
 """IPS Services"""
 import sys
@@ -328,15 +328,7 @@ class ServicesProxy:
             # get new messages, block until something interesting comes along
             responses = self._get_incoming_responses(block)
             for r in responses:
-                # time to die!
-                if r.__class__ == messages.ExitMessage:
-                    self.debug('%s Exiting', str(self.component_ref.component_id))
-                    if r.status == messages.Message.SUCCESS:
-                        sys.exit(0)
-                    else:
-                        sys.exit(1)
-                # response to my message
-                elif r.__class__ == messages.ServiceResponseMessage:
+                if r.__class__ == messages.ServiceResponseMessage:
                     if (r.request_msg_id not in
                             list(self.incomplete_calls.keys())):
                         self.error('Mismatched service response msg_id %s',
@@ -1846,13 +1838,11 @@ class ServicesProxy:
         task_pool.terminate_tasks()
         del self.task_pools[task_pool_name]
 
-    def create_sub_workflow(self, sub_name, config_file, override=None, input_dir=None):
+    def create_sub_workflow(self, sub_name, config_file, override={}, input_dir=None):
         """Create sub-workflow
 
         """
 
-        if not override:
-            override = {}
         if sub_name in list(self.sub_flows.keys()):
             self.exception("Duplicate sub flow name")
             raise Exception("Duplicate sub flow name")

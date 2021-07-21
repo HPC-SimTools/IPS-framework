@@ -233,8 +233,11 @@ def test_basic_concurrent1(tmpdir, capfd):
     assert captured_out[6] == "medium_worker : init() called"
     assert captured_out[8] == "large_worker : init() called"
     assert captured_out[10] == "Current time =  3.50"
-    assert captured_out[11] == "Current time =  3.60"
-    assert captured_out[12] == "Current time =  3.70"
+    assert captured_out[11] == "nonblocking wait_call() invoked before call 10 finished"
+    assert captured_out[12] == "Current time =  3.60"
+    assert captured_out[13] == "nonblocking wait_call() invoked before call 13 finished"
+    assert captured_out[14] == "Current time =  3.70"
+    assert captured_out[15] == "nonblocking wait_call() invoked before call 16 finished"
 
     # check files copied and created
     driver_files = [os.path.basename(f) for f in glob.glob(str(tmpdir.join("test_basic_concurrent1_0/work/drivers_testing_basic_concurrent1_*/*")))]

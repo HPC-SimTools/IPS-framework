@@ -24,7 +24,8 @@ SIM_NAME = test
 LOG_FILE = {str(tmpdir)}/sim.log
 SIM_ROOT = {str(tmpdir)}
 SIMULATION_MODE = NORMAL
-STATE_FILES = state.dat state100.dat
+CURRENT_STATE = state.dat
+STATE_FILES = $CURRENT_STATE state100.dat
 STATE_WORK_DIR = $SIM_ROOT/work/state
 
 [PORTS]
@@ -91,3 +92,10 @@ def test_dataManager_state_file(tmpdir):
         with open(str(tmpdir.join('work').join(direc).join(filename)), 'r') as f:
             value = int(f.readline())
         assert value == result
+
+    # check merge_current_state logfile
+    logfile = str(tmpdir.join('work').join('DATA_DRIVER__driver_dataManager_2').join('merge_current_state.log'))
+    assert os.path.exists(logfile)
+    # remove tmpdir from log output
+    log = open(logfile).readline().replace(str(tmpdir), '')
+    assert log == '-input /work/state/state.dat -updates /work/DATA_DRIVER__driver_dataManager_2/partial_state_file\n'

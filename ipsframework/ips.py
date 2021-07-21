@@ -1,6 +1,6 @@
 #! /usr/bin/env python3
 # -------------------------------------------------------------------------------
-# Copyright 2006-2020 UT-Battelle, LLC. See LICENSE for more information.
+# Copyright 2006-2021 UT-Battelle, LLC. See LICENSE for more information.
 # -------------------------------------------------------------------------------
 """
    The Integrated Plasma Simulator (IPS) Framework. This framework enables

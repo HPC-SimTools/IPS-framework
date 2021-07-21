@@ -1,5 +1,5 @@
 # -------------------------------------------------------------------------------
-# Copyright 2006-2020 UT-Battelle, LLC. See LICENSE for more information.
+# Copyright 2006-2021 UT-Battelle, LLC. See LICENSE for more information.
 # -------------------------------------------------------------------------------
 
 from ipsframework import Component
@@ -43,6 +43,17 @@ class HelloWorker(Component):
                 new_active_tasks = self.services.submit_tasks('pool', block=False)
                 active_tasks += new_active_tasks
                 print('Active = ', active_tasks, 'Finished = ', finished_tasks)
+
+        # Create task pool but then remove task pool, should terminate all tasks
+        for i in range(total_tasks):
+            self.services.add_task('pool', 'task_'+str(i), 1, cwd, bin, str(10000))
+        ret_val = self.services.submit_tasks('pool', block=False)
+        print('ret_val = ', ret_val)
+        self.services.remove_task_pool('pool')
+        try:
+            self.services.get_finished_tasks('pool')
+        except KeyError as e:
+            print(f'KeyError({e})')
 
         # exclude following test for now
         """

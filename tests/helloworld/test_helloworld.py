@@ -1,9 +1,11 @@
 from ipsframework import Framework
 import os
+import sys
 import shutil
 import json
 import glob
 import pytest
+import socketserver
 
 
 def copy_config_and_replace(infile, outfile, tmpdir, worker="hello_worker.py", portal=False):
@@ -22,6 +24,7 @@ def copy_config_and_replace(infile, outfile, tmpdir, worker="hello_worker.py", p
                     if portal:
                         fout.write("USE_PORTAL = True\n")
                         fout.write(f"USER_W3_DIR = {tmpdir}/www\n")
+                        fout.write("PORTAL_URL = http://localhost:8080\n")
                     else:
                         fout.write(line)
                 else:
@@ -198,7 +201,12 @@ def test_helloworld_task_pool(tmpdir, capfd):
         if "Nonblock_task" in captured_out[line]:
             assert captured_out[line].endswith("': 0}")
 
-    assert captured_out[-3] == 'Active =  0 Finished =  3'
+    assert captured_out[-5] == 'Active =  0 Finished =  3'
+
+    # output from remove_task_pool
+    assert captured_out[-4] == 'ret_val =  2'
+    assert captured_out[-3] == "KeyError('pool')"
+
     assert captured_out[-2] == 'HelloDriver: finished worker call'
     assert captured.err == ''
 
@@ -249,6 +257,7 @@ def test_helloworld_task_pool_dask(tmpdir, capfd):
             assert exit_status[f'{task}_{n}'] == 0
 
 
+@pytest.mark.skipif(sys.platform == 'darwin', reason="This doesn't work with macOS")
 def test_helloworld_portal(tmpdir, capfd):
     data_dir = os.path.dirname(__file__)
     copy_config_and_replace(os.path.join(data_dir, "hello_world.ips"), tmpdir.join("hello_world.ips"), tmpdir, portal=True)
@@ -256,34 +265,48 @@ def test_helloworld_portal(tmpdir, capfd):
     shutil.copy(os.path.join(data_dir, "hello_driver.py"), tmpdir)
     shutil.copy(os.path.join(data_dir, "hello_worker.py"), tmpdir)
 
-    framework = Framework(config_file_list=[os.path.join(tmpdir, "hello_world.ips")],
-                          log_file_name=str(tmpdir.join('test.log')),
-                          platform_file_name=os.path.join(tmpdir, "platform.conf"),
-                          debug=None,
-                          verbose_debug=None,
-                          cmd_nodes=0,
-                          cmd_ppn=0)
+    # standup simple socketserver to capture data from sendPost.py
 
-    assert framework.log_file_name.endswith('test.log')
+    data = []
 
-    fwk_components = framework.config_manager.get_framework_components()
-    assert len(fwk_components) == 2
-    assert 'Hello_world_1_FWK@runspaceInitComponent@3' in fwk_components
-    assert 'Hello_world_1_FWK@PortalBridge@4' in fwk_components
+    class TCPHandler(socketserver.BaseRequestHandler):
+        def handle(self):
+            data.append(self.request.recv(1024).strip().decode())
 
-    component_map = framework.config_manager.get_component_map()
+    with socketserver.TCPServer(("localhost", 8080), TCPHandler) as server:
+        server.timeout = 1
 
-    assert len(component_map) == 1
-    assert 'Hello_world_1' in component_map
-    hello_world_1 = component_map['Hello_world_1']
-    assert len(hello_world_1) == 1
-    assert hello_world_1[0].get_class_name() == 'HelloDriver'
-    assert hello_world_1[0].get_instance_name().startswith('Hello_world_1@HelloDriver')
-    assert hello_world_1[0].get_seq_num() == 1
-    assert hello_world_1[0].get_serialization().startswith('Hello_world_1@HelloDriver')
-    assert hello_world_1[0].get_sim_name() == 'Hello_world_1'
+        framework = Framework(config_file_list=[os.path.join(tmpdir, "hello_world.ips")],
+                              log_file_name=str(tmpdir.join('test.log')),
+                              platform_file_name=os.path.join(tmpdir, "platform.conf"),
+                              debug=None,
+                              verbose_debug=None,
+                              cmd_nodes=0,
+                              cmd_ppn=0)
 
-    framework.run()
+        assert framework.log_file_name.endswith('test.log')
+
+        fwk_components = framework.config_manager.get_framework_components()
+        assert len(fwk_components) == 2
+        assert 'Hello_world_1_FWK@runspaceInitComponent@3' in fwk_components
+        assert 'Hello_world_1_FWK@PortalBridge@4' in fwk_components
+
+        component_map = framework.config_manager.get_component_map()
+
+        assert len(component_map) == 1
+        assert 'Hello_world_1' in component_map
+        hello_world_1 = component_map['Hello_world_1']
+        assert len(hello_world_1) == 1
+        assert hello_world_1[0].get_class_name() == 'HelloDriver'
+        assert hello_world_1[0].get_instance_name().startswith('Hello_world_1@HelloDriver')
+        assert hello_world_1[0].get_seq_num() == 1
+        assert hello_world_1[0].get_serialization().startswith('Hello_world_1@HelloDriver')
+        assert hello_world_1[0].get_sim_name() == 'Hello_world_1'
+
+        framework.run()
+
+        for _ in range(8):
+            server.handle_request()
 
     captured = capfd.readouterr()
 
@@ -313,3 +336,14 @@ def test_helloworld_portal(tmpdir, capfd):
     assert '.json' in exts
     assert '.html' in exts
     assert '.eventlog' in exts
+
+    # check data sent to portal
+    assert len(data) == 6
+    # get first event to check
+    event = json.loads(data[0].split('\r\n')[-1])
+    assert event['code'] == 'Framework'
+    assert event['eventtype'] == 'IPS_START'
+    assert event['comment'] == 'Starting IPS Simulation'
+    assert event['state'] == 'Running'
+    assert event['sim_name'] == 'Hello_world_1'
+    assert event['seqnum'] == 0

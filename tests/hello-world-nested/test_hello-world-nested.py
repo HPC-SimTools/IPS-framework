@@ -24,6 +24,8 @@ def test_hello_world_nested(tmpdir, capfd):
     shutil.copy(os.path.join(data_dir, "hello_worker.py"), tmpdir)
     shutil.copy(os.path.join(data_dir, "hello_driver_sub.py"), tmpdir)
     shutil.copy(os.path.join(data_dir, "hello_worker_sub.py"), tmpdir)
+    with open(tmpdir.join('input.txt'), 'w') as f:
+        f.write("INPUT FILE\n")
 
     framework = Framework(config_file_list=[os.path.join(tmpdir, "hello_world.config")],
                           log_file_name=str(tmpdir.join('test.log')),
@@ -57,7 +59,7 @@ def test_hello_world_nested(tmpdir, capfd):
 
     assert 'WORKERSSUB_HELLO_HelloWorker_6 INFO     Hello from HelloWorker - sub\n' in lines
 
-    # check results file
+    # check sub workflow results file
     sub_out = tmpdir.join("hello_example_SUPER/work/WORKERS_HELLO_HelloWorker_2/Subflow_01/simulation_results/DRIVERS_HELLOSUB_HelloDriver_5/sub_out_0.0.txt")
 
     assert os.path.exists(str(sub_out))
@@ -67,3 +69,32 @@ def test_hello_world_nested(tmpdir, capfd):
         lines = f.readlines()
 
     assert lines[0] == "SUB OUTPUT FILE\n"
+
+    # check results file in parent workflow
+    sub_out = tmpdir.join("hello_example_SUPER/work/WORKERS_HELLO_HelloWorker_2/sub_out.txt")
+
+    assert os.path.exists(str(sub_out))
+
+    with open(str(sub_out), 'r') as f:
+        lines = f.readlines()
+
+    assert lines[0] == "SUB OUTPUT FILE\n"
+
+    # check input file staging
+    sub_input = tmpdir.join("hello_example_SUPER/work/WORKERS_HELLO_HelloWorker_2/input.txt")
+
+    assert os.path.exists(str(sub_input))
+
+    with open(str(sub_input), 'r') as f:
+        lines = f.readlines()
+
+    assert lines[0] == "SUB INPUT FILE\n"
+
+    sub_input = tmpdir.join("hello_example_SUPER/work/WORKERS_HELLO_HelloWorker_2/HELLO_DRIVER/input.txt")
+
+    assert os.path.exists(str(sub_input))
+
+    with open(str(sub_input), 'r') as f:
+        lines = f.readlines()
+
+    assert lines[0] == "SUB INPUT FILE\n"

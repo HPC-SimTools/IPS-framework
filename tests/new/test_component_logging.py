@@ -35,6 +35,8 @@ LOG_FILE = {str(tmpdir)}/sim.log
 LOG_LEVEL = {log_level}
 SIM_ROOT = {str(tmpdir)}
 SIMULATION_MODE = NORMAL
+OUT_REDIRECT = True
+OUT_REDIRECT_FNAME = {str(tmpdir)}/$SIM_NAME.out
 [PORTS]
     NAMES = DRIVER
     [[DRIVER]]
@@ -92,6 +94,14 @@ def test_component_logging(tmpdir):
         assert f'{component_id} {map_log_to_level[log_type]:8} step msg: {log_type} timestamp=0 test\n' in lines
     for log_type in ["log", "debug", "info"]:
         assert f'{component_id} {map_log_to_level[log_type]:8} step msg: {log_type} timestamp=0 test\n' not in lines
+
+    # check stdout redirect
+    with open(str(tmpdir.join('test.out')), 'r') as f:
+        lines = f.readlines()
+
+    assert lines[0] == "test@logging_tester@1.init\n"
+    assert lines[1] == "test@logging_tester@1.step\n"
+    assert lines[2] == "test@logging_tester@1.finalize\n"
 
 
 def test_component_logging_debug(tmpdir):

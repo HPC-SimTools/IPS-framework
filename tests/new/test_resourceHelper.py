@@ -1,4 +1,5 @@
 from ipsframework.resourceHelper import getResourceList
+from ipsframework.ipsExceptions import InvalidResourceSettingsException
 import pytest
 from unittest import mock
 
@@ -261,6 +262,44 @@ def test_resourceHelper_manual():
     assert spn == 1
     assert ppn == 2
     assert not accurateNodes
+
+
+def test_resourceHelper_manual_InvalidException():
+    # SOCKETS_PER_NODE > CORES_PER_NODE
+    def get_param(param, silent=True):
+        params = {'CORES_PER_NODE': 8,
+                  'SOCKETS_PER_NODE': 16,
+                  'NODES': 2,
+                  'PROCS_PER_NODE': 2,
+                  'TOTAL_PROCS': 0,
+                  'NODE_DETECTION': "manual"}
+        return params[param]
+
+    # create mock services and get_platform_parameter return values
+    services = mock.Mock()
+    services.get_platform_parameter.side_effect = get_param
+
+    with pytest.raises(InvalidResourceSettingsException) as excinfo:
+        getResourceList(services, 'host')
+    assert ("Invalid resource specification in platform configuration file:  socket per node count (16) greater than core per node count (8)."
+            == str(excinfo.value))
+
+    # CORES_PER_NODE % SOCKETS_PER_NODE != 0
+    def get_param(param, silent=True):
+        params = {'CORES_PER_NODE': 8,
+                  'SOCKETS_PER_NODE': 3,
+                  'NODES': 2,
+                  'PROCS_PER_NODE': 2,
+                  'TOTAL_PROCS': 0,
+                  'NODE_DETECTION': "manual"}
+        return params[param]
+
+    services.get_platform_parameter.side_effect = get_param
+
+    with pytest.raises(InvalidResourceSettingsException) as excinfo:
+        getResourceList(services, 'host')
+    assert ("Invalid resource specification in platform configuration file:  socket per node count (3) not divisible by core per node count (8)."
+            == str(excinfo.value))
 
 
 # with no detection defined

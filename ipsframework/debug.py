@@ -1,5 +1,5 @@
 # -------------------------------------------------------------------------------
-# Copyright 2006-2020 UT-Battelle, LLC. See LICENSE for more information.
+# Copyright 2006-2021 UT-Battelle, LLC. See LICENSE for more information.
 # -------------------------------------------------------------------------------
 """
 This file writes debug messages to 'debug.out' file if the environment
@@ -9,7 +9,7 @@ variable 'IPSES_DEBUG' is defined.
 import os
 
 
-class Debug:
+class Debug:  # pragma: no cover
     def __init__(self):
         self.file = None
         if 'IPSES_DEBUG' in os.environ:

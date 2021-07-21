@@ -1,5 +1,5 @@
 # -------------------------------------------------------------------------------
-# Copyright 2006-2020 UT-Battelle, LLC. See LICENSE for more information.
+# Copyright 2006-2021 UT-Battelle, LLC. See LICENSE for more information.
 # -------------------------------------------------------------------------------
 
 
@@ -119,24 +119,4 @@ class MethodResultMessage(Message):
         self.call_id = call_id
         self.args = args
         self.status = status
-        self.message_id = self.get_message_id()
-
-
-class ExitMessage(Message):
-    r"""
-    Message used to communicate the exit status of a component.
-
-    * *sender_id*: component id that is telling the component to die (framework)
-    * *receiver_id*: component id that is to die
-    * *status*: either Messages.SUCCESS or Messages.FAILURE indicating if the exit request is due to the simulation finishing successfully or in error.
-    * *\*args*: other information passed to the component to die.
-    """
-    counter = 0
-    delimiter = '|'
-    identifier = 'EXIT'
-
-    def __init__(self, sender_id, receiver_id, status, *args):
-        Message.__init__(self, sender_id, receiver_id)
-        self.status = status
-        self.args = args
         self.message_id = self.get_message_id()
