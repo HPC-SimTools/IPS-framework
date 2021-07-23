@@ -63,6 +63,8 @@ def test_build_launch_cmd_eval():
 @pytest.mark.skipif(not shutil.which('mpirun'), reason="missing mpirun")
 def test_build_launch_cmd_mpirun():
 
+    mpirun = shutil.which('mpirun')
+
     tm = TaskManager(mock.Mock())
 
     # test eval
@@ -82,7 +84,7 @@ def test_build_launch_cmd_mpirun():
                               partial_nodes=None,
                               task_id=None)
 
-    assert cmd == ('/usr/bin/mpirun -np 1 -x PYTHONPATH executable ', None)
+    assert cmd == (f'{mpirun} -np 1 -x PYTHONPATH executable ', None)
 
     cmd = tm.build_launch_cmd(nproc=1,
                               binary='executable',
@@ -95,7 +97,7 @@ def test_build_launch_cmd_mpirun():
                               partial_nodes=None,
                               task_id=None)
 
-    assert cmd == ('/usr/bin/mpirun -np 1 -x PYTHONPATH executable 13 42', None)
+    assert cmd == (f'{mpirun} -np 1 -x PYTHONPATH executable 13 42', None)
 
     cmd = tm.build_launch_cmd(nproc=1,
                               binary='executable',
@@ -108,7 +110,7 @@ def test_build_launch_cmd_mpirun():
                               partial_nodes=None,
                               task_id=None)
 
-    assert cmd == ('/usr/bin/mpirun -np 1 -x PYTHONPATH -H n1,n2 executable 13 42', None)
+    assert cmd == (f'{mpirun} -np 1 -x PYTHONPATH -H n1,n2 executable 13 42', None)
 
     # test SGI mpirun
     tm.config_mgr.get_platform_parameter.return_value = 'SGI'
