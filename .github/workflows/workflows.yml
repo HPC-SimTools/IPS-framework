@@ -3,7 +3,30 @@ name: CI
 on: [push, pull_request]
 
 jobs:
-  build:
+
+  static_analysis:
+
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.8
+    - name: Install python testing dependencies
+      run: pip install flake8==3.9.2 pylint==2.9.3 bandit==1.7.0 codespell==2.1.0 dask distributed
+    - name: flake8
+      run: flake8
+    - name: pylint
+      run: pylint ipsframework
+    - name: bandit
+      run: bandit -lll ipsframework/*.py
+    - name: codespell
+      run: codespell
+
+  tests:
 
     runs-on: ${{ matrix.os }}
 
