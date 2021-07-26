@@ -35,7 +35,7 @@ environment
 
   git clone https://github.com/HPC-SimTools/IPS-framework.git
   cd IPS-framework
-  python -m pip install .
+  python -m pip install ipsframework
 
 To leave your environment
 
@@ -81,7 +81,7 @@ Following the instruction we do
 Then install IPS into the environment, from within the IPS-framework
 source directory::
 
-  python setup.py install
+  python -m pip install ipsframework
 
 The example below show how to select the newly create conda
 environment to run use, see `Running Python in a batch job
@@ -96,3 +96,50 @@ environment to run use, see `Running Python in a batch job
 
   source /global/common/software/myproject/env/bin/activate
   ips.py --config=simulation.config --platform=platform.conf
+
+
+Installing dependencies
+-----------------------
+
+You can install just the dependencies you need by
+
+.. code-block:: bash
+
+   conda install matplotlib netcdf4 ...
+
+If you would like the same versions and dependencies in your conda
+environment as found in the python modules on Cori, you can export
+that environment and set your environment to be the same.
+
+Export ``python/3.7-anaconda-2019.10`` to yml file.
+
+.. code-block:: bash
+
+   module load python/3.7-anaconda-2019.10
+   conda env export --name base > environment.yml
+
+   # remove mpi4py and buildtest from environment.yml as these should be installed manually
+   sed -i '/mpi4py/d' environment.yml
+   sed -i '/buildtest/d' environment.yml
+
+Activate your conda environment and force it to match the
+``environment.yml`` file. ``mpi4py`` should be install separately
+`according to NERSC
+<https://docs.nersc.gov/development/languages/python/parallel-python/#mpi4py-in-your-custom-conda-environment>`_.
+
+.. code-block:: bash
+
+   source activate my_ips_env
+   conda env update -n my_ips_env --file environment.yml
+
+   # or
+
+   source /global/common/software/myproject/env/bin/activate # your environment
+   # setup base environment
+   conda env update -n base --file environment.yml
+
+Install ``mpi4py`` if needed
+
+.. code-block:: bash
+
+   MPICC="$(which cc) --shared" pip install --no-binary mpi4py mpi4py

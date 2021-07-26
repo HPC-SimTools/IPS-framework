@@ -58,6 +58,17 @@ Other Utilities
 Building and Setting up Your Environment
 ========================================
 
+IPS itself doesn't have any dependencies to run except python version
+≥ 3.6. There is an optional dependency `dask <https://dask.org>` that
+will enable dask to be used for task pool scheduling, see
+:meth:`ipsframework.services.ServicesProxy.submit_tasks`. IPS is
+tested to work with dask and distributed ≥ 2.5.2 but may work with
+earlier versions.
+
+It is recommend to install IPS in an conda environment, see
+:ref:`create conda`.
+
+
 It can be simply installed with
 
 .. code-block:: bash
@@ -70,59 +81,69 @@ The latest development version of IPS can be installed directly from github with
 
   python -m pip install git+https://github.com/HPC-SimTools/IPS-framework.git
 
-You can install a particular version by, for examples version ``v0.2.1``
+You can install a specific version by, for examples version ``v0.3.0``
 
 .. code-block:: bash
 
-  python -m pip install ipsframework==0.2.1
+  python -m pip install ipsframework==0.3.0
   # or
-  python -m pip install git+https://github.com/HPC-SimTools/IPS-framework.git@v0.2.1
+  python -m pip install git+https://github.com/HPC-SimTools/IPS-framework.git@v0.3.0
 
 
 Otherwise you can download the source code and install from there.
 
-Installing IPS
---------------
+.. _source install:
 
-Download IPS from source
+Installing IPS from source
+--------------------------
 
-.. code-block:: bash
+The source code can be cloned with git from
+https://github.com/HPC-SimTools/IPS-framework with either ssh:
 
-  git clone https://github.com/HPC-SimTools/IPS-framework.git
+.. code::
+
+   git clone git@github.com:HPC-SimTools/IPS-framework.git
+
+of over https:
+
+.. code::
+
+   git clone https://github.com/HPC-SimTools/IPS-framework.git
 
 Install in current python environment, from within the IPS-framework
 source directory
 
 .. code-block:: bash
 
-  python -m pip install .
-  # or
-  python setup.py install
+   python -m pip install .
 
 If you are using the system python and don't want to install as root
 you can do a user only install with
 
 .. code-block:: bash
 
-  python setup.py install --user
-
-Install in develop mode (this doesn't actually install the package but
-creates an egg link)
-
-.. code-block:: bash
-
-  python setup.py develop
-  # or
-  python -m pip install -e .
+   python -m pip install --user .
 
 ``ips.py`` should now be installed in your ``PATH`` and you should be
 able to run
 ``ips.py --config=simulation.config --platform=platform.conf``
 
+Install in editable mode
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+Installing in editable allows you to modify the source code and use it
+in from you source directory without reinstalling. This doesn’t
+actually install the package but creates an egg link.
+
+.. code-block:: bash
+
+   python -m pip install -e .
 
 .. note::
    You may need to use ``pip3`` and ``python3`` if you default
    ``python`` is not ``python3``.
+
+.. _create conda:
 
 Create and install in conda environment
 ---------------------------------------
@@ -145,12 +166,11 @@ First create a conda environment and activate it, this environment is named
   conda create -n ips python=3.9
   conda activate ips
 
-Next install IPS into this environment. From within the IPS-framework
-source directory
+Next install IPS into this environment in the same way as above. *e.g.*
 
 .. code-block:: bash
 
-  python setup.py install
+  python -m pip install ipsframework
 
 And you are good to go.
 

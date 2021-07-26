@@ -50,13 +50,13 @@ This `helloworld` package can be installed with
 
 .. code-block:: bash
 
-  python setup.py install
+  python -m pip install .
 
-Or to install it in develop mode with
+Or to install it in editable mode with
 
 .. code-block:: bash
 
-  python setup.py develop
+  python -m pip install -e .
 
 With the components installed as a package you can reference them by
 ``MODULE`` instead of providing the full path with ``SCRIPT``. So to use

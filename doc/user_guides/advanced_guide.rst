@@ -1,7 +1,17 @@
 Developing Drivers and Components for IPS Simulations
 =====================================================
 
-This section is for those who wish to modify and write drivers and components to construct a new simulation scenario.  It is expected that readers are familiar with IPS terminology, the directory structure and have looked at some existing drivers and components before attempting to modify or create new ones.  This guide will describe the elements of a simulation, how they work together, the structure of drivers and components, IPS services API, and a discussion of control flow, data flow and fault management. 
+This section is for those who wish to modify and write drivers and components to construct a new simulation scenario.  It is expected that readers are familiar with IPS terminology, the directory structure and have looked at some existing drivers and components before attempting to modify or create new ones.  This guide will describe the elements of a simulation, how they work together, the structure of drivers and components, IPS services API, and a discussion of control flow, data flow and fault management.
+
+Development environment
+-----------------------
+
+It is suggested that for developing drivers and component that you use
+a separate conda environment to your production environment using the
+latest stable release of IPS. See :ref:`installing-ips`.
+
+It is also recommended to write components as there own packages, see
+:doc:`component_package`.
 
 --------------------------
 Elements of a Simulation
