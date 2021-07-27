@@ -1814,6 +1814,8 @@ class ServicesProxy:
         return when all tasks have been launched.  If *block* is ``False``, return when all
         tasks that can be launched immediately have been launched.  Return number of tasks
         submitted.
+
+        Optionally, dask can be used to schedule and run the task pool.
         """
         start_time = time.time()
         self._send_monitor_event('IPS_TASK_POOL_BEGIN', 'task_pool = %s ' % task_pool_name)

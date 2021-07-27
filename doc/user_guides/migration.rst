@@ -22,8 +22,10 @@ Thing have changed, the package install is now managed with python
 setuptools and the IPS framework is install as a package called
 ipsframework, see :ref:`installing-ips`. The ips.py executable is also
 installed in you current PATH. This means that you no longer need to
-set PYTHONPATH or PATH when the IPS framework is installed. This
-required a rearrangement of the source code.
+set PYTHONPATH or PATH when the IPS framework is installed. Likewise,
+there should also no longer be any need to reference the IPS framework
+using ``IPS_ROOT`` or ``IPS_PATH``. This required a rearrangement of
+the source code.
 
 Also with this change in the way the package is install there are
 required code changes need to use it. The main one is that since this
