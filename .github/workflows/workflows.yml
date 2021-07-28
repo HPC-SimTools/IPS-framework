@@ -77,3 +77,32 @@ jobs:
       run: python -m pytest --cov --verbose --timeout=60
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v1
+
+  tests-wsl:
+
+    runs-on: windows-latest
+
+    timeout-minutes: 10
+
+    defaults:
+       run:
+         shell: wsl-bash {0}
+
+    steps:
+    - uses: actions/checkout@v2
+    - uses: Vampire/setup-wsl@v1
+      with:
+          distribution: Ubuntu-20.04
+          additional-packages:
+              python3-pip
+              python-is-python3
+    - name: Install python testing dependencies
+      run: python -m pip install pytest-cov pytest-timeout psutil dask==2021.07.1 distributed==2021.07.1
+    - name: Install IPS (in develop mode)
+      run: python -m pip install -e .
+    - name: testing running IPS (--help)
+      run: ips.py --help
+    - name: testing showing IPS version (--version)
+      run: ips.py --version
+    - name: Test with pytest
+      run: python -m pytest --cov --verbose --timeout=60
