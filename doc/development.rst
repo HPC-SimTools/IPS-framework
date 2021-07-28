@@ -35,7 +35,9 @@ to be used for task pool scheduling, see
 IPS-framework will work with python version ≥ 3.6. It is tested to work with
 dask and distributed ≥ 2.5.2 but may work with earlier versions.
 
-IPS-framework will work on Linux and macOS but not Windows.
+IPS-framework will work on Linux and macOS. It won't work on Windows
+directly but will work in the `Windows Subsystem for Linux
+<https://docs.microsoft.com/en-us/windows/wsl>`_.
 
 To run the tests requires ``pytest``, ``pytest-cov`` and
 ``psutil``. Optional dependencies are ``dask``/``distributed`` and
@@ -177,6 +179,9 @@ up to 3.9. It is also tested with 3 different version of dask,
 ``2.30.0`` versions of dask where chosen to match what is available on
 Cori at NERSC in the modules ``python/3.7-anaconda-2019.10`` and
 ``python/3.8-anaconda-2020.11``.
+
+The test suite also runs as part of the CI on Windows using WSL
+(Ubuntu 20.04) just using the default system python version.
 
 .. _docs:
 

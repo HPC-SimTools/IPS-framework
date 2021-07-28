@@ -338,7 +338,7 @@ def test_helloworld_portal(tmpdir, capfd):
     assert '.eventlog' in exts
 
     # check data sent to portal
-    assert len(data) == 6
+    assert len(data) >= 6
     # get first event to check
     event = json.loads(data[0].split('\r\n')[-1])
     assert event['code'] == 'Framework'
