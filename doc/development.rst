@@ -28,12 +28,12 @@ Development environment
 ~~~~~~~~~~~~~~~~~~~~~~~
 
 IPS-framework doesn't have any required dependencies. It has an
-optional dependency `dask <https://dask.org>`_ that will enable dask
+optional dependency `Dask <https://dask.org>`_ that will enable Dask
 to be used for task pool scheduling, see
-:meth:`ipsframework.services.ServicesProxy.submit_tasks`.
+:meth:`~ipsframework.services.ServicesProxy.submit_tasks`.
 
 IPS-framework will work with python version ≥ 3.6. It is tested to work with
-dask and distributed ≥ 2.5.2 but may work with earlier versions.
+Dask and distributed ≥ 2.5.2 but may work with earlier versions.
 
 IPS-framework will work on Linux and macOS. It won't work on Windows
 directly but will work in the `Windows Subsystem for Linux
@@ -174,9 +174,9 @@ Tests
 ~~~~~
 
 The test suite runs on Linux and macOS with python versions from 3.6
-up to 3.9. It is also tested with 3 different version of dask,
+up to 3.9. It is also tested with 3 different version of Dask,
 ``2.5.2``, ``2.30.0`` and the most recent version. The ``2.5.2``,
-``2.30.0`` versions of dask where chosen to match what is available on
+``2.30.0`` versions of Dask where chosen to match what is available on
 Cori at NERSC in the modules ``python/3.7-anaconda-2019.10`` and
 ``python/3.8-anaconda-2020.11``.
 
@@ -213,6 +213,9 @@ The deployment to `PyPI <https://pypi.org/project/ipsframework>`_ will
 happen automatically by a GitHub Actions `workflow
 <https://github.com/HPC-SimTools/IPS-framework/blob/main/.github/workflows/publish-to-test-pypi.yml>`_
 whenever a tag is created.
+
+Release notes should be added to
+https://github.com/HPC-SimTools/IPS-framework/releases
 
 We will publish a release candidate versions for any major or minor
 release before the full release to allow feedback from users. Patch

@@ -99,7 +99,13 @@ environment to run use, see `Running Python in a batch job
 
 
 Installing dependencies
------------------------
+~~~~~~~~~~~~~~~~~~~~~~~
+
+To see which packages are currently install in your environment run:
+
+.. code-block:: bash
+
+   conda list
 
 You can install just the dependencies you need by
 
@@ -142,4 +148,51 @@ Install ``mpi4py`` if needed
 
 .. code-block:: bash
 
-   MPICC="$(which cc) --shared" pip install --no-binary mpi4py mpi4py
+   MPICC="$(which cc) --shared" python -m pip install --no-binary mpi4py mpi4py
+
+Alternatively you can start with the same Anaconda environment which
+will have almost everything you need already and then just install the
+few missing dependencies. As an example, this use the same Anaconda
+distribution as in the ``python/3.7-anaconda-2019.10`` module.
+
+.. code-block:: bash
+
+   wget https://repo.anaconda.com/archive/Anaconda3-2019.10-Linux-x86_64.sh
+   bash Anaconda3-2019.10-Linux-x86_64.sh -b -p /global/common/software/myproject/env
+   source /global/common/software/myproject/env
+   conda install netcdf4
+   MPICC="$(which cc) --shared" python -m pip install --no-binary mpi4py mpi4py
+   python -m pip install dask-mpi
+
+User development
+~~~~~~~~~~~~~~~~
+
+Miniconda or Anaconda can can be installed to your home directory for easy development of component wrappers.
+
+.. code-block:: bash
+
+   wget https://repo.anaconda.com/archive/Anaconda3-2019.10-Linux-x86_64.sh
+   bash Anaconda3-2019.10-Linux-x86_64.sh -b -p $HOME/miniconda3
+   source $HOME/miniconda3/bin/activate
+   conda install netcdf4
+   MPICC="$(which cc) --shared" python -m pip install --no-binary mpi4py mpi4py
+   python -m pip install dask-mpi
+   python -m pip install ipsframework
+
+
+After which you can switch between youy development and the production
+environment on atom project by
+
+.. code-block:: bash
+
+   # switch to production environment
+   source /global/common/software/atom/cori/ips-framework-new/bin/activate
+
+   # switch bask to user development environment
+   source $HOME/miniconda3/bin/activate
+
+To see which environment you are currently in you can run
+
+.. code-block:: bash
+
+   conda env list
