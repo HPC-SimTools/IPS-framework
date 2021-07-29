@@ -27,7 +27,10 @@ class dask_worker(Component):
                                    self.VALUE if self.VALUE else f'{i}',
                                    **kwargs)
         nodes = self.services.get_config_param('NODES')
-        ret_val = self.services.submit_tasks('pool', use_dask=True, dask_nodes=nodes)
+        ret_val = self.services.submit_tasks('pool',
+                                             use_dask=True,
+                                             use_shifter=self.SHIFTER == 'True',
+                                             dask_nodes=nodes)
         self.services.info('ret_val = %d', ret_val)
         exit_status = self.services.get_finished_tasks('pool')
         for i in range(total_tasks):

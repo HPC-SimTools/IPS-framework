@@ -210,6 +210,11 @@ def test_resourceHelper_slurm_env(subprocess_check_output_mock, monkeypatch):
     services = mock.Mock()
     services.get_platform_parameter.side_effect = get_param
 
+    # remove SLURM env for tests if actually running with slurm
+    monkeypatch.delenv("SLURM_NODELIST", raising=False)
+    monkeypatch.delenv("SLURM_TASKS_PER_NODE", raising=False)
+    monkeypatch.delenv("SLURM_JOB_TASKS_PER_NODE", raising=False)
+
     # try with missing environment variables
     with pytest.raises(KeyError) as excinfo:
         getResourceList(services, 'host')
@@ -304,7 +309,10 @@ def test_resourceHelper_manual_InvalidException():
 
 # with no detection defined
 
-def test_resourceHelper_no_detection():
+def test_resourceHelper_no_detection(monkeypatch):
+    # remove SLURM_NODELIST for tests if actually running with slurm
+    monkeypatch.delenv("SLURM_NODELIST", raising=False)
+
     def get_param(param, silent=True):
         params = {'CORES_PER_NODE': 8,
                   'SOCKETS_PER_NODE': 1,
