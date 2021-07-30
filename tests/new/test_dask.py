@@ -122,8 +122,8 @@ def test_dask(tmpdir):
         assert f'task_name = task_{task}, elasped time = 1' in task_end_comments
 
 
-@pytest.mark.skipif(bool(shutil.which('shifter')),
-                    reason="This tests on works if shifter doesn't exist")
+@pytest.mark.skipif(shutil.which('shifter') is not None,
+                    reason="This tests only works if shifter doesn't exist")
 def test_dask_shifter_fail(tmpdir):
     pytest.importorskip("dask")
     pytest.importorskip("distributed")
@@ -415,3 +415,55 @@ def test_dask_logfile_errfile(tmpdir):
         lines = err_file.readlines()
         assert len(lines) == 1
         assert lines[0] == f'ERROR {i}\n'
+
+
+@pytest.mark.cori
+def test_dask_shifter_on_cori(tmpdir):
+    """
+    This test requires the shifter image to be set. e.g.
+
+    #SBATCH --image=continuumio/anaconda3:2020.11
+    """
+    exe = tmpdir.join("shifter_env.sh")
+    exe.write("#!/bin/bash\necho Running $1\necho SHIFTER_RUNTIME=$SHIFTER_RUNTIME\necho SHIFTER_IMAGEREQUEST=$SHIFTER_IMAGEREQUEST\n")
+    exe.chmod(448)  # 700
+
+    platform_file, config_file = write_basic_config_and_platform_files(tmpdir, exe=str(exe),
+                                                                       logfile='task_{}.log',
+                                                                       shifter=True)
+
+    framework = Framework(config_file_list=[str(config_file)],
+                          log_file_name=str(tmpdir.join('ips.log')),
+                          platform_file_name=str(platform_file),
+                          debug=None,
+                          verbose_debug=None,
+                          cmd_nodes=0,
+                          cmd_ppn=0)
+
+    framework.run()
+
+    # check output log file
+    with open(str(tmpdir.join('sim.log')), 'r') as f:
+        lines = f.readlines()
+
+    # remove timestamp
+    lines = [line[24:] for line in lines]
+
+    log = "DASK__dask_worker_2 INFO     {}\n"
+    assert log.format(f"cmd = {exe}") in lines
+    assert log.format("ret_val = 4") in lines
+
+    # task successful and return 0
+    for i in range(4):
+        assert log.format(f"task_{i} 0") in lines
+
+    # check that the process output log files are created
+    work_dir = tmpdir.join("work").join("DASK__dask_worker_2")
+    for i in range(4):
+        log_file = work_dir.join(f"task_{i}.log")
+        assert log_file.exists()
+        lines = log_file.readlines()
+        assert len(lines) == 3
+        assert lines[0] == f'Running {i}\n'
+        assert lines[1] == 'SHIFTER_RUNTIME=1\n'
+        assert lines[2].startswith("SHIFTER_IMAGEREQUEST")
