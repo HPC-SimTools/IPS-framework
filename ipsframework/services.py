@@ -1808,7 +1808,7 @@ class ServicesProxy:
                                   *args, keywords=keywords)
 
     def submit_tasks(self, task_pool_name, block=True, use_dask=False, dask_nodes=1,
-                     dask_ppn=None, launch_interval=0.0):
+                     dask_ppn=None, launch_interval=0.0, use_shifter=False):
         """
         Launch all unfinished tasks in task pool *task_pool_name*.  If *block* is ``True``,
         return when all tasks have been launched.  If *block* is ``False``, return when all
@@ -1820,7 +1820,7 @@ class ServicesProxy:
         start_time = time.time()
         self._send_monitor_event('IPS_TASK_POOL_BEGIN', 'task_pool = %s ' % task_pool_name)
         task_pool: TaskPool = self.task_pools[task_pool_name]
-        retval = task_pool.submit_tasks(block, use_dask, dask_nodes, dask_ppn, launch_interval)
+        retval = task_pool.submit_tasks(block, use_dask, dask_nodes, dask_ppn, launch_interval, use_shifter)
         self._send_monitor_event('IPS_TASK_POOL_END', 'task_pool = %s  elapsed time = %.2f S' %
                                  (task_pool_name, time.time() - start_time))
         return retval
@@ -1929,6 +1929,7 @@ class TaskPool:
     else:
         dask_scheduler = shutil.which("dask-scheduler")
         dask_worker = shutil.which("dask-worker")
+        shifter = shutil.which("shifter")
         if not dask_scheduler or not dask_worker:
             dask = None
             distributed = None
@@ -2021,7 +2022,7 @@ class TaskPool:
         self.queued_tasks[task_name] = Task(task_name, nproc, working_dir, binary_fullpath, *args,
                                             **keywords["keywords"])
 
-    def submit_dask_tasks(self, block=True, dask_nodes=1, dask_ppn=None):
+    def submit_dask_tasks(self, block=True, dask_nodes=1, dask_ppn=None, use_shifter=False):
         """Launch tasks in *queued_tasks* using dask.
 
         :param block: Unused, this will always return after tasks are submitted
@@ -2030,27 +2031,45 @@ class TaskPool:
         :type dask_nodes: int
         :param dask_ppn:  Number of processes per node, default None
         :type dask_ppn: int
+        :param use_shifter:  Option to launch dask scheduler and workers in shifter container
+        :type use_shifter: bool
         """
         services: ServicesProxy = self.services
         self.dask_file_name = os.path.join(os.getcwd(),
                                            f".{self.name}_dask_shed_{time.time()}.json")
-        self.dask_sched_pid = subprocess.Popen([self.dask_scheduler, "--no-dashboard",
-                                                "--scheduler-file", self.dask_file_name, "--port", "0"]).pid
+        if use_shifter:
+            self.dask_sched_pid = subprocess.Popen([self.shifter, "dask-scheduler", "--no-dashboard",
+                                                    "--scheduler-file", self.dask_file_name, "--port", "0"]).pid
+        else:
+            self.dask_sched_pid = subprocess.Popen([self.dask_scheduler, "--no-dashboard",
+                                                    "--scheduler-file", self.dask_file_name, "--port", "0"]).pid
 
         dask_nodes = 1 if dask_nodes is None else dask_nodes
         if services.get_config_param("MPIRUN") == "eval":
             dask_nodes = 1
 
         nthreads = dask_ppn if dask_ppn else services.get_config_param("PROCS_PER_NODE")
-        self.dask_workers_tid = services.launch_task(dask_nodes, os.getcwd(),
-                                                     self.dask_worker,
-                                                     "--scheduler-file",
-                                                     self.dask_file_name,
-                                                     "--nprocs", 1,
-                                                     "--nthreads", nthreads,
-                                                     "--no-dashboard",
-                                                     "--preload", self.services.dask_preload,
-                                                     task_ppn=1)
+        if use_shifter:
+            self.dask_workers_tid = services.launch_task(dask_nodes, os.getcwd(),
+                                                         self.shifter,
+                                                         "dask-worker",
+                                                         "--scheduler-file",
+                                                         self.dask_file_name,
+                                                         "--nprocs", 1,
+                                                         "--nthreads", nthreads,
+                                                         "--no-dashboard",
+                                                         "--preload", self.services.dask_preload,
+                                                         task_ppn=1)
+        else:
+            self.dask_workers_tid = services.launch_task(dask_nodes, os.getcwd(),
+                                                         self.dask_worker,
+                                                         "--scheduler-file",
+                                                         self.dask_file_name,
+                                                         "--nprocs", 1,
+                                                         "--nthreads", nthreads,
+                                                         "--no-dashboard",
+                                                         "--preload", self.services.dask_preload,
+                                                         task_ppn=1)
 
         self.dask_client = self.dask.distributed.Client(scheduler_file=self.dask_file_name)
 
@@ -2074,7 +2093,7 @@ class TaskPool:
         self.queued_tasks = {}
         return len(self.futures)
 
-    def submit_tasks(self, block=True, use_dask=False, dask_nodes=1, dask_ppn=None, launch_interval=0.0):
+    def submit_tasks(self, block=True, use_dask=False, dask_nodes=1, dask_ppn=None, launch_interval=0.0, use_shifter=False):
         """Launch tasks in *queued_tasks*.  Finished tasks are handled before
         launching new ones.  If *block* is ``True``, the number of
         tasks submitted is returned after all tasks have been launched
@@ -2094,13 +2113,19 @@ class TaskPool:
         :type dask_ppn: int
         :param launch_internal: time to wait between launching tasks, default 0.0
         :type launch_internal: float
+        :param use_shifter:  Option to launch dask scheduler and workers in shifter container
+        :type use_shifter: bool
 
         """
 
         if use_dask:
             if TaskPool.dask and self.serial_pool:
                 self.dask_pool = True
-                return self.submit_dask_tasks(block, dask_nodes, dask_ppn)
+                if use_shifter and not self.shifter:
+                    self.services.exception("Requested to run dask within shifter but shifter not available")
+                    raise Exception("shifter not found")
+                else:
+                    return self.submit_dask_tasks(block, dask_nodes, dask_ppn, use_shifter)
             elif not TaskPool.dask:
                 self.services.warning("Requested use_dask but cannot because import dask failed")
             elif not self.serial_pool:

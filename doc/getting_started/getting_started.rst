@@ -59,9 +59,9 @@ Building and Setting up Your Environment
 ========================================
 
 IPS itself doesn't have any dependencies to run except python version
-≥ 3.6. There is an optional dependency `dask <https://dask.org>` that
-will enable dask to be used for task pool scheduling, see
-:meth:`ipsframework.services.ServicesProxy.submit_tasks`. IPS is
+≥ 3.6. There is an optional dependency `Dask <https://dask.org>`_ that
+will enable Dask to be used for task pool scheduling, see
+:meth:`~ipsframework.services.ServicesProxy.submit_tasks`. IPS is
 tested to work with dask and distributed ≥ 2.5.2 but may work with
 earlier versions.
 
@@ -179,3 +179,18 @@ To leave your conda environment
 .. code-block:: bash
 
   conda deactivate
+
+Installing packages
+~~~~~~~~~~~~~~~~~~~
+
+To see which packages are currently install in your environment run:
+
+.. code-block:: bash
+
+   conda list
+
+You can install just the packages you need by
+
+.. code-block:: bash
+
+   conda install dask matplotlib netcdf4 ...
