@@ -61,7 +61,7 @@ class Driver(Component):
         listener = Listener(str(self.socket_address), 'AF_UNIX')
         self.services.warning('Created listener %s', str(self.socket_address))
         print('%s  Created Listener %s' % (
-            time.strftime("%b %d %Y %H:%M:%S", time.localtime()), str(self.socket_address)), str(listener))
+            time.strftime("%b %d %Y %H:%M:%S", time.localtime()), str(self.socket_address)))
         sys.stdout.flush()
         sim_cache = {}
         sock_fileno = listener._listener._socket.fileno()
