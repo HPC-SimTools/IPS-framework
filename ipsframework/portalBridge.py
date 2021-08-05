@@ -304,7 +304,7 @@ class PortalBridge(Component):
             # api search results are sorted by time
             # Note, check this with eqdsk dataobject in test-api
             print('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%')
-            print(len(is_checksum), file, parent)
+            print(len(is_checksum), file)
             print('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%')
 
             if len(is_checksum) > 0:
@@ -314,7 +314,6 @@ class PortalBridge(Component):
 
                 # Create dataobject reference by uid in the workflow
                 dataobject = self.mpo.add(workflow, parent, uid=file_uid, name=shortname, desc=longdesc)
-                print('Existing dataobject : id = ', file_uid)
                 self.mpo.meta(dataobject['uid'], 'ips_checksum', checksum)
                 # add filename metadata the dataobject reference
                 self.mpo.meta(dataobject['uid'], 'ips_filename', file)
@@ -326,7 +325,6 @@ class PortalBridge(Component):
                 # add checksum metadata to original data object
                 # add function currently only returns uri field, so fetch full record
                 full_dataobject = self.mpo.search('dataobject/' + dataobject['uid'])[0]
-                print('New data object', full_dataobject['do_uid'])
                 # add checksum so dataobject and also
                 self.mpo.meta(full_dataobject['do_uid'], 'ips_checksum', checksum)
                 self.mpo.meta(dataobject['uid'], 'ips_filename', file)
