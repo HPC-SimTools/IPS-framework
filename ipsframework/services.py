@@ -610,6 +610,10 @@ class ServicesProxy:
         :rtype: int
 
         """
+        if not isinstance(binary, str):
+            self.exception('Error in launch_task: task binary of wrong type, expected str but found %s', type(binary).__name__)
+            raise ValueError(f"task binary of wrong type, expected str but found {type(binary).__name__}")
+
         args = tuple(str(a) for a in args)
         tokens = binary.split()
         if len(tokens) > 1:
@@ -711,6 +715,10 @@ class ServicesProxy:
         queued_tasks = task_pool.queued_tasks
         submit_dict = {}
         for (task_name, task) in queued_tasks.items():
+            if not isinstance(task.binary, str):
+                self.exception('Error initiating task pool %s: task %s binary of wrong type, expected str but found %s',
+                               task_pool_name, task_name, type(task.binary).__name__)
+                raise ValueError(f"task {task_name} binary of wrong type, expected str but found {type(task.binary).__name__}")
             task_ppn = task.keywords.get('task_ppn', self.ppn)
             wnodes = task.keywords.get('whole_nodes', not self.shared_nodes)
             wsocks = task.keywords.get('whole_sockets', not self.shared_nodes)
@@ -1781,7 +1789,7 @@ class ServicesProxy:
         """
         Produce **exception** message in simulation log file. See :func:`logging.exception` for usage.
         """
-        self.logger.exception(msg, *args, exc_info=False)
+        self.logger.exception(msg, *args)
 
     def critical(self, msg, *args):
         """
