@@ -135,6 +135,37 @@ You can then also run ``python -m coverage report -m`` to show exactly
 which lines are missing test coverage.
 
 
+.. _cori-tests :
+
+Cori only tests
+~~~~~~~~~~~~~~~
+
+The are some tests that only run on Cori at NERSC and these are not
+run as part of the :ref:`CI <continuous integration>` and must be run
+manually. To run those test you need to add the option ``--runcori``
+to the ``pytest``. There are tests for the :ref:`shifter
+functionally<dask_shifter>` that is Cori specific.
+
+An example batch script for running the unit tests is:
+
+.. code-block:: bash
+
+  #!/bin/bash
+  #SBATCH -p debug
+  #SBATCH --nodes=1
+  #SBATCH --tasks-per-node=1
+  #SBATCH --cpus-per-task=32
+  #SBATCH -t 00:10:00
+  #SBATCH -C haswell
+  #SBATCH -J pytest
+  #SBATCH -e pytest.err
+  #SBATCH -o pytest.out
+  #SBATCH --image=continuumio/anaconda3:2020.11
+  module load python/3.8-anaconda-2020.11
+  python -m pytest --runcori
+
+The check the output in ``pytest.out`` to see that all the tests passed.
+
 Writing Tests
 ~~~~~~~~~~~~~
 
@@ -144,6 +175,8 @@ executing tests in IPS-framework.
 Tests should be added to ``tests`` directory. If writing component to
 use for testing that should go into ``tests/components`` and any
 executable should go into ``tests/bin``.
+
+.. _continuous integration:
 
 Continuous Integration (CI)
 ---------------------------
@@ -220,3 +253,6 @@ https://github.com/HPC-SimTools/IPS-framework/releases
 We will publish a release candidate versions for any major or minor
 release before the full release to allow feedback from users. Patch
 versions will not normally have an release candidate.
+
+Before a release is finalized the :ref:`Cori only tests<cori-tests>`
+should be run.

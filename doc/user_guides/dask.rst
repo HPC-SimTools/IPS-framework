@@ -54,6 +54,7 @@ simulation log is shown:
 .. literalinclude::  ../examples/dask/simulation_log.json
    :language: JSON
 
+.. _dask_shifter:
 
 Running dask in shifter
 -----------------------
