@@ -172,8 +172,8 @@ Miniconda or Anaconda can can be installed to your home directory for easy devel
 .. code-block:: bash
 
    wget https://repo.anaconda.com/archive/Anaconda3-2019.10-Linux-x86_64.sh
-   bash Anaconda3-2019.10-Linux-x86_64.sh -b -p $HOME/miniconda3
-   source $HOME/miniconda3/bin/activate
+   bash Anaconda3-2019.10-Linux-x86_64.sh -b -p $HOME/anaconda3
+   source $HOME/anaconda3/bin/activate
    conda install netcdf4
    MPICC="$(which cc) --shared" python -m pip install --no-binary mpi4py mpi4py
    python -m pip install dask-mpi
