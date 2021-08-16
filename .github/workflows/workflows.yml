@@ -36,7 +36,7 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest]
         python-version: [3.6, 3.7, 3.8, 3.9]
-        dask-version: ['2021.07.2']
+        dask-version: ['2021.08.0']
         include:
           # same as NERSC Cori module python/3.7-anaconda-2019.10
           - os: ubuntu-latest
@@ -97,7 +97,7 @@ jobs:
               python3-pip
               python-is-python3
     - name: Install python testing dependencies
-      run: python -m pip install pytest-cov pytest-timeout psutil dask==2021.07.2 distributed==2021.07.2
+      run: python -m pip install pytest-cov pytest-timeout psutil dask==2021.08.0 distributed==2021.08.0
     - name: Install IPS (in develop mode)
       run: python -m pip install -e .
     - name: testing running IPS (--help)
