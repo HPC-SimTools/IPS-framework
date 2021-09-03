@@ -1,21 +1,14 @@
-#IPS_ROOT = /home/elwasif/Projects/SWIM/cswim/ips/branches/ips-CAEBAT    # Root of IPS component and binary tree
-OUTPUT_PREFIX = 
-#NODES=1
-#CORES_PER_NODE=1
-
-
-RUN_ID = DAKOTA_Rosenbrock                   # Indentifier for this simulation run
+RUN_ID = DAKOTA_Rosenbrock                   # Identifier for this simulation run
 TOKAMAK_ID = TEST
 SHOT_NUMBER = 1                  # Numerical identifier for specific case
 
 SIM_NAME = ${RUN_ID}_${TOKAMAK_ID}_${SHOT_NUMBER}  # Name of current simulation
-SIM_ROOT = $IPS_ROOT/${SIM_NAME}                   # Where to put results from this simulation
+SIM_ROOT = $PWD/${SIM_NAME}                   # Where to put results from this simulation
 
 LOG_FILE = $SIM_ROOT/${RUN_ID}.log
 LOG_LEVEL = DEBUG
 
-# Stuff for connecting to the portal - PORTAL_URL and RUNID_URL are machine dependent
-#USER   = elwasif
+SIMULATION_MODE = NORMAL
 
 # A run comment picked up by the portal
 RUN_COMMENT = Testing dakota
@@ -58,13 +51,13 @@ PLASMA_STATE_FILES =
     SUB_CLASS = TEST
     NAME = ResenbrockDriver
     NPROC = 1
-    BIN_PATH = $IPS_ROOT/tests/dakota
-    INPUT_DIR = $IPS_ROOT/components/drivers/hello
+    BIN_PATH =
+    INPUT_DIR =
     INPUT_FILES = 
     OUTPUT_FILES =  
-    SCRIPT = $BIN_PATH/dakota_test_Rosenbrock.py
+    SCRIPT = $PWD/dakota_test_Rosenbrock.py
 
-# Time loop sepecification (two modes for now) EXPLICIT | REGULAR
+# Time loop specification (two modes for now) EXPLICIT | REGULAR
 # For MODE = REGULAR, the framework uses the variables START, FINISH, and NSTEP
 # For MODE = EXPLICIT, the frame work uses the variable VALUES (space separated list of time values)
 

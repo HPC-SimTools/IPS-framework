@@ -539,6 +539,30 @@ class Framework:
         self.event_service._print_stats()
         return True
 
+    def initiate_new_simulation(self, sim_name):
+        '''
+        This is to be called by the configuration manager as part of dynamically creating
+        a new simulation. The purpose here is to initiate the method invocations for the
+        framework-visible components in the new simulation
+        '''
+        comp_list = self.config_manager.get_simulation_components(sim_name)
+        msg_list = []
+        self._send_monitor_event(sim_name, 'IPS_START', 'Starting IPS Simulation', ok=True)
+        self._send_dynamic_sim_event(sim_name=sim_name, event_type='IPS_START')
+        for comp_id in comp_list:
+            for method in ['init', 'step', 'finalize']:
+                req_msg = ServiceRequestMessage(self.component_id,
+                                                self.component_id, comp_id,
+                                                'init_call', method, 0)
+                msg_list.append(req_msg)
+
+        # send off first round of invocations...
+        msg = msg_list.pop(0)
+        self.debug('Framework sending message %s ', msg.__dict__)
+        call_id = self.task_manager.init_call(msg, manage_return=False)
+        self.call_queue_map[call_id] = msg_list
+        self.outstanding_calls_list.append(call_id)
+
     def _send_monitor_event(self, sim_name='', eventType='', comment='', ok='True'):
         """
         Publish a portal monitor event to the *_IPS_MONITOR* event topic.
