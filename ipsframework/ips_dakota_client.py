@@ -101,8 +101,8 @@ class IPSDakotaClient:
 
 
 def main(argv=None):
-    in_file = argv[1]
-    out_file = argv[2]
+    in_file = sys.argv[1]
+    out_file = sys.argv[2]
     debug = False
     log_file_name = None
     try:
@@ -126,4 +126,4 @@ def main(argv=None):
 
 if __name__ == "__main__":
     sys.stdout.flush()
-    sys.exit(main(sys.argv))
+    sys.exit(main())

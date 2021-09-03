@@ -44,7 +44,9 @@ setup(
     packages=find_packages(),
     entry_points={
         'console_scripts': [
-            'ips.py = ipsframework.ips:main'
+            'ips.py = ipsframework.ips:main',
+            'ips_dakota_dynamic.py = ipsframework.ips_dakota_dynamic:main',
+            'ips_dakota_client.py = ipsframework.ips_dakota_client:main'
         ]
     },
     classifiers=[

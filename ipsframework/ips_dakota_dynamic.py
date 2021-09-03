@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+#!/usr/bin/env python
 # -------------------------------------------------------------------------------
 # Copyright 2006-2021 UT-Battelle, LLC. See LICENSE for more information.
 # -------------------------------------------------------------------------------
@@ -89,10 +89,6 @@ class DakotaDynamic:
             if k not in list(self.template_conf.keys()) and not any(x in v for x in '{}()$'):
                 self.template_conf[k] = v
 
-        alt_paths.append(self.template_conf['IPS_ROOT'])
-        alt_paths.append(os.path.join(self.template_conf['IPS_ROOT'], 'bin'))
-        alt_paths.append(os.path.join(self.template_conf['IPS_ROOT'], 'framework/src'))
-
         new_dakota_config = self.dakota_cfg + '.resolved'
         comp_vars = {}
         for line in self.dakota_conf:
@@ -113,7 +109,7 @@ class DakotaDynamic:
             elif tokens[0] == 'analysis_driver':
                 raw_prog = line.split('=')[1]
                 prog = raw_prog.strip(' "\'')
-                exec_prog = which(prog, alt_paths)
+                exec_prog = which(prog)
                 if not exec_prog:
                     raise Exception('Error: analysis driver %s not found in path' % prog)
                 line.replace(prog, exec_prog)
@@ -136,23 +132,13 @@ class DakotaDynamic:
         driver_conf['SUB_CLASS'] = 'BRIDGE'
         driver_conf['NAME'] = 'Driver'
         driver_conf['NPROC'] = 1
-        driver_conf['BIN_PATH'] = os.path.join(self.template_conf['IPS_ROOT'], 'bin')
+        driver_conf['BIN_PATH'] = ''
         driver_conf['BIN_DIR'] = driver_conf['BIN_PATH']
         driver_conf['INPUT_DIR'] = '/dev/null'
         driver_conf['INPUT_FILES'] = ''
         driver_conf['OUTPUT_FILES'] = ''
-        script = os.path.join(self.template_conf['IPS_ROOT'],
-                              'bin', 'dakota_bridge.py')
-        if os.path.isfile(script):
-            driver_conf['SCRIPT'] = script
-        else:
-            script = os.path.join(self.template_conf['IPS_ROOT'], 'framework',
-                                  'src', 'dakota_bridge.py')
-            if os.path.isfile(script):
-                driver_conf['SCRIPT'] = script
-            else:
-                raise Exception('Error: unable to locate dakota_bridge.py in \
-IPS_ROOT/bin or IPS_ROOT/framework/src')
+        driver_conf['SCRIPT'] = ""
+        driver_conf['MODULE'] = 'ipsframework.dakota_bridge'
         self.master_conf['DAKOTA_BRIDGE'] = driver_conf
 
         for comp in comp_vars:
@@ -200,8 +186,8 @@ IPS_ROOT/bin or IPS_ROOT/framework/src')
             if not os.path.isfile(self.restart_file):
                 raise Exception("Error accessing DAKOTA restart file %s" % (self.restart_file))
 
-        cmd = '%s --all --simulation=%s --platform=%s --verbose' % (ips, self.master_conf.filename,
-                                                                    os.environ['IPS_DAKOTA_platform'])
+        cmd = '%s --simulation=%s --platform=%s --verbose' % (ips, self.master_conf.filename,
+                                                              os.environ['IPS_DAKOTA_platform'])
         if self.log_file:
             cmd += ' --log=' + self.log_file
 
@@ -209,7 +195,7 @@ IPS_ROOT/bin or IPS_ROOT/framework/src')
             cmd += '  --debug'
 
         print('cmd =', cmd)
-        ips_server_proc = subprocess.Popen(cmd)
+        ips_server_proc = subprocess.Popen(cmd.split())
         print('%s  Launched IPS' % (time.strftime("%b %d %Y %H:%M:%S", time.localtime())))
         sys.stdout.flush()
         msg = {'SIMSTATUS': 'START'}
@@ -240,7 +226,7 @@ IPS_ROOT/bin or IPS_ROOT/framework/src')
         else:
             command = 'dakota %s ' % new_dakota_config
         dakota_logfile = open('dakota_%s.log' % (str(os.getpid())), 'w')
-        proc = subprocess.Popen(command, stdout=dakota_logfile, stderr=subprocess.STDOUT)
+        proc = subprocess.Popen(command.split(), stdout=dakota_logfile, stderr=subprocess.STDOUT)
         print('%s  Launched DAKOTA' % (time.strftime("%b %d %Y %H:%M:%S", time.localtime())))
         sys.stdout.flush()
         proc.wait()
