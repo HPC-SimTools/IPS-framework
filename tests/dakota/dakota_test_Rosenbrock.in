@@ -1,0 +1,37 @@
+# DAKOTA INPUT FILE - dakota_rosenbrock_syscall.in 
+
+
+strategy,
+	single_method
+	  graphics,tabular_graphics_data
+
+method,
+	conmin_frcg				
+	  max_iterations = 100			
+	  convergence_tolerance = 1e-4		
+          speculative
+
+model,
+	single
+
+variables,
+	continuous_design = 2			
+	  initial_point   -1.2	1.0	
+	  lower_bounds    -2.0     -2.0	
+	  upper_bounds     2.0      2.0	
+	  descriptors      'ROSE__X1'     "ROSE__X2"	
+
+interface,
+	fork asynchronous evaluation_concurrency = 10, file_tag, file_save	
+	  analysis_driver = '../../framework/src/ips_dakota_client.py'
+	  parameters_file = 'params.in'		
+	  results_file    = 'results.out'	
+
+responses,
+	num_objective_functions = 1             
+	numerical_gradients			
+	  method_source dakota			
+	  interval_type forward			
+	  fd_gradient_step_size = 1.e-5		
+	no_hessians
+
