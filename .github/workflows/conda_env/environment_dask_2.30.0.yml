@@ -1,0 +1,10 @@
+name: test
+channels:
+- conda-forge
+dependencies:
+- pytest-cov
+- pytest-timeout
+- psutil
+- mpi4py
+- dask=2.30.0
+- dakota

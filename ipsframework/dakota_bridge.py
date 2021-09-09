@@ -31,7 +31,7 @@ class Driver(Component):
     def init(self, timestamp=0, **keywords):
         self.services.subscribe('_IPS_DYNAMIC_SIMULATION', "process_event")
 
-    def step(self, timestamp=0, **keywords):
+    def step(self, timestamp=0, **keywords):  # pragma: no cover
 
         services = self.services
         sim_root = services.get_config_param('SIM_ROOT')

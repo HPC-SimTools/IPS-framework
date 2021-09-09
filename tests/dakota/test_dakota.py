@@ -1,8 +1,10 @@
-from ipsframework.ips_dakota_dynamic import DakotaDynamic
+from ipsframework import ips_dakota_dynamic
+from unittest import mock
 import os
 import shutil
 import pytest
 import glob
+import sys
 
 
 def copy_config_and_replace(infile, outfile, tmpdir):
@@ -19,21 +21,22 @@ def copy_config_and_replace(infile, outfile, tmpdir):
 
 @pytest.mark.skipif(shutil.which('dakota') is None,
                     reason="Requires dakota to run this test")
+@pytest.mark.timeout(120)
 def test_dakota(tmpdir):
     data_dir = os.path.dirname(__file__)
-    copy_config_and_replace(os.path.join(data_dir, "dakota_test_Rosenbrock.ips"), tmpdir.join("dakota_test_Rosenbrock.ips"), tmpdir)
+    copy_config_and_replace(os.path.join(data_dir, "dakota_test_Gaussian.ips"), tmpdir.join("dakota_test_Gaussian.ips"), tmpdir)
     shutil.copy(os.path.join(data_dir, "workstation.conf"), tmpdir)
-    shutil.copy(os.path.join(data_dir, "dakota_test_Rosenbrock.in"), tmpdir)
-    shutil.copy(os.path.join(data_dir, "dakota_test_Rosenbrock.py"), tmpdir)
+    shutil.copy(os.path.join(data_dir, "dakota_test_Gaussian.in"), tmpdir)
+    shutil.copy(os.path.join(data_dir, "dakota_test_Gaussian.py"), tmpdir)
 
     os.chdir(tmpdir)
 
-    sweep = DakotaDynamic(dakota_cfg=os.path.join(tmpdir, "dakota_test_Rosenbrock.in"),
-                          log_file=str(tmpdir.join('test.log')),
-                          platform_filename=os.path.join(tmpdir, "workstation.conf"),
-                          debug=False,
-                          ips_config_template=os.path.join(tmpdir, "dakota_test_Rosenbrock.ips"),
-                          restart_file=None)
+    sweep = ips_dakota_dynamic.DakotaDynamic(dakota_cfg=os.path.join(tmpdir, "dakota_test_Gaussian.in"),
+                                             log_file=str(tmpdir.join('test.log')),
+                                             platform_filename=os.path.join(tmpdir, "workstation.conf"),
+                                             debug=False,
+                                             ips_config_template=os.path.join(tmpdir, "dakota_test_Gaussian.ips"),
+                                             restart_file=None)
     sweep.run()
 
     # check dakota log
@@ -41,7 +44,51 @@ def test_dakota(tmpdir):
     with open(log_file, 'r') as f:
         lines = f.readlines()
 
-    X1, X2 = lines[-22].split()[1:]
+    X = lines[-13].split()[1]
 
-    assert float(X1) == pytest.approx(1, rel=1e-3)
-    assert float(X2) == pytest.approx(1, rel=1e-3)
+    assert float(X) == pytest.approx(0.5, rel=1e-4)
+
+
+@mock.patch('ipsframework.ips_dakota_dynamic.DakotaDynamic')
+def test_dakota_main(MockDakotaDynamic):
+    # override sys.argv for testing
+    sys.argv = ["ips_dakota_dynamic.py"]
+    ret = ips_dakota_dynamic.main()
+    assert ret == 1
+    MockDakotaDynamic.assert_not_called()
+
+    MockDakotaDynamic.reset_mock()
+    ret = ips_dakota_dynamic.main(["ips_dakota_dynamic.py"])
+    assert ret == 1
+    MockDakotaDynamic.assert_not_called()
+
+    MockDakotaDynamic.reset_mock()
+    sys.argv = ["ips_dakota_dynamic.py", "--somethingelse"]
+    ret = ips_dakota_dynamic.main()
+    assert ret == 1
+    MockDakotaDynamic.assert_not_called()
+
+    MockDakotaDynamic.reset_mock()
+    sys.argv = ["ips_dakota_dynamic.py", "--dakotaconfig=dakota.cfg"]
+    ret = ips_dakota_dynamic.main()
+    assert ret == 1
+    MockDakotaDynamic.assert_not_called()
+
+    MockDakotaDynamic.reset_mock()
+    sys.argv = ["ips_dakota_dynamic.py", "--simulation=sim.cfg"]
+    ret = ips_dakota_dynamic.main()
+    assert ret == 1
+    MockDakotaDynamic.assert_not_called()
+
+    MockDakotaDynamic.reset_mock()
+    sys.argv = ["ips_dakota_dynamic.py", "--simulation=sim.cfg", "--dakotaconfig=dakota.cfg"]
+    ret = ips_dakota_dynamic.main()
+    assert ret == 0
+    MockDakotaDynamic.assert_called_with("dakota.cfg", None, None, False, "sim.cfg", None)
+
+    MockDakotaDynamic.reset_mock()
+    sys.argv = ["ips_dakota_dynamic.py", "--simulation=sim.cfg", "--dakotaconfig=dakota.cfg",
+                "--platform=computer.conf", "--log=out.log", "--restart=dakota.rst", "--debug"]
+    ret = ips_dakota_dynamic.main()
+    assert ret == 0
+    MockDakotaDynamic.assert_called_with("dakota.cfg", "out.log", "computer.conf", True, "sim.cfg", "dakota.rst")

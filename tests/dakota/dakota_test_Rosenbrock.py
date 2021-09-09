@@ -1,5 +1,5 @@
 # -------------------------------------------------------------------------------
-# Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
+# Copyright 2006-2021 UT-Battelle, LLC. See LICENSE for more information.
 # -------------------------------------------------------------------------------
 import os
 from ipsframework import Component

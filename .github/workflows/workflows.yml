@@ -32,41 +32,47 @@ jobs:
 
     timeout-minutes: 10
 
+    defaults:
+      run:
+        shell: bash -l {0}
+
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest]
-        python-version: [3.6, 3.7, 3.8, 3.9]
-        dask-version: ['2021.08.0']
+        os: [ubuntu-latest]
+        python-version: [3.7, 3.8, 3.9]
+        conda_env: ['linux']
         include:
+          - os: ubuntu-latest
+            python-version: 3.6
+            conda_env: 'py36'
           # same as NERSC Cori module python/3.7-anaconda-2019.10
           - os: ubuntu-latest
             python-version: 3.7
-            dask-version: '2.5.2'
+            conda_env: 'dask_2.5.2'
           # same as NERSC Cori module python/3.8-anaconda-2020.11
           - os: ubuntu-latest
             python-version: 3.8
-            dask-version: '2.30.0'
+            conda_env: 'dask_2.30.0'
+          - os: macos-latest
+            python-version: 3.6
+            conda_env: 'py36'
+          - os: macos-latest
+            python-version: 3.7
+            conda_env: 'macos'
+          - os: macos-latest
+            python-version: 3.8
+            conda_env: 'macos'
+          - os: macos-latest
+            python-version: 3.9
+            conda_env: 'macos'
 
     steps:
     - uses: actions/checkout@v2
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v2
+    - uses: conda-incubator/setup-miniconda@v2
       with:
+        auto-update-conda: true
         python-version: ${{ matrix.python-version }}
-    - name: Install python testing dependencies
-      run: python -m pip install pytest-cov pytest-timeout psutil
-    # There is an issue with click 8 for dask < 2021.05 dask/dask#7658
-    - name: Install dask ${{ matrix.dask-version }} with click<8
-      if: ${{ matrix.python-version > 3.6 && matrix.dask-version < '2021.05.0' }}
-      run: python -m pip install dask==${{ matrix.dask-version }} distributed==${{ matrix.dask-version }} "click<8" msgpack==0.6.2
-    - name: Install dask ${{ matrix.dask-version }}
-      if: ${{ matrix.python-version > 3.6 && matrix.dask-version >= '2021.05.0' }}
-      run: python -m pip install dask==${{ matrix.dask-version }} distributed==${{ matrix.dask-version }}
-    - name: Install mpi testing dependencies
-      if: ${{ matrix.os == 'ubuntu-latest' }}
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y libopenmpi-dev python3-mpi4py
+        environment-file: .github/workflows/conda_env/environment_${{ matrix.conda_env }}.yml
     - name: Install IPS (in develop mode)
       run: python -m pip install -e .
     - name: testing running IPS (--help)
@@ -74,7 +80,7 @@ jobs:
     - name: testing showing IPS version (--version)
       run: ips.py --version
     - name: Test with pytest
-      run: python -m pytest --cov --verbose --timeout=60
+      run: python -m pytest --cov --cov-report=xml --cov-report=term --verbose --timeout=60
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v1
 
@@ -94,10 +100,11 @@ jobs:
       with:
           distribution: Ubuntu-20.04
           additional-packages:
-              python3-pip
               python-is-python3
-    - name: Install python testing dependencies
-      run: python -m pip install pytest-cov pytest-timeout psutil dask==2021.08.0 distributed==2021.08.0
+              python3-pip
+              python3-pytest-cov
+              python3-pytest-timeout
+              python3-psutil
     - name: Install IPS (in develop mode)
       run: python -m pip install -e .
     - name: testing running IPS (--help)
