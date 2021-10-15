@@ -87,6 +87,36 @@ def test_framework_simple(tmpdir, capfd):
     assert test[0].get_serialization().startswith('test@test_driver')
     assert test[0].get_sim_name() == 'test'
 
+    # check all registered service handlers
+    service_handlers = sorted(framework.service_handler.keys())
+    assert service_handlers == ['createListener',
+                                'create_simulation',
+                                'existsTopic',
+                                'finish_task',
+                                'getSubscription',
+                                'getTopic',
+                                'get_allocation',
+                                'get_config_parameter',
+                                'get_port',
+                                'get_time_loop',
+                                'init_call',
+                                'init_task',
+                                'init_task_pool',
+                                'launch_task',
+                                'merge_current_plasma_state',
+                                'processEvents',
+                                'registerEventListener',
+                                'registerSubscriber',
+                                'release_allocation',
+                                'removeSubscription',
+                                'sendEvent',
+                                'set_config_parameter',
+                                'stage_state',
+                                'unregisterEventListener',
+                                'unregisterSubscriber',
+                                'update_state',
+                                'wait_call']
+
     framework.run()
 
     # check simulation_log

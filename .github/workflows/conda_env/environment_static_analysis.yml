@@ -1,0 +1,10 @@
+name: static_analysis
+channels:
+- conda-forge
+dependencies:
+- python=3.9
+- flake8=4.0.1
+- pylint=2.11.1
+- bandit=1.7.0
+- codespell=2.1.0
+- dask=2021.09.1

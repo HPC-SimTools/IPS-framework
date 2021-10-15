@@ -38,8 +38,8 @@ class ResourceManager:
         # bookkeeping for allocationa and accounting
         self.nodes = {}
         self.num_nodes = 0
-        self.avail_nodes = list()
-        self.alloc_nodes = list()
+        self.avail_nodes = []
+        self.alloc_nodes = []
         self.total_cores = 0
         self.alloc_cores = 0
         self.avail_cores = 0

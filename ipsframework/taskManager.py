@@ -508,7 +508,7 @@ class TaskManager:
                             str(num_nodes), nproc_flag, str(nproc)])
         else:
             self.fwk.exception("invalid task launch command.")
-            raise "invalid task launch command."
+            raise RuntimeError("invalid task launch command.")
 
         cmd_args = ' '.join(cmd_args)
         cmd = ' '.join([cmd, binary, cmd_args])

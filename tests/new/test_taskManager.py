@@ -12,7 +12,7 @@ def test_build_launch_cmd_fail():
     tm.task_launch_cmd = 'launch_me'
     tm.resource_mgr = mock.Mock(nodes=['node1'])
 
-    with pytest.raises(TypeError):
+    with pytest.raises(RuntimeError):
         tm.build_launch_cmd(nproc=1,
                             binary='executable',
                             cmd_args=(),

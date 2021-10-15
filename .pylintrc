@@ -134,4 +134,6 @@ disable=print-statement,
         global-statement,
         empty-docstring,
         raise-missing-from,
-        consider-using-with
+        consider-using-with,
+        consider-using-f-string,
+        unspecified-encoding
