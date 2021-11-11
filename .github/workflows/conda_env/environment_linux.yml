@@ -1,4 +1,4 @@
-name: test
+name: ips_test
 channels:
 - conda-forge
 dependencies:
@@ -6,5 +6,5 @@ dependencies:
 - pytest-timeout
 - psutil
 - mpi4py
-- dask=2021.10.0
+- dask=2021.11.1
 - dakota

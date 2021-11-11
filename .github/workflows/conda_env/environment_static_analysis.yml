@@ -1,4 +1,4 @@
-name: static_analysis
+name: ips_static_analysis
 channels:
 - conda-forge
 dependencies:
@@ -7,4 +7,4 @@ dependencies:
 - pylint=2.11.1
 - bandit=1.7.0
 - codespell=2.1.0
-- dask=2021.10.0
+- dask=2021.11.1

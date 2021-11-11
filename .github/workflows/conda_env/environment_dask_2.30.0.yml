@@ -1,4 +1,4 @@
-name: test
+name: ips_test_dask_2.30
 channels:
 - conda-forge
 dependencies:

@@ -46,7 +46,7 @@ class ServiceRequestMessage(Message):
     identifier = 'REQUEST'
 
     def __init__(self, sender_id, receiver_id, target_comp_id, target_method, *args, **keywords):
-        Message.__init__(self, sender_id, receiver_id)
+        super().__init__(sender_id, receiver_id)
         self.target_comp_id = target_comp_id
         self.target_method = target_method
         self.args = args
@@ -70,7 +70,7 @@ class ServiceResponseMessage(Message):
     identifier = 'RESPONSE'
 
     def __init__(self, sender_id, receiver_id, request_msg_id, status, *args):
-        Message.__init__(self, sender_id, receiver_id)
+        super().__init__(sender_id, receiver_id)
         self.request_msg_id = request_msg_id
         self.status = status
         self.args = args
@@ -92,7 +92,7 @@ class MethodInvokeMessage(Message):
     identifier = 'INVOKE'
 
     def __init__(self, sender_id, receiver_id, call_id, target_method, *args, **keywords):
-        Message.__init__(self, sender_id, receiver_id)
+        super().__init__(sender_id, receiver_id)
         self.call_id = call_id
         self.target_method = target_method
         self.args = args
@@ -115,7 +115,7 @@ class MethodResultMessage(Message):
     identifier = 'RESULT'
 
     def __init__(self, sender_id, receiver_id, call_id, status, *args):
-        Message.__init__(self, sender_id, receiver_id)
+        super().__init__(sender_id, receiver_id)
         self.call_id = call_id
         self.args = args
         self.status = status
