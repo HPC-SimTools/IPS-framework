@@ -553,14 +553,14 @@ class TaskManager:
             except BadResourceRequestException as e:
                 self.fwk.error("There has been a fatal error, %s requested %d too many processors in task %d",
                                caller_id, e.deficit, e.task_id)
-                for (task_id, cmd) in list(ret_dict.values()):
+                for task_id, _, _ in ret_dict.values():
                     self.resource_mgr.release_allocation(task_id, -1)
                     del self.curr_task_table[task_id]
                 raise
             except ResourceRequestMismatchException as e:
                 self.fwk.error("There has been a fatal error, %s requested too few processors per node to launch task %d (request: procs = %d, ppn = %d)",
                                caller_id, e.task_id, e.nproc, e.ppn)
-                for (task_id, cmd) in list(ret_dict.values()):
+                for task_id, _, _ in ret_dict.values():
                     self.resource_mgr.release_allocation(task_id, -1)
                     del self.curr_task_table[task_id]
                 raise

@@ -1,4 +1,9 @@
-from ipsframework.taskManager import TaskManager
+from ipsframework import TaskManager, ResourceManager
+from ipsframework.messages import ServiceRequestMessage
+from ipsframework.ipsExceptions import (BadResourceRequestException,
+                                        ResourceRequestMismatchException,
+                                        BlockedMessageException,
+                                        InsufficientResourcesException)
 import pytest
 import shutil
 from unittest import mock
@@ -315,7 +320,7 @@ def test_build_launch_cmd_srun():
     tm.task_launch_cmd = 'srun'
     tm.resource_mgr = mock.Mock(nodes=['node1'])
 
-    cmd = tm.build_launch_cmd(nproc=1,
+    cmd = tm.build_launch_cmd(nproc=4,
                               binary='executable',
                               cmd_args=(),
                               working_dir=None,
@@ -326,9 +331,9 @@ def test_build_launch_cmd_srun():
                               partial_nodes=None,
                               task_id=None)
 
-    assert cmd == ('srun -N 2 -n 1 executable ', None)
+    assert cmd == ('srun -N 2 -n 4 executable ', None)
 
-    cmd = tm.build_launch_cmd(nproc=1,
+    cmd = tm.build_launch_cmd(nproc=4,
                               binary='executable',
                               cmd_args=('13', '42'),
                               working_dir=None,
@@ -339,4 +344,204 @@ def test_build_launch_cmd_srun():
                               partial_nodes=None,
                               task_id=None)
 
-    assert cmd == ('srun -N 2 -n 1 executable 13 42', None)
+    assert cmd == ('srun -N 2 -n 4 executable 13 42', None)
+
+
+def test_init_task_srun(tmpdir):
+    # this will combine calls to ResourceManager.get_allocation and
+    # TaskManager.build_launch_cmd
+
+    fwk = mock.Mock()
+    dm = mock.Mock()
+    cm = mock.Mock()
+    cm.fwk_sim_name = 'sim_name'
+    cm.sim_map = {'sim_name': mock.Mock(sim_root=str(tmpdir))}
+    cm.get_platform_parameter.return_value = 'HOST'
+
+    tm = TaskManager(fwk)
+
+    rm = ResourceManager(fwk)
+
+    tm.initialize(dm, rm, cm)
+    rm.initialize(dm, tm, cm,
+                  cmd_nodes=2,
+                  cmd_ppn=2)
+
+    tm.task_launch_cmd = 'srun'
+    rm.accurateNodes = True
+
+    def init_final_task(nproc, tppn):
+        task_id, cmd, _ = tm.init_task(ServiceRequestMessage('id', 'id', 'c', 'init_task',
+                                                             nproc, 'exe', '/dir', tppn, True,
+                                                             True, True))
+        tm.finish_task(ServiceRequestMessage('id', 'id', 'c', 'finish_task',
+                                             task_id, None))
+        return task_id, cmd
+
+    task_id, cmd = init_final_task(1, 0)
+    assert task_id == 1
+    assert cmd == "srun -N 1 -n 1 exe "
+
+    task_id, cmd = init_final_task(2, 0)
+    assert task_id == 2
+    assert cmd == "srun -N 1 -n 2 exe "
+
+    task_id, cmd = init_final_task(3, 0)
+    assert task_id == 3
+    assert cmd == "srun -N 2 -n 3 exe "
+
+    task_id, cmd = init_final_task(4, 0)
+    assert task_id == 4
+    assert cmd == "srun -N 2 -n 4 exe "
+
+    with pytest.raises(BadResourceRequestException):
+        init_final_task(5, 0)
+
+    task_id, cmd = init_final_task(1, 1)
+    assert task_id == 6
+    assert cmd == "srun -N 1 -n 1 exe "
+
+    task_id, cmd = init_final_task(2, 1)
+    assert task_id == 7
+    assert cmd == "srun -N 2 -n 2 exe "
+
+    with pytest.raises(ResourceRequestMismatchException):
+        init_final_task(3, 1)
+
+    # start two task, second should fail with Insufficient Resources depending on block
+    task_id, cmd, _ = tm.init_task(ServiceRequestMessage('id', 'id', 'c', 'init_task',
+                                                         4, 'exe', '/dir', 0, True,
+                                                         True, True))
+
+    with pytest.raises(BlockedMessageException):
+        tm.init_task(ServiceRequestMessage('id', 'id', 'c', 'init_task',
+                                           1, 'exe', '/dir', 0, True,
+                                           True, True))
+
+    with pytest.raises(InsufficientResourcesException):
+        tm.init_task(ServiceRequestMessage('id', 'id', 'c', 'init_task',
+                                           1, 'exe', '/dir', 0, False,
+                                           True, True))
+
+
+def test_init_task_pool_srun(tmpdir):
+    # this will combine calls to ResourceManager.get_allocation and
+    # TaskManager.build_launch_cmd
+
+    fwk = mock.Mock()
+    dm = mock.Mock()
+    cm = mock.Mock()
+    cm.fwk_sim_name = 'sim_name'
+    cm.sim_map = {'sim_name': mock.Mock(sim_root=str(tmpdir))}
+    cm.get_platform_parameter.return_value = 'HOST'
+
+    tm = TaskManager(fwk)
+
+    rm = ResourceManager(fwk)
+
+    tm.initialize(dm, rm, cm)
+    rm.initialize(dm, tm, cm,
+                  cmd_nodes=2,
+                  cmd_ppn=2)
+
+    tm.task_launch_cmd = 'srun'
+    rm.accurateNodes = True
+
+    def init_final_task_pool(nproc=1, tppn=0, number_of_tasks=1, msg=None):
+        if msg is None:
+            msg = {f'task{n}': (nproc, '/dir', f'exe{n}', (f'arg{n}',), tppn, True, False) for n in range(number_of_tasks)}
+        retval = tm.init_task_pool(ServiceRequestMessage('id', 'id', 'c', 'init_task_pool', msg))
+        for task_id, _, _ in retval.values():
+            tm.finish_task(ServiceRequestMessage('id', 'id', 'c', 'finish_task',
+                                                 task_id, None))
+        return retval
+
+    retval = init_final_task_pool(1, 0, 1)
+    assert len(retval) == 1
+    task_id, cmd, _ = retval['task0']
+    assert task_id == 1
+    assert cmd == 'srun -N 1 -n 1 exe0 arg0'
+
+    retval = init_final_task_pool(2, 0, 1)
+    assert len(retval) == 1
+    task_id, cmd, _ = retval['task0']
+    assert task_id == 2
+    assert cmd == 'srun -N 1 -n 2 exe0 arg0'
+
+    retval = init_final_task_pool(3, 0, 1)
+    assert len(retval) == 1
+    task_id, cmd, _ = retval['task0']
+    assert task_id == 3
+    assert cmd == 'srun -N 2 -n 3 exe0 arg0'
+
+    retval = init_final_task_pool(4, 0, 1)
+    assert len(retval) == 1
+    task_id, cmd, _ = retval['task0']
+    assert task_id == 4
+    assert cmd == 'srun -N 2 -n 4 exe0 arg0'
+
+    with pytest.raises(BadResourceRequestException):
+        init_final_task_pool(5, 0, 1)
+
+    retval = init_final_task_pool(1, 1, 1)
+    assert len(retval) == 1
+    task_id, cmd, _ = retval['task0']
+    assert task_id == 6
+    assert cmd == 'srun -N 1 -n 1 exe0 arg0'
+
+    retval = init_final_task_pool(2, 1, 1)
+    assert len(retval) == 1
+    task_id, cmd, _ = retval['task0']
+    assert task_id == 7
+    assert cmd == 'srun -N 2 -n 2 exe0 arg0'
+
+    with pytest.raises(ResourceRequestMismatchException):
+        init_final_task_pool(3, 1, 1)
+
+    retval = init_final_task_pool(1, 0, 2)
+    assert len(retval) == 2
+    task_id, cmd, _ = retval['task0']
+    assert task_id == 9
+    assert cmd == 'srun -N 1 -n 1 exe0 arg0'
+    task_id, cmd, _ = retval['task1']
+    assert task_id == 10
+    assert cmd == 'srun -N 1 -n 1 exe1 arg1'
+
+    retval = init_final_task_pool(2, 0, 2)
+    assert len(retval) == 2
+    task_id, cmd, _ = retval['task0']
+    assert task_id == 11
+    assert cmd == 'srun -N 1 -n 2 exe0 arg0'
+    task_id, cmd, _ = retval['task1']
+    assert task_id == 12
+    assert cmd == 'srun -N 1 -n 2 exe1 arg1'
+
+    retval = init_final_task_pool(4, 0, 2)
+    assert len(retval) == 1
+    task_id, cmd, _ = retval['task0']
+    assert task_id == 13
+    assert cmd == 'srun -N 2 -n 4 exe0 arg0'
+
+    # different size tasks
+    msg = {'task0': (1, '/dir', 'exe0', ('arg0',), 0, True, False),
+           'task1': (2, '/dir', 'exe1', ('arg1',), 0, True, False)}
+    retval = init_final_task_pool(msg=msg)
+    assert len(retval) == 2
+    task_id, cmd, _ = retval['task0']
+    assert task_id == 15
+    assert cmd == 'srun -N 1 -n 1 exe0 arg0'
+    task_id, cmd, _ = retval['task1']
+    assert task_id == 16
+    assert cmd == 'srun -N 1 -n 2 exe1 arg1'
+
+    # one good task, one bad task
+    msg = {'task0': (1, '/dir', 'exe0', ('arg0',), 0, True, False),
+           'task1': (5, '/dir', 'exe1', ('arg1',), 0, True, False)}
+    with pytest.raises(BadResourceRequestException):
+        init_final_task_pool(msg=msg)
+
+    # one good task, one bad task
+    msg = {'task0': (1, '/dir', 'exe0', ('arg0',), 0, True, False),
+           'task1': (3, '/dir', 'exe1', ('arg1',), 1, True, False)}
+    with pytest.raises(ResourceRequestMismatchException):
+        init_final_task_pool(msg=msg)
