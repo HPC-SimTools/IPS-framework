@@ -80,7 +80,7 @@ class PortalBridge(Component):
         Declaration of private variables and initialization of
         :py:class:`component.Component` object.
         """
-        Component.__init__(self, services, config)
+        super().__init__(services, config)
         self.host = ''
         self.curTime = time.localtime()
         self.startTime = self.curTime

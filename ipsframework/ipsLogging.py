@@ -19,10 +19,9 @@ class myLogRecordStreamHandler(socketserver.StreamRequestHandler):
 
     def __init__(self, request, client_address, server, handler):
         self.handler = handler
-        socketserver.StreamRequestHandler.__init__(self,
-                                                   request,
-                                                   client_address,
-                                                   server)
+        super().__init__(request,
+                         client_address,
+                         server)
 
     def handle(self):
         """
@@ -68,7 +67,7 @@ class LogRecordSocketReceiver(socketserver.ThreadingUnixStreamServer):
 
     def __init__(self, log_pipe,
                  handler=myLogRecordStreamHandler):
-        socketserver.UnixStreamServer.__init__(self, log_pipe, handler)
+        super().__init__(log_pipe, handler)
 
     def get_file_no(self):
         return self.socket.fileno()

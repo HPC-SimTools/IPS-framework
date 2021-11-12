@@ -1,8 +1,8 @@
-name: test
+name: ips_test
 channels:
 - conda-forge
 dependencies:
 - pytest-cov
 - pytest-timeout
 - psutil
-- dask=2021.10.0
+- dask=2021.11.1

@@ -29,7 +29,7 @@ class runspaceInitComponent(Component):
         Declaration of private variables and initialization of
         :py:class:`component.Component` object.
         """
-        Component.__init__(self, services, config)
+        super().__init__(services, config)
         # get the simRootDir
         self.simRootDir = services.get_config_param('SIM_ROOT')
         self.cwd = self.config['OS_CWD']

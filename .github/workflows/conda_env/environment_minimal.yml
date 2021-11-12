@@ -1,4 +1,4 @@
-name: test
+name: ips_test_minimal
 channels:
 - conda-forge
 dependencies:

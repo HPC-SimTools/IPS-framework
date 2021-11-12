@@ -5,9 +5,10 @@
 import os
 import time
 from math import ceil
-from .ipsExceptions import InsufficientResourcesException, \
-    BadResourceRequestException, \
-    ResourceRequestMismatchException
+from .ipsExceptions import (InsufficientResourcesException,
+                            BadResourceRequestException,
+                            ResourceRequestMismatchException,
+                            ResourceRequestUnequalPartitioningException)
 from .ips_es_spec import eventManager
 from .resourceHelper import getResourceList
 from .node_structure import Node
@@ -328,6 +329,11 @@ class ResourceManager:
                 c = ceil(float(nproc) / ppn)
                 raise InsufficientResourcesException(comp_id, task_id,
                                                      c, c - len(self.avail_nodes))
+            if nodes == "unequal":
+                raise ResourceRequestUnequalPartitioningException(comp_id, task_id,
+                                                                  nproc, ppn,
+                                                                  self.total_cores,
+                                                                  self.max_ppn)
         else:
             try:
                 self.processes += nproc
@@ -441,7 +447,10 @@ class ResourceManager:
                     whole_cap += ppn
                     nodes.append(n)
                     if whole_cap >= nproc:
-                        return True, nodes
+                        if nproc > ppn and nproc % ppn != 0:
+                            return False, "unequal"
+                        else:
+                            return True, nodes
         except Exception:
             self.fwk.exception("problem in RM.check_whole_node_cap")
             raise

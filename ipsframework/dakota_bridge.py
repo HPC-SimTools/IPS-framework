@@ -13,7 +13,7 @@ from .configobj import ConfigObj
 class Driver(Component):
 
     def __init__(self, services, config):
-        Component.__init__(self, services, config)
+        super().__init__(services, config)
         self.done = False
         self.events_received = []
         self.socket_address = ''
