@@ -3,7 +3,8 @@ from ipsframework.messages import ServiceRequestMessage
 from ipsframework.ipsExceptions import (BadResourceRequestException,
                                         ResourceRequestMismatchException,
                                         BlockedMessageException,
-                                        InsufficientResourcesException)
+                                        InsufficientResourcesException,
+                                        ResourceRequestUnequalPartitioningException)
 import pytest
 import shutil
 from unittest import mock
@@ -386,9 +387,8 @@ def test_init_task_srun(tmpdir):
     assert task_id == 2
     assert cmd == "srun -N 1 -n 2 exe "
 
-    task_id, cmd = init_final_task(3, 0)
-    assert task_id == 3
-    assert cmd == "srun -N 2 -n 3 exe "
+    with pytest.raises(ResourceRequestUnequalPartitioningException):
+        init_final_task(3, 0)
 
     task_id, cmd = init_final_task(4, 0)
     assert task_id == 4
@@ -468,11 +468,8 @@ def test_init_task_pool_srun(tmpdir):
     assert task_id == 2
     assert cmd == 'srun -N 1 -n 2 exe0 arg0'
 
-    retval = init_final_task_pool(3, 0, 1)
-    assert len(retval) == 1
-    task_id, cmd, _ = retval['task0']
-    assert task_id == 3
-    assert cmd == 'srun -N 2 -n 3 exe0 arg0'
+    with pytest.raises(ResourceRequestUnequalPartitioningException):
+        init_final_task_pool(3, 0, 1)
 
     retval = init_final_task_pool(4, 0, 1)
     assert len(retval) == 1

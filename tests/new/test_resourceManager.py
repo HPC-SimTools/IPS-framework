@@ -4,7 +4,8 @@ import io
 from ipsframework.resourceManager import ResourceManager
 from ipsframework.ipsExceptions import (InsufficientResourcesException,
                                         BadResourceRequestException,
-                                        ResourceRequestMismatchException)
+                                        ResourceRequestMismatchException,
+                                        ResourceRequestUnequalPartitioningException)
 
 
 def test_allocations(tmpdir):
@@ -67,6 +68,17 @@ def test_allocations(tmpdir):
 
     assert "component comp0 requested 3 nodes, which is more than possible by 1 nodes, for task 0." == str(excinfo.value)
 
+    with pytest.raises(ResourceRequestUnequalPartitioningException) as excinfo:
+        rm.get_allocation(comp_id='comp0',
+                          nproc=3,
+                          task_id=0,
+                          whole_nodes=True,
+                          whole_socks=False,
+                          task_ppn=2)
+
+    assert "component comp0 requested 3 processes with 2 processes per node, while the number of processes requested is less than the max (8), "\
+        "it will result in unequal partitioning of processes across nodes" == str(excinfo.value)
+
     with pytest.raises(BadResourceRequestException) as excinfo:
         rm.get_allocation(comp_id='comp0',
                           nproc=12,
@@ -84,7 +96,7 @@ def test_allocations(tmpdir):
                           whole_socks=False,
                           task_ppn=2)
 
-    assert ("component comp0 requested 6 processes with 2 processes per node, while the number of processes requestedis less than the max (8), "
+    assert ("component comp0 requested 6 processes with 2 processes per node, while the number of processes requested is less than the max (8), "
             "the processes per node value is too low." == str(excinfo.value))
 
     rm.get_allocation(comp_id='comp0',

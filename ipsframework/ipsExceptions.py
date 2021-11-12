@@ -69,8 +69,31 @@ class ResourceRequestMismatchException(Exception):
         self.args = (caller_id, tid, nproc, ppn, max_procs, max_ppn)
 
     def __str__(self):
-        s = "component %s requested %d processes with %d processes per node, while the number of processes requested"\
+        s = "component %s requested %d processes with %d processes per node, while the number of processes requested "\
             "is less than the max (%d), the processes per node value is too low." % (self.caller_id, self.nproc, self.ppn, self.max_procs)
+        return s
+
+
+class ResourceRequestUnequalPartitioningException(Exception):
+    """Exception raised by the resource manager when it is possible to
+    launch the requested number of processes, but the requested number
+    of processes and processes per node will result in unequal
+    partitioning of nodes.
+    """
+
+    def __init__(self, caller_id, tid, nproc, ppn, max_procs, max_ppn):
+        super().__init__()
+        self.caller_id = caller_id
+        self.task_id = tid
+        self.nproc = nproc
+        self.ppn = ppn
+        self.max_procs = max_procs
+        self.max_ppn = max_ppn
+        self.args = (caller_id, tid, nproc, ppn, max_procs, max_ppn)
+
+    def __str__(self):
+        s = "component %s requested %d processes with %d processes per node, while the number of processes requested is less than the max (%d), "\
+            "it will result in unequal partitioning of processes across nodes" % (self.caller_id, self.nproc, self.ppn, self.max_procs)
         return s
 
 
