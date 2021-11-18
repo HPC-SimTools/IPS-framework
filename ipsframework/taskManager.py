@@ -504,8 +504,23 @@ class TaskManager:
             nproc_flag = '-n'
             nnodes_flag = '-N'
             num_nodes = len(nodes.split(','))
-            cmd = ' '.join([self.task_launch_cmd, nnodes_flag,
-                            str(num_nodes), nproc_flag, str(nproc)])
+            if partial_nodes:
+                cmd = ' '.join([self.task_launch_cmd,
+                                nnodes_flag, str(num_nodes),
+                                nproc_flag, str(nproc)])
+            else:
+                cpuptask_flag = '-c'
+                num_cores = self.resource_mgr.cores_per_node
+                cpuptask = num_cores//ppn
+                cpubind_flag = '--cpu-bind=cores'
+                cmd = ' '.join([self.task_launch_cmd,
+                                nnodes_flag, str(num_nodes),
+                                nproc_flag, str(nproc),
+                                cpuptask_flag, str(cpuptask),
+                                cpubind_flag])
+                env_update = {'OMP_PLACES': 'threads',
+                              'OMP_PROC_BIND': 'spread',
+                              'OMP_NUM_THREADS': cpuptask}
         else:
             self.fwk.error("invalid task launch command.")
             raise RuntimeError("invalid task launch command.")

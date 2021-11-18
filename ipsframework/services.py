@@ -628,8 +628,12 @@ class ServicesProxy:
             raise
 
         task_id = self._launch_task(nproc, working_dir, task_id, command, env_update, tag, keywords)
-        self._send_monitor_event('IPS_LAUNCH_TASK', 'task_id = %s , Tag = %s , nproc = %d , Target = %s' %
-                                 (str(task_id), tag, int(nproc), command))
+
+        if env_update:
+            self._send_monitor_event('IPS_LAUNCH_TASK', f'task_id = {task_id} , Tag = {tag} , nproc = {nproc} , Target = {command}, env = {env_update}')
+        else:
+            self._send_monitor_event('IPS_LAUNCH_TASK', f'task_id = {task_id} , Tag = {tag} , nproc = {nproc} , Target = {command}')
+
         return task_id
 
     def _launch_task(self, nproc, working_dir, task_id, command, env_update, tag, keywords):
@@ -662,7 +666,7 @@ class ServicesProxy:
         try:
             self.debug('Launching command : %s', command)
             if env_update:
-                new_env = os.environ
+                new_env = os.environ.copy()
                 new_env.update(env_update)
                 process = subprocess.Popen(cmd_lst, stdout=task_stdout,
                                            stderr=task_stderr,
