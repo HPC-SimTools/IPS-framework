@@ -178,7 +178,6 @@ class ServicesProxy:
         self.chkpt_counter = 0
         self.sim_name = ''
         self.replay_conf = None
-        self.profile = False
         self.subflow_count = 0
         self.sub_flows = {}
         self.binary_fullpath_cache = {}
@@ -328,7 +327,7 @@ class ServicesProxy:
             # get new messages, block until something interesting comes along
             responses = self._get_incoming_responses(block)
             for r in responses:
-                if r.__class__ == messages.ServiceResponseMessage:
+                if isinstance(r, messages.ServiceResponseMessage):
                     if (r.request_msg_id not in
                             list(self.incomplete_calls.keys())):
                         self.error('Mismatched service response msg_id %s',
@@ -1926,11 +1925,9 @@ class TaskPool:
     """
     Class to contain and manage a pool of tasks.
     """
-    dask = None
-    distributed = None
     try:
-        dask: dask = __import__("dask")
-        distributed: dask.distributed = __import__("dask.distributed")
+        dask = __import__("dask")
+        distributed = __import__("dask.distributed")
     except ImportError:
         dask = None
         distributed = None

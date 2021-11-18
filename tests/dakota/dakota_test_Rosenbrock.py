@@ -8,7 +8,7 @@ from ipsframework import Component
 class ResenbrockDriver(Component):
 
     def __init__(self, services, config):
-        Component.__init__(self, services, config)
+        super().__init__(services, config)
 
     def init(self, timestamp=0):
         print('init from dakota test driver')

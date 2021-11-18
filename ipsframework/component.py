@@ -114,9 +114,6 @@ class Component:
         self.services.debug('Running - CompID =  %s',
                             self.component_id.get_serialization())
 
-        if self.services.profile:
-            self.services.debug('Instrumenting - CompID =  %s',
-                                self.component_id.get_serialization())
         self.services._init_event_service()
 
         while True:

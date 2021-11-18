@@ -13,7 +13,7 @@ from ipsframework import Component
 
 class basic_serial1(Component):
     def __init__(self, services, config):
-        Component.__init__(self, services, config)
+        super().__init__(services, config)
 
     def init(self, timestamp):
         self.services.log('Initing')

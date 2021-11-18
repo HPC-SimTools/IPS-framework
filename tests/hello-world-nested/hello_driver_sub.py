@@ -6,7 +6,7 @@ from ipsframework import Component
 
 class HelloDriver(Component):
     def __init__(self, services, config):
-        Component.__init__(self, services, config)
+        super().__init__(services, config)
         print('Created %s' % (self.__class__))
 
     def init(self, timeStamp=0.0):
