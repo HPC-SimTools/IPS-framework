@@ -357,7 +357,8 @@ def test_build_launch_cmd_srun():
                               nodes='n1,n2',
                               accurateNodes=None,
                               partial_nodes=False,
-                              task_id=None)
+                              task_id=None,
+                              cpp=1)
 
     assert cmd == ('srun -N 2 -n 4 -c 1 --cpu-bind=cores executable ',
                    {'OMP_PLACES': 'threads', 'OMP_PROC_BIND': 'spread', 'OMP_NUM_THREADS': 1})
@@ -371,7 +372,8 @@ def test_build_launch_cmd_srun():
                               nodes='n1,n2',
                               accurateNodes=None,
                               partial_nodes=False,
-                              task_id=None)
+                              task_id=None,
+                              cpp=2)
 
     assert cmd == ('srun -N 2 -n 2 -c 2 --cpu-bind=cores executable 13 42',
                    {'OMP_PLACES': 'threads', 'OMP_PROC_BIND': 'spread', 'OMP_NUM_THREADS': 2})
@@ -512,9 +514,9 @@ def test_init_task_pool_srun(tmpdir):
     tm.task_launch_cmd = 'srun'
     rm.accurateNodes = True
 
-    def init_final_task_pool(nproc=1, tppn=0, number_of_tasks=1, msg=None):
+    def init_final_task_pool(nproc=1, tppn=0, number_of_tasks=1, tcpp=0, msg=None):
         if msg is None:
-            msg = {f'task{n}': (nproc, '/dir', f'exe{n}', (f'arg{n}',), tppn, True, False) for n in range(number_of_tasks)}
+            msg = {f'task{n}': (nproc, '/dir', f'exe{n}', (f'arg{n}',), tppn, True, False, tcpp) for n in range(number_of_tasks)}
         retval = tm.init_task_pool(ServiceRequestMessage('id', 'id', 'c', 'init_task_pool', msg))
         for task_id, _, _ in retval.values():
             tm.finish_task(ServiceRequestMessage('id', 'id', 'c', 'finish_task',
@@ -584,26 +586,76 @@ def test_init_task_pool_srun(tmpdir):
     assert task_id == 13
     assert cmd == 'srun -N 2 -n 4 -c 1 --cpu-bind=cores exe0 arg0'
 
-    # different size tasks
-    msg = {'task0': (1, '/dir', 'exe0', ('arg0',), 0, True, False),
-           'task1': (2, '/dir', 'exe1', ('arg1',), 0, True, False)}
-    retval = init_final_task_pool(msg=msg)
-    assert len(retval) == 2
+    # now try with task_cpp set
+
+    fwk.reset_mock()
+    retval = init_final_task_pool(1, 1, 1, 2)
+    assert len(retval) == 1
     task_id, cmd, _ = retval['task0']
     assert task_id == 15
     assert cmd == 'srun -N 1 -n 1 -c 2 --cpu-bind=cores exe0 arg0'
-    task_id, cmd, _ = retval['task1']
+    fwk.warning.assert_not_called()
+
+    fwk.reset_mock()
+    retval = init_final_task_pool(1, 1, 1, 1)
+    assert len(retval) == 1
+    task_id, cmd, _ = retval['task0']
     assert task_id == 16
+    assert cmd == 'srun -N 1 -n 1 -c 1 --cpu-bind=cores exe0 arg0'
+    fwk.warning.assert_not_called()
+
+    fwk.reset_mock()
+    retval = init_final_task_pool(1, 1, 1, 4)
+    assert len(retval) == 1
+    task_id, cmd, _ = retval['task0']
+    assert task_id == 17
+    assert cmd == 'srun -N 1 -n 1 -c 2 --cpu-bind=cores exe0 arg0'
+    fwk.warning.assert_called_once_with('task cpp (4) exceeds maximum possible for 1 procs per node with 2 cores per node, using 2 cpus per proc instead')
+
+    fwk.reset_mock()
+    retval = init_final_task_pool(2, 1, 1, 2)
+    assert len(retval) == 1
+    task_id, cmd, _ = retval['task0']
+    assert task_id == 18
+    assert cmd == 'srun -N 2 -n 2 -c 2 --cpu-bind=cores exe0 arg0'
+    fwk.warning.assert_not_called()
+
+    fwk.reset_mock()
+    retval = init_final_task_pool(2, 1, 1, 1)
+    assert len(retval) == 1
+    task_id, cmd, _ = retval['task0']
+    assert task_id == 19
+    assert cmd == 'srun -N 2 -n 2 -c 1 --cpu-bind=cores exe0 arg0'
+    fwk.warning.assert_not_called()
+
+    fwk.reset_mock()
+    retval = init_final_task_pool(2, 1, 1, 4)
+    assert len(retval) == 1
+    task_id, cmd, _ = retval['task0']
+    assert task_id == 20
+    assert cmd == 'srun -N 2 -n 2 -c 2 --cpu-bind=cores exe0 arg0'
+    fwk.warning.assert_called_once_with('task cpp (4) exceeds maximum possible for 1 procs per node with 2 cores per node, using 2 cpus per proc instead')
+
+    # different size tasks
+    msg = {'task0': (1, '/dir', 'exe0', ('arg0',), 0, True, False, 0),
+           'task1': (2, '/dir', 'exe1', ('arg1',), 0, True, False, 0)}
+    retval = init_final_task_pool(msg=msg)
+    assert len(retval) == 2
+    task_id, cmd, _ = retval['task0']
+    assert task_id == 21
+    assert cmd == 'srun -N 1 -n 1 -c 2 --cpu-bind=cores exe0 arg0'
+    task_id, cmd, _ = retval['task1']
+    assert task_id == 22
     assert cmd == 'srun -N 1 -n 2 -c 1 --cpu-bind=cores exe1 arg1'
 
     # one good task, one bad task
-    msg = {'task0': (1, '/dir', 'exe0', ('arg0',), 0, True, False),
-           'task1': (5, '/dir', 'exe1', ('arg1',), 0, True, False)}
+    msg = {'task0': (1, '/dir', 'exe0', ('arg0',), 0, True, False, 0),
+           'task1': (5, '/dir', 'exe1', ('arg1',), 0, True, False, 0)}
     with pytest.raises(BadResourceRequestException):
         init_final_task_pool(msg=msg)
 
     # one good task, one bad task
-    msg = {'task0': (1, '/dir', 'exe0', ('arg0',), 0, True, False),
-           'task1': (3, '/dir', 'exe1', ('arg1',), 1, True, False)}
+    msg = {'task0': (1, '/dir', 'exe0', ('arg0',), 0, True, False, 0),
+           'task1': (3, '/dir', 'exe1', ('arg1',), 1, True, False, 0)}
     with pytest.raises(ResourceRequestMismatchException):
         init_final_task_pool(msg=msg)

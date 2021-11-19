@@ -228,7 +228,7 @@ class TaskManager:
         cmd_args = init_task_msg.args[8:]
 
         try:
-            return self._init_task(caller_id, nproc, binary, working_dir, tppn, wnodes, wsocks, cmd_args)
+            return self._init_task(caller_id, nproc, binary, working_dir, tppn, tcpp, wnodes, wsocks, cmd_args)
         except InsufficientResourcesException:
             if block:
                 raise BlockedMessageException(init_task_msg, '***%s waiting for %d resources' %
@@ -246,7 +246,7 @@ class TaskManager:
         except Exception:
             raise
 
-    def _init_task(self, caller_id, nproc, binary, working_dir, tppn, wnodes, wsocks, cmd_args):
+    def _init_task(self, caller_id, nproc, binary, working_dir, tppn, tcpp, wnodes, wsocks, cmd_args):
         # handle for task related things
         task_id = self.get_task_id()
 
@@ -255,13 +255,14 @@ class TaskManager:
                                                   task_id,
                                                   wnodes,
                                                   wsocks,
-                                                  task_ppn=tppn)
+                                                  task_ppn=tppn,
+                                                  task_cpp=tcpp)
         self.fwk.debug('RM: get_allocation() returned %s', str(retval))
         partial_node = retval[0]
         if partial_node:
             (nodelist, corelist, ppn, max_ppn, accurateNodes) = retval[1:]
         else:
-            (nodelist, ppn, max_ppn, accurateNodes) = retval[1:]
+            (nodelist, ppn, max_ppn, cpp, accurateNodes) = retval[1:]
 
         if partial_node:
             nodes = ','.join(nodelist)
@@ -295,7 +296,7 @@ class TaskManager:
 
     def build_launch_cmd(self, nproc, binary, cmd_args, working_dir, ppn,
                          max_ppn, nodes, accurateNodes, partial_nodes,
-                         task_id, tcpp=0, core_list=''):
+                         task_id, cpp=0, core_list=''):
         """
         Construct task launch command to be executed by the component.
 
@@ -512,17 +513,6 @@ class TaskManager:
                                 nproc_flag, str(nproc)])
             else:
                 cpuptask_flag = '-c'
-                num_cores = self.resource_mgr.cores_per_node
-                max_cpp = num_cores//ppn
-                if tcpp > 0:
-                    if tcpp > max_cpp:
-                        self.fwk.warning(f"task cpp ({tcpp}) exceeds maximum possible for {ppn} procs per node "
-                                         f"with {num_cores} cores per node, using {max_cpp} cpus per proc instead")
-                        cpp = max_cpp
-                    else:
-                        cpp = tcpp
-                else:
-                    cpp = max_cpp
                 cpubind_flag = '--cpu-bind=cores'
                 cmd = ' '.join([self.task_launch_cmd,
                                 nnodes_flag, str(num_nodes),
@@ -558,10 +548,10 @@ class TaskManager:
         ret_dict = {}
         for task_name in task_dict:
             # handle for task related things
-            (nproc, working_dir, binary, cmd_args, tppn, wnodes, wsocks) = task_dict[task_name]
+            (nproc, working_dir, binary, cmd_args, tppn, wnodes, wsocks, tcpp) = task_dict[task_name]
 
             try:
-                ret_dict[task_name] = self._init_task(caller_id, nproc, binary, working_dir, tppn, wnodes, wsocks, cmd_args)
+                ret_dict[task_name] = self._init_task(caller_id, nproc, binary, working_dir, tppn, tcpp, wnodes, wsocks, cmd_args)
             except InsufficientResourcesException:
                 continue
             except BadResourceRequestException as e:
