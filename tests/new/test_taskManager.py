@@ -361,7 +361,7 @@ def test_build_launch_cmd_srun():
                               cpp=1)
 
     assert cmd == ('srun -N 2 -n 4 -c 1 --cpu-bind=cores executable ',
-                   {'OMP_PLACES': 'threads', 'OMP_PROC_BIND': 'spread', 'OMP_NUM_THREADS': 1})
+                   {'OMP_PLACES': 'threads', 'OMP_PROC_BIND': 'spread', 'OMP_NUM_THREADS': '1'})
 
     cmd = tm.build_launch_cmd(nproc=2,
                               binary='executable',
@@ -376,7 +376,7 @@ def test_build_launch_cmd_srun():
                               cpp=2)
 
     assert cmd == ('srun -N 2 -n 2 -c 2 --cpu-bind=cores executable 13 42',
-                   {'OMP_PLACES': 'threads', 'OMP_PROC_BIND': 'spread', 'OMP_NUM_THREADS': 2})
+                   {'OMP_PLACES': 'threads', 'OMP_PROC_BIND': 'spread', 'OMP_NUM_THREADS': '2'})
 
 
 def test_init_task_srun(tmpdir):

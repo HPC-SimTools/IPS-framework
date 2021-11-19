@@ -521,7 +521,7 @@ class TaskManager:
                                 cpubind_flag])
                 env_update = {'OMP_PLACES': 'threads',
                               'OMP_PROC_BIND': 'spread',
-                              'OMP_NUM_THREADS': cpp}
+                              'OMP_NUM_THREADS': str(cpp)}
         else:
             self.fwk.error("invalid task launch command.")
             raise RuntimeError("invalid task launch command.")
