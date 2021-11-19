@@ -400,10 +400,10 @@ def test_init_task_srun(tmpdir):
     tm.task_launch_cmd = 'srun'
     rm.accurateNodes = True
 
-    def init_final_task(nproc, tppn):
+    def init_final_task(nproc, tppn, tcpt=0):
         task_id, cmd, _ = tm.init_task(ServiceRequestMessage('id', 'id', 'c', 'init_task',
                                                              nproc, 'exe', '/dir', tppn, True,
-                                                             True, True))
+                                                             True, True, tcpt))
         tm.finish_task(ServiceRequestMessage('id', 'id', 'c', 'finish_task',
                                              task_id, None))
         return task_id, cmd
@@ -437,20 +437,56 @@ def test_init_task_srun(tmpdir):
     with pytest.raises(ResourceRequestMismatchException):
         init_final_task(3, 1)
 
+    fwk.reset_mock()
+    task_id, cmd = init_final_task(1, 1, 2)
+    assert task_id == 9
+    assert cmd == "srun -N 1 -n 1 -c 2 --cpu-bind=cores exe "
+    fwk.warning.assert_not_called()
+
+    fwk.reset_mock()
+    task_id, cmd = init_final_task(1, 1, 1)
+    assert task_id == 10
+    assert cmd == "srun -N 1 -n 1 -c 1 --cpu-bind=cores exe "
+    fwk.warning.assert_not_called()
+
+    fwk.reset_mock()
+    task_id, cmd = init_final_task(1, 1, 4)
+    assert task_id == 11
+    assert cmd == "srun -N 1 -n 1 -c 2 --cpu-bind=cores exe "
+    fwk.warning.assert_called_once_with("task cpp (4) exceeds maximum possible for 1 procs per node with 2 cores per node, using 2 cpus per proc instead")
+
+    fwk.reset_mock()
+    task_id, cmd = init_final_task(2, 1, 2)
+    assert task_id == 12
+    assert cmd == "srun -N 2 -n 2 -c 2 --cpu-bind=cores exe "
+    fwk.warning.assert_not_called()
+
+    fwk.reset_mock()
+    task_id, cmd = init_final_task(2, 1, 1)
+    assert task_id == 13
+    assert cmd == "srun -N 2 -n 2 -c 1 --cpu-bind=cores exe "
+    fwk.warning.assert_not_called()
+
+    fwk.reset_mock()
+    task_id, cmd = init_final_task(2, 1, 12)
+    assert task_id == 14
+    assert cmd == "srun -N 2 -n 2 -c 2 --cpu-bind=cores exe "
+    fwk.warning.assert_called_once_with("task cpp (12) exceeds maximum possible for 1 procs per node with 2 cores per node, using 2 cpus per proc instead")
+
     # start two task, second should fail with Insufficient Resources depending on block
     task_id, cmd, _ = tm.init_task(ServiceRequestMessage('id', 'id', 'c', 'init_task',
                                                          4, 'exe', '/dir', 0, True,
-                                                         True, True))
+                                                         True, True, 0))
 
     with pytest.raises(BlockedMessageException):
         tm.init_task(ServiceRequestMessage('id', 'id', 'c', 'init_task',
                                            1, 'exe', '/dir', 0, True,
-                                           True, True))
+                                           True, True, 0))
 
     with pytest.raises(InsufficientResourcesException):
         tm.init_task(ServiceRequestMessage('id', 'id', 'c', 'init_task',
                                            1, 'exe', '/dir', 0, False,
-                                           True, True))
+                                           True, True, 0))
 
 
 def test_init_task_pool_srun(tmpdir):

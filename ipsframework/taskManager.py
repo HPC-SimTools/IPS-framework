@@ -222,9 +222,10 @@ class TaskManager:
         block = init_task_msg.args[4]  # Block waiting for available resources
         wnodes = init_task_msg.args[5]
         wsocks = init_task_msg.args[6]
+        tcpp = init_task_msg.args[7]
 
         # SIMYAN: increased arguments
-        cmd_args = init_task_msg.args[7:]
+        cmd_args = init_task_msg.args[8:]
 
         try:
             return self._init_task(caller_id, nproc, binary, working_dir, tppn, wnodes, wsocks, cmd_args)
@@ -279,7 +280,8 @@ class TaskManager:
                                                       working_dir, ppn,
                                                       max_ppn, nodes,
                                                       accurateNodes,
-                                                      False, task_id)
+                                                      False, task_id,
+                                                      cpp)
 
         self.curr_task_table[task_id] = {'component': caller_id,
                                          'status': 'init_task',
@@ -293,7 +295,7 @@ class TaskManager:
 
     def build_launch_cmd(self, nproc, binary, cmd_args, working_dir, ppn,
                          max_ppn, nodes, accurateNodes, partial_nodes,
-                         task_id, core_list=''):
+                         task_id, tcpp=0, core_list=''):
         """
         Construct task launch command to be executed by the component.
 
@@ -511,16 +513,25 @@ class TaskManager:
             else:
                 cpuptask_flag = '-c'
                 num_cores = self.resource_mgr.cores_per_node
-                cpuptask = num_cores//ppn
+                max_cpp = num_cores//ppn
+                if tcpp > 0:
+                    if tcpp > max_cpp:
+                        self.fwk.warning(f"task cpp ({tcpp}) exceeds maximum possible for {ppn} procs per node "
+                                         f"with {num_cores} cores per node, using {max_cpp} cpus per proc instead")
+                        cpp = max_cpp
+                    else:
+                        cpp = tcpp
+                else:
+                    cpp = max_cpp
                 cpubind_flag = '--cpu-bind=cores'
                 cmd = ' '.join([self.task_launch_cmd,
                                 nnodes_flag, str(num_nodes),
                                 nproc_flag, str(nproc),
-                                cpuptask_flag, str(cpuptask),
+                                cpuptask_flag, str(cpp),
                                 cpubind_flag])
                 env_update = {'OMP_PLACES': 'threads',
                               'OMP_PROC_BIND': 'spread',
-                              'OMP_NUM_THREADS': cpuptask}
+                              'OMP_NUM_THREADS': cpp}
         else:
             self.fwk.error("invalid task launch command.")
             raise RuntimeError("invalid task launch command.")

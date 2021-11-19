@@ -181,6 +181,7 @@ class ServicesProxy:
         self.sub_flows = {}
         self.binary_fullpath_cache = {}
         self.ppn = 0
+        self.cpp = 0
         self.shared_nodes = False
 
     def __initialize__(self, component_ref):
@@ -240,6 +241,11 @@ class ServicesProxy:
             self.ppn = int(conf['PROCS_PER_NODE'])
         except Exception:
             self.ppn = 0
+
+        try:
+            self.cpp = int(conf['CPUS_PER_PROC'])
+        except Exception:
+            self.cpp = 0
 
         if self.sim_conf['SIMULATION_MODE'] == 'RESTART':
             if self.sim_conf['RESTART_TIME'] == 'LATEST':
@@ -611,6 +617,7 @@ class ServicesProxy:
             self.binary_fullpath_cache[binary] = binary_fullpath
 
         task_ppn = keywords.get('task_ppn', self.ppn)
+        task_cpp = keywords.get('task_cpp', self.cpp)
         block = keywords.get('block', True)
         tag = keywords.get('tag', 'None')
 
@@ -622,7 +629,7 @@ class ServicesProxy:
             msg_id = self._invoke_service(self.fwk.component_id,
                                           'init_task', nproc, binary_fullpath,
                                           working_dir, task_ppn, block,
-                                          whole_nodes, whole_socks, *args)
+                                          whole_nodes, whole_socks, task_cpp, *args)
             (task_id, command, env_update) = self._get_service_response(msg_id, block=True)
         except Exception:
             raise
@@ -711,9 +718,10 @@ class ServicesProxy:
             task_ppn = task.keywords.get('task_ppn', self.ppn)
             wnodes = task.keywords.get('whole_nodes', not self.shared_nodes)
             wsocks = task.keywords.get('whole_sockets', not self.shared_nodes)
+            task_cpp = task.keywords.get('task_cpp', 0)
             submit_dict[task_name] = (task.nproc, task.working_dir,
                                       task.binary, task.args,
-                                      task_ppn, wnodes, wsocks)
+                                      task_ppn, wnodes, wsocks, task_cpp)
 
         try:
             msg_id = self._invoke_service(self.fwk.component_id,
