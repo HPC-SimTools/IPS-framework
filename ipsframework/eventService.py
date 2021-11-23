@@ -58,8 +58,8 @@ class EventService:
     def _print_stats(self):
         if self.fwk:
             self.fwk.debug(":::::::::TOPIC-WISE EVENT STATS:::::::::")
-            for topicName in list(self.topicDirectory.keys()):
-                self.fwk.debug("%s = %s", topicName, self.topicDirectory[topicName].getEventStats())
+            for topicName, topic in self.topicDirectory.items():
+                self.fwk.debug("%s = %s", topicName, topic.getEventStats())
             self.fwk.debug("::::::::::::::::::::::::::::::::::::::::")
 
     def process_service_request(self, msg):
@@ -107,8 +107,8 @@ class EventService:
             first unregistering a listener from all subscribed topics and then
             deleting it from the listenerDirectory.
             """
-            for subscriptionName in list(self.subscriberDirectory[subscriberid].keys()):
-                for listenerKey in list(self.subscriberDirectory[subscriberid][subscriptionName].keys()):
+            for subscriptionName in self.subscriberDirectory[subscriberid]:
+                for listenerKey in self.subscriberDirectory[subscriberid][subscriptionName]:
                     listenerid = self.subscriberDirectory[subscriberid][subscriptionName][listenerKey]
                     debug.output("Unregistering listener on listenerKey %s, subscription %s"
                                  % (listenerKey, subscriptionName), listenerid, subscriberid)
@@ -166,8 +166,8 @@ class EventService:
     def processEvents(self, subscriberid):
         eventList = {}
         if subscriberid in self.subscriberDirectory:
-            for subscriptionName in list(self.subscriberDirectory[subscriberid].keys()):
-                for listenerKey in list(self.subscriberDirectory[subscriberid][subscriptionName].keys()):
+            for subscriptionName in self.subscriberDirectory[subscriberid]:
+                for listenerKey in self.subscriberDirectory[subscriberid][subscriptionName]:
                     listenerid = self.subscriberDirectory[subscriberid][subscriptionName][listenerKey]
                     """ This check is required to allow the _same_ listener to handle different topics. """
                     if listenerid not in eventList:
@@ -288,7 +288,7 @@ class EventService:
             if subscriptionName in self.subscriberDirectory[subscriberid]:
                 debug.output("\n\n------Subscriber's subscription to %s is being removed"
                              % subscriptionName, subscriberid)
-                for listenerKey in list(self.subscriberDirectory[subscriberid][subscriptionName].keys()):
+                for listenerKey in self.subscriberDirectory[subscriberid][subscriptionName]:
                     listenerid = self.subscriberDirectory[subscriberid][subscriptionName][listenerKey]
                     debug.output("Unregistering listener on listenerKey %s, subscription %s"
                                  % (listenerKey, subscriptionName), listenerid, subscriberid)

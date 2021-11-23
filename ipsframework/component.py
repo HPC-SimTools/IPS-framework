@@ -82,7 +82,7 @@ class Component:
             pass
         else:
             if str(redirect).strip() != '':
-                if ('OUT_REDIRECT_FNAME') not in list(self.services.sim_conf.keys()):
+                if 'OUT_REDIRECT_FNAME' not in self.services.sim_conf:
                     fname = "%s.out" % (self.services.sim_conf['SIM_NAME'])
                     fname = os.path.join(self.services.sim_conf['PWD'], fname)
                     print('Redirecting stdout to ', fname)

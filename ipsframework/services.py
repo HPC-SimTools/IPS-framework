@@ -304,7 +304,7 @@ class ServicesProxy:
             response = self.finished_calls[msg_id]
             del self.finished_calls[msg_id]
             return response
-        elif msg_id not in list(self.incomplete_calls.keys()):
+        elif msg_id not in self.incomplete_calls:
             self.error('Invalid call ID : %s ', str(msg_id))
             raise Exception('Invalid message request ID argument')
 
@@ -314,11 +314,9 @@ class ServicesProxy:
             responses = self._get_incoming_responses(block)
             for r in responses:
                 if isinstance(r, messages.ServiceResponseMessage):
-                    if (r.request_msg_id not in
-                            list(self.incomplete_calls.keys())):
+                    if r.request_msg_id not in self.incomplete_calls:
                         self.error('Mismatched service response msg_id %s',
                                    str(r.request_msg_id))
-                        #                        dumpAll()
                         raise Exception('Mismatched service response msg_id.')
                     else:
                         del self.incomplete_calls[msg_id]
@@ -339,9 +337,7 @@ class ServicesProxy:
         if msg_id in list(self.finished_calls.keys()):
             response = self.finished_calls[msg_id]
             del self.finished_calls[msg_id]
-            #            dumpAll()
             return response
-        #        dumpAll()
         return None
 
     def _invoke_service(self, component_id, method_name, *args, **keywords):
@@ -699,7 +695,7 @@ class ServicesProxy:
         task_pool = self.task_pools[task_pool_name]
         queued_tasks = task_pool.queued_tasks
         submit_dict = {}
-        for (task_name, task) in queued_tasks.items():
+        for task_name, task in queued_tasks.items():
             if not isinstance(task.binary, str):
                 self.exception('Error initiating task pool %s: task %s binary of wrong type, expected str but found %s',
                                task_pool_name, task_name, type(task.binary).__name__)
@@ -720,7 +716,7 @@ class ServicesProxy:
             raise
 
         active_tasks = {}
-        for task_name in list(allocated_tasks.keys()):
+        for task_name in allocated_tasks:
             if launch_interval > 0:
                 time.sleep(launch_interval)
             task = queued_tasks[task_name]
@@ -990,7 +986,7 @@ class ServicesProxy:
             sim_name = self.sim_name
         else:
             sim_name = target_sim_name
-        if param in list(self.sim_conf.keys()):
+        if param in self.sim_conf:
             raise Exception('Cannot dynamically alter simulation configuration parameter ' + param)
         try:
             msg_id = self._invoke_service(self.fwk.component_id,
@@ -1786,7 +1782,7 @@ class ServicesProxy:
         """
         Create an empty pool of tasks with the name *task_pool_name*.  Raise exception if duplicate name.
         """
-        if task_pool_name in list(self.task_pools.keys()):
+        if task_pool_name in self.task_pools:
             raise Exception('Error: Duplicate task pool name %s' % (task_pool_name))
         self.task_pools[task_pool_name] = TaskPool(task_pool_name, self)
 
@@ -1833,12 +1829,15 @@ class ServicesProxy:
         task_pool.terminate_tasks()
         del self.task_pools[task_pool_name]
 
-    def create_sub_workflow(self, sub_name, config_file, override={}, input_dir=None):
+    def create_sub_workflow(self, sub_name, config_file, override=None, input_dir=None):
         """Create sub-workflow
 
         """
 
-        if sub_name in list(self.sub_flows.keys()):
+        if override is None:
+            override = {}
+
+        if sub_name in self.sub_flows:
             self.exception("Duplicate sub flow name")
             raise Exception("Duplicate sub flow name")
 
@@ -1852,7 +1851,7 @@ class ServicesProxy:
         # Update undefined sub workflow configuration entries using top level configuration
         # only applicable to non-component entries (ones with non-dictionary values)
         for (k, v) in self.sim_conf.items():
-            if k not in list(sub_conf_new.keys()) and type(v).__name__ != 'dict':
+            if k not in sub_conf_new and type(v).__name__ != 'dict':
                 sub_conf_new[k] = v
 
         sub_conf_new['SIM_NAME'] = self.sim_name + "::" + sub_name
@@ -2219,7 +2218,7 @@ class TaskPool:
                 _ = [f.cancel() for f in self.futures]
                 self.futures = []
             else:
-                for task_id in list(self.active_tasks.keys()):
+                for task_id in self.active_tasks:
                     self.services.kill_task(task_id)
         self.queued_tasks = {}
         self.blocked_tasks = {}

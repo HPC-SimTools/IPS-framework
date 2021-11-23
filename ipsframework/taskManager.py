@@ -102,9 +102,9 @@ class TaskManager:
         Prints the task table pretty-like.
         """
         ctt = self.curr_task_table
-        for c, i in list(ctt.items()):
+        for c, i in ctt.items():
             print(c)
-            for k, v in list(i.items()):
+            for k, v in i.items():
                 print("   ", k, "=", v)
             print("------")
         print("=====================")
@@ -361,14 +361,14 @@ class TaskManager:
                     num_cores = self.resource_mgr.cores_per_socket
                     for (n, cl) in core_list:
                         core_dict.update({n: cl})
-                        if len(cl) in list(ppn_groups.keys()):
+                        if len(cl) in ppn_groups:
                             ppn_groups[len(cl)].append(n)
                         else:
                             ppn_groups.update({len(cl): [n]})
                     cmdlets = []
                     envlets = []
                     bin_n_args = ' '.join([binary, *cmd_args])
-                    for p, ns in list(ppn_groups.items()):
+                    for p, ns in ppn_groups.items():
                         cmdlets.append(' '.join([','.join(ns), str(p),
                                                  bin_n_args]))
                         el_node = []
@@ -530,7 +530,7 @@ class TaskManager:
         caller_id = init_task_msg.sender_id
         task_dict = init_task_msg.args[0]
         ret_dict = {}
-        for task_name in list(task_dict.keys()):
+        for task_name in task_dict:
             # handle for task related things
             task_id = self.get_task_id()
             (nproc, working_dir, binary, cmd_args, tppn, wnodes, wsocks) = task_dict[task_name]

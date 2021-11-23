@@ -223,7 +223,7 @@ class ResourceManager:
         Print the node tree to ``stdout``.
         """
         print("*** RM.nodeTable ***")
-        for n, i in list(self.nodes.items()):
+        for n, i in self.nodes.items():
             print(n)
             i.print_sockets()
         print("=====================")
@@ -421,7 +421,7 @@ class ResourceManager:
                     print(n.name, n.avail_cores)
                     n.print_sockets()
                 print("\n ***** Neither List!")
-                for nm, n in list(self.nodes.items()):
+                for nm, n in self.nodes.items():
                     if nm not in self.avail_nodes and nm not in self.alloc_nodes:
                         print(nm, n.avail_cores)
                         n.print_sockets()
@@ -461,7 +461,7 @@ class ResourceManager:
             raise
         # check to see if it is possible to satisfy the request
         tot_cap = 0
-        for n in list(self.nodes.values()):
+        for n in self.nodes.values():
             tot_cap += min([ppn, n.total_cores])
             if tot_cap >= nproc:
                 return False, "insufficient"
@@ -505,7 +505,7 @@ class ResourceManager:
             raise
         # check to see if it is possible to satisfy the request
         tot_cap = 0
-        for n in list(self.nodes.values()):
+        for n in self.nodes.values():
             tot_cap += min([ppn, n.total_cores])
             if tot_cap >= nproc:
                 return False, "insufficient"
@@ -552,7 +552,7 @@ class ResourceManager:
             raise
         # check to see if it is possible to satisfy the request
         tot_cap = 0
-        for n in list(self.nodes.values()):
+        for n in self.nodes.values():
             tot_cap += min([ppn, n.total_cores])
             if tot_cap >= nproc:
                 return False, "insufficient"
@@ -572,7 +572,7 @@ class ResourceManager:
 
         o, nproc, num_cores = self.active_tasks[task_id]
         tot_avc = 0
-        for n, node in list(self.nodes.items()):
+        for n, node in self.nodes.items():
             if task_id in node.task_ids:
                 node.release(task_id, o)
                 if node.avail_cores > 0 and n not in self.avail_nodes:

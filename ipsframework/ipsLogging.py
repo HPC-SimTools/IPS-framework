@@ -107,7 +107,7 @@ class ipsLogger:
     def __run__(self):
         time_out = 1.0
         while 1:
-            read_set = list(self.log_map.keys())
+            read_set = self.log_map.keys()
             if read_set:
                 rd, _, _ = select.select(read_set,
                                          [], [],

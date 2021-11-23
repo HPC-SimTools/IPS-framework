@@ -79,14 +79,14 @@ class DakotaDynamic:
             self.template_conf = ConfigObj(self.config_template, interpolation='template', file_error=True)
         except (IOError, SyntaxError):
             raise
-        for k in list(self.platform_conf.keys()):
-            if k not in list(self.template_conf.keys()):
-                self.template_conf[k] = self.platform_conf[k]
+        for k, v in self.platform_conf.items():
+            if k not in self.template_conf:
+                self.template_conf[k] = v
 
         # Import environment variables into config file
         # giving precedence to config file definitions in case of duplicates
         for (k, v) in os.environ.items():
-            if k not in list(self.template_conf.keys()) and not any(x in v for x in '{}()$'):
+            if k not in self.template_conf and not any(x in v for x in '{}()$'):
                 self.template_conf[k] = v
 
         new_dakota_config = self.dakota_cfg + '.resolved'
@@ -122,7 +122,7 @@ class DakotaDynamic:
                     batch_size = int(conc_tokens[1])
                     print('Using evaluation_concurrency = ', batch_size)
                 else:
-                    print('Missing evaluation_concurrency spec, using default value of %d' % (batch_size))
+                    print('Missing evaluation_concurrency spec, using default value')
 
         self.master_conf['PORTS'] = {'NAMES': 'DRIVER'}
         self.master_conf['PORTS']['DRIVER'] = {'IMPLEMENTATION': 'DAKOTA_BRIDGE'}
@@ -159,7 +159,7 @@ class DakotaDynamic:
             raise
 
         for (k, v) in self.template_conf.items():
-            if k not in list(self.master_conf.keys()):
+            if k not in self.master_conf:
                 try:
                     list(v.keys())
                 except Exception:

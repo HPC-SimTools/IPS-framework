@@ -63,7 +63,7 @@ class SubscriberEventService:
 
 
 class Event:
-    def __init__(self, header={}, body={}):
+    def __init__(self, header, body):
         self.header = deepcopy(header)
         self.body = deepcopy(body)
 

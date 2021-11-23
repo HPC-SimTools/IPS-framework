@@ -161,8 +161,7 @@ class PortalBridge(Component):
             time.sleep(0.5)
 
     def finalize(self, timestamp=0.0, **keywords):
-        for sim_name in list(self.sim_map.keys()):
-            sim_data = self.sim_map[sim_name]
+        for sim_data in self.sim_map.values():
             try:
                 sim_data.monitor_file.close()
                 sim_data.json_monitor_file.close()

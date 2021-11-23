@@ -431,7 +431,7 @@ class Framework:
             #                           driver.init(), driver.step(), driver.finalize()]
             # these messages will be sent on a FIFO basis, thus running the init components,
             # then the corresponding drivers.
-            for sim_name, comp_list in list(sim_comps.items()):
+            for sim_name, comp_list in sim_comps.items():
                 msg_list = []
                 self._send_monitor_event(sim_name, 'IPS_START', 'Starting IPS Simulation')
                 self._send_dynamic_sim_event(sim_name=sim_name, event_type='IPS_START')
@@ -460,7 +460,7 @@ class Framework:
 
         # send off first round of invocations...
         try:
-            for sim_name, msg_list in list(outstanding_sim_calls.items()):
+            for sim_name, msg_list in outstanding_sim_calls.items():
                 msg = msg_list.pop(0)
                 self.debug('Framework sending message %s ', msg.__dict__)
                 call_id = self.task_manager.init_call(msg, manage_return=False)
@@ -528,7 +528,7 @@ class Framework:
                         self.call_queue_map[call_id] = sim_msg_list
                     except IndexError:
                         sim_comps = self.config_manager.get_component_map()  # Get any new dynamic simulations
-                        if sim_name in list(sim_comps.keys()):
+                        if sim_name in sim_comps:
                             self._send_monitor_event(sim_name, 'IPS_END',
                                                      comment, ok)
                             self._send_dynamic_sim_event(sim_name, 'IPS_END', ok)
