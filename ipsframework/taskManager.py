@@ -513,7 +513,7 @@ class TaskManager:
                                 nproc_flag, str(nproc)])
             else:
                 cpuptask_flag = '-c'
-                cpubind_flag = '--cpu-bind=cores'
+                cpubind_flag = '--hint=compute_bound'
                 cmd = ' '.join([self.task_launch_cmd,
                                 nnodes_flag, str(num_nodes),
                                 nproc_flag, str(nproc),
