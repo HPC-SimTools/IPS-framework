@@ -1,9 +1,9 @@
 # -------------------------------------------------------------------------------
 # Copyright 2006-2021 UT-Battelle, LLC. See LICENSE for more information.
 # -------------------------------------------------------------------------------
-from ipsframework import Component
 from time import sleep
 import copy
+from ipsframework import Component
 
 
 def myFun(*args):
@@ -17,18 +17,15 @@ class HelloWorker(Component):
         super().__init__(services, config)
         print('Created %s' % (self.__class__))
 
-    def init(self, timeStamp=0.0):
-        return
-
-    def step(self, timeStamp=0.0):
+    def step(self, timestamp=0.0, **keywords):
         print('Hello from HelloWorker')
 
-        bin = '/bin/sleep'
+        exe = '/bin/sleep'
         cwd = self.services.get_working_dir()
         self.services.create_task_pool('pool')
         for i, duration in enumerate(("0.2", "0.4", "0.6")):
             self.services.add_task('pool', 'bin_'+str(i), 1,
-                                   cwd, bin, duration)
+                                   cwd, exe, duration)
             self.services.add_task('pool', 'meth_'+str(i), 1,
                                    cwd, copy.copy(self).myMethod,
                                    duration)
@@ -44,6 +41,3 @@ class HelloWorker(Component):
         print(f"myMethod({args[0]})")
         sleep(float(args[0]))
         return 0
-
-    def finalize(self, timeStamp=0.0):
-        return

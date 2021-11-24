@@ -13,7 +13,7 @@ def test_checkpoint_components_bad_input():
 
     with pytest.raises(KeyError) as excinfo:
         servicesProxy.checkpoint_components([], 0)
-    assert "'CHECKPOINT'" == str(excinfo.value)
+    assert str(excinfo.value) == "'CHECKPOINT'"
 
     servicesProxy.error.assert_called_with('Missing CHECKPOINT config section, or one of the required parameters: MODE, NUM_CHECKPOINT')
     servicesProxy.exception.assert_called_with('Error accessing CHECKPOINT section in config file')

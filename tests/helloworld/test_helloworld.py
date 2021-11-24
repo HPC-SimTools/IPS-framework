@@ -1,11 +1,11 @@
-from ipsframework import Framework
 import os
 import sys
 import shutil
 import json
 import glob
-import pytest
 import socketserver
+import pytest
+from ipsframework import Framework, TaskPool
 
 
 def copy_config_and_replace(infile, outfile, tmpdir, worker="hello_worker.py", portal=False):
@@ -214,7 +214,6 @@ def test_helloworld_task_pool(tmpdir, capfd):
 def test_helloworld_task_pool_dask(tmpdir, capfd):
     pytest.importorskip("dask")
     pytest.importorskip("distributed")
-    from ipsframework import TaskPool
     assert TaskPool.dask is not None
 
     data_dir = os.path.dirname(__file__)

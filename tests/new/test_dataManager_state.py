@@ -1,5 +1,5 @@
-from ipsframework import Framework
 import os
+from ipsframework import Framework
 
 
 def write_basic_config_and_platform_files(tmpdir):

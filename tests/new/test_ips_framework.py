@@ -1,7 +1,7 @@
-from ipsframework import Framework
 import glob
 import json
 import pytest
+from ipsframework import Framework
 
 
 def write_basic_config_and_platform_files(tmpdir):

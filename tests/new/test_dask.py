@@ -1,10 +1,10 @@
-import pytest
 import glob
 import json
 import os
 import importlib
-import ipsframework
 import shutil
+import pytest
+import ipsframework
 from ipsframework import Framework
 
 

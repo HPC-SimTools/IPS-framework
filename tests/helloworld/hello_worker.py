@@ -10,12 +10,11 @@ class HelloWorker(Component):
         super().__init__(services, config)
         print('Created %s' % (self.__class__))
 
-    def init(self, timeStamp=0.0):
+    def init(self, timestamp=0.0, **keywords):
         return
 
-    def step(self, timeStamp=0.0):
+    def step(self, timestamp=0.0, **keywords):
         print('Hello from HelloWorker')
-        return
 
-    def finalize(self, timeStamp=0.0):
+    def finalize(self, timestamp=0.0, **keywords):
         return

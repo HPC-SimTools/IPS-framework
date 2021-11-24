@@ -1,8 +1,9 @@
 from ipsframework import Component
 
 
+# pylint: disable=no-member,attribute-defined-outside-init
 class timeloop_comp(Component):
-    def init(self, timestamp=0.0):
+    def init(self, timestamp=0.0, **keywords):
         self.output_files = self.OUTPUT_FILES.split()
         self.output_files.append(self.services.get_config_param("CURRENT_STATE"))
         self.services.stage_state()
@@ -11,7 +12,7 @@ class timeloop_comp(Component):
                 f.write(f'{self.component_id} init()\n')
         self.services.update_state()
 
-    def restart(self, timestamp=0.0):
+    def restart(self, timestamp=0.0, **keywords):
         self.services.log(f'restart({timestamp})')
 
         self.output_files = self.OUTPUT_FILES.split()
@@ -27,7 +28,7 @@ class timeloop_comp(Component):
                 f.write(f'{self.component_id} restart()\n')
         self.services.update_state()
 
-    def step(self, timestamp=0.0):
+    def step(self, timestamp=0.0, **keywords):
         self.services.log(f"step({timestamp})")
         self.services.stage_state()
         for output_file in self.output_files:
@@ -36,6 +37,6 @@ class timeloop_comp(Component):
         self.services.update_state()
         self.services.stage_output_files(timestamp, self.OUTPUT_FILES)
 
-    def checkpoint(self, timestamp=0.0):
+    def checkpoint(self, timestamp=0.0, **keywords):
         self.services.log(f'checkpoint({timestamp})')
         self.services.save_restart_files(timestamp, self.RESTART_FILES)

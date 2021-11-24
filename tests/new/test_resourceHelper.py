@@ -1,7 +1,7 @@
+from unittest import mock
+import pytest
 from ipsframework.resourceHelper import getResourceList
 from ipsframework.ipsExceptions import InvalidResourceSettingsException
-import pytest
-from unittest import mock
 
 
 # checkjob
@@ -71,7 +71,7 @@ def test_resourceHelper_qstat(subprocess_popen_mock, monkeypatch):
     # try with missing environment variables
     with pytest.raises(KeyError) as excinfo:
         getResourceList(services, 'host')
-    assert "'PBS_JOBID'" == str(excinfo.value)
+    assert str(excinfo.value) == "'PBS_JOBID'"
 
     # set mock return values
     monkeypatch.setenv("PBS_JOBID", "1234")
@@ -128,7 +128,7 @@ def test_resourceHelper_qstat2(subprocess_popen_mock, monkeypatch):
     # try with missing environment variables
     with pytest.raises(KeyError) as excinfo:
         getResourceList(services, 'host')
-    assert "'PBS_JOBID'" == str(excinfo.value)
+    assert str(excinfo.value) == "'PBS_JOBID'"
 
     # set mock return values
     monkeypatch.setenv("PBS_JOBID", "1234")
@@ -165,7 +165,7 @@ def test_resourceHelper_pbs_env(monkeypatch, tmpdir):
     # try with missing environment variables
     with pytest.raises(KeyError) as excinfo:
         getResourceList(services, 'host')
-    assert "'PBS_NNODES'" == str(excinfo.value)
+    assert str(excinfo.value) == "'PBS_NNODES'"
 
     # PBS_NNODES
     monkeypatch.setenv("PBS_NNODES", "2")
@@ -218,7 +218,7 @@ def test_resourceHelper_slurm_env(subprocess_check_output_mock, monkeypatch):
     # try with missing environment variables
     with pytest.raises(KeyError) as excinfo:
         getResourceList(services, 'host')
-    assert "'SLURM_NODELIST'" == str(excinfo.value)
+    assert str(excinfo.value) == "'SLURM_NODELIST'"
 
     # set mock return values
     monkeypatch.setenv("SLURM_NODELIST", "nid00[658-659]")
@@ -226,7 +226,7 @@ def test_resourceHelper_slurm_env(subprocess_check_output_mock, monkeypatch):
     # try with missing environment variables
     with pytest.raises(KeyError) as excinfo:
         getResourceList(services, 'host')
-    assert "'SLURM_JOB_TASKS_PER_NODE'" == str(excinfo.value)
+    assert str(excinfo.value) == "'SLURM_JOB_TASKS_PER_NODE'"
 
     monkeypatch.setenv("SLURM_TASKS_PER_NODE", "2(x2)")
 
@@ -286,11 +286,11 @@ def test_resourceHelper_manual_InvalidException():
 
     with pytest.raises(InvalidResourceSettingsException) as excinfo:
         getResourceList(services, 'host')
-    assert ("Invalid resource specification in platform configuration file:  socket per node count (16) greater than core per node count (8)."
-            == str(excinfo.value))
+    assert (str(excinfo.value) == "Invalid resource specification in platform configuration file:  socket per node count (16) "
+            "greater than core per node count (8).")
 
     # CORES_PER_NODE % SOCKETS_PER_NODE != 0
-    def get_param(param, silent=True):
+    def get_param2(param, silent=True):
         params = {'CORES_PER_NODE': 8,
                   'SOCKETS_PER_NODE': 3,
                   'NODES': 2,
@@ -299,12 +299,12 @@ def test_resourceHelper_manual_InvalidException():
                   'NODE_DETECTION': "manual"}
         return params[param]
 
-    services.get_platform_parameter.side_effect = get_param
+    services.get_platform_parameter.side_effect = get_param2
 
     with pytest.raises(InvalidResourceSettingsException) as excinfo:
         getResourceList(services, 'host')
-    assert ("Invalid resource specification in platform configuration file:  socket per node count (3) not divisible by core per node count (8)."
-            == str(excinfo.value))
+    assert (str(excinfo.value) == "Invalid resource specification in platform configuration file:  socket per node count (3) "
+            "not divisible by core per node count (8).")
 
 
 # with no detection defined
@@ -325,11 +325,11 @@ def test_resourceHelper_no_detection(monkeypatch):
 
     with pytest.raises(KeyError) as excinfo:
         getResourceList(services, 'host')
-    assert "'NODES'" == str(excinfo.value)
+    assert str(excinfo.value) == "'NODES'"
 
     # fallback to manual is enough info supplied
 
-    def get_param(param, silent=True):
+    def get_param2(param, silent=True):
         params = {'CORES_PER_NODE': 8,
                   'SOCKETS_PER_NODE': 1,
                   'NODES': 0,
@@ -338,7 +338,7 @@ def test_resourceHelper_no_detection(monkeypatch):
                   'NODE_DETECTION': ""}
         return params[param]
 
-    services.get_platform_parameter.side_effect = get_param
+    services.get_platform_parameter.side_effect = get_param2
 
     listOfNodes, cpn, spn, ppn, accurateNodes = getResourceList(services, 'host')
 

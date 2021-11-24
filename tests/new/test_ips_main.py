@@ -1,8 +1,8 @@
-from ipsframework import ips
-import pytest
 from unittest import mock
 import sys
 import os
+import pytest
+from ipsframework import ips
 
 
 @mock.patch('ipsframework.ips.Framework')

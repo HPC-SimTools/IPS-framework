@@ -14,14 +14,10 @@ from ipsframework.ipsExceptions import IncompleteCallException
 
 
 class basic_concurrent1(Component):
-    def __init__(self, services, config):
-        super().__init__(services, config)
-
-    def init(self, timestamp):
+    def init(self, timestamp=0.0, **keywords):
         self.services.log('Initing')
-        return
 
-    def step(self, timestamp):
+    def step(self, timestamp=0.0, **keywords):
         self.services.log('Stepping')
 
         services = self.services
@@ -72,7 +68,6 @@ class basic_concurrent1(Component):
         services.call(w1, 'finalize', 99)
         services.call(w2, 'finalize', 99)
         services.call(w3, 'finalize', 99)
-        return
 
     def process_event(self, topicName, theEvent):
         print("Driver: processed ", (topicName, str(theEvent)))

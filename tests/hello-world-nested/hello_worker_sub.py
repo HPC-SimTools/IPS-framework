@@ -9,15 +9,6 @@ class HelloWorker(Component):
         super().__init__(services, config)
         print('Created %s' % (self.__class__))
 
-    def init(self, timeStamp=0.0):
-        return
-
-    def validate(self, timeStamp=0.0):
-        return
-
-    def step(self, timeStamp=0.0):
+    def step(self, timestamp=0.0, **keywords):
         print('Hello from HelloWorker - sub')
         self.services.info('Hello from HelloWorker - sub')
-
-    def finalize(self, timeStamp=0.0):
-        return

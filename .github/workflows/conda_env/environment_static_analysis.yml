@@ -8,3 +8,4 @@ dependencies:
 - bandit=1.7.1
 - codespell=2.1.0
 - dask=2021.11.2
+- pytest
