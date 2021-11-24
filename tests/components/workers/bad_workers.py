@@ -6,7 +6,7 @@ def func(x):
 
 
 class bad_task_worker(Component):
-    def step(self, timestamp):
+    def step(self, timestamp=0.0, **keywords):
         cwd = self.services.get_working_dir()
         pid = self.services.launch_task(1,
                                         cwd,
@@ -15,7 +15,7 @@ class bad_task_worker(Component):
 
 
 class bad_task_pool_worker1(Component):
-    def step(self, timestamp):
+    def step(self, timestamp=0.0, **keywords):
         cwd = self.services.get_working_dir()
         self.services.create_task_pool('pool')
         self.services.add_task('pool', 'task', 1, cwd, 42)
@@ -24,7 +24,7 @@ class bad_task_pool_worker1(Component):
 
 
 class bad_task_pool_worker2(Component):
-    def step(self, timestamp):
+    def step(self, timestamp=0.0, **keywords):
         cwd = self.services.get_working_dir()
         self.services.create_task_pool('pool')
         self.services.add_task('pool', 'task', 1, cwd, func, 1)
@@ -33,5 +33,5 @@ class bad_task_pool_worker2(Component):
 
 
 class exception_worker(Component):
-    def step(self, timestamp):
+    def step(self, timestamp=0.0, **keywords):
         raise RuntimeError('Runtime error')

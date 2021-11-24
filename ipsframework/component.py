@@ -82,7 +82,7 @@ class Component:
             pass
         else:
             if str(redirect).strip() != '':
-                if ('OUT_REDIRECT_FNAME') not in list(self.services.sim_conf.keys()):
+                if 'OUT_REDIRECT_FNAME' not in self.services.sim_conf:
                     fname = "%s.out" % (self.services.sim_conf['SIM_NAME'])
                     fname = os.path.join(self.services.sim_conf['PWD'], fname)
                     print('Redirecting stdout to ', fname)
@@ -114,9 +114,6 @@ class Component:
         self.services.debug('Running - CompID =  %s',
                             self.component_id.get_serialization())
 
-        if self.services.profile:
-            self.services.debug('Instrumenting - CompID =  %s',
-                                self.component_id.get_serialization())
         self.services._init_event_service()
 
         while True:

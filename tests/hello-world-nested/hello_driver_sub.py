@@ -6,16 +6,11 @@ from ipsframework import Component
 
 class HelloDriver(Component):
     def __init__(self, services, config):
-        Component.__init__(self, services, config)
+        super().__init__(services, config)
         print('Created %s' % (self.__class__))
 
-    def init(self, timeStamp=0.0):
-        return
-
-    def validate(self, timeStamp=0.0):
-        return
-
-    def step(self, timeStamp=0.0):
+    # pylint: disable=no-member
+    def step(self, timestamp=0.0, **keywords):
         try:
             worker_comp = self.services.get_port('WORKER')
         except Exception:
@@ -24,8 +19,4 @@ class HelloDriver(Component):
         self.services.call(worker_comp, 'step', 0.0)
         with open(self.OUTPUT_FILES.split()[0], 'w') as f:
             f.write("SUB OUTPUT FILE\n")
-        self.services.stage_output_files(timeStamp, self.OUTPUT_FILES)
-        return
-
-    def finalize(self, timeStamp=0.0):
-        return
+        self.services.stage_output_files(timestamp, self.OUTPUT_FILES)

@@ -176,7 +176,7 @@ class Socket:
         socket.
     """
 
-    def __init__(self, name, cps, coreids=[]):
+    def __init__(self, name, cps, coreids=()):
         """
         s = number of sockets (per node)
         c = number of cores (per node)

@@ -63,8 +63,8 @@ class EventServiceFwkProxy(EventServiceProxy):
 
     def processEvents(self, subscriberid):
         eventList = self.event_service.processEvents(subscriberid)
-        for listenerid in list(eventList.keys()):
-            for topicName in list(eventList[listenerid].keys()):
+        for listenerid in eventList:
+            for topicName in eventList[listenerid]:
                 for theEvent in eventList[listenerid][topicName]:
                     self.listenerDirectory[listenerid].processEvent(topicName, theEvent)
 
@@ -133,8 +133,8 @@ class EventServiceCmpProxy(EventServiceProxy):
         msg_id = self.service_proxy._invoke_service(self.service_proxy.fwk.component_id,
                                                     'processEvents', subscriberid)
         eventList = self.service_proxy._get_service_response(msg_id, True)
-        for listenerid in list(eventList.keys()):
-            for topicName in list(eventList[listenerid].keys()):
+        for listenerid in eventList:
+            for topicName in eventList[listenerid]:
                 for theEvent in eventList[listenerid][topicName]:
                     self.listenerDirectory[listenerid].processEvent(topicName, theEvent)
 

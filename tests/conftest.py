@@ -26,7 +26,7 @@ def run_around_tests():
     children = psutil.Process().children()
     for child in children:
         child.terminate()
-    gone, alive = psutil.wait_procs(children, timeout=3, callback=on_terminate)
+    _, alive = psutil.wait_procs(children, timeout=3, callback=on_terminate)
     for p in alive:
         print(f"Killing {p}")
         p.kill()

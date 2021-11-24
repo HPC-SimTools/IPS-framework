@@ -17,7 +17,7 @@ from ipsframework import Component
 class my_comp (Component):
 
     def __init__(self, services, config):
-        Component.__init__(self, services, config)
+        super().__init__(services, config)
         print(('Created %s' % (self.__class__)))
 
 # -----------------------------------------------------------------------------

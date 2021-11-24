@@ -10,8 +10,6 @@ try:
 except ImportError:
     pass
 
-remote_copy_fun = None
-
 
 def which(program, alt_paths=None):
     def is_exe(fpath):
@@ -44,11 +42,9 @@ def copyFiles(src_dir, src_file_list, target_dir, prefix='', keep_old=False):
        Wild-cards in file name specification are allowed.
     """
 
-    global remote_copy_fun
     use_data_server = os.getenv('USE_DATA_SERVER', "DATA_SERVER_NOT_USED")
     if use_data_server != "DATA_SERVER_NOT_USED":
-        if not remote_copy_fun:
-            data_server = Pyro4.Proxy("PYRONAME:DataServer")
+        data_server = Pyro4.Proxy("PYRONAME:DataServer")
         data_server.copyFiles(src_dir, src_file_list, target_dir, prefix, keep_old)
         return
 

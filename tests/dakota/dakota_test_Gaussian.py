@@ -7,7 +7,8 @@ from ipsframework import Component
 
 
 class GaussianWellDriver(Component):
-    def step(self, timestamp=0):
+    # pylint: disable=no-member
+    def step(self, timestamp=0.0, **keywords):
         print('step from dakota test driver')
         self.services.stage_input_files(self.INPUT_FILES)
         x = float(self.X)

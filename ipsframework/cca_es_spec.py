@@ -10,6 +10,8 @@ central event service.
 """
 from copy import deepcopy
 
+_proxy = None
+
 
 class EventServiceException(Exception):
     """
@@ -61,7 +63,7 @@ class SubscriberEventService:
 
 
 class Event:
-    def __init__(self, header={}, body={}):
+    def __init__(self, header, body):
         self.header = deepcopy(header)
         self.body = deepcopy(body)
 
@@ -130,6 +132,6 @@ def initialize_event_service(service):
         _proxy = EventServiceCmpProxy(service)
 
 
-# pylint: disable=C0413
+# pylint: disable=wrong-import-position
 from .eventService import EventService  # noqa: E402
 from .eventServiceProxy import EventServiceFwkProxy, EventServiceCmpProxy  # noqa: E402

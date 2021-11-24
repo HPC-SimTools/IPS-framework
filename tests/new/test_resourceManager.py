@@ -1,6 +1,6 @@
 from unittest import mock
-import pytest
 import io
+import pytest
 from ipsframework.resourceManager import ResourceManager
 from ipsframework.ipsExceptions import (InsufficientResourcesException,
                                         BadResourceRequestException,
@@ -66,7 +66,7 @@ def test_allocations(tmpdir):
                           whole_nodes=True,
                           whole_socks=False)
 
-    assert "component comp0 requested 3 nodes, which is more than possible by 1 nodes, for task 0." == str(excinfo.value)
+    assert str(excinfo.value) == "component comp0 requested 3 nodes, which is more than possible by 1 nodes, for task 0."
 
     with pytest.raises(ResourceRequestUnequalPartitioningException) as excinfo:
         rm.get_allocation(comp_id='comp0',
@@ -76,8 +76,8 @@ def test_allocations(tmpdir):
                           whole_socks=False,
                           task_ppn=2)
 
-    assert "component comp0 requested 3 processes with 2 processes per node, while the number of processes requested is less than the max (8), "\
-        "it will result in unequal partitioning of processes across nodes" == str(excinfo.value)
+    assert (str(excinfo.value) == "component comp0 requested 3 processes with 2 processes per node, while the number of processes requested is "
+            "less than the max (8), it will result in unequal partitioning of processes across nodes")
 
     with pytest.raises(BadResourceRequestException) as excinfo:
         rm.get_allocation(comp_id='comp0',
@@ -86,7 +86,7 @@ def test_allocations(tmpdir):
                           whole_nodes=False,
                           whole_socks=True)
 
-    assert "component comp0 requested 3 nodes, which is more than possible by 1 nodes, for task 0." == str(excinfo.value)
+    assert str(excinfo.value) == "component comp0 requested 3 nodes, which is more than possible by 1 nodes, for task 0."
 
     with pytest.raises(ResourceRequestMismatchException) as excinfo:
         rm.get_allocation(comp_id='comp0',
@@ -96,8 +96,8 @@ def test_allocations(tmpdir):
                           whole_socks=False,
                           task_ppn=2)
 
-    assert ("component comp0 requested 6 processes with 2 processes per node, while the number of processes requested is less than the max (8), "
-            "the processes per node value is too low." == str(excinfo.value))
+    assert (str(excinfo.value) == "component comp0 requested 6 processes with 2 processes per node, while the number of processes requested is "
+            "less than the max (8), the processes per node value is too low.")
 
     rm.get_allocation(comp_id='comp0',
                       nproc=2,
@@ -202,7 +202,7 @@ def test_allocations(tmpdir):
                           whole_nodes=False,
                           whole_socks=False)
 
-    assert "component comp0 requested 1 nodes, which is more than available by 0 nodes, for task 3." == str(excinfo.value)
+    assert str(excinfo.value) == "component comp0 requested 1 nodes, which is more than available by 0 nodes, for task 3."
 
     rm.release_allocation(task_id=1,
                           status=None)

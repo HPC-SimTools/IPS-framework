@@ -22,7 +22,7 @@ jobs:
     - name: flake8
       run: flake8
     - name: pylint
-      run: pylint ipsframework
+      run: pylint ipsframework tests
     - name: bandit
       run: bandit -lll ipsframework/*.py
     - name: codespell

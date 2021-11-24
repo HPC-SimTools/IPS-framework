@@ -124,14 +124,6 @@ def test_component_logging_debug(tmpdir):
     # remove timestamp
     lines = [line[24:] for line in lines]
 
-    map_log_to_level = {"log": "INFO",
-                        "debug": "DEBUG",
-                        "info": "INFO",
-                        "warning": "WARNING",
-                        "error": "ERROR",
-                        "exception": "ERROR",
-                        "critical": "CRITICAL"}
-
     component_id = "LOGGING__logging_tester_1"
 
     # for log_level=DEBUG all logs should be included

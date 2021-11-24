@@ -2,6 +2,7 @@ from ipsframework import Component
 
 
 class dask_worker(Component):
+    # pylint: disable=no-member
     def step(self, timestamp=0.0, **keywords):
         cmd = self.EXECUTABLE
         self.services.send_portal_event(event_type='COMPONENT_EVENT',

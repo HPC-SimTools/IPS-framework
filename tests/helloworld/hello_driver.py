@@ -7,10 +7,10 @@ from ipsframework import Component
 
 class HelloDriver(Component):
     def __init__(self, services, config):
-        Component.__init__(self, services, config)
+        super().__init__(services, config)
         print('Created %s' % (self.__class__))
 
-    def init(self, timeStamp=0.0):
+    def init(self, timestamp=0.0, **keywords):
         print('HelloDriver: init')
         try:
             worker_comp = self.services.get_port('WORKER')
@@ -19,9 +19,8 @@ class HelloDriver(Component):
             raise
         self.services.call(worker_comp, 'init', 0.0)
         print('HelloDriver: finished worker init call')
-        return
 
-    def step(self, timeStamp=0.0):
+    def step(self, timestamp=0.0, **keywords):
         print('HelloDriver: beginning step call')
         try:
             worker_comp = self.services.get_port('WORKER')
@@ -30,7 +29,3 @@ class HelloDriver(Component):
             raise
         self.services.call(worker_comp, 'step', 0.0)
         print('HelloDriver: finished worker call')
-        return
-
-    def finalize(self, timeStamp=0.0):
-        return

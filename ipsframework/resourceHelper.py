@@ -185,9 +185,7 @@ def get_checkjob_info():
                 if r.find("-") > -1:
                     # this is a range
                     ss, es = r.split("-")
-                    s = int(ss)
-                    e = int(es)
-                    for i in range(s, e + 1):
+                    for i in range(int(ss), int(es) + 1):
                         nodes.append(str(i))
                 else:
                     # this is a single node id

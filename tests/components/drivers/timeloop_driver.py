@@ -2,9 +2,11 @@ from ipsframework import Component
 
 
 class timeloop_driver(Component):
-    def init(self, timestamp=0.0):
-        self.state_file = self.services.get_config_param("CURRENT_STATE")
-        self.workers = [self.services.get_port(port) for port in self.services.get_config_param('PORTS')['NAMES'].split() if port not in ('INIT', 'DRIVER')]
+    def init(self, timestamp=0.0, **keywords):
+        self.state_file = self.services.get_config_param("CURRENT_STATE")  # pylint: disable=attribute-defined-outside-init
+        self.workers = [self.services.get_port(port)  # pylint: disable=attribute-defined-outside-init
+                        for port in self.services.get_config_param('PORTS')['NAMES'].split()
+                        if port not in ('INIT', 'DRIVER')]
 
         mode = 'restart' if self.services.get_config_param("SIMULATION_MODE").lower() == 'restart' else 'init'
 
@@ -20,7 +22,7 @@ class timeloop_driver(Component):
         for port in self.workers:
             self.services.call(port, mode, timestamp)
 
-    def step(self, timestamp=0.0):
+    def step(self, timestamp=0.0, **keywords):
 
         timeloop = self.services.get_time_loop()
 
@@ -41,5 +43,5 @@ class timeloop_driver(Component):
         for port in self.workers:
             self.services.call(port, 'finalize', timeloop[-1])
 
-    def checkpoint(self, timestamp=0.0):
+    def checkpoint(self, timestamp=0.0, **keywords):
         self.services.log(f'checkpoint({timestamp})')

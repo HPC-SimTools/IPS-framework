@@ -1,3 +1,6 @@
+import shutil
+from unittest import mock
+import pytest
 from ipsframework import TaskManager, ResourceManager
 from ipsframework.messages import ServiceRequestMessage
 from ipsframework.ipsExceptions import (BadResourceRequestException,
@@ -5,9 +8,6 @@ from ipsframework.ipsExceptions import (BadResourceRequestException,
                                         BlockedMessageException,
                                         InsufficientResourcesException,
                                         ResourceRequestUnequalPartitioningException)
-import pytest
-import shutil
-from unittest import mock
 
 
 def test_build_launch_cmd_fail():

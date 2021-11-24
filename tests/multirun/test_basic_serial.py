@@ -1,8 +1,8 @@
-from ipsframework import Framework
 import os
 import shutil
 import glob
 import pytest
+from ipsframework import Framework
 
 
 def copy_config_and_replace(infile, srcdir, tmpdir):

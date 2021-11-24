@@ -45,6 +45,8 @@ class ConfigurationManager:
             self.portal_sim_name = None
             self.sim_root = None
             self.sim_conf = None
+            self.log_file = None
+            self.log_pipe_name = None
             self.config_file = None
             self.conf_file_dir = None
             self.driver_comp = None
@@ -190,10 +192,8 @@ class ConfigurationManager:
         self.platform_conf['USER'] = user
 
         # Grab environment variables
-        plat_keys = list(self.platform_conf.keys())
         for (k, v) in os.environ.items():
-            if k not in plat_keys \
-                    and not any(x in v for x in '{}()$'):
+            if k not in self.platform_conf and not any(x in v for x in '{}()$'):
                 self.platform_conf[k] = v
 
         mpirun_version = self.platform_conf.get('MPIRUN_VERSION', 'OpenMPI-generic')
@@ -235,21 +235,20 @@ class ConfigurationManager:
 
                 # Import environment variables into config file
                 # giving precedence to config file definitions in case of duplicates
-                conf_keys = list(conf.keys())
                 for (k, v) in os.environ.items():
-                    if k not in conf_keys and not any(x in v for x in '{}()$'):
+                    if k not in conf and not any(x in v for x in '{}()$'):
                         conf[k] = v
 
                 # Allow simulation file to override platform values
                 # and then put all platform values into simulation map
                 for key in self.platform_conf:
-                    if key in conf_keys and key not in os.environ.keys():
+                    if key in conf and key not in os.environ.keys():
                         self.platform_conf[key] = conf[key]
-                    if key not in conf_keys:
+                    if key not in conf:
                         conf[key] = self.platform_conf[key]
 
                 # Override platform value for PORTAL_URL if in simulation
-                if 'PORTAL_URL' in conf_keys:
+                if 'PORTAL_URL' in conf:
                     self.platform_conf['PORTAL_URL'] = conf['PORTAL_URL']
 
             except (IOError, SyntaxError):
@@ -606,21 +605,19 @@ class ConfigurationManager:
         parent_sim = self.sim_map[parent_sim_name]
         # Incorporate environment variables into config file
         # Use config file entries when duplicates are detected
-        conf_keys = list(conf.keys())
         for (k, v) in os.environ.items():
             # Do not include functions from environment
-            if k not in conf_keys and \
-                    not any(x in v for x in '{}()$'):
+            if k not in conf and not any(x in v for x in '{}()$'):
                 conf[k] = v
 
         # Allow propagation of entries from platform config file to simulation
         # config file
-        for keyword in list(self.platform_conf.keys()):
-            if keyword not in list(conf.keys()):
-                conf[keyword] = self.platform_conf[keyword]
+        for keyword, value in self.platform_conf.items():
+            if keyword not in conf:
+                conf[keyword] = value
         if override:
-            for kw in list(override.keys()):
-                conf[kw] = override[kw]
+            for kw, v in override.items():
+                conf[kw] = v
         try:
             sim_name = conf['SIM_NAME']
             sim_root = conf['SIM_ROOT']

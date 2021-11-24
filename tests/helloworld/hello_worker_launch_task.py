@@ -6,7 +6,7 @@ from ipsframework import Component
 
 
 class HelloWorker(Component):
-    def step(self, timeStamp=0.0):
+    def step(self, timestamp=0.0, **keywords):
         print('Hello from HelloWorker')
 
         cwd = self.services.get_working_dir()

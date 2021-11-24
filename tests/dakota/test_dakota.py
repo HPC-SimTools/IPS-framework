@@ -1,10 +1,10 @@
-from ipsframework import ips_dakota_dynamic
 from unittest import mock
 import os
 import shutil
-import pytest
 import glob
 import sys
+import pytest
+from ipsframework import ips_dakota_dynamic
 
 
 def copy_config_and_replace(infile, outfile, tmpdir):

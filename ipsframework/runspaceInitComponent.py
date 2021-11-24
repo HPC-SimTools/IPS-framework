@@ -59,26 +59,25 @@ class runspaceInitComponent(Component):
             self.services.exception('Error creating directory %s : %s',
                                     self.simRootDir, oserr.strerror)
 
-        self.config_files = services.fwk.config_file_list
-        self.platform_file = services.fwk.platform_file_name
-        self.main_log_file = services.get_config_param('LOG_FILE')
+        config_files = services.fwk.config_file_list
+        platform_file = services.fwk.platform_file_name
 
         # Determine where the file is...if there's not an absolute path specified,
         # assume that it was in the directory that the IPS was launched from.
         # NOTE: This is not necessarily where the IPS is installed.
-        if not self.config_files[0].startswith("/"):
-            self.conf_file_loc = self.cwd
+        if not config_files[0].startswith("/"):
+            conf_file_loc = self.cwd
         else:
-            (head, _) = os.path.split(os.path.abspath(self.config_files[0]))
-            self.conf_file_loc = head
-        if not self.platform_file.startswith("/"):
-            self.plat_file_loc = self.cwd
+            (head, _) = os.path.split(os.path.abspath(config_files[0]))
+            conf_file_loc = head
+        if not platform_file.startswith("/"):
+            plat_file_loc = self.cwd
         else:
-            (head, _) = os.path.split(os.path.abspath(self.platform_file))
-            self.plat_file_loc = head
+            (head, _) = os.path.split(os.path.abspath(platform_file))
+            plat_file_loc = head
 
-        ipsutil.copyFiles(self.conf_file_loc, self.config_files, self.simRootDir)
-        ipsutil.copyFiles(self.plat_file_loc, self.platform_file, self.simRootDir)
+        ipsutil.copyFiles(conf_file_loc, config_files, self.simRootDir)
+        ipsutil.copyFiles(plat_file_loc, platform_file, self.simRootDir)
 
     @catch_and_go
     def step(self, timestamp=0.0, **keywords):

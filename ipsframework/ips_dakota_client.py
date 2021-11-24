@@ -45,7 +45,7 @@ class IPSDakotaClient:
         # Import environment variables into config file
         # giving precedence to config file definitions in case of duplicates
         for (k, v) in os.environ.items():
-            if k not in list(self.old_master_conf.keys()):
+            if k not in self.old_master_conf:
                 self.old_master_conf[k] = v
 
         self.sim_root = self.old_master_conf['SIM_ROOT']
@@ -73,9 +73,9 @@ class IPSDakotaClient:
                 comp_conf[var_name] = val
                 parameter_list.append((comp, var_name, val))
 
-        for k in list(self.platform_conf.keys()):
-            if k not in list(self.old_master_conf.keys()):
-                self.old_master_conf[k] = self.platform_conf[k]
+        for k, v in self.platform_conf.items():
+            if k not in self.old_master_conf:
+                self.old_master_conf[k] = v
 
         server_address = os.environ['IPS_DAKOTA_SOCKET_ADDRESS']
 
