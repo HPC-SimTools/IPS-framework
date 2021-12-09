@@ -554,7 +554,7 @@ class ServicesProxy:
         manage how the binary is launched.  Keywords may be the following:
 
             * *task_ppn* : the processes per node value for this task
-            * *task_cpp* : the cores per process
+            * *task_cpp* : the cores per process, only used when ``MPIRUN=srun`` commands
             * *block* : specifies that this task will block (or raise an
               exception) if not enough resources are available to run
               immediately.  If ``True``, the task will be retried until it

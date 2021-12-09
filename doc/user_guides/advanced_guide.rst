@@ -291,7 +291,128 @@ Component invocation in the IPS means one component is calling another component
 Task Launch
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The task launch interface allows components to launch and manage the execution of (parallel) executables.  Similar to the component invocation interface, the behavior of *launch_task* and the *wait_task* variants are controlled using the *block* keyword argument and different interfaces to *wait_task*.
+The task launch interface allows components to launch and manage the
+execution of (parallel) executables.  Similar to the component
+invocation interface, the behavior of
+:py:meth:`~ipsframework.services.ServicesProxy.launch_task` and the
+:py:meth:`~ipsframework.services.ServicesProxy.wait_task` variants are
+controlled using the *block* keyword argument and different interfaces
+to *wait_task*.
+
+The ``task_ppn`` and ``task_cpp`` options all greater control over how
+commands are made. ``task_ppn`` will limit the number of task per
+node, ``task_ccp`` will limit the number of cores assigned to each
+process, this is only used when ``MPIRUN=srun``, if ``task_cpp`` is
+not set it will be calculated automatically.
+
+~~~~~~~~~~~~~~
+Slurm examples
+~~~~~~~~~~~~~~
+
+The following examples show the behavior if you are running on a `Cori
+<https://docs.nersc.gov/systems/cori>`_ with 32 cores per node.
+
+Using the `check-mpi.gnu.cori
+<https://docs.nersc.gov/jobs/affinity/#use-nersc-prebuilt-binaries>`_
+binary provided on Cori with ``nproc=8`` without specifying other
+options:
+
+.. code-block:: python
+
+    self.services.launch_task(8, cwd, "check-mpi.gnu.cori")
+
+the ``srun`` command created will be ``srun -N 1 -n 8 -c
+4 --threads-per-core=1 --cpu-bind=cores check-mpi.gnu.cori`` along
+with settings the environment variables for OpenMP
+``OMP_PLACES=threads OMP_PROC_BIND=spread OMP_NUM_THREADS=4``. The
+resulting core affinity is
+
+.. code-block:: text
+
+    Hello from rank 0, on nid00025. (core affinity = 0-3)
+    Hello from rank 1, on nid00025. (core affinity = 16-19)
+    Hello from rank 2, on nid00025. (core affinity = 4-7)
+    Hello from rank 3, on nid00025. (core affinity = 20-23)
+    Hello from rank 4, on nid00025. (core affinity = 8-11)
+    Hello from rank 5, on nid00025. (core affinity = 24-27)
+    Hello from rank 6, on nid00025. (core affinity = 12-15)
+    Hello from rank 7, on nid00025. (core affinity = 28-31)
+
+If you also include the option ``task_ppn=4``:
+
+.. code-block:: python
+
+    self.services.launch_task(8, cwd, "check-mpi.gnu.cori", task_ppn=4)
+
+then the command created will be ``srun -N 2 -n 8 -c
+8 --threads-per-core=1 --cpu-bind=cores check-mpi.gnu.cori`` along
+with settings the environment variables for OpenMP
+``OMP_PLACES=threads OMP_PROC_BIND=spread OMP_NUM_THREADS=8``. The
+resulting core affinity is
+
+.. code-block:: text
+
+    Hello from rank 0, on nid00025. (core affinity = 0-7)
+    Hello from rank 1, on nid00025. (core affinity = 16-23)
+    Hello from rank 2, on nid00025. (core affinity = 8-15)
+    Hello from rank 3, on nid00025. (core affinity = 24-31)
+    Hello from rank 4, on nid00026. (core affinity = 0-7)
+    Hello from rank 5, on nid00026. (core affinity = 16-23)
+    Hello from rank 6, on nid00026. (core affinity = 8-15)
+    Hello from rank 7, on nid00026. (core affinity = 24-31)
+
+You can limit the ``--cpus-per-task`` of the ``srun`` command by
+setting ``task_cpp``, adding ``task_cpp=2``
+
+.. code-block:: python
+
+    self.services.launch_task(8, cwd, "check-mpi.gnu.cori", task_ppn=4, task_cpp=2)
+
+will create the command ``srun -N 2 -n 8 -c
+2 --threads-per-core=1 --cpu-bind=cores check-mpi.gnu.cori`` and set
+``OMP_PLACES=threads OMP_PROC_BIND=spread OMP_NUM_THREADS=2``. This
+will result in under-utilizing the nodes, which may be needed if your
+task is memory bound. The resulting core affinity is
+
+.. code-block:: text
+
+    Hello from rank 0, on nid00025. (core affinity = 0,1)
+    Hello from rank 1, on nid00025. (core affinity = 16,17)
+    Hello from rank 2, on nid00025. (core affinity = 2,3)
+    Hello from rank 3, on nid00025. (core affinity = 18,19)
+    Hello from rank 4, on nid00026. (core affinity = 0,1)
+    Hello from rank 5, on nid00026. (core affinity = 16,17)
+    Hello from rank 6, on nid00026. (core affinity = 2,3)
+    Hello from rank 7, on nid00026. (core affinity = 18,19)
+
+Using the `check-hybrid.gnu.cori
+<https://docs.nersc.gov/jobs/affinity/#use-nersc-prebuilt-binaries>`_
+binary with the same options:
+
+.. code-block:: python
+
+    self.services.launch_task(8, cwd, "check-hybrid.gnu.cori", task_ppn=4, task_cpp=2)
+
+the resulting core affinity of the OpenMP threads are:
+
+.. code-block:: text
+
+    Hello from rank 0, thread 0, on nid00025. (core affinity = 0)
+    Hello from rank 0, thread 1, on nid00025. (core affinity = 1)
+    Hello from rank 1, thread 0, on nid00025. (core affinity = 16)
+    Hello from rank 1, thread 1, on nid00025. (core affinity = 17)
+    Hello from rank 2, thread 0, on nid00025. (core affinity = 2)
+    Hello from rank 2, thread 1, on nid00025. (core affinity = 3)
+    Hello from rank 3, thread 0, on nid00025. (core affinity = 18)
+    Hello from rank 3, thread 1, on nid00025. (core affinity = 19)
+    Hello from rank 4, thread 0, on nid00026. (core affinity = 0)
+    Hello from rank 4, thread 1, on nid00026. (core affinity = 1)
+    Hello from rank 5, thread 0, on nid00026. (core affinity = 16)
+    Hello from rank 5, thread 1, on nid00026. (core affinity = 17)
+    Hello from rank 6, thread 0, on nid00026. (core affinity = 2)
+    Hello from rank 6, thread 1, on nid00026. (core affinity = 3)
+    Hello from rank 7, thread 0, on nid00026. (core affinity = 18)
+    Hello from rank 7, thread 1, on nid00026. (core affinity = 19)
 
 .. automethod:: ipsframework.services.ServicesProxy.launch_task
    :noindex:
