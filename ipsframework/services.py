@@ -638,7 +638,7 @@ class ServicesProxy:
         task_id = self._launch_task(nproc, working_dir, task_id, command, env_update, tag, keywords)
 
         if env_update:
-            self._send_monitor_event('IPS_LAUNCH_TASK', f'task_id = {task_id} , Tag = {tag} , nproc = {nproc} , Target = {command} , env = {env_update}')
+            self._send_monitor_event('IPS_LAUNCH_TASK', f'task_id = {task_id} , Tag = {tag} , nproc = {nproc} , Target = {command}, env = {env_update}')
         else:
             self._send_monitor_event('IPS_LAUNCH_TASK', f'task_id = {task_id} , Tag = {tag} , nproc = {nproc} , Target = {command}')
 
@@ -745,7 +745,7 @@ class ServicesProxy:
             if env_update:
                 self._send_monitor_event('IPS_LAUNCH_TASK_POOL',
                                          f'task_id = {task_id} , Tag = {tag} , nproc = {task.nproc} , Target = {command} , task_name = {task_name}'
-                                         f' , env = {env_update}')
+                                         f', env = {env_update}')
             else:
                 self._send_monitor_event('IPS_LAUNCH_TASK_POOL',
                                          f'task_id = {task_id} , Tag = {tag} , nproc = {task.nproc} , Target = {command} , task_name = {task_name}')
