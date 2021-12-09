@@ -554,6 +554,7 @@ class ServicesProxy:
         manage how the binary is launched.  Keywords may be the following:
 
             * *task_ppn* : the processes per node value for this task
+            * *task_cpp* : the cores per process
             * *block* : specifies that this task will block (or raise an
               exception) if not enough resources are available to run
               immediately.  If ``True``, the task will be retried until it
@@ -637,7 +638,7 @@ class ServicesProxy:
         task_id = self._launch_task(nproc, working_dir, task_id, command, env_update, tag, keywords)
 
         if env_update:
-            self._send_monitor_event('IPS_LAUNCH_TASK', f'task_id = {task_id} , Tag = {tag} , nproc = {nproc} , Target = {command}, env = {env_update}')
+            self._send_monitor_event('IPS_LAUNCH_TASK', f'task_id = {task_id} , Tag = {tag} , nproc = {nproc} , Target = {command} , env = {env_update}')
         else:
             self._send_monitor_event('IPS_LAUNCH_TASK', f'task_id = {task_id} , Tag = {tag} , nproc = {nproc} , Target = {command}')
 
@@ -718,7 +719,7 @@ class ServicesProxy:
             task_ppn = task.keywords.get('task_ppn', self.ppn)
             wnodes = task.keywords.get('whole_nodes', not self.shared_nodes)
             wsocks = task.keywords.get('whole_sockets', not self.shared_nodes)
-            task_cpp = task.keywords.get('task_cpp', 0)
+            task_cpp = task.keywords.get('task_cpp', self.cpp)
             submit_dict[task_name] = (task.nproc, task.working_dir,
                                       task.binary, task.args,
                                       task_ppn, wnodes, wsocks, task_cpp)
@@ -741,9 +742,13 @@ class ServicesProxy:
 
             active_tasks[task_name] = self._launch_task(task.nproc, task.working_dir, task_id, command, env_update, tag, task.keywords)
 
-            self._send_monitor_event('IPS_LAUNCH_TASK_POOL',
-                                     'task_id = %s , Tag = %s , nproc = %d , Target = %s , task_name = %s' %
-                                     (str(task_id), str(tag), int(task.nproc), command, task_name))
+            if env_update:
+                self._send_monitor_event('IPS_LAUNCH_TASK_POOL',
+                                         f'task_id = {task_id} , Tag = {tag} , nproc = {task.nproc} , Target = {command} , task_name = {task_name}'
+                                         f' , env = {env_update}')
+            else:
+                self._send_monitor_event('IPS_LAUNCH_TASK_POOL',
+                                         f'task_id = {task_id} , Tag = {tag} , nproc = {task.nproc} , Target = {command} , task_name = {task_name}')
 
         return active_tasks
 
