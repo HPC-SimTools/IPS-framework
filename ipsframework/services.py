@@ -92,7 +92,8 @@ def launch(binary, task_name, working_dir, *args, **keywords):
             finish_time = time.time()
             with worker.lock:
                 print(json.dumps({"event_type": "IPS_TASK_END", "event_time": finish_time,
-                                  "event_comment": f"task_name = {task_name}, elasped time = {finish_time - start_time:.2f}s"}),
+                                  "event_comment": f"task_name = {task_name}, elapsed time = {finish_time - start_time:.2f}s",
+                                  "elapsed_time": finish_time - start_time}),
                       file=worker_event_log)
         except subprocess.TimeoutExpired:
             with worker.lock:
@@ -110,7 +111,8 @@ def launch(binary, task_name, working_dir, *args, **keywords):
         finish_time = time.time()
         with worker.lock:
             print(json.dumps({"event_type": "IPS_TASK_END", "event_time": finish_time,
-                              "event_comment": f"task_name = {task_name}, elasped time = {finish_time - start_time:.2f}s"}),
+                              "event_comment": f"task_name = {task_name}, elapsed time = {finish_time - start_time:.2f}s",
+                              "elapsed_time": finish_time - start_time}),
                   file=worker_event_log)
 
     return task_name, ret_val
@@ -384,7 +386,8 @@ class ServicesProxy:
                             comment='',
                             ok='True',
                             state='Running',
-                            event_time=None):
+                            event_time=None,
+                            elapsed_time=None):
         """
         Construct and send an event populated with the component's
         information, *eventType*, *comment*, *ok*, *state*, and a wall time
@@ -399,6 +402,8 @@ class ServicesProxy:
         if event_time is None:
             event_time = time.time()
         portal_data['walltime'] = '%.2f' % (event_time - self.component_ref.start_time)
+        if elapsed_time is not None:
+            portal_data['elapsed_time'] = elapsed_time
         portal_data['state'] = state
         portal_data['comment'] = comment
         if self.monitor_url:
@@ -461,7 +466,7 @@ class ServicesProxy:
                                       'init_call',
                                       method_name, *args, **keywords)
         call_id = self._get_service_response(msg_id, True)
-        self.call_targets[call_id] = (target, method_name, args)
+        self.call_targets[call_id] = (target, method_name, args, time.time())
         return call_id
 
     def call(self, component_id, method_name, *args, **keywords):
@@ -495,7 +500,7 @@ class ServicesProxy:
 
         """
         try:
-            (target, method_name, args) = self.call_targets[call_id]
+            (target, method_name, args, start_time) = self.call_targets[call_id]
         except KeyError:
             self.exception('Invalid call_id in wait-call() : %s', call_id)
             raise
@@ -506,7 +511,8 @@ class ServicesProxy:
                           else str(x) for x in args]
         self._send_monitor_event('IPS_CALL_END', 'Target = ' +
                                  target + ':' + method_name + '(' +
-                                 str(*formatted_args) + ')')
+                                 str(*formatted_args) + ')',
+                                 elapsed_time=time.time()-start_time)
         del self.call_targets[call_id]
         return response
 
@@ -857,14 +863,17 @@ class ServicesProxy:
                     time.sleep(delay)
                 else:
                     break
+
+        finish_time = time.time();
         if task_retval is None:
             process.kill()
             task_retval = process.wait()
             self._send_monitor_event('IPS_TASK_END', 'task_id = %s  TIMEOUT elapsed time = %.2f S' %
-                                     (str(task_id), time.time() - start_time))
+                                     (str(task_id), finish_time - start_time))
         else:
             self._send_monitor_event('IPS_TASK_END', 'task_id = %s  elapsed time = %.2f S' %
-                                     (str(task_id), time.time() - start_time))
+                                     (str(task_id), finish_time - start_time),
+                                     elapsed_time=finish_time - start_time)
 
         del self.task_map[task_id]
         try:
@@ -1272,7 +1281,8 @@ class ServicesProxy:
         self._send_monitor_event(eventType='IPS_STAGE_INPUTS',
                                  comment='Elapsed time = %.3f Path = %s Files = %s' %
                                  (elapsed_time, os.path.abspath(inputDir),
-                                  str(input_file_list)))
+                                  str(input_file_list)),
+                                 elapsed_time=elapsed_time)
 
     def stage_subflow_output_files(self, subflow_name='ALL'):
         """Gather outputs from sub-workflows. Sub-workflow output is defined
@@ -1458,7 +1468,8 @@ class ServicesProxy:
         elapsed_time = time.time() - start_time
         self._send_monitor_event('IPS_STAGE_OUTPUTS',
                                  'Elapsed time = %.3f Path = %s Files = %s' %
-                                 (elapsed_time, output_dir, str(file_list)))
+                                 (elapsed_time, output_dir, str(file_list)),
+                                 elapsed_time=elapsed_time)
 
     def save_restart_files(self, timeStamp, file_list):
         """
@@ -1565,7 +1576,8 @@ class ServicesProxy:
         elapsed_time = time.time() - start_time
         self._send_monitor_event('IPS_STAGE_STATE',
                                  'Elapsed time = %.3f  files = %s Success' %
-                                 (elapsed_time, ' '.join(files)))
+                                 (elapsed_time, ' '.join(files)),
+                                 elapsed_time=elapsed_time)
 
     def update_state(self, state_files=None):
         """
@@ -1600,7 +1612,8 @@ class ServicesProxy:
         elapsed_time = time.time() - start_time
         self._send_monitor_event('IPS_UPDATE_STATE',
                                  'Elapsed time = %.3f   files = %s Success' %
-                                 (elapsed_time, ' '.join(files)))
+                                 (elapsed_time, ' '.join(files)),
+                                 elapsed_time=elapsed_time)
 
     def merge_current_state(self, partial_state_file, logfile=None, merge_binary=None):
         """
@@ -1703,13 +1716,15 @@ class ServicesProxy:
     def send_portal_event(self,
                           event_type="COMPONENT_EVENT",
                           event_comment="",
-                          event_time=None):
+                          event_time=None,
+                          elapsed_time=None):
         """
         Send event to web portal.
         """
         return self._send_monitor_event(eventType=event_type,
                                         comment=event_comment,
-                                        event_time=event_time)
+                                        event_time=event_time,
+                                        elapsed_time=elapsed_time)
 
     def log(self, msg, *args):
         """
@@ -1785,8 +1800,10 @@ class ServicesProxy:
         self._send_monitor_event('IPS_TASK_POOL_BEGIN', 'task_pool = %s ' % task_pool_name)
         task_pool: TaskPool = self.task_pools[task_pool_name]
         retval = task_pool.submit_tasks(block, use_dask, dask_nodes, dask_ppn, launch_interval, use_shifter)
+        elapsed_time = time.time() - start_time
         self._send_monitor_event('IPS_TASK_POOL_END', 'task_pool = %s  elapsed time = %.2f S' %
-                                 (task_pool_name, time.time() - start_time))
+                                 (task_pool_name, elapsed_time),
+                                 elapsed_time=elapsed_time)
         return retval
 
     def get_finished_tasks(self, task_pool_name):

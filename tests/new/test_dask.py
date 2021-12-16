@@ -119,7 +119,7 @@ def test_dask(tmpdir):
 
     task_end_comments = [e.get('comment')[:-4] for e in lines if e.get('eventtype') == "IPS_TASK_END"]
     for task in range(4):
-        assert f'task_name = task_{task}, elasped time = 1' in task_end_comments
+        assert f'task_name = task_{task}, elapsed time = 1' in task_end_comments
 
 
 @pytest.mark.skipif(shutil.which('shifter') is not None,
@@ -222,7 +222,7 @@ def test_dask_fake_shifter(tmpdir, monkeypatch):
 
     task_end_comments = [e.get('comment')[:-4] for e in lines if e.get('eventtype') == "IPS_TASK_END"]
     for task in range(4):
-        assert f'task_name = task_{task}, elasped time = 1' in task_end_comments
+        assert f'task_name = task_{task}, elapsed time = 1' in task_end_comments
 
     # check shifter.log file
     with open(str(tmpdir.join('/work/DASK__dask_worker_2').join('shifter.log')), 'r') as f:
