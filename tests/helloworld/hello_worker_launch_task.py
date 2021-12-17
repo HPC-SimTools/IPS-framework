@@ -1,7 +1,7 @@
 # -------------------------------------------------------------------------------
 # Copyright 2006-2021 UT-Battelle, LLC. See LICENSE for more information.
 # -------------------------------------------------------------------------------
-
+import time
 from ipsframework import Component
 
 
@@ -49,3 +49,13 @@ class HelloWorker(Component):
         print('kill_all_tasks')
         self.services.kill_all_tasks()
         print('Number of tasks =', len(self.services.task_map))
+
+        # launch a long task that will timeout
+        task_id = self.services.launch_task(1, cwd, '/bin/sleep', '100', timeout=0.1)
+        time.sleep(1)
+        retval = self.services.wait_task_nonblocking(task_id)
+        print('Timeout task 1 retval =', retval)
+
+        task_id = self.services.launch_task(1, cwd, '/bin/sleep', '100')
+        retval = self.services.wait_task(task_id, timeout=1)
+        print('Timeout task 2 retval =', retval)
