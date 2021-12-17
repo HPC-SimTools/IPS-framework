@@ -228,7 +228,7 @@ class ServicesProxy:
             elif pn_compconf.upper() == 'EXCLUSIVE':
                 self.shared_nodes = False
             else:
-                self.fwk.exception("Bad 'NODE_ALLOCATION_MODE' value %s" % pn_compconf)
+                self.fwk.error("Bad 'NODE_ALLOCATION_MODE' value %s" % pn_compconf)
                 raise Exception("Bad 'NODE_ALLOCATION_MODE' value %s")
         except Exception:
             self.shared_nodes = self.sim_conf['NODE_ALLOCATION_MODE'] == 'SHARED'
@@ -592,7 +592,7 @@ class ServicesProxy:
 
         """
         if not isinstance(binary, str):
-            self.exception('Error in launch_task: task binary of wrong type, expected str but found %s', type(binary).__name__)
+            self.error('Error in launch_task: task binary of wrong type, expected str but found %s', type(binary).__name__)
             raise ValueError(f"task binary of wrong type, expected str but found {type(binary).__name__}")
 
         args = tuple(str(a) for a in args)
@@ -701,8 +701,8 @@ class ServicesProxy:
         submit_dict = {}
         for task_name, task in queued_tasks.items():
             if not isinstance(task.binary, str):
-                self.exception('Error initiating task pool %s: task %s binary of wrong type, expected str but found %s',
-                               task_pool_name, task_name, type(task.binary).__name__)
+                self.error('Error initiating task pool %s: task %s binary of wrong type, expected str but found %s',
+                           task_pool_name, task_name, type(task.binary).__name__)
                 raise ValueError(f"task {task_name} binary of wrong type, expected str but found {type(task.binary).__name__}")
             task_ppn = task.keywords.get('task_ppn', self.ppn)
             wnodes = task.keywords.get('whole_nodes', not self.shared_nodes)
@@ -980,7 +980,7 @@ class ServicesProxy:
         if time_conf['MODE'] == 'REGULAR':
             for entry in ['FINISH', 'START', 'NSTEP']:
                 if not safe(time_conf[entry]):
-                    self.exception('Invalid TIME_LOOP value of %s = %s' % (entry, time_conf[entry]))
+                    self.error('Invalid TIME_LOOP value of %s = %s' % (entry, time_conf[entry]))
                     raise Exception('Invalid TIME_LOOP value of %s = %s' % (entry, time_conf[entry]))
             finish = float(eval(time_conf['FINISH']))
             start = float(eval(time_conf['START']))
@@ -1802,7 +1802,7 @@ class ServicesProxy:
             override = {}
 
         if sub_name in self.sub_flows:
-            self.exception("Duplicate sub flow name")
+            self.error("Duplicate sub flow name")
             raise Exception("Duplicate sub flow name")
 
         self.subflow_count += 1
@@ -2075,7 +2075,7 @@ class TaskPool:
             if TaskPool.dask and self.serial_pool:
                 self.dask_pool = True
                 if use_shifter and not self.shifter:
-                    self.services.exception("Requested to run dask within shifter but shifter not available")
+                    self.services.error("Requested to run dask within shifter but shifter not available")
                     raise Exception("shifter not found")
                 else:
                     return self.submit_dask_tasks(block, dask_nodes, dask_ppn, use_shifter)
