@@ -387,7 +387,9 @@ class ServicesProxy:
                             ok='True',
                             state='Running',
                             event_time=None,
-                            elapsed_time=None):
+                            elapsed_time=None,
+                            procs_requested=None,
+                            cores_allocated=None):
         """
         Construct and send an event populated with the component's
         information, *eventType*, *comment*, *ok*, *state*, and a wall time
@@ -408,6 +410,11 @@ class ServicesProxy:
         portal_data['comment'] = comment
         if self.monitor_url:
             portal_data['vizurl'] = self.monitor_url.split('//')[-1]
+
+        if procs_requested is not None:
+            portal_data['procs_requested'] = procs_requested
+        if cores_allocated is not None:
+            portal_data['cores_allocated'] = cores_allocated
 
         event_data = {}
         event_data['sim_name'] = self.sim_conf['__PORTAL_SIM_NAME']
@@ -632,16 +639,18 @@ class ServicesProxy:
                                           'init_task', nproc, binary_fullpath,
                                           working_dir, task_ppn, block,
                                           whole_nodes, whole_socks, task_cpp, *args)
-            (task_id, command, env_update) = self._get_service_response(msg_id, block=True)
+            (task_id, command, env_update, cores_allocated) = self._get_service_response(msg_id, block=True)
         except Exception:
             raise
 
         task_id = self._launch_task(nproc, working_dir, task_id, command, env_update, tag, keywords)
 
         if env_update:
-            self._send_monitor_event('IPS_LAUNCH_TASK', f'task_id = {task_id} , Tag = {tag} , nproc = {nproc} , Target = {command}, env = {env_update}')
+            self._send_monitor_event('IPS_LAUNCH_TASK', f'task_id = {task_id} , Tag = {tag} , nproc = {nproc} , Target = {command}, env = {env_update}',
+                                     procs_requested=nproc, cores_allocated=cores_allocated)
         else:
-            self._send_monitor_event('IPS_LAUNCH_TASK', f'task_id = {task_id} , Tag = {tag} , nproc = {nproc} , Target = {command}')
+            self._send_monitor_event('IPS_LAUNCH_TASK', f'task_id = {task_id} , Tag = {tag} , nproc = {nproc} , Target = {command}',
+                                     procs_requested=nproc, cores_allocated=cores_allocated)
 
         return task_id
 
@@ -738,7 +747,7 @@ class ServicesProxy:
             if launch_interval > 0:
                 time.sleep(launch_interval)
             task = queued_tasks[task_name]
-            (task_id, command, env_update) = allocated_tasks[task_name]
+            (task_id, command, env_update, cores_allocated) = allocated_tasks[task_name]
             tag = task.keywords.get('tag', 'None')
 
             active_tasks[task_name] = self._launch_task(task.nproc, task.working_dir, task_id, command, env_update, tag, task.keywords)
@@ -746,10 +755,14 @@ class ServicesProxy:
             if env_update:
                 self._send_monitor_event('IPS_LAUNCH_TASK_POOL',
                                          f'task_id = {task_id} , Tag = {tag} , nproc = {task.nproc} , Target = {command} , task_name = {task_name}'
-                                         f', env = {env_update}')
+                                         f', env = {env_update}',
+                                         procs_requested=task.nproc,
+                                         cores_allocated=cores_allocated)
             else:
                 self._send_monitor_event('IPS_LAUNCH_TASK_POOL',
-                                         f'task_id = {task_id} , Tag = {tag} , nproc = {task.nproc} , Target = {command} , task_name = {task_name}')
+                                         f'task_id = {task_id} , Tag = {tag} , nproc = {task.nproc} , Target = {command} , task_name = {task_name}',
+                                         procs_requested=task.nproc,
+                                         cores_allocated=cores_allocated)
 
         return active_tasks
 
@@ -864,7 +877,7 @@ class ServicesProxy:
                 else:
                     break
 
-        finish_time = time.time();
+        finish_time = time.time()
         if task_retval is None:
             process.kill()
             task_retval = process.wait()
