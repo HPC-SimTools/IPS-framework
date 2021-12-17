@@ -627,6 +627,12 @@ class ServicesProxy:
         except Exception:
             raise
 
+        task_id = self._launch_task(nproc, working_dir, task_id, command, env_update, tag, keywords)
+        self._send_monitor_event('IPS_LAUNCH_TASK', 'task_id = %s , Tag = %s , nproc = %d , Target = %s' %
+                                 (str(task_id), tag, int(nproc), command))
+        return task_id
+
+    def _launch_task(self, nproc, working_dir, task_id, command, env_update, tag, keywords):
         log_filename = keywords.get('logfile')
         timeout = keywords.get("timeout", 1.e9)
 
@@ -669,8 +675,6 @@ class ServicesProxy:
         except Exception:
             self.exception('Error executing command : %s', command)
             raise
-        self._send_monitor_event('IPS_LAUNCH_TASK', 'task_id = %s , Tag = %s , nproc = %d , Target = %s' %
-                                 (str(task_id), tag, int(nproc), command))
 
         # FIXME: process Monitoring Command : ps --no-headers -o pid,state pid1  pid2 pid3 ...
 
@@ -721,54 +725,14 @@ class ServicesProxy:
                 time.sleep(launch_interval)
             task = queued_tasks[task_name]
             (task_id, command, env_update) = allocated_tasks[task_name]
-
             tag = task.keywords.get('tag', 'None')
 
-            log_filename = task.keywords.get('logfile')
+            active_tasks[task_name] = self._launch_task(task.nproc, task.working_dir, task_id, command, env_update, tag, task.keywords)
 
-            timeout = task.keywords.get("timeout", 1.e9)
-
-            task_stdout = sys.stdout
-            if log_filename:
-                try:
-                    task_stdout = open(log_filename, 'w')
-                except Exception:
-                    self.exception('Error opening log file %s : using stdout', log_filename)
-
-            task_stderr = subprocess.STDOUT
-            try:
-                err_filename = task.keywords['errfile']
-            except KeyError:
-                pass
-            else:
-                try:
-                    task_stderr = open(err_filename, 'w')
-                except Exception:
-                    self.exception('Error opening stderr file %s : using stderr', err_filename)
-
-            cmd_lst = command.split(' ')
-            try:
-                self.debug('Launching command : %s', command)
-                if env_update:
-                    new_env = os.environ
-                    new_env.update(env_update)
-                    process = subprocess.Popen(cmd_lst, stdout=task_stdout,
-                                               stderr=task_stderr,
-                                               cwd=task.working_dir,
-                                               env=new_env)
-                else:
-                    process = subprocess.Popen(cmd_lst, stdout=task_stdout,
-                                               stderr=task_stderr,
-                                               cwd=task.working_dir)
-            except Exception:
-                self.exception('Error executing task %s - command : %s', task_name, command)
-                raise
             self._send_monitor_event('IPS_LAUNCH_TASK_POOL',
                                      'task_id = %s , Tag = %s , nproc = %d , Target = %s , task_name = %s' %
                                      (str(task_id), str(tag), int(task.nproc), command, task_name))
 
-            self.task_map[task_id] = (process, time.time(), timeout)
-            active_tasks[task_name] = task_id
         return active_tasks
 
     def kill_task(self, task_id):

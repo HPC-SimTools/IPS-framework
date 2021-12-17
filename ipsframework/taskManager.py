@@ -225,22 +225,9 @@ class TaskManager:
 
         # SIMYAN: increased arguments
         cmd_args = init_task_msg.args[7:]
-        # handle for task related things
-        task_id = self.get_task_id()
 
         try:
-            retval = self.resource_mgr.get_allocation(caller_id,
-                                                      nproc,
-                                                      task_id,
-                                                      wnodes,
-                                                      wsocks,
-                                                      task_ppn=tppn)
-            self.fwk.debug('RM: get_allocation() returned %s', str(retval))
-            partial_node = retval[0]
-            if partial_node:
-                (nodelist, corelist, ppn, max_ppn, accurateNodes) = retval[1:]
-            else:
-                (nodelist, ppn, max_ppn, accurateNodes) = retval[1:]
+            return self._init_task(caller_id, nproc, binary, working_dir, tppn, wnodes, wsocks, cmd_args)
         except InsufficientResourcesException:
             if block:
                 raise BlockedMessageException(init_task_msg, '***%s waiting for %d resources' %
@@ -258,16 +245,23 @@ class TaskManager:
         except Exception:
             raise
 
-        # SIMYAN: moved up a few lines and ret_data, node_file added
-        self.curr_task_table[task_id] = {'component': caller_id,
-                                         'status': 'init_task',
-                                         'binary': binary,
-                                         'nproc': nproc,
-                                         'args': cmd_args,
-                                         'launch_cmd': None,
-                                         'env_update': None,
-                                         'ret_data': None,
-                                         'node_file': None}
+    def _init_task(self, caller_id, nproc, binary, working_dir, tppn, wnodes, wsocks, cmd_args):
+        # handle for task related things
+        task_id = self.get_task_id()
+
+        retval = self.resource_mgr.get_allocation(caller_id,
+                                                  nproc,
+                                                  task_id,
+                                                  wnodes,
+                                                  wsocks,
+                                                  task_ppn=tppn)
+        self.fwk.debug('RM: get_allocation() returned %s', str(retval))
+        partial_node = retval[0]
+        if partial_node:
+            (nodelist, corelist, ppn, max_ppn, accurateNodes) = retval[1:]
+        else:
+            (nodelist, ppn, max_ppn, accurateNodes) = retval[1:]
+
         if partial_node:
             nodes = ','.join(nodelist)
             (cmd, env_update) = self.build_launch_cmd(nproc, binary, cmd_args,
@@ -286,9 +280,15 @@ class TaskManager:
                                                       max_ppn, nodes,
                                                       accurateNodes,
                                                       False, task_id)
-        task_data = self.curr_task_table[task_id]
-        task_data['launch_cmd'] = cmd
-        task_data['env_update'] = env_update
+
+        self.curr_task_table[task_id] = {'component': caller_id,
+                                         'status': 'init_task',
+                                         'binary': binary,
+                                         'nproc': nproc,
+                                         'args': cmd_args,
+                                         'launch_cmd': cmd,
+                                         'env_update': env_update}
+
         return (task_id, cmd, env_update)
 
     def build_launch_cmd(self, nproc, binary, cmd_args, working_dir, ppn,
@@ -532,22 +532,10 @@ class TaskManager:
         ret_dict = {}
         for task_name in task_dict:
             # handle for task related things
-            task_id = self.get_task_id()
             (nproc, working_dir, binary, cmd_args, tppn, wnodes, wsocks) = task_dict[task_name]
 
             try:
-                retval = self.resource_mgr.get_allocation(caller_id,
-                                                          nproc,
-                                                          task_id,
-                                                          wnodes, wsocks,
-                                                          task_ppn=tppn)
-                self.fwk.debug('RM: get_allocation() returned %s', str(retval))
-                partial_node = retval[0]
-                if partial_node:
-                    (nodelist, corelist, ppn, max_ppn, accurateNodes) = retval[1:]
-                else:
-                    (nodelist, ppn, max_ppn, accurateNodes) = retval[1:]
-
+                ret_dict[task_name] = self._init_task(caller_id, nproc, binary, working_dir, tppn, wnodes, wsocks, cmd_args)
             except InsufficientResourcesException:
                 continue
             except BadResourceRequestException as e:
@@ -568,37 +556,6 @@ class TaskManager:
                 self.fwk.exception('TM:init_task_pool(): Allocation exception')
                 raise
 
-            if partial_node:
-                nodes = ','.join(nodelist)
-                (cmd, env_update) = self.build_launch_cmd(nproc, binary,
-                                                          cmd_args,
-                                                          working_dir, ppn,
-                                                          max_ppn, nodes,
-                                                          accurateNodes,
-                                                          partial_node,
-                                                          task_id,
-                                                          core_list=corelist)
-            else:
-                if accurateNodes:
-                    nodes = ','.join(nodelist)
-                else:
-                    nodes = ''
-                (cmd, env_update) = self.build_launch_cmd(nproc, binary,
-                                                          cmd_args,
-                                                          working_dir,
-                                                          ppn, max_ppn, nodes,
-                                                          accurateNodes, False,
-                                                          task_id)
-
-            self.curr_task_table[task_id] = {'component': caller_id,
-                                             'status': 'init_task',
-                                             'binary': binary,
-                                             'nproc': nproc,
-                                             'args': cmd_args,
-                                             'launch_cmd': cmd,
-                                             'env_update': env_update,
-                                             'ret_data': None}
-            ret_dict[task_name] = (task_id, cmd, env_update)
         return ret_dict
 
     def finish_task(self, finish_task_msg):

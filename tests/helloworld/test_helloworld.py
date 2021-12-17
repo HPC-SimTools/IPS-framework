@@ -140,7 +140,9 @@ def test_helloworld_launch_task(tmpdir, capfd):
     assert captured_out[15] == 'Number of tasks = 2'
     assert captured_out[16] == 'kill_all_tasks'
     assert captured_out[17] == 'Number of tasks = 0'
-    assert captured_out[18] == 'HelloDriver: finished worker call'
+    assert captured_out[18] == 'Timeout task 1 retval = -1'
+    assert captured_out[19] == 'Timeout task 2 retval = -9'
+    assert captured_out[20] == 'HelloDriver: finished worker call'
     assert captured.err == ''
 
 
