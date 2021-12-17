@@ -311,7 +311,7 @@ class Framework:
         """
         Produce **exception** message in simulation log file. See :func:`logging.exception` for usage.
         """
-        self.logger.exception(msg, *args, exc_info=False)
+        self.logger.exception(msg, *args)
 
     def critical(self, msg, *args):
         """

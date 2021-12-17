@@ -161,13 +161,17 @@ def test_framework_empty_config_list(tmpdir):
     with open(str(tmpdir.join('test.log')), 'r') as f:
         lines = f.readlines()
 
+    assert len(lines) == 8
+
+    assert "Traceback (most recent call last):\n" in lines
+    assert "    raise ValueError('Missing config file? Something is very wrong')\n" in lines
+    assert "ValueError: Missing config file? Something is very wrong\n" in lines
+
     # remove timestamp
     lines = [line[24:] for line in lines]
 
-    assert len(lines) == 3
     assert "FRAMEWORK       ERROR    Missing config file? Something is very wrong\n" in lines
     assert "FRAMEWORK       ERROR    Problem initializing managers\n" in lines
-    assert "FRAMEWORK       ERROR    exception encountered while cleaning up config_manager\n" in lines
 
 
 def test_framework_log_output(tmpdir):
@@ -186,7 +190,10 @@ def test_framework_log_output(tmpdir):
     framework.info("info message")
     framework.warning("warning message")
     framework.error("error message")
-    framework.exception("exception message")
+    try:
+        raise RuntimeError("an error has occurred")
+    except RuntimeError:
+        framework.exception("exception message")
     framework.critical("critical message")
 
     framework.terminate_all_sims()
@@ -195,15 +202,19 @@ def test_framework_log_output(tmpdir):
     with open(str(tmpdir.join('framework_log_test.log')), 'r') as f:
         lines = f.readlines()
 
+    assert len(lines) == 13
+
+    assert "Traceback (most recent call last):\n" in lines
+    assert '    raise RuntimeError("an error has occurred")\n' in lines
+    assert "RuntimeError: an error has occurred\n" in lines
+
     # remove timestamp
     lines = [line[24:] for line in lines]
 
-    assert len(lines) == 9
     assert "FRAMEWORK       WARNING  warning message\n" in lines
     assert "FRAMEWORK       ERROR    error message\n" in lines
     assert "FRAMEWORK       ERROR    exception message\n" in lines
     assert "FRAMEWORK       CRITICAL critical message\n" in lines
-
     assert "FRAMEWORK       INFO     log message\n" not in lines
     assert "FRAMEWORK       DEBUG    debug message\n" not in lines
     assert "FRAMEWORK       INFO     info message\n" not in lines
@@ -225,7 +236,10 @@ def test_framework_log_output_debug(tmpdir):
     framework.info("info message")
     framework.warning("warning message")
     framework.error("error message")
-    framework.exception("exception message")
+    try:
+        raise ValueError("wrong value")
+    except ValueError:
+        framework.exception("exception message")
     framework.critical("critical message")
 
     framework.terminate_all_sims()
@@ -234,10 +248,15 @@ def test_framework_log_output_debug(tmpdir):
     with open(str(tmpdir.join('framework_log_debug_test.log')), 'r') as f:
         lines = f.readlines()
 
+    assert len(lines) == 32
+
+    assert "Traceback (most recent call last):\n" in lines
+    assert '    raise ValueError("wrong value")\n' in lines
+    assert "ValueError: wrong value\n" in lines
+
     # remove timestamp
     lines = [line[24:] for line in lines]
 
-    assert len(lines) == 28
     assert "FRAMEWORK       INFO     log message\n" in lines
     assert "FRAMEWORK       DEBUG    debug message\n" in lines
     assert "FRAMEWORK       INFO     info message\n" in lines

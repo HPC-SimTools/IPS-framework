@@ -146,7 +146,7 @@ class ConfigurationManager:
 
         # Idiot checks
         if len(self.config_file_list) == 0:
-            self.fwk.exception('Missing config file? Something is very wrong')
+            self.fwk.error('Missing config file? Something is very wrong')
             raise ValueError('Missing config file? Something is very wrong')
 
         """
@@ -206,7 +206,7 @@ class ConfigurationManager:
         try:
             node_alloc_mode = self.platform_conf['NODE_ALLOCATION_MODE'].upper()
             if node_alloc_mode not in ['EXCLUSIVE', 'SHARED']:
-                self.fwk.exception("bad value for NODE_ALLOCATION_MODE. expected 'EXCLUSIVE' or 'SHARED'.")
+                self.fwk.error("bad value for NODE_ALLOCATION_MODE. expected 'EXCLUSIVE' or 'SHARED'.")
                 raise ValueError("bad value for NODE_ALLOCATION_MODE. expected 'EXCLUSIVE' or 'SHARED'.")
         except Exception:
             self.fwk.exception("missing value or bad type for NODE_ALLOCATION_MODE.  expected 'EXCLUSIVE' or 'SHARED'.")
@@ -268,13 +268,13 @@ class ConfigurationManager:
                 raise
 
             if sim_name in sim_name_list:
-                self.fwk.exception('Error: Duplicate SIM_NAME in configuration files')
+                self.fwk.error('Error: Duplicate SIM_NAME in configuration files')
                 sys.exit(1)
             if sim_root in sim_root_list:
-                self.fwk.exception('Error: Duplicate SIM_ROOT in configuration files')
+                self.fwk.error('Error: Duplicate SIM_ROOT in configuration files')
                 sys.exit(1)
             if log_file in log_file_list:
-                self.fwk.exception('Error: Duplicate LOG_FILE in configuration files')
+                self.fwk.error('Error: Duplicate LOG_FILE in configuration files')
                 sys.exit(1)
             if 'SIMULATION_CONFIG_FILE' not in conf:
                 conf['SIMULATION_CONFIG_FILE'] = conf_file
@@ -412,7 +412,7 @@ class ConfigurationManager:
             elif pn_simconf.upper() == 'EXCLUSIVE':
                 sim_data.sim_conf['NODE_ALLOCATION_MODE'] = 'EXCLUSIVE'
             else:
-                self.fwk.exception("Bad 'NODE_ALLOCATION_MODE' value %s" % pn_simconf)
+                self.fwk.error("Bad 'NODE_ALLOCATION_MODE' value %s" % pn_simconf)
                 raise Exception("Bad 'NODE_ALLOCATION_MODE' value %s" % pn_simconf)
         except Exception:
             sim_data.sim_conf['NODE_ALLOCATION_MODE'] = self.platform_conf['NODE_ALLOCATION_MODE']
@@ -630,10 +630,10 @@ in configuration file %s', config_file)
             self.fwk.error('Error: Duplicate SIM_NAME %s in configuration files' % (sim_name))
             raise Exception('Duplicate SIM_NAME %s in configuration files' % (sim_name))
         if sim_root in self.sim_root_list:
-            self.fwk.exception('Error: Duplicate SIM_ROOT in configuration files')
+            self.fwk.error('Error: Duplicate SIM_ROOT in configuration files')
             raise Exception('Duplicate SIM_ROOT in configuration files')
         if log_file in self.log_file_list:
-            self.fwk.exception('Error: Duplicate LOG_FILE in configuration files')
+            self.fwk.error('Error: Duplicate LOG_FILE in configuration files')
             raise Exception('Duplicate LOG_FILE in configuration files')
 
         # Add path to configuration file to simulation configuration in memory
@@ -750,4 +750,5 @@ in configuration file %s', config_file)
             raise
         for k in list(self.sim_map.keys()):
             del self.sim_map[k]
-        self.log_process.terminate()
+        if self.log_process is not None:
+            self.log_process.terminate()
