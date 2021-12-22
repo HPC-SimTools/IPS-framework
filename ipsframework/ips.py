@@ -350,8 +350,7 @@ class Framework:
                     self._dispatch_service_request(msg)
                     continue
                 elif msg.__class__.__name__ == 'MethodResultMessage':
-                    self.debug('Received Result for call %s' %
-                               (msg.call_id))
+                    self.debug('Received Result for call %s', msg.call_id)
                     if msg.call_id not in outstanding_fwk_calls:
                         self.task_manager.return_call(msg)
                     else:

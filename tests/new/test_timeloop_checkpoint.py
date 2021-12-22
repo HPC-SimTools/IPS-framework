@@ -1,4 +1,6 @@
-from ipsframework import Framework
+from unittest.mock import MagicMock
+import pytest
+from ipsframework import Framework, ServicesProxy
 
 
 def write_basic_config_and_platform_files(tmpdir, restart=False):
@@ -275,3 +277,53 @@ def test_timeloop_checkpoint_restart(tmpdir):
         assert results_dir.join('TIMELOOP_COMP__timeloop_comp_8').join(f'w1_2_{time}.dat').exists()
         assert results_dir.join('TIMELOOP_COMP2__timeloop_comp_9').join(f'w2_1_{time}.dat').exists()
         assert results_dir.join('TIMELOOP_COMP2__timeloop_comp_9').join(f'w2_2_{time}.dat').exists()
+
+
+def test_TIME_LOOP():
+    sim_conf = {'TIME_LOOP': {'MODE': 'REGULAR',
+                              'START': '0',
+                              'FINISH': '10',
+                              'NSTEP': '10'}}
+    servicesProxy = ServicesProxy(None, None, None, sim_conf, None)
+    tl = servicesProxy.get_time_loop()
+    assert tl == list(range(11))
+
+    sim_conf = {'TIME_LOOP': {'MODE': 'REGULAR',
+                              'START': '0 + 20 / 2',
+                              'FINISH': '13 - 1',
+                              'NSTEP': '2'}}
+    servicesProxy = ServicesProxy(None, None, None, sim_conf, None)
+    tl = servicesProxy.get_time_loop()
+    assert tl == [10, 11, 12]
+
+    sim_conf = {'TIME_LOOP': {'MODE': 'REGULAR',
+                              'START': '10 * 2',
+                              'FINISH': '10 ** 2',
+                              'NSTEP': '2'}}
+    servicesProxy = ServicesProxy(None, None, None, sim_conf, None)
+    tl = servicesProxy.get_time_loop()
+    assert tl == [20, 60, 100]
+
+    sim_conf = {'TIME_LOOP': {'MODE': 'REGULAR',
+                              'START': '1e2',
+                              'FINISH': '5e1',
+                              'NSTEP': '2'}}
+    servicesProxy = ServicesProxy(None, None, None, sim_conf, None)
+    tl = servicesProxy.get_time_loop()
+    assert tl == [100, 75, 50]
+
+    sim_conf = {'TIME_LOOP': {'MODE': 'EXPLICIT',
+                              'VALUES': '7 13 -42 1000'}}
+    servicesProxy = ServicesProxy(None, None, None, sim_conf, None)
+    tl = servicesProxy.get_time_loop()
+    assert tl == [7, 13, -42, 1000]
+
+    sim_conf = {'TIME_LOOP': {'MODE': 'REGULAR',
+                              'START': '1p2',
+                              'FINISH': '10',
+                              'NSTEP': '2'}}
+    servicesProxy = ServicesProxy(None, None, None, sim_conf, None)
+    servicesProxy.error = MagicMock(name='error')
+    with pytest.raises(ValueError) as excinfo:
+        servicesProxy.get_time_loop()
+    assert str(excinfo.value) == "Invalid TIME_LOOP value of START = 1p2"

@@ -21,7 +21,7 @@ def copy_config_and_replace(infile, outfile, tmpdir):
 
 @pytest.mark.skipif(shutil.which('dakota') is None,
                     reason="Requires dakota to run this test")
-@pytest.mark.timeout(120)
+@pytest.mark.timeout(200)
 def test_dakota(tmpdir):
     data_dir = os.path.dirname(__file__)
     copy_config_and_replace(os.path.join(data_dir, "dakota_test_Gaussian.ips"), tmpdir.join("dakota_test_Gaussian.ips"), tmpdir)
