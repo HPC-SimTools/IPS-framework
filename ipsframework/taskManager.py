@@ -222,12 +222,13 @@ class TaskManager:
         block = init_task_msg.args[4]  # Block waiting for available resources
         wnodes = init_task_msg.args[5]
         wsocks = init_task_msg.args[6]
+        tcpp = init_task_msg.args[7]
 
         # SIMYAN: increased arguments
-        cmd_args = init_task_msg.args[7:]
+        cmd_args = init_task_msg.args[8:]
 
         try:
-            return self._init_task(caller_id, nproc, binary, working_dir, tppn, wnodes, wsocks, cmd_args)
+            return self._init_task(caller_id, nproc, binary, working_dir, tppn, tcpp, wnodes, wsocks, cmd_args)
         except InsufficientResourcesException:
             if block:
                 raise BlockedMessageException(init_task_msg, '***%s waiting for %d resources' %
@@ -245,7 +246,7 @@ class TaskManager:
         except Exception:
             raise
 
-    def _init_task(self, caller_id, nproc, binary, working_dir, tppn, wnodes, wsocks, cmd_args):
+    def _init_task(self, caller_id, nproc, binary, working_dir, tppn, tcpp, wnodes, wsocks, cmd_args):
         # handle for task related things
         task_id = self.get_task_id()
 
@@ -254,13 +255,14 @@ class TaskManager:
                                                   task_id,
                                                   wnodes,
                                                   wsocks,
-                                                  task_ppn=tppn)
+                                                  task_ppn=tppn,
+                                                  task_cpp=tcpp)
         self.fwk.debug('RM: get_allocation() returned %s', str(retval))
         partial_node = retval[0]
         if partial_node:
             (nodelist, corelist, ppn, max_ppn, accurateNodes) = retval[1:]
         else:
-            (nodelist, ppn, max_ppn, accurateNodes) = retval[1:]
+            (nodelist, ppn, max_ppn, cpp, accurateNodes) = retval[1:]
 
         if partial_node:
             nodes = ','.join(nodelist)
@@ -279,7 +281,8 @@ class TaskManager:
                                                       working_dir, ppn,
                                                       max_ppn, nodes,
                                                       accurateNodes,
-                                                      False, task_id)
+                                                      False, task_id,
+                                                      cpp)
 
         self.curr_task_table[task_id] = {'component': caller_id,
                                          'status': 'init_task',
@@ -293,7 +296,7 @@ class TaskManager:
 
     def build_launch_cmd(self, nproc, binary, cmd_args, working_dir, ppn,
                          max_ppn, nodes, accurateNodes, partial_nodes,
-                         task_id, core_list=''):
+                         task_id, cpp=0, core_list=''):
         """
         Construct task launch command to be executed by the component.
 
@@ -504,8 +507,21 @@ class TaskManager:
             nproc_flag = '-n'
             nnodes_flag = '-N'
             num_nodes = len(nodes.split(','))
-            cmd = ' '.join([self.task_launch_cmd, nnodes_flag,
-                            str(num_nodes), nproc_flag, str(nproc)])
+            if partial_nodes:
+                cmd = ' '.join([self.task_launch_cmd,
+                                nnodes_flag, str(num_nodes),
+                                nproc_flag, str(nproc)])
+            else:
+                cpuptask_flag = '-c'
+                cpubind_flag = '--threads-per-core=1 --cpu-bind=cores'
+                cmd = ' '.join([self.task_launch_cmd,
+                                nnodes_flag, str(num_nodes),
+                                nproc_flag, str(nproc),
+                                cpuptask_flag, str(cpp),
+                                cpubind_flag])
+                env_update = {'OMP_PLACES': 'threads',
+                              'OMP_PROC_BIND': 'spread',
+                              'OMP_NUM_THREADS': str(cpp)}
         else:
             self.fwk.error("invalid task launch command.")
             raise RuntimeError("invalid task launch command.")
@@ -532,10 +548,10 @@ class TaskManager:
         ret_dict = {}
         for task_name in task_dict:
             # handle for task related things
-            (nproc, working_dir, binary, cmd_args, tppn, wnodes, wsocks) = task_dict[task_name]
+            (nproc, working_dir, binary, cmd_args, tppn, wnodes, wsocks, tcpp) = task_dict[task_name]
 
             try:
-                ret_dict[task_name] = self._init_task(caller_id, nproc, binary, working_dir, tppn, wnodes, wsocks, cmd_args)
+                ret_dict[task_name] = self._init_task(caller_id, nproc, binary, working_dir, tppn, tcpp, wnodes, wsocks, cmd_args)
             except InsufficientResourcesException:
                 continue
             except BadResourceRequestException as e:

@@ -256,7 +256,7 @@ class ResourceManager:
     # RM getAllocation
     # pylint: disable=inconsistent-return-statements
     def get_allocation(self, comp_id, nproc, task_id,
-                       whole_nodes, whole_socks, task_ppn=0):
+                       whole_nodes, whole_socks, task_ppn=0, task_cpp=0):
         """
         Traverse available nodes to return:
 
@@ -316,6 +316,20 @@ class ResourceManager:
         allocation_possible = False
         if whole_nodes:
             allocation_possible, nodes = self.check_whole_node_cap(nproc, ppn)
+
+            if allocation_possible:
+                num_cores = self.cores_per_node
+                max_cpp = num_cores//ppn
+                if task_cpp > 0:
+                    if task_cpp > max_cpp:
+                        self.fwk.warning(f"task cpp ({task_cpp}) exceeds maximum possible for {ppn} procs per node "
+                                         f"with {num_cores} cores per node, using {max_cpp} cpus per proc instead")
+                        cpp = max_cpp
+                    else:
+                        cpp = task_cpp
+                else:
+                    cpp = max_cpp
+
         elif whole_socks:
             allocation_possible, nodes = self.check_whole_sock_cap(nproc, ppn)
         else:
@@ -429,7 +443,7 @@ class ResourceManager:
 
             if whole_nodes:
                 self.report_RM_status("allocation for task %d using whole nodes" % task_id)
-                return not whole_nodes, nodes, ppn, self.max_ppn, self.accurateNodes
+                return not whole_nodes, nodes, ppn, self.max_ppn, cpp, self.accurateNodes
             else:
                 self.report_RM_status("allocation for task %d using partial nodes" % task_id)
                 return not whole_nodes, nodes, node_file_entries, ppn, self.max_ppn, self.accurateNodes

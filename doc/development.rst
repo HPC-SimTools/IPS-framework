@@ -144,7 +144,11 @@ The are some tests that only run on Cori at NERSC and these are not
 run as part of the :ref:`CI <continuous integration>` and must be run
 manually. To run those test you need to add the option ``--runcori``
 to the ``pytest``. There are tests for the :ref:`shifter
-functionally<dask_shifter>` that is Cori specific.
+functionally<dask_shifter>` that is Cori specific. There are also
+tests for the srun commands built with different ``task_ppn`` and
+``task_cpp`` options in
+:meth:`~ipsframework.services.ServicesProxy.launch_task`.
+
 
 An example batch script for running the unit tests is:
 
@@ -153,8 +157,6 @@ An example batch script for running the unit tests is:
   #!/bin/bash
   #SBATCH -p debug
   #SBATCH --nodes=1
-  #SBATCH --tasks-per-node=1
-  #SBATCH --cpus-per-task=32
   #SBATCH -t 00:10:00
   #SBATCH -C haswell
   #SBATCH -J pytest
@@ -164,7 +166,8 @@ An example batch script for running the unit tests is:
   module load python/3.8-anaconda-2020.11
   python -m pytest --runcori
 
-The check the output in ``pytest.out`` to see that all the tests passed.
+Then check the output in ``pytest.out`` to see that all the tests
+passed.
 
 Writing Tests
 ~~~~~~~~~~~~~
