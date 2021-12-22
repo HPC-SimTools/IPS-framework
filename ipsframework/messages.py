@@ -76,6 +76,10 @@ class ServiceResponseMessage(Message):
         self.args = args
         self.message_id = self.get_message_id()
 
+    def __repr__(self):
+        return (f'ServiceResponseMessage(sender_id={self.sender_id}, receiver_id={self.receiver_id}, request_msg_id={self.request_msg_id},'
+                f'status={self.status}, args={self.args}, message_id={self.message_id})')
+
 
 class MethodInvokeMessage(Message):
     r"""

@@ -228,7 +228,7 @@ class ServicesProxy:
             elif pn_compconf.upper() == 'EXCLUSIVE':
                 self.shared_nodes = False
             else:
-                self.fwk.error("Bad 'NODE_ALLOCATION_MODE' value %s" % pn_compconf)
+                self.fwk.error("Bad 'NODE_ALLOCATION_MODE' value %s", pn_compconf)
                 raise Exception("Bad 'NODE_ALLOCATION_MODE' value %s")
         except Exception:
             self.shared_nodes = self.sim_conf['NODE_ALLOCATION_MODE'] == 'SHARED'
@@ -300,13 +300,12 @@ class ServicesProxy:
         :py:meth:`messages.ServiceResponseMessage` when available, otherwise
         ``None``.
         """
-        if msg_id in list(self.finished_calls.keys()):
-            response = self.finished_calls[msg_id]
-            del self.finished_calls[msg_id]
-            return response
-        elif msg_id not in self.incomplete_calls:
-            self.error('Invalid call ID : %s ', str(msg_id))
-            raise Exception('Invalid message request ID argument')
+        try:
+            return self.finished_calls.pop(msg_id)
+        except KeyError:
+            if msg_id not in self.incomplete_calls:
+                self.error('Invalid call ID : %s ', str(msg_id))
+                raise Exception('Invalid message request ID argument')
 
         keep_going = True
         while keep_going:
@@ -334,11 +333,7 @@ class ServicesProxy:
             if not block:
                 keep_going = False
         # if this message corresponds to a finish invocation, return the response message
-        if msg_id in list(self.finished_calls.keys()):
-            response = self.finished_calls[msg_id]
-            del self.finished_calls[msg_id]
-            return response
-        return None
+        return self.finished_calls.pop(msg_id, None)
 
     def _invoke_service(self, component_id, method_name, *args, **keywords):
         r"""
@@ -605,7 +600,7 @@ class ServicesProxy:
         except KeyError:
             binary_fullpath = ipsutil.which(binary)
         if not binary_fullpath:
-            self.error("Program %s is not in path or is not executable" % binary)
+            self.error("Program %s is not in path or is not executable", binary)
             raise Exception("Program %s is not in path or is not executable" % binary)
         else:
             self.binary_fullpath_cache[binary] = binary_fullpath
@@ -970,9 +965,8 @@ class ServicesProxy:
         """
         if self.time_loop is not None:
             return self.time_loop
-        sim_conf = self.sim_conf
         tlist = []
-        time_conf = sim_conf['TIME_LOOP']
+        time_conf = self.sim_conf['TIME_LOOP']
 
         def safe(nums):
             return len(set(str(nums)).difference(set("1234567890-+/*.e "))) == 0
@@ -980,8 +974,8 @@ class ServicesProxy:
         if time_conf['MODE'] == 'REGULAR':
             for entry in ['FINISH', 'START', 'NSTEP']:
                 if not safe(time_conf[entry]):
-                    self.error('Invalid TIME_LOOP value of %s = %s' % (entry, time_conf[entry]))
-                    raise Exception('Invalid TIME_LOOP value of %s = %s' % (entry, time_conf[entry]))
+                    self.error('Invalid TIME_LOOP value of %s = %s', entry, time_conf[entry])
+                    raise ValueError('Invalid TIME_LOOP value of %s = %s' % (entry, time_conf[entry]))
             finish = float(eval(time_conf['FINISH']))
             start = float(eval(time_conf['START']))
             nstep = int(eval(time_conf['NSTEP']))
@@ -1611,7 +1605,7 @@ class ServicesProxy:
         bin_name = merge_binary if merge_binary else "update_state"
         full_path_binary = ipsutil.which(bin_name)
         if not full_path_binary:
-            self.error("Missing executable %s in PATH" % bin_name)
+            self.error("Missing executable %s in PATH", bin_name)
             raise FileNotFoundError("Missing executable file %s in PATH" % bin_name)
         try:
             msg_id = self._invoke_service(self.fwk.component_id,
@@ -1810,7 +1804,7 @@ class ServicesProxy:
             sub_conf_new = ConfigObj(infile=config_file, interpolation='template', file_error=True)
             sub_conf_old = ConfigObj(infile=config_file, interpolation='template', file_error=True)
         except Exception:
-            self.exception("Error accessing sub-workflow config file %s" % config_file)
+            self.exception("Error accessing sub-workflow config file %s", config_file)
             raise
         # Update undefined sub workflow configuration entries using top level configuration
         # only applicable to non-component entries (ones with non-dictionary values)
@@ -1966,7 +1960,7 @@ class TaskPool:
             except KeyError:
                 binary_fullpath = ipsutil.which(binary)
             if not binary_fullpath:
-                self.services.error("Program %s is not in path or is not executable" % binary)
+                self.services.error("Program %s is not in path or is not executable", binary)
                 raise Exception("Program %s is not in path or is not executable" % binary)
             else:
                 self.services.binary_fullpath_cache[binary] = binary_fullpath
