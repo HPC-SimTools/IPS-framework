@@ -404,8 +404,8 @@ def test_init_task_srun(tmpdir):
 
     def init_final_task(nproc, tppn, tcpt=0):
         task_id, cmd, _, cores_allocated = tm.init_task(ServiceRequestMessage('id', 'id', 'c', 'init_task',
-                                                             nproc, 'exe', '/dir', tppn, True,
-                                                             True, True, tcpt))
+                                                                              nproc, 'exe', '/dir', tppn, True,
+                                                                              True, True, tcpt))
         tm.finish_task(ServiceRequestMessage('id', 'id', 'c', 'finish_task',
                                              task_id, None))
         return task_id, cmd, cores_allocated

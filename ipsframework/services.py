@@ -388,6 +388,9 @@ class ServicesProxy:
                             state='Running',
                             event_time=None,
                             elapsed_time=None,
+                            start_time=None,
+                            end_time=None,
+                            target=None,
                             procs_requested=None,
                             cores_allocated=None):
         """
@@ -406,15 +409,20 @@ class ServicesProxy:
         portal_data['walltime'] = '%.2f' % (event_time - self.component_ref.start_time)
         if elapsed_time is not None:
             portal_data['elapsed_time'] = elapsed_time
-        portal_data['state'] = state
-        portal_data['comment'] = comment
-        if self.monitor_url:
-            portal_data['vizurl'] = self.monitor_url.split('//')[-1]
-
+        if start_time is not None:
+            portal_data['start_time'] = start_time
+        if end_time is not None:
+            portal_data['end_time'] = end_time
+        if target is not None:
+            portal_data['target'] = target
         if procs_requested is not None:
             portal_data['procs_requested'] = procs_requested
         if cores_allocated is not None:
             portal_data['cores_allocated'] = cores_allocated
+        portal_data['state'] = state
+        portal_data['comment'] = comment
+        if self.monitor_url:
+            portal_data['vizurl'] = self.monitor_url.split('//')[-1]
 
         event_data = {}
         event_data['sim_name'] = self.sim_conf['__PORTAL_SIM_NAME']
@@ -440,7 +448,7 @@ class ServicesProxy:
         method in the base class for components.
 
         """
-        for (p, _, _) in self.task_map.values():
+        for p, *_ in self.task_map.values():
             try:
                 p.kill()
             except Exception:
@@ -514,12 +522,14 @@ class ServicesProxy:
         msg_id = self._invoke_service(self.fwk.component_id, 'wait_call',
                                       call_id, block)
         response = self._get_service_response(msg_id, block=True)
-        formatted_args = ['%.3f' % (x) if isinstance(x, float)
-                          else str(x) for x in args]
-        self._send_monitor_event('IPS_CALL_END', 'Target = ' +
-                                 target + ':' + method_name + '(' +
-                                 str(*formatted_args) + ')',
-                                 elapsed_time=time.time()-start_time)
+        formatted_args = ','.join('%.3f' % (x) if isinstance(x, float)
+                                  else str(x) for x in args)
+        target_full = f'{target}:{method_name}({formatted_args})'
+        self._send_monitor_event('IPS_CALL_END', 'Target = ' + target_full,
+                                 start_time=start_time,
+                                 end_time=time.time(),
+                                 elapsed_time=time.time()-start_time,
+                                 target=target_full)
         del self.call_targets[call_id]
         return response
 
@@ -643,7 +653,7 @@ class ServicesProxy:
         except Exception:
             raise
 
-        task_id = self._launch_task(nproc, working_dir, task_id, command, env_update, tag, keywords)
+        task_id = self._launch_task(nproc, working_dir, task_id, command, cores_allocated, env_update, tag, keywords, binary, args)
 
         if env_update:
             self._send_monitor_event('IPS_LAUNCH_TASK', f'task_id = {task_id} , Tag = {tag} , nproc = {nproc} , Target = {command}, env = {env_update}',
@@ -654,7 +664,7 @@ class ServicesProxy:
 
         return task_id
 
-    def _launch_task(self, nproc, working_dir, task_id, command, env_update, tag, keywords):
+    def _launch_task(self, nproc, working_dir, task_id, command, cores_allocated, env_update, tag, keywords, binary, args):
         log_filename = keywords.get('logfile')
         timeout = keywords.get("timeout", 1.e9)
 
@@ -700,7 +710,7 @@ class ServicesProxy:
 
         # FIXME: process Monitoring Command : ps --no-headers -o pid,state pid1  pid2 pid3 ...
 
-        self.task_map[task_id] = (process, time.time(), timeout)
+        self.task_map[task_id] = (process, time.time(), timeout, nproc, cores_allocated, command, binary, args)
         return task_id  # process.pid
 
     def launch_task_pool(self, task_pool_name, launch_interval=0.0):
@@ -750,7 +760,9 @@ class ServicesProxy:
             (task_id, command, env_update, cores_allocated) = allocated_tasks[task_name]
             tag = task.keywords.get('tag', 'None')
 
-            active_tasks[task_name] = self._launch_task(task.nproc, task.working_dir, task_id, command, env_update, tag, task.keywords)
+            active_tasks[task_name] = self._launch_task(task.nproc,
+                                                        task.working_dir, task_id, command, cores_allocated,
+                                                        env_update, tag, task.keywords, task.binary, task.args)
 
             if env_update:
                 self._send_monitor_event('IPS_LAUNCH_TASK_POOL',
@@ -778,7 +790,7 @@ class ServicesProxy:
         :rtype: bool
         """
         try:
-            process, _, _ = self.task_map[task_id]
+            process, *_ = self.task_map[task_id]
             # TODO: process and start_time will have to be accessed as shown
             #      below if this task can be relaunched to support FT...
         except KeyError:
@@ -824,7 +836,7 @@ class ServicesProxy:
         :return: return value of task if finished else None
         """
         try:
-            process, start_time, timeout = self.task_map[task_id]
+            process, start_time, timeout, *_ = self.task_map[task_id]
             # TODO: process and start_time will have to be accessed as shown
             #      below if this task can be relaunched to support FT...
         except KeyError:
@@ -861,7 +873,7 @@ class ServicesProxy:
         :return: return value of task
         """
         try:
-            process, start_time, _ = self.task_map[task_id]
+            process, start_time, _, nproc, cores, _, binary, args = self.task_map[task_id]
         except KeyError:
             self.exception('Error: unrecognizable task_id = %s ', str(task_id))
             raise
@@ -886,7 +898,12 @@ class ServicesProxy:
         else:
             self._send_monitor_event('IPS_TASK_END', 'task_id = %s  elapsed time = %.2f S' %
                                      (str(task_id), finish_time - start_time),
-                                     elapsed_time=finish_time - start_time)
+                                     start_time=start_time,
+                                     end_time=finish_time,
+                                     elapsed_time=finish_time - start_time,
+                                     procs_requested=nproc,
+                                     cores_allocated=cores,
+                                     target=f'{binary}({",".join(args)})')
 
         del self.task_map[task_id]
         try:
