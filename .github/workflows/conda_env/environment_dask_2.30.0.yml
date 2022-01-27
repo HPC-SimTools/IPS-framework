@@ -8,3 +8,4 @@ dependencies:
 - mpi4py
 - openmpi
 - dask=2.30.0
+- coverage<=6.2

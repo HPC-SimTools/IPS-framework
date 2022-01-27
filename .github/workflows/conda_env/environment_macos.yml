@@ -5,4 +5,5 @@ dependencies:
 - pytest-cov
 - pytest-timeout
 - psutil
-- dask=2021.12.0
+- dask=2022.01.0
+- coverage<=6.2

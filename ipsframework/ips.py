@@ -171,14 +171,14 @@ class Framework:
             self.log_level = logging.DEBUG
         # create handler and set level to debug
         logger.setLevel(self.log_level)
-        ch = logging.StreamHandler(self.log_file)
-        ch.setLevel(self.log_level)
+        self.ch = logging.StreamHandler(self.log_file)
+        self.ch.setLevel(self.log_level)
         # create formatter
         formatter = logging.Formatter("%(asctime)s %(name)-15s %(levelname)-8s %(message)s")
         # add formatter to ch
-        ch.setFormatter(formatter)
+        self.ch.setFormatter(formatter)
         # add ch to logger
-        logger.addHandler(ch)
+        logger.addHandler(self.ch)
         self.logger = logger
         self.verbose_debug = verbose_debug
         self.outstanding_calls_list = []
@@ -536,6 +536,7 @@ class Framework:
 
         self.terminate_all_sims(Message.SUCCESS)
         self.event_service._print_stats()
+        self.logger.removeHandler(self.ch)
         return True
 
     def initiate_new_simulation(self, sim_name):
