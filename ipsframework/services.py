@@ -415,6 +415,7 @@ class ServicesProxy:
             portal_data['end_time'] = end_time
         if target is not None:
             portal_data['target'] = target
+            portal_data['origin_target'] = f'{self.component_ref.component_id.get_class_name()}@{self.component_ref.component_id.get_seq_num()}'
         if procs_requested is not None:
             portal_data['procs_requested'] = procs_requested
         if cores_allocated is not None:
@@ -529,7 +530,7 @@ class ServicesProxy:
                                  start_time=start_time,
                                  end_time=time.time(),
                                  elapsed_time=time.time()-start_time,
-                                 target=target_full)
+                                 target=target)
         del self.call_targets[call_id]
         return response
 

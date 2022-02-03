@@ -633,6 +633,8 @@ class Framework:
             portal_data['state'] = 'Completed'
             portal_data['stopat'] = time.strftime('%Y-%m-%d|%H:%M:%S%Z',
                                                   time.localtime())
+            portal_data['start_time'] = self.start_time
+            portal_data['end_time'] = time.time()
 
         event_body = {}
         event_body['sim_name'] = sim_name
