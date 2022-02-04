@@ -415,7 +415,9 @@ class ServicesProxy:
             portal_data['end_time'] = end_time
         if target is not None:
             portal_data['target'] = target
-            portal_data['origin_target'] = f'{self.component_ref.component_id.get_class_name()}@{self.component_ref.component_id.get_seq_num()}'
+            formatted_args = ['%.3f' % (x) if isinstance(x, float)
+                              else str(x) for x in self.component_ref.args]
+            portal_data['origin_target'] = f"{self.component_ref.component_id.get_class_name()}@{self.component_ref.component_id.get_seq_num()}:{self.component_ref.method_name}({' ,'.join(formatted_args)})"
         if procs_requested is not None:
             portal_data['procs_requested'] = procs_requested
         if cores_allocated is not None:
@@ -530,7 +532,7 @@ class ServicesProxy:
                                  start_time=start_time,
                                  end_time=time.time(),
                                  elapsed_time=time.time()-start_time,
-                                 target=target)
+                                 target=target_full)
         del self.call_targets[call_id]
         return response
 
@@ -904,7 +906,7 @@ class ServicesProxy:
                                      elapsed_time=finish_time - start_time,
                                      procs_requested=nproc,
                                      cores_allocated=cores,
-                                     target=f'{binary}({",".join(args)})')
+                                     target=f'{binary} {" ".join(args)}')
 
         del self.task_map[task_id]
         try:
