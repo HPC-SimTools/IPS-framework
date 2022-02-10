@@ -413,7 +413,7 @@ class ServicesProxy:
         if start_time is not None:
             trace['timestamp'] = int(start_time*1e6)  # convert to microsecond
             if elapsed_time is not None:
-                trace['duration'] = end_time
+                trace['duration'] = int(elapsed_time*1e6)
             elif end_time is not None:
                 trace['duration'] = int((end_time-start_time)*1e6)  # convert to microsecond
         if target is not None:
@@ -422,10 +422,8 @@ class ServicesProxy:
             formatted_args = ['%.3f' % (x) if isinstance(x, float)
                               else str(x) for x in self.component_ref.args]
             trace['id'] = hashlib.md5(f"{target}:{operation}".encode()).hexdigest()[:16]
-            trace['id_text'] = f"{target}:{operation}"
-            trace['parentId'] = hashlib.md5(f"{self.component_ref.component_id.get_class_name()}@{self.component_ref.component_id.get_seq_num()}:{self.component_ref.method_name}({' ,'.join(formatted_args)})".encode()).hexdigest()[:16]
-            trace['parentId_text'] = f"{self.component_ref.component_id.get_class_name()}@{self.component_ref.component_id.get_seq_num()}:{self.component_ref.method_name}({' ,'.join(formatted_args)})"
-            trace['componentID'] = str(self.component_ref.component_id)
+            trace['parentId'] = hashlib.md5(f"{self.component_ref.component_id}:{self.component_ref.method_name}({' ,'.join(formatted_args)})"
+                                            .encode()).hexdigest()[:16]
 
         if trace:
             portal_data['trace'] = trace
@@ -482,9 +480,7 @@ class ServicesProxy:
         :return: call_id
         :rtype: int
         """
-        target_class = component_id.get_class_name()
-        target_seqnum = component_id.get_seq_num()
-        target = target_class + '@' + str(target_seqnum)
+        target = str(component_id)
         formatted_args = ['%.3f' % (x) if isinstance(x, float)
                           else str(x) for x in args]
         if keywords:

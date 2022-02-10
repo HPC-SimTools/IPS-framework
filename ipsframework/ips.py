@@ -182,7 +182,7 @@ class Framework:
         logger.addHandler(self.ch)
         self.logger = logger
         self.verbose_debug = verbose_debug
-        self.outstanding_calls_list = []
+        self.outstanding_calls_list = {}
         self.call_queue_map = {}
 
         # add the handler to the root logger
@@ -422,7 +422,7 @@ class Framework:
                 for method in ['step', 'finalize']:
                     req_msg = ServiceRequestMessage(self.component_id, self.component_id,
                                                     comp_id, 'init_call', method, 0)
-                    msg_list.append(req_msg)
+                    msg_list.append((req_msg, None, str(comp_id), method, 0))
 
                 outstanding_sim_calls[str(comp_id)] = msg_list
 
@@ -448,7 +448,7 @@ class Framework:
                                                         self.component_id,
                                                         comp_id,
                                                         'init_call', method, 0)
-                        msg_list.append(req_msg)
+                        msg_list.append((req_msg, sim_name, str(comp_id), method, 0))
                     # SIMYAN: add the msg_list to the outstanding sim calls
                     if msg_list:
                         outstanding_sim_calls[sim_name] = msg_list
@@ -461,11 +461,11 @@ class Framework:
         # send off first round of invocations...
         try:
             for sim_name, msg_list in outstanding_sim_calls.items():
-                msg = msg_list.pop(0)
+                msg, sim_name, comp, method, arg = msg_list.pop(0)
                 self.debug('Framework sending message %s ', msg.__dict__)
                 call_id = self.task_manager.init_call(msg, manage_return=False)
                 self.call_queue_map[call_id] = msg_list
-                self.outstanding_calls_list.append(call_id)
+                self.outstanding_calls_list[call_id] = sim_name, comp, method, arg, time.time()
         except Exception:
             self.exception('encountered exception during fwk.run() sending first round of invocations (init of inits and fwk comps)')
             self.terminate_all_sims(status=Message.FAILURE)
@@ -504,7 +504,14 @@ class Framework:
                         self.task_manager.return_call(msg)
                         continue
                     # Message is a result from a framework invocation
-                    self.outstanding_calls_list.remove(msg.call_id)
+                    sim_name, comp, method, arg, start_time = self.outstanding_calls_list.pop(msg.call_id)
+                    if sim_name is not None:
+                        self._send_monitor_event(sim_name=sim_name,
+                                                 eventType='IPS_CALL_END',
+                                                 start_time=start_time,
+                                                 end_time=time.time(),
+                                                 target=comp,
+                                                 operation=f'{method}({arg})')
                     sim_msg_list = self.call_queue_map[msg.call_id]
                     del self.call_queue_map[msg.call_id]
                     if msg.status == Message.FAILURE:
@@ -521,10 +528,10 @@ class Framework:
                         comment = 'Simulation Ended'
                         ok = True
                     try:
-                        next_call_msg = sim_msg_list.pop(0)
+                        next_call_msg, sim_name, comp, method, arg = sim_msg_list.pop(0)
                         call_id = self.task_manager.init_call(next_call_msg,
                                                               manage_return=False)
-                        self.outstanding_calls_list.append(call_id)
+                        self.outstanding_calls_list[call_id] = sim_name, comp, method, arg, time.time()
                         self.call_queue_map[call_id] = sim_msg_list
                     except IndexError:
                         sim_comps = self.config_manager.get_component_map()  # Get any new dynamic simulations
@@ -555,16 +562,16 @@ class Framework:
                 req_msg = ServiceRequestMessage(self.component_id,
                                                 self.component_id, comp_id,
                                                 'init_call', method, 0)
-                msg_list.append(req_msg)
+                msg_list.append((req_msg, sim_name, str(comp_id), method, 0))
 
         # send off first round of invocations...
-        msg = msg_list.pop(0)
+        msg, sim_name, comp, method, arg = msg_list.pop(0)
         self.debug('Framework sending message %s ', msg.__dict__)
         call_id = self.task_manager.init_call(msg, manage_return=False)
         self.call_queue_map[call_id] = msg_list
-        self.outstanding_calls_list.append(call_id)
+        self.outstanding_calls_list[call_id] = sim_name, comp, method, arg, time.time()
 
-    def _send_monitor_event(self, sim_name='', eventType='', comment='', ok='True'):
+    def _send_monitor_event(self, sim_name='', eventType='', comment='', ok='True', target=None, operation=None, start_time=None, end_time=None):
         """
         Publish a portal monitor event to the *_IPS_MONITOR* event topic.
         Event topics that start with an underscore are reserved for use by the
@@ -634,15 +641,25 @@ class Framework:
             portal_data['state'] = 'Completed'
             portal_data['stopat'] = time.strftime('%Y-%m-%d|%H:%M:%S%Z',
                                                   time.localtime())
-            portal_data['start_time'] = self.start_time
-            portal_data['end_time'] = time.time()
-            portal_data['trace'] = {"timestamp": int(time.time()*1e6),
+            portal_data['trace'] = {"timestamp": int(self.start_time*1e6),
                                     "duration": int((time.time() - self.start_time)*1e6),
                                     "localEndpoint": {
                                         "serviceName": str(self.component_id)
                                     },
-                                    "id": hashlib.md5(str(self.component_id).encode()).hexdigest()[:16],
-                                    "id_text": str(self.component_id)}
+                                    "id": hashlib.md5(str(self.component_id).encode()).hexdigest()[:16]}
+        elif eventType == "IPS_CALL_END":
+            trace = {}
+            if start_time is not None and end_time is not None:
+                trace['timestamp'] = int(start_time*1e6)  # convert to microsecond
+                trace['duration'] = int((end_time-start_time)*1e6)  # convert to microsecond
+            if target is not None:
+                trace['localEndpoint'] = {"serviceName": target}
+                trace['name'] = operation
+                trace['id'] = hashlib.md5(f"{target}:{operation}".encode()).hexdigest()[:16]
+                trace["parentId"] = hashlib.md5(str(self.component_id).encode()).hexdigest()[:16]
+
+            if trace:
+                portal_data['trace'] = trace
 
         event_body = {}
         event_body['sim_name'] = sim_name

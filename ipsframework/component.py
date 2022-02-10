@@ -31,6 +31,8 @@ class Component:
         self.config = config
         self.start_time = 0.0
         self.sys_exit = None
+        self.method_name = None
+        self.args = None
         for i in config.keys():
             try:
                 setattr(self, i, config[i])
