@@ -7,7 +7,7 @@ import queue
 import os
 import subprocess
 import threading
-
+import hashlib
 import time
 import shutil
 import logging
@@ -408,19 +408,28 @@ class ServicesProxy:
         if event_time is None:
             event_time = time.time()
         portal_data['walltime'] = '%.2f' % (event_time - self.component_ref.start_time)
-        if elapsed_time is not None:
-            portal_data['elapsed_time'] = elapsed_time
+
+        trace = {}
         if start_time is not None:
-            portal_data['start_time'] = start_time
-        if end_time is not None:
-            portal_data['end_time'] = end_time
+            trace['timestamp'] = int(start_time*1e6)  # convert to microsecond
+            if elapsed_time is not None:
+                trace['duration'] = end_time
+            elif end_time is not None:
+                trace['duration'] = int((end_time-start_time)*1e6)  # convert to microsecond
         if target is not None:
-            portal_data['target'] = target
-            portal_data['operation'] = operation
+            trace['localEndpoint'] = {"serviceName": target}
+            trace['name'] = operation
             formatted_args = ['%.3f' % (x) if isinstance(x, float)
                               else str(x) for x in self.component_ref.args]
-            portal_data['sender_operation'] = f"{self.component_ref.method_name}({' ,'.join(formatted_args)})"
-            portal_data['sender'] = f"{self.component_ref.component_id.get_class_name()}@{self.component_ref.component_id.get_seq_num()}"
+            trace['id'] = hashlib.md5(f"{target}:{operation}".encode()).hexdigest()[:16]
+            trace['id_text'] = f"{target}:{operation}"
+            trace['parentId'] = hashlib.md5(f"{self.component_ref.component_id.get_class_name()}@{self.component_ref.component_id.get_seq_num()}:{self.component_ref.method_name}({' ,'.join(formatted_args)})".encode()).hexdigest()[:16]
+            trace['parentId_text'] = f"{self.component_ref.component_id.get_class_name()}@{self.component_ref.component_id.get_seq_num()}:{self.component_ref.method_name}({' ,'.join(formatted_args)})"
+            trace['componentID'] = str(self.component_ref.component_id)
+
+        if trace:
+            portal_data['trace'] = trace
+
         if procs_requested is not None:
             portal_data['procs_requested'] = procs_requested
         if cores_allocated is not None:

@@ -59,6 +59,7 @@ import socket
 import logging
 import os
 import time
+import hashlib
 from ipsframework import platformspec
 from ipsframework.messages import Message, ServiceRequestMessage, \
     ServiceResponseMessage, MethodInvokeMessage
@@ -635,6 +636,13 @@ class Framework:
                                                   time.localtime())
             portal_data['start_time'] = self.start_time
             portal_data['end_time'] = time.time()
+            portal_data['trace'] = {"timestamp": int(time.time()*1e6),
+                                    "duration": int((time.time() - self.start_time)*1e6),
+                                    "localEndpoint": {
+                                        "serviceName": str(self.component_id)
+                                    },
+                                    "id": hashlib.md5(str(self.component_id).encode()).hexdigest()[:16],
+                                    "id_text": str(self.component_id)}
 
         event_body = {}
         event_body['sim_name'] = sim_name
