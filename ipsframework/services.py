@@ -1325,7 +1325,10 @@ class ServicesProxy:
                                  comment='Elapsed time = %.3f Path = %s Files = %s' %
                                  (elapsed_time, os.path.abspath(inputDir),
                                   str(input_file_list)),
-                                 elapsed_time=elapsed_time)
+                                 start_time=start_time,
+                                 elapsed_time=elapsed_time,
+                                 target="stage_input_files",
+                                 operation=str(input_file_list))
 
     def stage_subflow_output_files(self, subflow_name='ALL'):
         """Gather outputs from sub-workflows. Sub-workflow output is defined
@@ -1512,7 +1515,10 @@ class ServicesProxy:
         self._send_monitor_event('IPS_STAGE_OUTPUTS',
                                  'Elapsed time = %.3f Path = %s Files = %s' %
                                  (elapsed_time, output_dir, str(file_list)),
-                                 elapsed_time=elapsed_time)
+                                 start_time=start_time,
+                                 elapsed_time=elapsed_time,
+                                 target="stage_output_files",
+                                 operation=str(file_list))
 
     def save_restart_files(self, timeStamp, file_list):
         """
@@ -1620,7 +1626,10 @@ class ServicesProxy:
         self._send_monitor_event('IPS_STAGE_STATE',
                                  'Elapsed time = %.3f  files = %s Success' %
                                  (elapsed_time, ' '.join(files)),
-                                 elapsed_time=elapsed_time)
+                                 start_time=start_time,
+                                 elapsed_time=elapsed_time,
+                                 target="stage_state",
+                                 operation=str(files))
 
     def update_state(self, state_files=None):
         """
@@ -1656,7 +1665,10 @@ class ServicesProxy:
         self._send_monitor_event('IPS_UPDATE_STATE',
                                  'Elapsed time = %.3f   files = %s Success' %
                                  (elapsed_time, ' '.join(files)),
-                                 elapsed_time=elapsed_time)
+                                 start_time=start_time,
+                                 elapsed_time=elapsed_time,
+                                 target="update_state",
+                                 operation=str(files))
 
     def merge_current_state(self, partial_state_file, logfile=None, merge_binary=None):
         """
