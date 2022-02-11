@@ -125,11 +125,11 @@ def test_framework_simple(tmpdir, capfd):
     with open(json_files[0], 'r') as json_file:
         json_lines = json_file.readlines()
 
-    assert len(json_lines) == 6
+    assert len(json_lines) == 9
 
     event0 = json.loads(json_lines[0])
     event1 = json.loads(json_lines[1])
-    event2 = json.loads(json_lines[5])
+    event2 = json.loads(json_lines[8])
 
     assert event0['eventtype'] == 'IPS_START'
     assert event1['eventtype'] == 'IPS_RESOURCE_ALLOC'
