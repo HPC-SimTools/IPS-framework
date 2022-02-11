@@ -77,8 +77,8 @@ def launch(binary, task_name, working_dir, *args, **keywords):
 
         cmd = f"{binary} {' '.join(map(str, args))}"
         with worker.lock:
-            print(json.dumps({"event_type": "IPS_LAUNCH_DASK_TASK", "event_time": time.time(),
-                              "event_comment": f"task_name = {task_name}, Target = {cmd}"}),
+            print(json.dumps({"eventType": "IPS_LAUNCH_DASK_TASK", "event_time": time.time(),
+                              "comment": f"task_name = {task_name}, Target = {cmd}"}),
                   file=worker_event_log)
 
         cmd_lst = cmd.split()
@@ -91,28 +91,34 @@ def launch(binary, task_name, working_dir, *args, **keywords):
             ret_val = process.wait(timeout)
             finish_time = time.time()
             with worker.lock:
-                print(json.dumps({"event_type": "IPS_TASK_END", "event_time": finish_time,
-                                  "event_comment": f"task_name = {task_name}, elapsed time = {finish_time - start_time:.2f}s",
-                                  "elapsed_time": finish_time - start_time}),
+                print(json.dumps({"eventType": "IPS_TASK_END", "event_time": finish_time,
+                                  "comment": f"task_name = {task_name}, elapsed time = {finish_time - start_time:.2f}s",
+                                  "start_time": start_time,
+                                  "elapsed_time": finish_time - start_time,
+                                  "target": binary,
+                                  "operation": ' '.join(map(str, args))}),
                       file=worker_event_log)
         except subprocess.TimeoutExpired:
             with worker.lock:
-                print(json.dumps({"event_type": "IPS_TASK_END", "event_time": time.time(),
-                                  "event_comment": f"task_name = {task_name}, timed-out after {timeout}s"}),
+                print(json.dumps({"eventType": "IPS_TASK_END", "event_time": time.time(),
+                                  "comment": f"task_name = {task_name}, timed-out after {timeout}s"}),
                       file=worker_event_log)
             os.killpg(process.pid, signal.SIGKILL)
             ret_val = -1
     else:
         with worker.lock:
-            print(json.dumps({"event_type": "IPS_LAUNCH_DASK_TASK", "event_time": time.time(),
-                              "event_comment": f"task_name = {task_name}, Target = {binary.__name__}({','.join(map(str, args))})"}),
+            print(json.dumps({"eventType": "IPS_LAUNCH_DASK_TASK", "event_time": time.time(),
+                              "comment": f"task_name = {task_name}, Target = {binary.__name__}({','.join(map(str, args))})"}),
                   file=worker_event_log)
         ret_val = binary(*args)
         finish_time = time.time()
         with worker.lock:
-            print(json.dumps({"event_type": "IPS_TASK_END", "event_time": finish_time,
-                              "event_comment": f"task_name = {task_name}, elapsed time = {finish_time - start_time:.2f}s",
-                              "elapsed_time": finish_time - start_time}),
+            print(json.dumps({"eventType": "IPS_TASK_END", "event_time": finish_time,
+                              "comment": f"task_name = {task_name}, elapsed time = {finish_time - start_time:.2f}s",
+                              "start_time": start_time,
+                              "elapsed_time": finish_time - start_time,
+                              "target": binary.__name__,
+                              "operation": f"({','.join(map(str, args))})"}),
                   file=worker_event_log)
 
     return task_name, ret_val
@@ -2218,7 +2224,7 @@ class TaskPool:
 
                 events.sort(key=itemgetter('event_time'))
                 for event in events:
-                    self.services.send_portal_event(**event)
+                    self.services._send_monitor_event(**event)
             except Exception as e:
                 # If it fails for any other reason, make sure we can continue
                 self.services.exception('Error while reading dask worker log files: %s', str(e))
