@@ -463,6 +463,10 @@ class Framework:
             for sim_name, msg_list in outstanding_sim_calls.items():
                 msg, sim_name, comp, method, arg = msg_list.pop(0)
                 self.debug('Framework sending message %s ', msg.__dict__)
+                if sim_name is not None:
+                    self._send_monitor_event(sim_name=sim_name,
+                                             comment=f'Target = {comp}:{method}({arg})',
+                                             eventType='IPS_CALL_BEGIN')
                 call_id = self.task_manager.init_call(msg, manage_return=False)
                 self.call_queue_map[call_id] = msg_list
                 self.outstanding_calls_list[call_id] = sim_name, comp, method, arg, time.time()
@@ -507,6 +511,7 @@ class Framework:
                     sim_name, comp, method, arg, start_time = self.outstanding_calls_list.pop(msg.call_id)
                     if sim_name is not None:
                         self._send_monitor_event(sim_name=sim_name,
+                                                 comment=f'Target = {comp}:{method}({arg})',
                                                  eventType='IPS_CALL_END',
                                                  start_time=start_time,
                                                  end_time=time.time(),
@@ -529,6 +534,10 @@ class Framework:
                         ok = True
                     try:
                         next_call_msg, sim_name, comp, method, arg = sim_msg_list.pop(0)
+                        if sim_name is not None:
+                            self._send_monitor_event(sim_name=sim_name,
+                                                     comment=f'Target = {comp}:{method}({arg})',
+                                                     eventType='IPS_CALL_BEGIN')
                         call_id = self.task_manager.init_call(next_call_msg,
                                                               manage_return=False)
                         self.outstanding_calls_list[call_id] = sim_name, comp, method, arg, time.time()
