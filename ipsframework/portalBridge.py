@@ -200,7 +200,7 @@ class PortalBridge(Component):
         portal_data['seqnum'] = sim_data.counter
 
         if 'trace' in portal_data:
-            portal_data['trace']['traceID'] = hashlib.md5(sim_data.portal_runid.encode()).hexdigest()
+            portal_data['trace']['traceId'] = hashlib.md5(sim_data.portal_runid.encode()).hexdigest()
 
         self.send_event(sim_data, portal_data)
         sim_data.counter += 1
