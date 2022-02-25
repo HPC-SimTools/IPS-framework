@@ -416,13 +416,12 @@ class ServicesProxy:
         portal_data['walltime'] = '%.2f' % (event_time - self.component_ref.start_time)
 
         trace = {}
-        if start_time is not None:
+        if start_time is not None and (elapsed_time is not None or end_time is not None) and target is not None and operation is not None:
             trace['timestamp'] = int(start_time*1e6)  # convert to microsecond
             if elapsed_time is not None:
                 trace['duration'] = int(elapsed_time*1e6)
             elif end_time is not None:
                 trace['duration'] = int((end_time-start_time)*1e6)  # convert to microsecond
-        if target is not None:
             trace['localEndpoint'] = {"serviceName": target}
             trace['name'] = operation
             formatted_args = ['%.3f' % (x) if isinstance(x, float)
@@ -430,14 +429,15 @@ class ServicesProxy:
             trace['id'] = hashlib.md5(f"{target}:{operation}".encode()).hexdigest()[:16]
             trace['parentId'] = hashlib.md5(f"{self.component_ref.component_id}:{self.component_ref.method_name}({' ,'.join(formatted_args)})"
                                             .encode()).hexdigest()[:16]
+            trace['tags'] = {}
+            if procs_requested is not None:
+                trace['tags']['procs_requested'] = str(procs_requested)
+            if cores_allocated is not None:
+                trace['tags']['cores_allocated'] = str(cores_allocated)
 
         if trace:
             portal_data['trace'] = trace
 
-        if procs_requested is not None:
-            portal_data['procs_requested'] = procs_requested
-        if cores_allocated is not None:
-            portal_data['cores_allocated'] = cores_allocated
         portal_data['state'] = state
         portal_data['comment'] = comment
         if self.monitor_url:
