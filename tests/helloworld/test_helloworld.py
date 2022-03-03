@@ -259,6 +259,7 @@ def test_helloworld_task_pool_dask(tmpdir, capfd):
 
 
 @pytest.mark.skipif(sys.platform == 'darwin', reason="This doesn't work with macOS")
+@pytest.mark.timeout(120)
 def test_helloworld_portal(tmpdir, capfd):
     data_dir = os.path.dirname(__file__)
     copy_config_and_replace(os.path.join(data_dir, "hello_world.ips"), tmpdir.join("hello_world.ips"), tmpdir, portal=True)

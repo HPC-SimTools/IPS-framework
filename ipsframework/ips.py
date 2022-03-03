@@ -655,7 +655,8 @@ class Framework:
                                     "localEndpoint": {
                                         "serviceName": str(self.component_id)
                                     },
-                                    "id": hashlib.md5(str(self.component_id).encode()).hexdigest()[:16]}
+                                    "id": hashlib.md5(str(self.component_id).encode()).hexdigest()[:16],
+                                    'tags': {'total_cores': str(self.resource_manager.total_cores)}}
         elif eventType == "IPS_CALL_END":
             trace = {}
             if start_time is not None and end_time is not None:
