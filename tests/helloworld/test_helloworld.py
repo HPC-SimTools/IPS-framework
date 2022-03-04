@@ -245,6 +245,10 @@ def test_helloworld_task_pool_dask(tmpdir, capfd):
     assert captured_out[4] == 'HelloDriver: finished worker init call'
     assert captured_out[5] == 'HelloDriver: beginning step call'
     assert captured_out[6] == 'Hello from HelloWorker'
+
+    assert "Running setup of worker" in captured_out
+    assert "Running teardown of worker" in captured_out
+
     assert 'ret_val =  9' in captured_out
 
     for duration in ("0.2", "0.4", "0.6"):

@@ -1848,7 +1848,7 @@ class ServicesProxy:
                                   *args, keywords=keywords)
 
     def submit_tasks(self, task_pool_name, block=True, use_dask=False, dask_nodes=1,
-                     dask_ppn=None, launch_interval=0.0, use_shifter=False):
+                     dask_ppn=None, launch_interval=0.0, use_shifter=False, dask_worker_plugin=None):
         """
         Launch all unfinished tasks in task pool *task_pool_name*.  If *block* is ``True``,
         return when all tasks have been launched.  If *block* is ``False``, return when all
@@ -1860,7 +1860,7 @@ class ServicesProxy:
         start_time = time.time()
         self._send_monitor_event('IPS_TASK_POOL_BEGIN', 'task_pool = %s ' % task_pool_name)
         task_pool: TaskPool = self.task_pools[task_pool_name]
-        retval = task_pool.submit_tasks(block, use_dask, dask_nodes, dask_ppn, launch_interval, use_shifter)
+        retval = task_pool.submit_tasks(block, use_dask, dask_nodes, dask_ppn, launch_interval, use_shifter, dask_worker_plugin)
         elapsed_time = time.time() - start_time
         self._send_monitor_event('IPS_TASK_POOL_END', 'task_pool = %s  elapsed time = %.2f S' %
                                  (task_pool_name, elapsed_time),
@@ -2066,7 +2066,7 @@ class TaskPool:
         self.queued_tasks[task_name] = Task(task_name, nproc, working_dir, binary_fullpath, *args,
                                             **keywords["keywords"])
 
-    def submit_dask_tasks(self, block=True, dask_nodes=1, dask_ppn=None, use_shifter=False):
+    def submit_dask_tasks(self, block=True, dask_nodes=1, dask_ppn=None, use_shifter=False, dask_worker_plugin=None):
         """Launch tasks in *queued_tasks* using dask.
 
         :param block: Unused, this will always return after tasks are submitted
@@ -2077,6 +2077,8 @@ class TaskPool:
         :type dask_ppn: int
         :param use_shifter:  Option to launch dask scheduler and workers in shifter container
         :type use_shifter: bool
+        :param dask_worker_plugin: If provided this will be registered as a worker plugin with the dask client
+        :type dask_worker_plugin: distributed.diagnostics.plugin.WorkerPlugin
         """
         services: ServicesProxy = self.services
         self.dask_file_name = os.path.join(os.getcwd(),
@@ -2115,6 +2117,9 @@ class TaskPool:
 
         self.dask_client = self.dask.distributed.Client(scheduler_file=self.dask_file_name)
 
+        if dask_worker_plugin is not None:
+            self.dask_client.register_worker_plugin(dask_worker_plugin)
+
         try:
             self.worker_event_logfile = services.sim_name + '_' + services.get_config_param("PORTAL_RUNID") + '_' + self.name + '_{}.json'
         except KeyError:
@@ -2135,7 +2140,7 @@ class TaskPool:
         self.queued_tasks = {}
         return len(self.futures)
 
-    def submit_tasks(self, block=True, use_dask=False, dask_nodes=1, dask_ppn=None, launch_interval=0.0, use_shifter=False):
+    def submit_tasks(self, block=True, use_dask=False, dask_nodes=1, dask_ppn=None, launch_interval=0.0, use_shifter=False, dask_worker_plugin=None):
         """Launch tasks in *queued_tasks*.  Finished tasks are handled before
         launching new ones.  If *block* is ``True``, the number of
         tasks submitted is returned after all tasks have been launched
@@ -2157,7 +2162,8 @@ class TaskPool:
         :type launch_internal: float
         :param use_shifter:  Option to launch dask scheduler and workers in shifter container
         :type use_shifter: bool
-
+        :param dask_worker_plugin: If provided this will be registered as a worker plugin with the dask client
+        :type dask_worker_plugin: distributed.diagnostics.plugin.WorkerPlugin
         """
 
         if use_dask:
@@ -2167,7 +2173,7 @@ class TaskPool:
                     self.services.error("Requested to run dask within shifter but shifter not available")
                     raise Exception("shifter not found")
                 else:
-                    return self.submit_dask_tasks(block, dask_nodes, dask_ppn, use_shifter)
+                    return self.submit_dask_tasks(block, dask_nodes, dask_ppn, use_shifter, dask_worker_plugin)
             elif not TaskPool.dask:
                 self.services.warning("Requested use_dask but cannot because import dask failed")
             elif not self.serial_pool:
