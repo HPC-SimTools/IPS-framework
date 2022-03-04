@@ -7,7 +7,7 @@ import queue
 import os
 import subprocess
 import threading
-
+import hashlib
 import time
 import shutil
 import logging
@@ -77,8 +77,8 @@ def launch(binary, task_name, working_dir, *args, **keywords):
 
         cmd = f"{binary} {' '.join(map(str, args))}"
         with worker.lock:
-            print(json.dumps({"event_type": "IPS_LAUNCH_DASK_TASK", "event_time": time.time(),
-                              "event_comment": f"task_name = {task_name}, Target = {cmd}"}),
+            print(json.dumps({"eventType": "IPS_LAUNCH_DASK_TASK", "event_time": time.time(),
+                              "comment": f"task_name = {task_name}, Target = {cmd}"}),
                   file=worker_event_log)
 
         cmd_lst = cmd.split()
@@ -91,26 +91,34 @@ def launch(binary, task_name, working_dir, *args, **keywords):
             ret_val = process.wait(timeout)
             finish_time = time.time()
             with worker.lock:
-                print(json.dumps({"event_type": "IPS_TASK_END", "event_time": finish_time,
-                                  "event_comment": f"task_name = {task_name}, elasped time = {finish_time - start_time:.2f}s"}),
+                print(json.dumps({"eventType": "IPS_TASK_END", "event_time": finish_time,
+                                  "comment": f"task_name = {task_name}, elapsed time = {finish_time - start_time:.2f}s",
+                                  "start_time": start_time,
+                                  "elapsed_time": finish_time - start_time,
+                                  "target": binary,
+                                  "operation": ' '.join(map(str, args))}),
                       file=worker_event_log)
         except subprocess.TimeoutExpired:
             with worker.lock:
-                print(json.dumps({"event_type": "IPS_TASK_END", "event_time": time.time(),
-                                  "event_comment": f"task_name = {task_name}, timed-out after {timeout}s"}),
+                print(json.dumps({"eventType": "IPS_TASK_END", "event_time": time.time(),
+                                  "comment": f"task_name = {task_name}, timed-out after {timeout}s"}),
                       file=worker_event_log)
             os.killpg(process.pid, signal.SIGKILL)
             ret_val = -1
     else:
         with worker.lock:
-            print(json.dumps({"event_type": "IPS_LAUNCH_DASK_TASK", "event_time": time.time(),
-                              "event_comment": f"task_name = {task_name}, Target = {binary.__name__}({','.join(map(str, args))})"}),
+            print(json.dumps({"eventType": "IPS_LAUNCH_DASK_TASK", "event_time": time.time(),
+                              "comment": f"task_name = {task_name}, Target = {binary.__name__}({','.join(map(str, args))})"}),
                   file=worker_event_log)
         ret_val = binary(*args)
         finish_time = time.time()
         with worker.lock:
-            print(json.dumps({"event_type": "IPS_TASK_END", "event_time": finish_time,
-                              "event_comment": f"task_name = {task_name}, elasped time = {finish_time - start_time:.2f}s"}),
+            print(json.dumps({"eventType": "IPS_TASK_END", "event_time": finish_time,
+                              "comment": f"task_name = {task_name}, elapsed time = {finish_time - start_time:.2f}s",
+                              "start_time": start_time,
+                              "elapsed_time": finish_time - start_time,
+                              "target": binary.__name__,
+                              "operation": f"({','.join(map(str, args))})"}),
                   file=worker_event_log)
 
     return task_name, ret_val
@@ -384,7 +392,14 @@ class ServicesProxy:
                             comment='',
                             ok='True',
                             state='Running',
-                            event_time=None):
+                            event_time=None,
+                            elapsed_time=None,
+                            start_time=None,
+                            end_time=None,
+                            target=None,
+                            operation=None,
+                            procs_requested=None,
+                            cores_allocated=None):
         """
         Construct and send an event populated with the component's
         information, *eventType*, *comment*, *ok*, *state*, and a wall time
@@ -399,6 +414,30 @@ class ServicesProxy:
         if event_time is None:
             event_time = time.time()
         portal_data['walltime'] = '%.2f' % (event_time - self.component_ref.start_time)
+
+        trace = {}  # Zipkin json format
+        if start_time is not None and (elapsed_time is not None or end_time is not None) and target is not None and operation is not None:
+            trace['timestamp'] = int(start_time*1e6)  # convert to microsecond
+            if elapsed_time is not None:
+                trace['duration'] = int(elapsed_time*1e6)
+            elif end_time is not None:
+                trace['duration'] = int((end_time-start_time)*1e6)  # convert to microsecond
+            trace['localEndpoint'] = {"serviceName": target}
+            trace['name'] = operation
+            formatted_args = ['%.3f' % (x) if isinstance(x, float)
+                              else str(x) for x in self.component_ref.args]
+            trace['id'] = hashlib.md5(f"{target}:{operation}".encode()).hexdigest()[:16]
+            trace['parentId'] = hashlib.md5(f"{self.component_ref.component_id}:{self.component_ref.method_name}({' ,'.join(formatted_args)})"
+                                            .encode()).hexdigest()[:16]
+            trace['tags'] = {}
+            if procs_requested is not None:
+                trace['tags']['procs_requested'] = str(procs_requested)
+            if cores_allocated is not None:
+                trace['tags']['cores_allocated'] = str(cores_allocated)
+
+        if trace:
+            portal_data['trace'] = trace
+
         portal_data['state'] = state
         portal_data['comment'] = comment
         if self.monitor_url:
@@ -428,7 +467,7 @@ class ServicesProxy:
         method in the base class for components.
 
         """
-        for (p, _, _) in self.task_map.values():
+        for p, *_ in self.task_map.values():
             try:
                 p.kill()
             except Exception:
@@ -447,9 +486,7 @@ class ServicesProxy:
         :return: call_id
         :rtype: int
         """
-        target_class = component_id.get_class_name()
-        target_seqnum = component_id.get_seq_num()
-        target = target_class + '@' + str(target_seqnum)
+        target = str(component_id)
         formatted_args = ['%.3f' % (x) if isinstance(x, float)
                           else str(x) for x in args]
         if keywords:
@@ -461,7 +498,7 @@ class ServicesProxy:
                                       'init_call',
                                       method_name, *args, **keywords)
         call_id = self._get_service_response(msg_id, True)
-        self.call_targets[call_id] = (target, method_name, args)
+        self.call_targets[call_id] = (target, method_name, args, time.time())
         return call_id
 
     def call(self, component_id, method_name, *args, **keywords):
@@ -495,18 +532,22 @@ class ServicesProxy:
 
         """
         try:
-            (target, method_name, args) = self.call_targets[call_id]
+            (target, method_name, args, start_time) = self.call_targets[call_id]
         except KeyError:
             self.exception('Invalid call_id in wait-call() : %s', call_id)
             raise
         msg_id = self._invoke_service(self.fwk.component_id, 'wait_call',
                                       call_id, block)
         response = self._get_service_response(msg_id, block=True)
-        formatted_args = ['%.3f' % (x) if isinstance(x, float)
-                          else str(x) for x in args]
-        self._send_monitor_event('IPS_CALL_END', 'Target = ' +
-                                 target + ':' + method_name + '(' +
-                                 str(*formatted_args) + ')')
+        formatted_args = ','.join('%.3f' % (x) if isinstance(x, float)
+                                  else str(x) for x in args)
+        target_full = f'{target}:{method_name}({formatted_args})'
+        self._send_monitor_event('IPS_CALL_END', 'Target = ' + target_full,
+                                 start_time=start_time,
+                                 end_time=time.time(),
+                                 elapsed_time=time.time()-start_time,
+                                 target=target,
+                                 operation=f'{method_name}({formatted_args})')
         del self.call_targets[call_id]
         return response
 
@@ -626,20 +667,22 @@ class ServicesProxy:
                                           'init_task', nproc, binary_fullpath,
                                           working_dir, task_ppn, block,
                                           whole_nodes, whole_socks, task_cpp, *args)
-            (task_id, command, env_update) = self._get_service_response(msg_id, block=True)
+            (task_id, command, env_update, cores_allocated) = self._get_service_response(msg_id, block=True)
         except Exception:
             raise
 
-        task_id = self._launch_task(nproc, working_dir, task_id, command, env_update, tag, keywords)
+        task_id = self._launch_task(nproc, working_dir, task_id, command, cores_allocated, env_update, tag, keywords, binary, args)
 
         if env_update:
-            self._send_monitor_event('IPS_LAUNCH_TASK', f'task_id = {task_id} , Tag = {tag} , nproc = {nproc} , Target = {command}, env = {env_update}')
+            self._send_monitor_event('IPS_LAUNCH_TASK', f'task_id = {task_id} , Tag = {tag} , nproc = {nproc} , Target = {command}, env = {env_update}',
+                                     procs_requested=nproc, cores_allocated=cores_allocated)
         else:
-            self._send_monitor_event('IPS_LAUNCH_TASK', f'task_id = {task_id} , Tag = {tag} , nproc = {nproc} , Target = {command}')
+            self._send_monitor_event('IPS_LAUNCH_TASK', f'task_id = {task_id} , Tag = {tag} , nproc = {nproc} , Target = {command}',
+                                     procs_requested=nproc, cores_allocated=cores_allocated)
 
         return task_id
 
-    def _launch_task(self, nproc, working_dir, task_id, command, env_update, tag, keywords):
+    def _launch_task(self, nproc, working_dir, task_id, command, cores_allocated, env_update, tag, keywords, binary, args):
         log_filename = keywords.get('logfile')
         timeout = keywords.get("timeout", 1.e9)
 
@@ -685,7 +728,7 @@ class ServicesProxy:
 
         # FIXME: process Monitoring Command : ps --no-headers -o pid,state pid1  pid2 pid3 ...
 
-        self.task_map[task_id] = (process, time.time(), timeout)
+        self.task_map[task_id] = (process, time.time(), timeout, nproc, cores_allocated, command, binary, args)
         return task_id  # process.pid
 
     def launch_task_pool(self, task_pool_name, launch_interval=0.0):
@@ -732,18 +775,24 @@ class ServicesProxy:
             if launch_interval > 0:
                 time.sleep(launch_interval)
             task = queued_tasks[task_name]
-            (task_id, command, env_update) = allocated_tasks[task_name]
+            (task_id, command, env_update, cores_allocated) = allocated_tasks[task_name]
             tag = task.keywords.get('tag', 'None')
 
-            active_tasks[task_name] = self._launch_task(task.nproc, task.working_dir, task_id, command, env_update, tag, task.keywords)
+            active_tasks[task_name] = self._launch_task(task.nproc,
+                                                        task.working_dir, task_id, command, cores_allocated,
+                                                        env_update, tag, task.keywords, task.binary, task.args)
 
             if env_update:
                 self._send_monitor_event('IPS_LAUNCH_TASK_POOL',
                                          f'task_id = {task_id} , Tag = {tag} , nproc = {task.nproc} , Target = {command} , task_name = {task_name}'
-                                         f', env = {env_update}')
+                                         f', env = {env_update}',
+                                         procs_requested=task.nproc,
+                                         cores_allocated=cores_allocated)
             else:
                 self._send_monitor_event('IPS_LAUNCH_TASK_POOL',
-                                         f'task_id = {task_id} , Tag = {tag} , nproc = {task.nproc} , Target = {command} , task_name = {task_name}')
+                                         f'task_id = {task_id} , Tag = {tag} , nproc = {task.nproc} , Target = {command} , task_name = {task_name}',
+                                         procs_requested=task.nproc,
+                                         cores_allocated=cores_allocated)
 
         return active_tasks
 
@@ -759,7 +808,7 @@ class ServicesProxy:
         :rtype: bool
         """
         try:
-            process, _, _ = self.task_map[task_id]
+            process, *_ = self.task_map[task_id]
             # TODO: process and start_time will have to be accessed as shown
             #      below if this task can be relaunched to support FT...
         except KeyError:
@@ -805,7 +854,7 @@ class ServicesProxy:
         :return: return value of task if finished else None
         """
         try:
-            process, start_time, timeout = self.task_map[task_id]
+            process, start_time, timeout, *_ = self.task_map[task_id]
             # TODO: process and start_time will have to be accessed as shown
             #      below if this task can be relaunched to support FT...
         except KeyError:
@@ -842,7 +891,7 @@ class ServicesProxy:
         :return: return value of task
         """
         try:
-            process, start_time, _ = self.task_map[task_id]
+            process, start_time, _, nproc, cores, _, binary, args = self.task_map[task_id]
         except KeyError:
             self.exception('Error: unrecognizable task_id = %s ', str(task_id))
             raise
@@ -857,14 +906,23 @@ class ServicesProxy:
                     time.sleep(delay)
                 else:
                     break
+
+        finish_time = time.time()
         if task_retval is None:
             process.kill()
             task_retval = process.wait()
             self._send_monitor_event('IPS_TASK_END', 'task_id = %s  TIMEOUT elapsed time = %.2f S' %
-                                     (str(task_id), time.time() - start_time))
+                                     (str(task_id), finish_time - start_time))
         else:
             self._send_monitor_event('IPS_TASK_END', 'task_id = %s  elapsed time = %.2f S' %
-                                     (str(task_id), time.time() - start_time))
+                                     (str(task_id), finish_time - start_time),
+                                     start_time=start_time,
+                                     end_time=finish_time,
+                                     elapsed_time=finish_time - start_time,
+                                     procs_requested=nproc,
+                                     cores_allocated=cores,
+                                     target=binary,
+                                     operation=" ".join(args))
 
         del self.task_map[task_id]
         try:
@@ -1272,7 +1330,11 @@ class ServicesProxy:
         self._send_monitor_event(eventType='IPS_STAGE_INPUTS',
                                  comment='Elapsed time = %.3f Path = %s Files = %s' %
                                  (elapsed_time, os.path.abspath(inputDir),
-                                  str(input_file_list)))
+                                  str(input_file_list)),
+                                 start_time=start_time,
+                                 elapsed_time=elapsed_time,
+                                 target="stage_input_files",
+                                 operation=str(input_file_list))
 
     def stage_subflow_output_files(self, subflow_name='ALL'):
         """Gather outputs from sub-workflows. Sub-workflow output is defined
@@ -1458,7 +1520,11 @@ class ServicesProxy:
         elapsed_time = time.time() - start_time
         self._send_monitor_event('IPS_STAGE_OUTPUTS',
                                  'Elapsed time = %.3f Path = %s Files = %s' %
-                                 (elapsed_time, output_dir, str(file_list)))
+                                 (elapsed_time, output_dir, str(file_list)),
+                                 start_time=start_time,
+                                 elapsed_time=elapsed_time,
+                                 target="stage_output_files",
+                                 operation=str(file_list))
 
     def save_restart_files(self, timeStamp, file_list):
         """
@@ -1565,7 +1631,11 @@ class ServicesProxy:
         elapsed_time = time.time() - start_time
         self._send_monitor_event('IPS_STAGE_STATE',
                                  'Elapsed time = %.3f  files = %s Success' %
-                                 (elapsed_time, ' '.join(files)))
+                                 (elapsed_time, ' '.join(files)),
+                                 start_time=start_time,
+                                 elapsed_time=elapsed_time,
+                                 target="stage_state",
+                                 operation=str(files))
 
     def update_state(self, state_files=None):
         """
@@ -1600,7 +1670,11 @@ class ServicesProxy:
         elapsed_time = time.time() - start_time
         self._send_monitor_event('IPS_UPDATE_STATE',
                                  'Elapsed time = %.3f   files = %s Success' %
-                                 (elapsed_time, ' '.join(files)))
+                                 (elapsed_time, ' '.join(files)),
+                                 start_time=start_time,
+                                 elapsed_time=elapsed_time,
+                                 target="update_state",
+                                 operation=str(files))
 
     def merge_current_state(self, partial_state_file, logfile=None, merge_binary=None):
         """
@@ -1703,13 +1777,15 @@ class ServicesProxy:
     def send_portal_event(self,
                           event_type="COMPONENT_EVENT",
                           event_comment="",
-                          event_time=None):
+                          event_time=None,
+                          elapsed_time=None):
         """
         Send event to web portal.
         """
         return self._send_monitor_event(eventType=event_type,
                                         comment=event_comment,
-                                        event_time=event_time)
+                                        event_time=event_time,
+                                        elapsed_time=elapsed_time)
 
     def log(self, msg, *args):
         """
@@ -1785,8 +1861,10 @@ class ServicesProxy:
         self._send_monitor_event('IPS_TASK_POOL_BEGIN', 'task_pool = %s ' % task_pool_name)
         task_pool: TaskPool = self.task_pools[task_pool_name]
         retval = task_pool.submit_tasks(block, use_dask, dask_nodes, dask_ppn, launch_interval, use_shifter)
+        elapsed_time = time.time() - start_time
         self._send_monitor_event('IPS_TASK_POOL_END', 'task_pool = %s  elapsed time = %.2f S' %
-                                 (task_pool_name, time.time() - start_time))
+                                 (task_pool_name, elapsed_time),
+                                 elapsed_time=elapsed_time)
         return retval
 
     def get_finished_tasks(self, task_pool_name):
@@ -2146,7 +2224,7 @@ class TaskPool:
 
                 events.sort(key=itemgetter('event_time'))
                 for event in events:
-                    self.services.send_portal_event(**event)
+                    self.services._send_monitor_event(**event)
             except Exception as e:
                 # If it fails for any other reason, make sure we can continue
                 self.services.exception('Error while reading dask worker log files: %s', str(e))

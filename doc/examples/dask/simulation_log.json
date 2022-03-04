@@ -21,18 +21,18 @@
   "code": "DASK_WORKER__DaskWorker",
   "eventtype": "IPS_TASK_END",
   "walltime": "2.83",
-  "comment": "task_name = method, elasped time = 0.50s",
+  "comment": "task_name = method, elapsed time = 0.50s",
 }
 {
   "code": "DASK_WORKER__DaskWorker",
   "eventtype": "IPS_TASK_END",
   "walltime": "2.83",
-  "comment": "task_name = function, elasped time = 0.50s",
+  "comment": "task_name = function, elapsed time = 0.50s",
 }
 {
   "code": "DASK_WORKER__DaskWorker",
   "eventtype": "IPS_TASK_END",
   "walltime": "2.85",
   "state": "Running",
-  "comment": "task_name = binary, elasped time = 0.52s",
+  "comment": "task_name = binary, elapsed time = 0.52s",
 }

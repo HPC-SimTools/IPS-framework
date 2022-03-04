@@ -4,6 +4,7 @@ import shutil
 import json
 import glob
 import socketserver
+import hashlib
 import pytest
 from ipsframework import Framework, TaskPool
 
@@ -259,6 +260,7 @@ def test_helloworld_task_pool_dask(tmpdir, capfd):
 
 
 @pytest.mark.skipif(sys.platform == 'darwin', reason="This doesn't work with macOS")
+@pytest.mark.timeout(120)
 def test_helloworld_portal(tmpdir, capfd):
     data_dir = os.path.dirname(__file__)
     copy_config_and_replace(os.path.join(data_dir, "hello_world.ips"), tmpdir.join("hello_world.ips"), tmpdir, portal=True)
@@ -306,7 +308,8 @@ def test_helloworld_portal(tmpdir, capfd):
 
         framework.run()
 
-        for _ in range(8):
+        # just get the first 5 events
+        for _ in range(5):
             server.handle_request()
 
     captured = capfd.readouterr()
@@ -339,7 +342,7 @@ def test_helloworld_portal(tmpdir, capfd):
     assert '.eventlog' in exts
 
     # check data sent to portal
-    assert len(data) >= 6
+    assert len(data) == 5
     # get first event to check
     event = json.loads(data[0].split('\r\n')[-1])
     assert event['code'] == 'Framework'
@@ -348,3 +351,24 @@ def test_helloworld_portal(tmpdir, capfd):
     assert event['state'] == 'Running'
     assert event['sim_name'] == 'Hello_world_1'
     assert event['seqnum'] == 0
+    assert 'ips_version' in event
+
+    # get last event to check
+    event = json.loads(data[-1].split('\r\n')[-1])
+    assert event['code'] == 'DRIVERS_HELLO_HelloDriver'
+    assert event['eventtype'] == 'IPS_CALL_END'
+    assert event['comment'] == 'Target = Hello_world_1@HelloWorker@2:init(0.000)'
+    assert event['state'] == 'Running'
+    assert event['sim_name'] == 'Hello_world_1'
+    assert 'trace' in event
+    trace = event['trace']
+    assert 'duration' in trace
+    assert 'timestamp' in trace
+    assert 'id' in trace
+    assert trace['id'] == hashlib.md5('Hello_world_1@HelloWorker@2:init(0.000)'.encode()).hexdigest()[:16]
+    assert 'traceId' in trace
+    assert trace['traceId'] == hashlib.md5(event['portal_runid'].encode()).hexdigest()
+    assert 'parentId' in trace
+    assert trace['parentId'] == hashlib.md5('Hello_world_1@HelloDriver@1:init(0)'.encode()).hexdigest()[:16]
+    assert 'localEndpoint' in trace
+    assert trace['localEndpoint']['serviceName'] == 'Hello_world_1@HelloWorker@2'

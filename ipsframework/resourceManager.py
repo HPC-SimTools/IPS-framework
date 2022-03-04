@@ -356,7 +356,7 @@ class ResourceManager:
         else:
             try:
                 self.processes += nproc
-                k = 0
+                cores_allocated = 0
                 alloc_procs = 0
                 node_file_entries = []
                 if whole_nodes:
@@ -371,10 +371,10 @@ class ResourceManager:
                         self.avail_nodes.remove(n)
                         self.alloc_nodes.append(n)
                         node_file_entries.append((n, cores))
-                        k += procs
-                    self.alloc_cores += k
-                    self.avail_cores -= k
-                    self.active_tasks.update({task_id: (comp_id, nproc, k)})
+                        cores_allocated += procs
+                    self.alloc_cores += cores_allocated
+                    self.avail_cores -= cores_allocated
+                    self.active_tasks.update({task_id: (comp_id, nproc, cores_allocated)})
                 elif whole_socks:
                     # -------------------------------
                     # whole sock allocation
@@ -388,7 +388,7 @@ class ResourceManager:
                                                          whole_socks,
                                                          task_id, comp_id,
                                                          to_alloc)
-                            k += len(cores)
+                            cores_allocated += len(cores)
                             alloc_procs = min([ppn, len(cores)])
                             node_file_entries.append((n, cores))
                             if n not in self.alloc_nodes:
@@ -396,9 +396,9 @@ class ResourceManager:
                                 if node.avail_cores - node.total_cores == 0:
                                     self.avail_nodes.remove(n)
 
-                    self.alloc_cores += k
-                    self.avail_cores -= k
-                    self.active_tasks.update({task_id: (comp_id, nproc, k)})
+                    self.alloc_cores += cores_allocated
+                    self.avail_cores -= cores_allocated
+                    self.active_tasks.update({task_id: (comp_id, nproc, cores_allocated)})
                 else:
                     # -------------------------------
                     # single core allocation
@@ -407,22 +407,22 @@ class ResourceManager:
                         node = self.nodes[n]
                         if node.avail_cores > 0:
                             to_alloc = min([ppn, node.avail_cores,
-                                            nproc - k])
+                                            nproc - cores_allocated])
                             self.fwk.debug("allocate task_id %d node %s %d cores" % (task_id, n, to_alloc))
                             procs, cores = node.allocate(whole_nodes,
                                                          whole_socks,
                                                          task_id, comp_id,
                                                          to_alloc)
-                            k += procs
+                            cores_allocated += procs
                             node_file_entries.append((n, cores))
                             if n not in self.alloc_nodes:
                                 self.alloc_nodes.append(n)
                                 if node.avail_cores - node.total_cores == 0:
                                     self.avail_nodes.remove(n)
 
-                    self.alloc_cores += k
-                    self.avail_cores -= k
-                    self.active_tasks.update({task_id: (comp_id, nproc, k)})
+                    self.alloc_cores += cores_allocated
+                    self.avail_cores -= cores_allocated
+                    self.active_tasks.update({task_id: (comp_id, nproc, cores_allocated)})
             except Exception:
                 print("Available Nodes:")
                 for nm in self.avail_nodes:
@@ -443,10 +443,10 @@ class ResourceManager:
 
             if whole_nodes:
                 self.report_RM_status("allocation for task %d using whole nodes" % task_id)
-                return not whole_nodes, nodes, ppn, self.max_ppn, cpp, self.accurateNodes
+                return not whole_nodes, nodes, ppn, self.max_ppn, cpp, self.accurateNodes, cores_allocated
             else:
                 self.report_RM_status("allocation for task %d using partial nodes" % task_id)
-                return not whole_nodes, nodes, node_file_entries, ppn, self.max_ppn, self.accurateNodes
+                return not whole_nodes, nodes, node_file_entries, ppn, self.max_ppn, self.accurateNodes, cores_allocated
 
     def check_whole_node_cap(self, nproc, ppn):
         """

@@ -31,6 +31,8 @@ class Component:
         self.config = config
         self.start_time = 0.0
         self.sys_exit = None
+        self.method_name = None
+        self.args = None
         for i in config.keys():
             try:
                 setattr(self, i, config[i])
@@ -121,19 +123,19 @@ class Component:
             self.services.log('Received Message ')
             sender_id = msg.sender_id
             call_id = msg.call_id
-            method_name = msg.target_method
-            args = msg.args
+            self.method_name = msg.target_method
+            self.args = msg.args
             keywords = msg.keywords
             formatted_args = ['%.3f' % (x) if isinstance(x, float)
-                              else str(x) for x in args]
+                              else str(x) for x in self.args]
             if keywords:
                 formatted_args += [" %s=" % k + str(v) for (k, v) in keywords.items()]
 
-            self.services.debug('Calling method ' + method_name +
+            self.services.debug('Calling method ' + self.method_name +
                                 "(" + ' ,'.join(formatted_args) + ")")
             try:
-                method = getattr(self, method_name)
-                retval = method(*args, **keywords)
+                method = getattr(self, self.method_name)
+                retval = method(*self.args, **keywords)
             except Exception as e:
                 self.services.exception('Uncaught Exception in component method.')
                 response_msg = MethodResultMessage(self.component_id,

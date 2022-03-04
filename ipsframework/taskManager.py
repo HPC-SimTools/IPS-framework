@@ -260,9 +260,9 @@ class TaskManager:
         self.fwk.debug('RM: get_allocation() returned %s', str(retval))
         partial_node = retval[0]
         if partial_node:
-            (nodelist, corelist, ppn, max_ppn, accurateNodes) = retval[1:]
+            (nodelist, corelist, ppn, max_ppn, accurateNodes, cores_allocated) = retval[1:]
         else:
-            (nodelist, ppn, max_ppn, cpp, accurateNodes) = retval[1:]
+            (nodelist, ppn, max_ppn, cpp, accurateNodes, cores_allocated) = retval[1:]
 
         if partial_node:
             nodes = ','.join(nodelist)
@@ -292,7 +292,7 @@ class TaskManager:
                                          'launch_cmd': cmd,
                                          'env_update': env_update}
 
-        return (task_id, cmd, env_update)
+        return (task_id, cmd, env_update, cores_allocated)
 
     def build_launch_cmd(self, nproc, binary, cmd_args, working_dir, ppn,
                          max_ppn, nodes, accurateNodes, partial_nodes,
@@ -557,14 +557,14 @@ class TaskManager:
             except BadResourceRequestException as e:
                 self.fwk.error("There has been a fatal error, %s requested %d too many processors in task %d",
                                caller_id, e.deficit, e.task_id)
-                for task_id, _, _ in ret_dict.values():
+                for task_id, _, _, _ in ret_dict.values():
                     self.resource_mgr.release_allocation(task_id, -1)
                     del self.curr_task_table[task_id]
                 raise
             except ResourceRequestMismatchException as e:
                 self.fwk.error("There has been a fatal error, %s requested too few processors per node to launch task %d (request: procs = %d, ppn = %d)",
                                caller_id, e.task_id, e.nproc, e.ppn)
-                for task_id, _, _ in ret_dict.values():
+                for task_id, _, _, _ in ret_dict.values():
                     self.resource_mgr.release_allocation(task_id, -1)
                     del self.curr_task_table[task_id]
                 raise

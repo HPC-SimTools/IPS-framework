@@ -107,7 +107,7 @@ def test_dask(tmpdir):
     with open(json_files[0], 'r') as json_file:
         lines = json_file.readlines()
     lines = [json.loads(line.strip()) for line in lines]
-    assert len(lines) == 22
+    assert len(lines) == 28
 
     eventtypes = [e.get('eventtype') for e in lines]
     assert eventtypes.count('IPS_LAUNCH_DASK_TASK') == 4
@@ -119,7 +119,7 @@ def test_dask(tmpdir):
 
     task_end_comments = [e.get('comment')[:-4] for e in lines if e.get('eventtype') == "IPS_TASK_END"]
     for task in range(4):
-        assert f'task_name = task_{task}, elasped time = 1' in task_end_comments
+        assert f'task_name = task_{task}, elapsed time = 1' in task_end_comments
 
 
 @pytest.mark.skipif(shutil.which('shifter') is not None,
@@ -154,7 +154,7 @@ def test_dask_shifter_fail(tmpdir):
     with open(json_files[0], 'r') as json_file:
         lines = json_file.readlines()
     lines = [json.loads(line.strip()) for line in lines]
-    assert len(lines) == 8
+    assert len(lines) == 12
 
     assert lines[-1].get('eventtype') == "IPS_END"
     assert lines[-1].get('comment') == "Simulation Execution Error"
@@ -210,7 +210,7 @@ def test_dask_fake_shifter(tmpdir, monkeypatch):
     with open(json_files[0], 'r') as json_file:
         lines = json_file.readlines()
     lines = [json.loads(line.strip()) for line in lines]
-    assert len(lines) == 22
+    assert len(lines) == 28
 
     eventtypes = [e.get('eventtype') for e in lines]
     assert eventtypes.count('IPS_LAUNCH_DASK_TASK') == 4
@@ -222,7 +222,7 @@ def test_dask_fake_shifter(tmpdir, monkeypatch):
 
     task_end_comments = [e.get('comment')[:-4] for e in lines if e.get('eventtype') == "IPS_TASK_END"]
     for task in range(4):
-        assert f'task_name = task_{task}, elasped time = 1' in task_end_comments
+        assert f'task_name = task_{task}, elapsed time = 1' in task_end_comments
 
     # check shifter.log file
     with open(str(tmpdir.join('/work/DASK__dask_worker_2').join('shifter.log')), 'r') as f:
@@ -270,7 +270,7 @@ def test_dask_timeout(tmpdir):
     with open(json_files[0], 'r') as json_file:
         lines = json_file.readlines()
     lines = [json.loads(line.strip()) for line in lines]
-    assert len(lines) == 22
+    assert len(lines) == 28
 
     eventtypes = [e.get('eventtype') for e in lines]
     assert eventtypes.count('IPS_LAUNCH_DASK_TASK') == 4
