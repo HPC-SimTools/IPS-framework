@@ -415,7 +415,7 @@ class ServicesProxy:
             event_time = time.time()
         portal_data['walltime'] = '%.2f' % (event_time - self.component_ref.start_time)
 
-        trace = {}
+        trace = {}  # Zipkin json format
         if start_time is not None and (elapsed_time is not None or end_time is not None) and target is not None and operation is not None:
             trace['timestamp'] = int(start_time*1e6)  # convert to microsecond
             if elapsed_time is not None:

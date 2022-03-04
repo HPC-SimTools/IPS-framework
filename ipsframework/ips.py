@@ -650,6 +650,7 @@ class Framework:
             portal_data['state'] = 'Completed'
             portal_data['stopat'] = time.strftime('%Y-%m-%d|%H:%M:%S%Z',
                                                   time.localtime())
+            # Zipkin json format
             portal_data['trace'] = {"timestamp": int(self.start_time*1e6),
                                     "duration": int((time.time() - self.start_time)*1e6),
                                     "localEndpoint": {
@@ -658,7 +659,7 @@ class Framework:
                                     "id": hashlib.md5(str(self.component_id).encode()).hexdigest()[:16],
                                     'tags': {'total_cores': str(self.resource_manager.total_cores)}}
         elif eventType == "IPS_CALL_END":
-            trace = {}
+            trace = {}  # Zipkin json format
             if start_time is not None and end_time is not None:
                 trace['timestamp'] = int(start_time*1e6)  # convert to microsecond
                 trace['duration'] = int((end_time-start_time)*1e6)  # convert to microsecond
