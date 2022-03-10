@@ -109,4 +109,49 @@ You batch script should then look like:
    ips.py --config=ips.conf --platform=platform.conf
 
 
+Running with worker plugin
+--------------------------
 
+There is the ability to set a
+:class:`~distributed.diagnostics.plugin.WorkerPlugin` on the dask
+worker using the `dask_worker_plugin` option in
+:meth:`~ipsframework.services.ServicesProxy.submit_tasks`.
+
+Using a WorkerPlugin in combination with shifter allows you to do
+things like coping files out of the `Temporary XFS
+<https://docs.nersc.gov/development/shifter/how-to-use/#temporary-xfs-files-for-optimizing-io>`_
+file system. An example of that is
+
+.. code-block:: python
+
+    from distributed.diagnostics.plugin import WorkerPlugin
+
+    class DaskWorkerPlugin(WorkerPlugin):
+        def __init__(self, tmp_dir, target_dir):
+            self.tmp_dir = tmp_dir
+            self.target_dir = target_dir
+
+        def teardown(self, worker):
+            os.system(f"cp {self.tmp_dir}/* {self.target_dir}")
+
+    class Worker(Component):
+        def step(self, timestamp=0.0):
+            cwd = self.services.get_working_dir()
+
+            self.services.create_task_pool('pool')
+            self.services.add_task('pool', 'task_1', 1, '/tmp/', 'executable')
+
+            worker_plugin = DaskWorkerPlugin('/tmp', cwd)
+
+            ret_val = self.services.submit_tasks('pool',
+                                                 use_dask=True, use_shifter=True,
+                                                 dask_worker_plugin=worker_plugin)
+
+            exit_status = self.services.get_finished_tasks('pool')
+
+
+where the batch script has the temporary XFS filesystem mounted as
+
+.. code-block:: bash
+
+    #SBATCH --volume="/global/cscratch1/sd/$USER/tmpfiles:/tmp:perNodeCache=size=1G"

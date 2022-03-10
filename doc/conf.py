@@ -233,4 +233,5 @@ man_pages = [
      [u'UT-Battelle, LLC'], 1)
 ]
 
-intersphinx_mapping = {'python': ('https://docs.python.org/3', None)}
+intersphinx_mapping = {'python': ('https://docs.python.org/3', None),
+                       'distributed': ('http://distributed.dask.org/en/stable', None)}
