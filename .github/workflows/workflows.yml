@@ -7,7 +7,6 @@ jobs:
   static_analysis:
 
     runs-on: ubuntu-latest
-    timeout-minutes: 10
 
     defaults:
       run:
@@ -31,7 +30,6 @@ jobs:
   tests:
 
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 10
 
     defaults:
       run:
@@ -81,7 +79,6 @@ jobs:
   tests-wsl:
 
     runs-on: windows-latest
-    timeout-minutes: 10
 
     defaults:
        run:
