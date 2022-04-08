@@ -25,14 +25,14 @@ class Component:
         """
         Set up config values and reference to services.
         """
-        self.component_id = None
-        self.invocation_q = None
-        self.services = weakref.proxy(services)
-        self.config = config
-        self.start_time = 0.0
-        self.sys_exit = None
-        self.method_name = None
-        self.args = None
+        self.__component_id = None
+        self.__invocation_q = None
+        self.__services = weakref.proxy(services)
+        self.__config = config
+        self.__start_time = 0.0
+        self.__sys_exit = None
+        self.__method_name = None
+        self.__args = None
         for i in config.keys():
             try:
                 setattr(self, i, config[i])
@@ -44,7 +44,7 @@ class Component:
         cls = self.__class__
         result = cls.__new__(cls)
         for k, v in self.__dict__.items():
-            if k in ["invocation_q", "sys_exit", "services"]:
+            if k in ["_Component__invocation_q", "_Component__sys_exit", "_Component__services"]:
                 setattr(result, k, None)
             else:
                 setattr(result, k, copy(v))
@@ -54,9 +54,9 @@ class Component:
         """
         Establish connection to *invocation_q*.
         """
-        self.component_id = component_id
-        self.invocation_q = invocation_q
-        self.start_time = start_time
+        self.__component_id = component_id
+        self.__invocation_q = invocation_q
+        self.__start_time = start_time
 #        setattr(sys, 'exit', sys.exit)
 
     def __my_exit__(self, arg=0):
@@ -77,7 +77,7 @@ class Component:
 
         tmp = sys.exit
         sys.exit = self.__my_exit__
-        self.sys_exit = tmp
+        self.__sys_exit = tmp
         try:
             redirect = self.services.sim_conf['OUT_REDIRECT']
         except KeyError:
@@ -119,15 +119,15 @@ class Component:
         self.services._init_event_service()
 
         while True:
-            msg = self.invocation_q.get()
+            msg = self.__invocation_q.get()
             self.services.log('Received Message ')
             sender_id = msg.sender_id
             call_id = msg.call_id
-            self.method_name = msg.target_method
-            self.args = msg.args
+            self.__method_name = msg.target_method
+            self.__args = msg.args
             keywords = msg.keywords
             formatted_args = ['%.3f' % (x) if isinstance(x, float)
-                              else str(x) for x in self.args]
+                              else str(x) for x in self.__args]
             if keywords:
                 formatted_args += [" %s=" % k + str(v) for (k, v) in keywords.items()]
 
@@ -148,6 +148,30 @@ class Component:
                                                    call_id,
                                                    Message.SUCCESS, retval)
             self.services.fwk_in_q.put(response_msg)
+
+    @property
+    def component_id(self):
+        return self.__component_id
+
+    @property
+    def services(self):
+        return self.__services
+
+    @property
+    def config(self):
+        return self.__config
+
+    @property
+    def start_time(self):
+        return self.__start_time
+
+    @property
+    def method_name(self):
+        return self.__method_name
+
+    @property
+    def args(self):
+        return self.__args
 
     def init(self, timestamp=0.0, **keywords):
         """
@@ -191,7 +215,7 @@ class Component:
         self.services.cleanup()
         if status == Message.SUCCESS:
             self.services.debug('Calling self.sys_exit(0)')
-            self.sys_exit(0)
+            self.__sys_exit(0)
         else:
             self.services.debug('Calling self.sys_exit(1)')
-            self.sys_exit(1)
+            self.__sys_exit(1)
