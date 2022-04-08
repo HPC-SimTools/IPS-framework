@@ -35,3 +35,8 @@ class bad_task_pool_worker2(Component):
 class exception_worker(Component):
     def step(self, timestamp=0.0, **keywords):
         raise RuntimeError('Runtime error')
+
+
+class assign_protected_attribute(Component):
+    def step(self, timestamp=0.0, **keywords):
+        self.args = 0

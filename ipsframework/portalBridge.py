@@ -84,7 +84,6 @@ class PortalBridge(Component):
         self.host = ''
         self.curTime = time.localtime()
         self.startTime = self.curTime
-        self.services = services
         self.sim_map = {}
         self.portal_url = None
         self.done = False

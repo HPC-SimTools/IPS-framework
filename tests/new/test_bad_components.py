@@ -164,3 +164,31 @@ def test_bad_task_pool2(tmpdir):
 
     assert "WORKER__bad_task_pool_worker2_2 ERROR    Uncaught Exception in component method.\n" in lines
     assert "DRIVER__driver_1 ERROR    Uncaught Exception in component method.\n" in lines
+
+
+def test_assign_protected_attribute(tmpdir):
+    platform_file, config_file = write_basic_config_and_platform_files(tmpdir, worker='assign_protected_attribute')
+
+    framework = Framework(config_file_list=[str(config_file)],
+                          log_file_name=str(tmpdir.join('ips.log')),
+                          platform_file_name=str(platform_file),
+                          debug=None,
+                          verbose_debug=None,
+                          cmd_nodes=0,
+                          cmd_ppn=0)
+
+    framework.run()
+
+    # check output log file
+    with open(str(tmpdir.join('sim.log')), 'r') as f:
+        lines = f.readlines()
+
+    # python 3.10 includes the attribute name in the error message
+    assert "AttributeError: can't set attribute\n" in lines or "AttributeError: can't set attribute 'args'\n" in lines
+    assert "Exception: can't set attribute\n" in lines or "Exception: can't set attribute 'args'\n" in lines
+
+    # remove timestamp
+    lines = [line[24:] for line in lines]
+
+    assert "WORKER__assign_protected_attribute_2 ERROR    Uncaught Exception in component method.\n" in lines
+    assert "DRIVER__driver_1 ERROR    Uncaught Exception in component method.\n" in lines
