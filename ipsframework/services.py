@@ -390,7 +390,7 @@ class ServicesProxy:
     def _send_monitor_event(self,
                             eventType='',
                             comment='',
-                            ok='True',
+                            ok=True,
                             state='Running',
                             event_time=None,
                             elapsed_time=None,
@@ -1306,7 +1306,7 @@ class ServicesProxy:
             self._send_monitor_event('IPS_STAGE_INPUTS',
                                      'Files = ' + str(input_file_list) +
                                      ' Exception raised : ' + str(e),
-                                     ok='False')
+                                     ok=False)
             self.exception('Error in stage_input_files')
             raise e
         for (_, old_conf, _, _) in self.sub_flows.values():
@@ -1323,7 +1323,7 @@ class ServicesProxy:
                     self._send_monitor_event('IPS_STAGE_INPUTS',
                                              'Files = ' + str(input_files) +
                                              ' Exception raised : ' + str(e),
-                                             ok='False')
+                                             ok=False)
                     self.exception('Error in stage_input_files')
                     raise e
         elapsed_time = time.time() - start_time
@@ -1368,7 +1368,7 @@ class ServicesProxy:
                 self._send_monitor_event('IPS_STAGE_SUBFLOW_OUTPUTS',
                                          'Files = ' + str(output_files) +
                                          ' Exception raised : ' + str(e),
-                                         ok='False')
+                                         ok=False)
                 self.exception('Error in stage_subflow_output_files() for subflow %s' % sim_name)
                 raise
             else:
@@ -1416,7 +1416,7 @@ class ServicesProxy:
             self._send_monitor_event('IPS_STAGE_OUTPUTS',
                                      'Files = ' + str(file_list) +
                                      ' Exception raised : ' + str(e),
-                                     ok='False')
+                                     ok=False)
             self.exception('Error in stage_output_files()')
             raise
 
@@ -1434,7 +1434,7 @@ class ServicesProxy:
             self._send_monitor_event('IPS_STAGE_OUTPUTS',
                                      'Files = ' + str(file_list) +
                                      ' Exception raised : ' + e.strerror,
-                                     ok='False')
+                                     ok=False)
             self.exception('Error creating directory %s : %d-%s',
                            plasma_dir, e.errno, e.strerror)
             raise
@@ -1477,7 +1477,7 @@ class ServicesProxy:
                 self._send_monitor_event('IPS_STAGE_OUTPUTS',
                                          'Files = ' + str(file_list) +
                                          ' Exception raised : ' + str(why),
-                                         ok='False')
+                                         ok=False)
                 raise
 
         # Store symlinks to component output files in a single top-level directory
@@ -1561,7 +1561,7 @@ class ServicesProxy:
             self._send_monitor_event('IPS_STAGE_RESTART',
                                      'Files = ' + str(file_list) +
                                      ' Exception raised : ' + str(e),
-                                     ok='False')
+                                     ok=False)
             self.exception('Error in stage_restart_files()')
             raise
 
@@ -1594,7 +1594,7 @@ class ServicesProxy:
             self._send_monitor_event('IPS_GET_RESTART',
                                      'Files = ' + str(file_list) +
                                      ' Exception raised : ' + str(e),
-                                     ok='False')
+                                     ok=False)
             self.exception('Error in get_restart_files()')
             raise
 
@@ -1625,7 +1625,7 @@ class ServicesProxy:
         except Exception as e:
             self._send_monitor_event('IPS_STAGE_STATE',
                                      ' Exception raised : ' + str(e),
-                                     ok='False')
+                                     ok=False)
             self.exception('Error staging state files')
             raise
         elapsed_time = time.time() - start_time
@@ -1664,7 +1664,7 @@ class ServicesProxy:
             print('Error updating state files', str(e))
             self._send_monitor_event('IPS_UPDATE_STATE',
                                      ' Exception raised : ' + str(e),
-                                     ok='False')
+                                     ok=False)
             self.exception('Error updating state files')
             raise
         elapsed_time = time.time() - start_time
@@ -1707,7 +1707,7 @@ class ServicesProxy:
             print('Error merging state files', str(e))
             self._send_monitor_event('IPS_MERGE_PLASMA_STATE',
                                      ' Exception raised : ' + str(e),
-                                     ok='False')
+                                     ok=False)
             self.exception('Error merging plasma state file ' + partial_state_file)
             raise
         if ret_val == 0:
@@ -1717,7 +1717,7 @@ class ServicesProxy:
         else:
             self._send_monitor_event('IPS_MERGE_PLASMA_STATE',
                                      ' Error in call to update_state() : ',
-                                     ok='False')
+                                     ok=False)
             self.error('Error merging update %s into current plasma state file %s',
                        partial_state_file, current_plasma_state)
             raise Exception('Error merging update %s into current plasma state file %s' %

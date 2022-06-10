@@ -580,7 +580,7 @@ class Framework:
         self.call_queue_map[call_id] = msg_list
         self.outstanding_calls_list[call_id] = sim_name, comp, method, arg, time.time()
 
-    def _send_monitor_event(self, sim_name='', eventType='', comment='', ok='True', target=None, operation=None, start_time=None, end_time=None):
+    def _send_monitor_event(self, sim_name='', eventType='', comment='', ok=True, target=None, operation=None, start_time=None, end_time=None):
         """
         Publish a portal monitor event to the *_IPS_MONITOR* event topic.
         Event topics that start with an underscore are reserved for use by the
