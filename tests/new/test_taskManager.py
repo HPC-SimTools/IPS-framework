@@ -358,7 +358,38 @@ def test_build_launch_cmd_srun():
                               accurateNodes=None,
                               partial_nodes=False,
                               task_id=None,
-                              cpp=1)
+                              cpp=1,
+                              omp=False)
+
+    assert cmd == ('srun -N 2 -n 4 -c 1 --threads-per-core=1 --cpu-bind=cores executable ', None)
+
+    cmd = tm.build_launch_cmd(nproc=2,
+                              binary='executable',
+                              cmd_args=('13', '42'),
+                              working_dir=None,
+                              ppn=1,
+                              max_ppn=None,
+                              nodes='n1,n2',
+                              accurateNodes=None,
+                              partial_nodes=False,
+                              task_id=None,
+                              cpp=2,
+                              omp=False)
+
+    assert cmd == ('srun -N 2 -n 2 -c 2 --threads-per-core=1 --cpu-bind=cores executable 13 42', None)
+
+    cmd = tm.build_launch_cmd(nproc=4,
+                              binary='executable',
+                              cmd_args=(),
+                              working_dir=None,
+                              ppn=2,
+                              max_ppn=None,
+                              nodes='n1,n2',
+                              accurateNodes=None,
+                              partial_nodes=False,
+                              task_id=None,
+                              cpp=1,
+                              omp=True)
 
     assert cmd == ('srun -N 2 -n 4 -c 1 --threads-per-core=1 --cpu-bind=cores executable ',
                    {'OMP_PLACES': 'threads', 'OMP_PROC_BIND': 'spread', 'OMP_NUM_THREADS': '1'})
@@ -373,7 +404,8 @@ def test_build_launch_cmd_srun():
                               accurateNodes=None,
                               partial_nodes=False,
                               task_id=None,
-                              cpp=2)
+                              cpp=2,
+                              omp=True)
 
     assert cmd == ('srun -N 2 -n 2 -c 2 --threads-per-core=1 --cpu-bind=cores executable 13 42',
                    {'OMP_PLACES': 'threads', 'OMP_PROC_BIND': 'spread', 'OMP_NUM_THREADS': '2'})
@@ -405,7 +437,7 @@ def test_init_task_srun(tmpdir):
     def init_final_task(nproc, tppn, tcpt=0):
         task_id, cmd, _, cores_allocated = tm.init_task(ServiceRequestMessage('id', 'id', 'c', 'init_task',
                                                                               nproc, 'exe', '/dir', tppn, True,
-                                                                              True, True, tcpt))
+                                                                              True, True, tcpt, False))
         tm.finish_task(ServiceRequestMessage('id', 'id', 'c', 'finish_task',
                                              task_id, None))
         return task_id, cmd, cores_allocated
@@ -483,17 +515,17 @@ def test_init_task_srun(tmpdir):
     # start two task, second should fail with Insufficient Resources depending on block
     task_id, cmd, _, _ = tm.init_task(ServiceRequestMessage('id', 'id', 'c', 'init_task',
                                                             4, 'exe', '/dir', 0, True,
-                                                            True, True, 0))
+                                                            True, True, 0, False))
 
     with pytest.raises(BlockedMessageException):
         tm.init_task(ServiceRequestMessage('id', 'id', 'c', 'init_task',
                                            1, 'exe', '/dir', 0, True,
-                                           True, True, 0))
+                                           True, True, 0, False))
 
     with pytest.raises(InsufficientResourcesException):
         tm.init_task(ServiceRequestMessage('id', 'id', 'c', 'init_task',
                                            1, 'exe', '/dir', 0, False,
-                                           True, True, 0))
+                                           True, True, 0, False))
 
 
 def test_init_task_pool_srun(tmpdir):
@@ -521,7 +553,7 @@ def test_init_task_pool_srun(tmpdir):
 
     def init_final_task_pool(nproc=1, tppn=0, number_of_tasks=1, tcpp=0, msg=None):
         if msg is None:
-            msg = {f'task{n}': (nproc, '/dir', f'exe{n}', (f'arg{n}',), tppn, True, False, tcpp) for n in range(number_of_tasks)}
+            msg = {f'task{n}': (nproc, '/dir', f'exe{n}', (f'arg{n}',), tppn, True, False, tcpp, False) for n in range(number_of_tasks)}
         retval = tm.init_task_pool(ServiceRequestMessage('id', 'id', 'c', 'init_task_pool', msg))
         for task_id, _, _, _ in retval.values():
             tm.finish_task(ServiceRequestMessage('id', 'id', 'c', 'finish_task',
@@ -650,8 +682,8 @@ def test_init_task_pool_srun(tmpdir):
     fwk.warning.assert_called_once_with('task cpp (4) exceeds maximum possible for 1 procs per node with 2 cores per node, using 2 cpus per proc instead')
 
     # different size tasks
-    msg = {'task0': (1, '/dir', 'exe0', ('arg0',), 0, True, False, 0),
-           'task1': (2, '/dir', 'exe1', ('arg1',), 0, True, False, 0)}
+    msg = {'task0': (1, '/dir', 'exe0', ('arg0',), 0, True, False, 0, False),
+           'task1': (2, '/dir', 'exe1', ('arg1',), 0, True, False, 0, False)}
     retval = init_final_task_pool(msg=msg)
     assert len(retval) == 2
     task_id, cmd, _, cores = retval['task0']
@@ -664,13 +696,13 @@ def test_init_task_pool_srun(tmpdir):
     assert cores == 2
 
     # one good task, one bad task
-    msg = {'task0': (1, '/dir', 'exe0', ('arg0',), 0, True, False, 0),
-           'task1': (5, '/dir', 'exe1', ('arg1',), 0, True, False, 0)}
+    msg = {'task0': (1, '/dir', 'exe0', ('arg0',), 0, True, False, 0, False),
+           'task1': (5, '/dir', 'exe1', ('arg1',), 0, True, False, 0, False)}
     with pytest.raises(BadResourceRequestException):
         init_final_task_pool(msg=msg)
 
     # one good task, one bad task
-    msg = {'task0': (1, '/dir', 'exe0', ('arg0',), 0, True, False, 0),
-           'task1': (3, '/dir', 'exe1', ('arg1',), 1, True, False, 0)}
+    msg = {'task0': (1, '/dir', 'exe0', ('arg0',), 0, True, False, 0, False),
+           'task1': (3, '/dir', 'exe1', ('arg1',), 1, True, False, 0, False)}
     with pytest.raises(ResourceRequestMismatchException):
         init_final_task_pool(msg=msg)

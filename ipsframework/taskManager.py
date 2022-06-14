@@ -223,12 +223,13 @@ class TaskManager:
         wnodes = init_task_msg.args[5]
         wsocks = init_task_msg.args[6]
         tcpp = init_task_msg.args[7]
+        omp = init_task_msg.args[8]
 
         # SIMYAN: increased arguments
-        cmd_args = init_task_msg.args[8:]
+        cmd_args = init_task_msg.args[9:]
 
         try:
-            return self._init_task(caller_id, nproc, binary, working_dir, tppn, tcpp, wnodes, wsocks, cmd_args)
+            return self._init_task(caller_id, nproc, binary, working_dir, tppn, tcpp, omp, wnodes, wsocks, cmd_args)
         except InsufficientResourcesException:
             if block:
                 raise BlockedMessageException(init_task_msg, '***%s waiting for %d resources' %
@@ -246,7 +247,7 @@ class TaskManager:
         except Exception:
             raise
 
-    def _init_task(self, caller_id, nproc, binary, working_dir, tppn, tcpp, wnodes, wsocks, cmd_args):
+    def _init_task(self, caller_id, nproc, binary, working_dir, tppn, tcpp, omp, wnodes, wsocks, cmd_args):
         # handle for task related things
         task_id = self.get_task_id()
 
@@ -282,7 +283,7 @@ class TaskManager:
                                                       max_ppn, nodes,
                                                       accurateNodes,
                                                       False, task_id,
-                                                      cpp)
+                                                      cpp, omp)
 
         self.curr_task_table[task_id] = {'component': caller_id,
                                          'status': 'init_task',
@@ -296,7 +297,7 @@ class TaskManager:
 
     def build_launch_cmd(self, nproc, binary, cmd_args, working_dir, ppn,
                          max_ppn, nodes, accurateNodes, partial_nodes,
-                         task_id, cpp=0, core_list=''):
+                         task_id, cpp=0, omp=False, core_list=''):
         """
         Construct task launch command to be executed by the component.
 
@@ -519,9 +520,10 @@ class TaskManager:
                                 nproc_flag, str(nproc),
                                 cpuptask_flag, str(cpp),
                                 cpubind_flag])
-                env_update = {'OMP_PLACES': 'threads',
-                              'OMP_PROC_BIND': 'spread',
-                              'OMP_NUM_THREADS': str(cpp)}
+                if omp:
+                    env_update = {'OMP_PLACES': 'threads',
+                                  'OMP_PROC_BIND': 'spread',
+                                  'OMP_NUM_THREADS': str(cpp)}
         else:
             self.fwk.error("invalid task launch command.")
             raise RuntimeError("invalid task launch command.")
@@ -548,10 +550,10 @@ class TaskManager:
         ret_dict = {}
         for task_name in task_dict:
             # handle for task related things
-            (nproc, working_dir, binary, cmd_args, tppn, wnodes, wsocks, tcpp) = task_dict[task_name]
+            (nproc, working_dir, binary, cmd_args, tppn, wnodes, wsocks, tcpp, omp) = task_dict[task_name]
 
             try:
-                ret_dict[task_name] = self._init_task(caller_id, nproc, binary, working_dir, tppn, tcpp, wnodes, wsocks, cmd_args)
+                ret_dict[task_name] = self._init_task(caller_id, nproc, binary, working_dir, tppn, tcpp, omp, wnodes, wsocks, cmd_args)
             except InsufficientResourcesException:
                 continue
             except BadResourceRequestException as e:

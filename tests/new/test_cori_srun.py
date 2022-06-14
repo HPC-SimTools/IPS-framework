@@ -73,7 +73,7 @@ def test_srun_openmp_on_cori(tmpdir):
     work_dir = tmpdir.join("work").join("OPENMP__openmp_task_1")
 
     # 0
-    for c in (2, 4, 6):
+    for c in (5, 7, 9):
         assert comments[c][0] == "Target = srun -N 1 -n 1 -c 32 --threads-per-core=1 --cpu-bind=cores /usr/common/software/bin/check-mpi.gnu.cori "
         assert comments[c][1] == "env = {'OMP_PLACES': 'threads', 'OMP_PROC_BIND': 'spread', 'OMP_NUM_THREADS': '32'}"
 
@@ -82,7 +82,7 @@ def test_srun_openmp_on_cori(tmpdir):
         assert lines[0].startswith('Hello from rank 0') and lines[0].endswith('(core affinity = 0-63)\n')
 
     # 1
-    for c in (8, 10, 12):
+    for c in (11, 13, 15):
         assert comments[c][0] == "Target = srun -N 1 -n 4 -c 8 --threads-per-core=1 --cpu-bind=cores /usr/common/software/bin/check-mpi.gnu.cori "
         assert comments[c][1] == "env = {'OMP_PLACES': 'threads', 'OMP_PROC_BIND': 'spread', 'OMP_NUM_THREADS': '8'}"
 
@@ -94,7 +94,7 @@ def test_srun_openmp_on_cori(tmpdir):
         assert lines[3].startswith('Hello from rank 3') and lines[3].endswith('(core affinity = 24-31,56-63)\n')
 
     # 2
-    for c in (14, 16, 18):
+    for c in (17, 19, 21):
         assert comments[c][0] == "Target = srun -N 1 -n 32 -c 1 --threads-per-core=1 --cpu-bind=cores /usr/common/software/bin/check-mpi.gnu.cori "
         assert comments[c][1] == "env = {'OMP_PLACES': 'threads', 'OMP_PROC_BIND': 'spread', 'OMP_NUM_THREADS': '1'}"
 
@@ -105,8 +105,8 @@ def test_srun_openmp_on_cori(tmpdir):
             assert l.startswith(f'Hello from rank {n}') and l.endswith(f'(core affinity = {cores},{cores+32})\n')
 
     # 31
-    assert comments[20][0] == "Target = srun -N 1 -n 4 -c 8 --threads-per-core=1 --cpu-bind=cores /usr/common/software/bin/check-mpi.gnu.cori "
-    assert comments[20][1] == "env = {'OMP_PLACES': 'threads', 'OMP_PROC_BIND': 'spread', 'OMP_NUM_THREADS': '8'}"
+    assert comments[23][0] == "Target = srun -N 1 -n 4 -c 8 --threads-per-core=1 --cpu-bind=cores /usr/common/software/bin/check-mpi.gnu.cori "
+    assert comments[23][1] == "env = {'OMP_PLACES': 'threads', 'OMP_PROC_BIND': 'spread', 'OMP_NUM_THREADS': '8'}"
 
     lines = sorted(work_dir.join("log.31").readlines())
     assert lines[0].startswith('Hello from rank 0') and lines[0].endswith('(core affinity = 0-7,32-39)\n')
@@ -115,8 +115,8 @@ def test_srun_openmp_on_cori(tmpdir):
     assert lines[3].startswith('Hello from rank 3') and lines[3].endswith('(core affinity = 24-31,56-63)\n')
 
     # 32
-    assert comments[22][0] == "Target = srun -N 1 -n 4 -c 4 --threads-per-core=1 --cpu-bind=cores /usr/common/software/bin/check-mpi.gnu.cori "
-    assert comments[22][1] == "env = {'OMP_PLACES': 'threads', 'OMP_PROC_BIND': 'spread', 'OMP_NUM_THREADS': '4'}"
+    assert comments[25][0] == "Target = srun -N 1 -n 4 -c 4 --threads-per-core=1 --cpu-bind=cores /usr/common/software/bin/check-mpi.gnu.cori "
+    assert comments[25][1] == "env = {'OMP_PLACES': 'threads', 'OMP_PROC_BIND': 'spread', 'OMP_NUM_THREADS': '4'}"
 
     lines = sorted(work_dir.join("log.32").readlines())
     assert lines[0].startswith('Hello from rank 0') and lines[0].endswith('(core affinity = 0-3,32-35)\n')
@@ -125,8 +125,8 @@ def test_srun_openmp_on_cori(tmpdir):
     assert lines[3].startswith('Hello from rank 3') and lines[3].endswith('(core affinity = 20-23,52-55)\n')
 
     # 33
-    assert comments[24][0] == "Target = srun -N 1 -n 4 -c 2 --threads-per-core=1 --cpu-bind=cores /usr/common/software/bin/check-mpi.gnu.cori "
-    assert comments[24][1] == "env = {'OMP_PLACES': 'threads', 'OMP_PROC_BIND': 'spread', 'OMP_NUM_THREADS': '2'}"
+    assert comments[27][0] == "Target = srun -N 1 -n 4 -c 2 --threads-per-core=1 --cpu-bind=cores /usr/common/software/bin/check-mpi.gnu.cori "
+    assert comments[27][1] == "env = {'OMP_PLACES': 'threads', 'OMP_PROC_BIND': 'spread', 'OMP_NUM_THREADS': '2'}"
 
     lines = sorted(work_dir.join("log.33").readlines())
     assert lines[0].startswith('Hello from rank 0') and lines[0].endswith('(core affinity = 0,1,32,33)\n')
@@ -137,8 +137,8 @@ def test_srun_openmp_on_cori(tmpdir):
     # openmp
 
     # 41
-    assert comments[26][0] == "Target = srun -N 1 -n 4 -c 8 --threads-per-core=1 --cpu-bind=cores /usr/common/software/bin/check-hybrid.gnu.cori "
-    assert comments[26][1] == "env = {'OMP_PLACES': 'threads', 'OMP_PROC_BIND': 'spread', 'OMP_NUM_THREADS': '8'}"
+    assert comments[29][0] == "Target = srun -N 1 -n 4 -c 8 --threads-per-core=1 --cpu-bind=cores /usr/common/software/bin/check-hybrid.gnu.cori "
+    assert comments[29][1] == "env = {'OMP_PLACES': 'threads', 'OMP_PROC_BIND': 'spread', 'OMP_NUM_THREADS': '8'}"
 
     lines = sorted(work_dir.join("log.41").readlines())
     for n, l in enumerate(lines):
@@ -146,8 +146,8 @@ def test_srun_openmp_on_cori(tmpdir):
         assert l.endswith(f"(core affinity = {n%8 + n//16*8 + n//8%2*16})\n")
 
     # 42
-    assert comments[28][0] == "Target = srun -N 1 -n 4 -c 4 --threads-per-core=1 --cpu-bind=cores /usr/common/software/bin/check-hybrid.gnu.cori "
-    assert comments[28][1] == "env = {'OMP_PLACES': 'threads', 'OMP_PROC_BIND': 'spread', 'OMP_NUM_THREADS': '4'}"
+    assert comments[31][0] == "Target = srun -N 1 -n 4 -c 4 --threads-per-core=1 --cpu-bind=cores /usr/common/software/bin/check-hybrid.gnu.cori "
+    assert comments[31][1] == "env = {'OMP_PLACES': 'threads', 'OMP_PROC_BIND': 'spread', 'OMP_NUM_THREADS': '4'}"
 
     lines = sorted(work_dir.join("log.42").readlines())
     for n, l in enumerate(lines):
@@ -155,8 +155,8 @@ def test_srun_openmp_on_cori(tmpdir):
         assert l.endswith(f"(core affinity = {n%4 + n//8*4 + n//4%2*16})\n")
 
     # 43
-    assert comments[30][0] == "Target = srun -N 1 -n 4 -c 2 --threads-per-core=1 --cpu-bind=cores /usr/common/software/bin/check-hybrid.gnu.cori "
-    assert comments[30][1] == "env = {'OMP_PLACES': 'threads', 'OMP_PROC_BIND': 'spread', 'OMP_NUM_THREADS': '2'}"
+    assert comments[33][0] == "Target = srun -N 1 -n 4 -c 2 --threads-per-core=1 --cpu-bind=cores /usr/common/software/bin/check-hybrid.gnu.cori "
+    assert comments[33][1] == "env = {'OMP_PLACES': 'threads', 'OMP_PROC_BIND': 'spread', 'OMP_NUM_THREADS': '2'}"
 
     lines = sorted(work_dir.join("log.43").readlines())
     for n, l in enumerate(lines):
@@ -189,9 +189,9 @@ def test_srun_openmp_on_cori_pool(tmpdir):
     work_dir = tmpdir.join("work").join("OPENMP__openmp_task_pool_1")
 
     # 1
-    assert comments[3][0] == "Target = srun -N 1 -n 4 -c 8 --threads-per-core=1 --cpu-bind=cores /usr/common/software/bin/check-mpi.gnu.cori  "
-    assert comments[3][1] == "task_name = task_1"
-    assert comments[3][2] == "env = {'OMP_PLACES': 'threads', 'OMP_PROC_BIND': 'spread', 'OMP_NUM_THREADS': '8'}"
+    assert comments[6][0] == "Target = srun -N 1 -n 4 -c 8 --threads-per-core=1 --cpu-bind=cores /usr/common/software/bin/check-mpi.gnu.cori  "
+    assert comments[6][1] == "task_name = task_1"
+    assert comments[6][2] == "env = {'OMP_PLACES': 'threads', 'OMP_PROC_BIND': 'spread', 'OMP_NUM_THREADS': '8'}"
 
     lines = sorted(work_dir.join("log.1").readlines())
     assert lines[0].startswith('Hello from rank 0') and lines[0].endswith('(core affinity = 0-7,32-39)\n')
@@ -200,9 +200,9 @@ def test_srun_openmp_on_cori_pool(tmpdir):
     assert lines[3].startswith('Hello from rank 3') and lines[3].endswith('(core affinity = 24-31,56-63)\n')
 
     # 2
-    assert comments[5][0] == "Target = srun -N 1 -n 4 -c 4 --threads-per-core=1 --cpu-bind=cores /usr/common/software/bin/check-mpi.gnu.cori  "
-    assert comments[5][1] == "task_name = task_2"
-    assert comments[5][2] == "env = {'OMP_PLACES': 'threads', 'OMP_PROC_BIND': 'spread', 'OMP_NUM_THREADS': '4'}"
+    assert comments[8][0] == "Target = srun -N 1 -n 4 -c 4 --threads-per-core=1 --cpu-bind=cores /usr/common/software/bin/check-mpi.gnu.cori  "
+    assert comments[8][1] == "task_name = task_2"
+    assert comments[8][2] == "env = {'OMP_PLACES': 'threads', 'OMP_PROC_BIND': 'spread', 'OMP_NUM_THREADS': '4'}"
 
     lines = sorted(work_dir.join("log.2").readlines())
     assert lines[0].startswith('Hello from rank 0') and lines[0].endswith('(core affinity = 0-3,32-35)\n')
@@ -211,9 +211,9 @@ def test_srun_openmp_on_cori_pool(tmpdir):
     assert lines[3].startswith('Hello from rank 3') and lines[3].endswith('(core affinity = 20-23,52-55)\n')
 
     # 3
-    assert comments[7][0] == "Target = srun -N 1 -n 4 -c 2 --threads-per-core=1 --cpu-bind=cores /usr/common/software/bin/check-mpi.gnu.cori  "
-    assert comments[7][1] == "task_name = task_3"
-    assert comments[7][2] == "env = {'OMP_PLACES': 'threads', 'OMP_PROC_BIND': 'spread', 'OMP_NUM_THREADS': '2'}"
+    assert comments[10][0] == "Target = srun -N 1 -n 4 -c 2 --threads-per-core=1 --cpu-bind=cores /usr/common/software/bin/check-mpi.gnu.cori  "
+    assert comments[10][1] == "task_name = task_3"
+    assert comments[10][2] == "env = {'OMP_PLACES': 'threads', 'OMP_PROC_BIND': 'spread', 'OMP_NUM_THREADS': '2'}"
 
     lines = sorted(work_dir.join("log.3").readlines())
     assert lines[0].startswith('Hello from rank 0') and lines[0].endswith('(core affinity = 0,1,32,33)\n')
