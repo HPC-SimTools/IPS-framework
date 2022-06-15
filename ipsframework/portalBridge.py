@@ -255,7 +255,7 @@ class PortalBridge(Component):
             try:
                 if self.first_event:  # First time, launch sendPost.py daemon
                     cmd = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'sendPost.py')
-                    python_exec = shutil.which('python')
+                    python_exec = shutil.which('python3')
                     self.childProcess = Popen([python_exec, cmd], bufsize=128,
                                               stdin=PIPE, stdout=PIPE,
                                               stderr=PIPE, close_fds=True)
