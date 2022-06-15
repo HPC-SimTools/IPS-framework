@@ -62,7 +62,7 @@ import time
 import hashlib
 from ipsframework import platformspec
 from ipsframework.messages import Message, ServiceRequestMessage, \
-    ServiceResponseMessage, MethodInvokeMessage
+    ServiceResponseMessage, MethodInvokeMessage, MethodResultMessage
 from ipsframework.configurationManager import ConfigurationManager
 from ipsframework.taskManager import TaskManager
 from ipsframework.resourceManager import ResourceManager
@@ -259,7 +259,7 @@ class Framework:
                 ret_val = handler(msg)
             except BlockedMessageException as e:
                 if self.verbose_debug:
-                    self.debug('Blocked message : %s', e.__str__())
+                    self.debug('Blocked message : %s', str(e))
                 self.blocked_messages.append(msg)
                 return
             except Exception as e:
@@ -347,10 +347,10 @@ class Framework:
             self.blocked_messages = []
             for msg in msg_list:
                 self.debug('Framework processing message %s ', msg.message_id)
-                if msg.__class__.__name__ == 'ServiceRequestMessage':
+                if isinstance(msg, ServiceRequestMessage):
                     self._dispatch_service_request(msg)
                     continue
-                elif msg.__class__.__name__ == 'MethodResultMessage':
+                elif isinstance(msg, MethodResultMessage):
                     self.debug('Received Result for call %s', msg.call_id)
                     if msg.call_id not in outstanding_fwk_calls:
                         self.task_manager.return_call(msg)
@@ -495,7 +495,7 @@ class Framework:
                     self.debug('Framework processing message %s ', msg.message_id)
 
                 sim_name = msg.sender_id.get_sim_name()
-                if msg.__class__.__name__ == 'ServiceRequestMessage':
+                if isinstance(msg, ServiceRequestMessage):
                     try:
                         self._dispatch_service_request(msg)
                     except Exception:
@@ -503,7 +503,7 @@ class Framework:
                         self.terminate_all_sims(status=Message.FAILURE)
                         return False
                     continue
-                elif msg.__class__.__name__ == 'MethodResultMessage':
+                elif isinstance(msg, MethodResultMessage):
                     if msg.call_id not in self.outstanding_calls_list:
                         self.task_manager.return_call(msg)
                         continue

@@ -31,7 +31,7 @@ def parse_log_line(line):
 
 
 def convert_logdata_to_html(lines):
-    if type(lines).__name__ == 'str':
+    if isinstance(lines, str):
         lines = [line for line in lines.split('\n') if line != '']
     tokens = []
     for line in lines:

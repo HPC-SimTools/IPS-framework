@@ -102,7 +102,7 @@ def test_srun_openmp_on_cori(tmpdir):
         lines = sorted(work_dir.join(f"log.{log}").readlines(), key=lambda a: int(a.split()[3].replace(',', '')))
         for n, l in enumerate(lines):
             cores = n//2 + n % 2*16
-            assert lines[n].startswith(f'Hello from rank {n}') and lines[n].endswith(f'(core affinity = {cores},{cores+32})\n')
+            assert l.startswith(f'Hello from rank {n}') and l.endswith(f'(core affinity = {cores},{cores+32})\n')
 
     # 31
     assert comments[20][0] == "Target = srun -N 1 -n 4 -c 8 --threads-per-core=1 --cpu-bind=cores /usr/common/software/bin/check-mpi.gnu.cori "
