@@ -108,7 +108,7 @@ def get_qstat_jobinfo2():
             else:
                 i = nodes.index(node_name)
                 ndata[i][1].append(procid)
-        ppn = max([len(p[1]) for p in ndata])
+        ppn = max(len(p[1]) for p in ndata)
         return len(ndata), ppn, False, ndata
     else:
         raise Exception('Error in call to qstat')

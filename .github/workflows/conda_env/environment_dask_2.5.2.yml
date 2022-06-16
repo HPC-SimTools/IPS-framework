@@ -8,4 +8,6 @@ dependencies:
 - mpi4py
 - openmpi
 - dask=2.5.2
-- coverage<=6.2
+- click<8
+- msgpack-python<1
+- coverage!=6.3

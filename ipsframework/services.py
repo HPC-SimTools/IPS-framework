@@ -1406,7 +1406,7 @@ class ServicesProxy:
         output_dir = os.path.join(sim_root, out_root,
                                   str(timeStamp), 'components',
                                   self.full_comp_id)
-        if type(file_list).__name__ == 'str':
+        if isinstance(file_list, str):
             file_list = file_list.split()
         all_files = sum([glob.glob(f) for f in file_list], [])
         try:
@@ -1904,7 +1904,7 @@ class ServicesProxy:
         # Update undefined sub workflow configuration entries using top level configuration
         # only applicable to non-component entries (ones with non-dictionary values)
         for (k, v) in self.sim_conf.items():
-            if k not in sub_conf_new and type(v).__name__ != 'dict':
+            if k not in sub_conf_new and not isinstance(v, dict):
                 sub_conf_new[k] = v
 
         sub_conf_new['SIM_NAME'] = self.sim_name + "::" + sub_name

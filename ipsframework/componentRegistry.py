@@ -175,7 +175,7 @@ class ComponentRegistry(metaclass=SingletonMeta):
             print('No registry entry found for ', key)
             raise
         try:
-            value = entry.__getattribute__(artifact)
+            value = getattr(entry, artifact)
         except KeyError:
             print('Invalid registry attribute : ', artifact)
             print('Possible values are : ', list(entry.__dict__.keys()))
