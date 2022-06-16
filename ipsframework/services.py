@@ -591,6 +591,8 @@ class ServicesProxy:
 
             * *task_ppn* : the processes per node value for this task
             * *task_cpp* : the cores per process, only used when ``MPIRUN=srun`` commands
+            * *omp* : If ``True`` the task will be launch with the correct OpenMP environment
+               variables set, only used when ``MPIRUN=srun``
             * *block* : specifies that this task will block (or raise an
               exception) if not enough resources are available to run
               immediately.  If ``True``, the task will be retried until it
@@ -655,6 +657,7 @@ class ServicesProxy:
 
         task_ppn = keywords.get('task_ppn', self.ppn)
         task_cpp = keywords.get('task_cpp', self.cpp)
+        omp = keywords.get('omp', False)
         block = keywords.get('block', True)
         tag = keywords.get('tag', 'None')
 
@@ -666,7 +669,7 @@ class ServicesProxy:
             msg_id = self._invoke_service(self.fwk.component_id,
                                           'init_task', nproc, binary_fullpath,
                                           working_dir, task_ppn, block,
-                                          whole_nodes, whole_socks, task_cpp, *args)
+                                          whole_nodes, whole_socks, task_cpp, omp, *args)
             (task_id, command, env_update, cores_allocated) = self._get_service_response(msg_id, block=True)
         except Exception:
             raise
@@ -758,9 +761,10 @@ class ServicesProxy:
             wnodes = task.keywords.get('whole_nodes', not self.shared_nodes)
             wsocks = task.keywords.get('whole_sockets', not self.shared_nodes)
             task_cpp = task.keywords.get('task_cpp', self.cpp)
+            omp = task.keywords.get('omp', False)
             submit_dict[task_name] = (task.nproc, task.working_dir,
                                       task.binary, task.args,
-                                      task_ppn, wnodes, wsocks, task_cpp)
+                                      task_ppn, wnodes, wsocks, task_cpp, omp)
 
         try:
             msg_id = self._invoke_service(self.fwk.component_id,

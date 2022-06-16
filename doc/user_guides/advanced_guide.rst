@@ -325,12 +325,13 @@ The following examples show the behavior if you are running on a `Cori
 
 Using the `check-mpi.gnu.cori
 <https://docs.nersc.gov/jobs/affinity/#use-nersc-prebuilt-binaries>`_
-binary provided on Cori with ``nproc=8`` without specifying other
-options:
+binary provided on Cori with ``nproc=8`` and settings the correct OMP
+environment variables with ``omp=True`` without specifying other
+options :
 
 .. code-block:: python
 
-    self.services.launch_task(8, cwd, "check-mpi.gnu.cori")
+    self.services.launch_task(8, cwd, "check-mpi.gnu.cori", omp=True)
 
 the ``srun`` command created will be ``srun -N 1 -n 8 -c
 4 --threads-per-core=1 --cpu-bind=cores check-mpi.gnu.cori`` along
@@ -353,7 +354,7 @@ If you also include the option ``task_ppn=4``:
 
 .. code-block:: python
 
-    self.services.launch_task(8, cwd, "check-mpi.gnu.cori", task_ppn=4)
+    self.services.launch_task(8, cwd, "check-mpi.gnu.cori", task_ppn=4, omp=True)
 
 then the command created will be ``srun -N 2 -n 8 -c
 8 --threads-per-core=1 --cpu-bind=cores check-mpi.gnu.cori`` along
@@ -377,7 +378,7 @@ setting ``task_cpp``, adding ``task_cpp=2``
 
 .. code-block:: python
 
-    self.services.launch_task(8, cwd, "check-mpi.gnu.cori", task_ppn=4, task_cpp=2)
+    self.services.launch_task(8, cwd, "check-mpi.gnu.cori", task_ppn=4, task_cpp=2, omp=True)
 
 will create the command ``srun -N 2 -n 8 -c
 2 --threads-per-core=1 --cpu-bind=cores check-mpi.gnu.cori`` and set
@@ -402,7 +403,7 @@ binary with the same options:
 
 .. code-block:: python
 
-    self.services.launch_task(8, cwd, "check-hybrid.gnu.cori", task_ppn=4, task_cpp=2)
+    self.services.launch_task(8, cwd, "check-hybrid.gnu.cori", task_ppn=4, task_cpp=2, omp=True)
 
 the resulting core affinity of the OpenMP threads are:
 
