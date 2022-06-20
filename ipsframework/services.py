@@ -2240,7 +2240,8 @@ class TaskPool:
                 self.services.exception('Error while reading dask worker log files: %s', str(e))
             else:
                 for worker in worker_names:
-                    os.remove(self.worker_event_logfile.format(worker))
+                    if os.path.isfile(self.worker_event_logfile.format(worker)):
+                        os.remove(self.worker_event_logfile.format(worker))
 
         self.finished_tasks = {}
         self.active_tasks = {}
