@@ -538,16 +538,28 @@ class ServicesProxy:
             raise
         msg_id = self._invoke_service(self.fwk.component_id, 'wait_call',
                                       call_id, block)
-        response = self._get_service_response(msg_id, block=True)
         formatted_args = ','.join('%.3f' % (x) if isinstance(x, float)
                                   else str(x) for x in args)
         target_full = f'{target}:{method_name}({formatted_args})'
-        self._send_monitor_event('IPS_CALL_END', 'Target = ' + target_full,
-                                 start_time=start_time,
-                                 end_time=time.time(),
-                                 elapsed_time=time.time()-start_time,
-                                 target=target,
-                                 operation=f'{method_name}({formatted_args})')
+        try:
+            response = self._get_service_response(msg_id, block=True)
+            self._send_monitor_event('IPS_CALL_END', 'Target = ' + target_full,
+                                     start_time=start_time,
+                                     end_time=time.time(),
+                                     elapsed_time=time.time()-start_time,
+                                     target=target,
+                                     operation=f'{method_name}({formatted_args})')
+        except Exception as e:
+            self._send_monitor_event('IPS_CALL_END',
+                                     f'Error: "{e}" Target = {target_full}',
+                                     start_time=start_time,
+                                     end_time=time.time(),
+                                     elapsed_time=time.time()-start_time,
+                                     target=target,
+                                     operation=f'{method_name}({formatted_args})',
+                                     ok=False)
+            raise
+
         del self.call_targets[call_id]
         return response
 

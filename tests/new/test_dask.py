@@ -154,7 +154,7 @@ def test_dask_shifter_fail(tmpdir):
     with open(json_files[0], 'r') as json_file:
         lines = json_file.readlines()
     lines = [json.loads(line.strip()) for line in lines]
-    assert len(lines) == 12
+    assert len(lines) == 13
 
     assert lines[-1].get('eventtype') == "IPS_END"
     assert lines[-1].get('comment') == "Simulation Execution Error"
