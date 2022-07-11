@@ -1,3 +1,5 @@
+import os
+import json
 from ipsframework import Framework
 
 
@@ -84,6 +86,23 @@ def test_exception(tmpdir):
     assert "WORKER__exception_worker_2 ERROR    Uncaught Exception in component method.\n" in lines
     assert "DRIVER__driver_1 ERROR    Uncaught Exception in component method.\n" in lines
 
+    # check event log
+    events = read_event_log(tmpdir)
+    assert len(events) == 11
+
+    worker_call_end_event = events[8]
+
+    assert worker_call_end_event["code"] == "DRIVER__driver"
+    assert worker_call_end_event["eventtype"] == "IPS_CALL_END"
+    assert not worker_call_end_event['ok']
+    assert worker_call_end_event["comment"] == "Error: \"Runtime error\" Target = test@exception_worker@2:step(0)"
+
+    sim_end_event = events[10]
+    assert sim_end_event["code"] == "Framework"
+    assert sim_end_event["eventtype"] == "IPS_END"
+    assert not sim_end_event['ok']
+    assert sim_end_event["comment"] == "Simulation Execution Error"
+
 
 def test_bad_task(tmpdir):
     platform_file, config_file = write_basic_config_and_platform_files(tmpdir, worker='bad_task_worker')
@@ -110,6 +129,23 @@ def test_bad_task(tmpdir):
 
     assert "WORKER__bad_task_worker_2 ERROR    Uncaught Exception in component method.\n" in lines
     assert "DRIVER__driver_1 ERROR    Uncaught Exception in component method.\n" in lines
+
+    # check event log
+    events = read_event_log(tmpdir)
+    assert len(events) == 11
+
+    worker_call_end_event = events[8]
+
+    assert worker_call_end_event["code"] == "DRIVER__driver"
+    assert worker_call_end_event["eventtype"] == "IPS_CALL_END"
+    assert not worker_call_end_event['ok']
+    assert worker_call_end_event["comment"] == "Error: \"task binary of wrong type, expected str but found int\" Target = test@bad_task_worker@2:step(0)"
+
+    sim_end_event = events[10]
+    assert sim_end_event["code"] == "Framework"
+    assert sim_end_event["eventtype"] == "IPS_END"
+    assert not sim_end_event['ok']
+    assert sim_end_event["comment"] == "Simulation Execution Error"
 
 
 def test_bad_task_pool1(tmpdir):
@@ -192,3 +228,30 @@ def test_assign_protected_attribute(tmpdir):
 
     assert "WORKER__assign_protected_attribute_2 ERROR    Uncaught Exception in component method.\n" in lines
     assert "DRIVER__driver_1 ERROR    Uncaught Exception in component method.\n" in lines
+
+    # check event log
+    events = read_event_log(tmpdir)
+    assert len(events) == 11
+
+    worker_call_end_event = events[8]
+
+    assert worker_call_end_event["code"] == "DRIVER__driver"
+    assert worker_call_end_event["eventtype"] == "IPS_CALL_END"
+    assert not worker_call_end_event['ok']
+    # python 3.10 includes the attribute name in the error message
+    assert worker_call_end_event["comment"] in ("Error: \"can't set attribute\" Target = test@assign_protected_attribute@2:step(0)",
+                                                "Error: \"can't set attribute 'args'\" Target = test@assign_protected_attribute@2:step(0)")
+
+    sim_end_event = events[10]
+    assert sim_end_event["code"] == "Framework"
+    assert sim_end_event["eventtype"] == "IPS_END"
+    assert not sim_end_event['ok']
+    assert sim_end_event["comment"] == "Simulation Execution Error"
+
+
+def read_event_log(tmpdir):
+    sim_event_log_json = next(f for f in os.listdir(tmpdir.join("simulation_log")) if f.endswith(".json"))
+    with open(str(tmpdir.join("simulation_log").join(sim_event_log_json)), 'r') as f:
+        lines = f.readlines()
+
+    return [json.loads(line) for line in lines]
