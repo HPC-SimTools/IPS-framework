@@ -649,6 +649,12 @@ class Framework:
                 pass
             portal_data['startat'] = getTimeString(time.localtime(self.start_time))
             portal_data['ips_version'] = get_versions()['version']
+
+            try:
+                portal_data['parent_portal_runid'] = get_config(sim_name, 'PARENT_PORTAL_RUNID')
+            except KeyError:
+                pass
+
         elif eventType == 'IPS_END':
             portal_data['state'] = 'Completed'
             portal_data['stopat'] = getTimeString(time.localtime(event_time))
