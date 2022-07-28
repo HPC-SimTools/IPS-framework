@@ -414,6 +414,7 @@ class ServicesProxy:
         if event_time is None:
             event_time = time.time()
         portal_data['walltime'] = '%.2f' % (event_time - self.component_ref.start_time)
+        portal_data['time'] = ipsutil.getTimeString(time.localtime(event_time))
 
         trace = {}  # Zipkin json format
         if start_time is not None and (elapsed_time is not None or end_time is not None) and target is not None and operation is not None:

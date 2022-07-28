@@ -72,6 +72,7 @@ from ipsframework.ipsExceptions import BlockedMessageException
 from ipsframework.eventService import EventService
 from ipsframework.cca_es_spec import initialize_event_service
 from ipsframework.ips_es_spec import eventManager
+from ipsframework.ipsutil import getTimeString
 from ipsframework._version import get_versions
 
 if sys.version[0] != '3':  # noqa: E402
@@ -593,6 +594,7 @@ class Framework:
             whether the event indicates normal simulation execution, or an
             error condition.
         """
+        event_time = time.time()
         if self.verbose_debug:
             self.debug('_send_monitor_event(%s - %s)', sim_name, eventType)
         portal_data = {}
@@ -601,7 +603,9 @@ class Framework:
         portal_data['eventtype'] = eventType
         portal_data['ok'] = ok
         portal_data['comment'] = comment
-        portal_data['walltime'] = '%.2f' % (time.time() - self.start_time)
+        portal_data['walltime'] = '%.2f' % (event_time - self.start_time)
+        portal_data['time'] = getTimeString(time.localtime(event_time))
+
         topic_name = '_IPS_MONITOR'
         # portal_data['phystimestamp'] = self.timeStamp
         get_config = self.config_manager.get_config_parameter
@@ -643,16 +647,14 @@ class Framework:
                 portal_data['sim_runid'] = get_config(sim_name, 'RUN_ID')
             except KeyError:
                 pass
-            portal_data['startat'] = time.strftime('%Y-%m-%d|%H:%M:%S%Z',
-                                                   time.localtime(self.start_time))
+            portal_data['startat'] = getTimeString(time.localtime(self.start_time))
             portal_data['ips_version'] = get_versions()['version']
         elif eventType == 'IPS_END':
             portal_data['state'] = 'Completed'
-            portal_data['stopat'] = time.strftime('%Y-%m-%d|%H:%M:%S%Z',
-                                                  time.localtime())
+            portal_data['stopat'] = getTimeString(time.localtime(event_time))
             # Zipkin json format
             portal_data['trace'] = {"timestamp": int(self.start_time*1e6),
-                                    "duration": int((time.time() - self.start_time)*1e6),
+                                    "duration": int((event_time - self.start_time)*1e6),
                                     "localEndpoint": {
                                         "serviceName": str(self.component_id)
                                     },
