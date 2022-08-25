@@ -382,6 +382,7 @@ class ConfigurationManager:
                 portal_conf['USER'] = self.sim_map[self.fwk_sim_name].sim_conf['USER']
             except KeyError:
                 portal_conf['USER'] = self.platform_conf['USER']
+            portal_conf['HOST'] = self.platform_conf['HOST']
             if self.fwk.log_level == logging.DEBUG:
                 portal_conf['LOG_LEVEL'] = 'DEBUG'
 

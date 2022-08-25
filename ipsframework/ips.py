@@ -611,7 +611,7 @@ class Framework:
         get_config = self.config_manager.get_config_parameter
         if eventType == 'IPS_START':
             portal_data['state'] = 'Running'
-            portal_data['host'] = get_config(sim_name, 'HOST')
+            portal_data['host'] = self.config_manager.get_platform_parameter('HOST')
             try:
                 portal_data['outputprefix'] = get_config(sim_name, 'OUTPUT_PREFIX')
             except KeyError:
