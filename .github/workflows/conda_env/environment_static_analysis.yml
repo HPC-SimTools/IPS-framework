@@ -3,9 +3,9 @@ channels:
 - conda-forge
 dependencies:
 - python=3.8
-- flake8=4.0.1
-- pylint=2.14.2
+- flake8=5.0.4
+- pylint=2.15.0
 - bandit=1.7.4
-- codespell=2.1.0
-- dask=2022.06.0
+- codespell=2.2.1
+- dask=2022.08.1
 - pytest

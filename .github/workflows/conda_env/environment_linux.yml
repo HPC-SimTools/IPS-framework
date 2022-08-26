@@ -6,6 +6,6 @@ dependencies:
 - pytest-timeout
 - psutil
 - mpi4py
-- dask=2022.06.0
+- dask=2022.08.1
 - dakota
 - coverage!=6.3
