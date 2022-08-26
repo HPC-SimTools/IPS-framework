@@ -35,7 +35,11 @@ in either your :doc:`Platform Configuration File<platform>` or your
 Tracing
 -------
 
-IPS (version >= 0.6.0) has the ability to capture a trace of the
+.. note::
+
+   New in IPS-Framework 0.6.0
+
+IPS has the ability to capture a trace of the
 workflow to allow analysis and visualizations. The traces are captured
 in the `Zipkin Span format <https://zipkin.io/zipkin-api/>`_ and
 viewed within IPS portal using `Jaeger
@@ -60,3 +64,39 @@ The statistics can be further broken down by operation.
 .. note::
 
    Self time (ST) is the total time spent in a span when it was not waiting on children. For example, a 10ms span with two 4ms non-overlapping children would have self-time = 10ms - 2 * 4ms = 2ms.
+
+
+Child Runs
+----------
+
+.. note::
+
+   New in IPS-Framework 0.7.0
+
+If you have a workflow where you are running ``ips`` as a task of
+another IPS simulation you can create a relation between them that
+will allow it to be viewed together in the IPS-portal and get a single
+trace for the entire collection.
+
+To setup the hierarchical structure between different IPS runs, so if
+one run starts other runs as a separate simulation, you can set the
+``PARENT_PORTAL_RUNID`` parameter in the child simulation
+configuration. This can be done dynamically from the parent simulation
+like:
+
+.. code-block:: python
+
+  child_conf['PARENT_PORTAL_RUNID'] = self.services.get_config_param("PORTAL_RUNID")
+
+This is automatically configured when running
+``ips_dakota_dynamic.py``.
+
+The child runs will not appear on the main runs list but will appear
+on a tab next to the events.
+
+.. image:: child_runs.png
+
+The trace of the primary simulation will contain the traces from all
+the simulations:
+
+.. image:: child_runs_trace.png
