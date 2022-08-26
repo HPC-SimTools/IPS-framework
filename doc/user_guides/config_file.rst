@@ -45,7 +45,7 @@ These items describe this configuration and is used for describing and locating 
 
 \*\* Mandatory items: *SIM_ROOT*, *SIM_NAME*, *LOG_FILE*
 
-*RUN_ID*, *TOKOMAK_ID*, *SHOT_NUMBER* - identifiers for the simulation that are helpful for SWIM users.  They ore often used to form a hierarchical name for the simulation, identifying related runs.
+*RUN_ID*, *TOKOMAK_ID*, *SHOT_NUMBER* - identifiers for the simulation that are helpful for SWIM users.  They are often used to form a hierarchical name for the simulation, identifying related runs.
 
 *OUTPUT_PREFIX* - used to prevent collisions and overwriting of different simulations using the same *SIM_ROOT*.
 

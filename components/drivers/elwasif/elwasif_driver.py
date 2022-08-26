@@ -33,7 +33,7 @@ class testDriver(Component):
         rfComp = services.get_port('RF_IC')
         profAdvanceComp = services.get_port('PROFILE_ADVANCE')
 
-        if(rfComp is None or profAdvanceComp is None):
+        if rfComp is None or profAdvanceComp is None:
             print('Error accessing physics components')
             sys.exit(1)
 

@@ -1770,7 +1770,7 @@ class ServicesProxy:
 
     def subscribe(self, topicName, callback):
         """
-        Subscribe to topic *topicName* on the IPS event service and register *callback* as the method to be invoked whem an event is published to that topic.
+        Subscribe to topic *topicName* on the IPS event service and register *callback* as the method to be invoked when an event is published to that topic.
         """
         if not topicName.startswith('_IPS'):
             topicName = self.sim_name + '_' + topicName
