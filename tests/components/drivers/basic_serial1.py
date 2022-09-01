@@ -29,7 +29,7 @@ class basic_serial1(Component):
         w3 = self.services.get_port('WORKER3')
 
         # should we do something different here?????  a try block?
-        if(w1 is None or w2 is None or w3 is None):
+        if w1 is None or w2 is None or w3 is None:
             print('Error accessing physics components')
             raise Exception('Error accessing physics components')
 

@@ -131,7 +131,7 @@ class ipsLogger:
                     self.add_sim_log(tokens[1], tokens[2])
                 elif tokens[0] == 'END_SIM':  # Expecting Message 'END_SIM log_pipe_name'
                     log_pipe_name = tokens[1]
-                    for fileno, (recvr, _, f_name) in list(self.log_map.items()):
+                    for fileno, (recvr, _, f_name) in self.log_map.copy().items():
                         if f_name == log_pipe_name:
                             del recvr
                             del self.log_map[fileno]

@@ -179,7 +179,7 @@ class my_comp (Component):
         power_ic = ps.variables['power_ic'].getValue()[0]
         ps.close()
         print('power = ', power_ic)
-        if(-0.02 < power_ic < 0.02):
+        if -0.02 < power_ic < 0.02:
             retcode = subprocess.call([zero_RF_IC_power, cur_state_file])
             if (retcode != 0):
                 print('Error executing ', prepare_input)
@@ -197,7 +197,7 @@ class my_comp (Component):
 # retain power from previous time step i.e. leave sources untouched in the state.
 # However power_ic needs to be reset back to positive
 
-        elif(power_ic < -0.02):
+        elif power_ic < -0.02:
             print('continuing power from previous time step')
             ps.variables['power_ic'].assignValue(-power_ic)
             ps.close()
