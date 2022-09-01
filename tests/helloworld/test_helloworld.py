@@ -356,6 +356,7 @@ def test_helloworld_portal(tmpdir, capfd):
     assert event['sim_name'] == 'Hello_world_1'
     assert event['seqnum'] == 0
     assert 'ips_version' in event
+    assert 'time' in event
 
     # get last event to check
     event = json.loads(data[-1].split('\r\n')[-1])
@@ -364,6 +365,7 @@ def test_helloworld_portal(tmpdir, capfd):
     assert event['comment'] == 'Target = Hello_world_1@HelloWorker@2:init(0.000)'
     assert event['state'] == 'Running'
     assert event['sim_name'] == 'Hello_world_1'
+    assert 'time' in event
     assert 'trace' in event
     trace = event['trace']
     assert 'duration' in trace
