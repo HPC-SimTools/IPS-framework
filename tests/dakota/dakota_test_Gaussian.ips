@@ -1,4 +1,4 @@
-RUN_ID = DAKOTA_Rosenbrock                   # Identifier for this simulation run
+RUN_ID = DAKOTA_Gaussian                   # Identifier for this simulation run
 TOKAMAK_ID = TEST
 SHOT_NUMBER = 1                  # Numerical identifier for specific case
 

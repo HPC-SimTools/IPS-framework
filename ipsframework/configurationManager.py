@@ -9,6 +9,7 @@ import tempfile
 import uuid
 import logging
 import socket
+import time
 from multiprocessing import Queue, Process, set_start_method
 from .configobj import ConfigObj
 from . import ipsLogging
@@ -40,7 +41,8 @@ class ConfigurationManager:
         entry in the configurationManager class
         """
 
-        def __init__(self, sim_name):
+        def __init__(self, sim_name, start_time=time.time()):
+            self.start_time = start_time
             self.sim_name = sim_name
             self.portal_sim_name = None
             self.sim_root = None
@@ -281,7 +283,7 @@ class ConfigurationManager:
             sim_name_list.append(sim_name)
             sim_root_list.append(sim_root)
             log_file_list.append(log_file)
-            new_sim = self.SimulationData(sim_name)
+            new_sim = self.SimulationData(sim_name, self.fwk.start_time)
             conf['__PORTAL_SIM_NAME'] = sim_name
             new_sim.sim_conf = conf
             new_sim.config_file = conf_file
@@ -301,7 +303,7 @@ class ConfigurationManager:
             if not self.fwk_sim_name:
                 fwk_sim_conf = conf.dict()
                 fwk_sim_conf['SIM_NAME'] = '_'.join([conf['SIM_NAME'], 'FWK'])
-                fwk_sim = self.SimulationData(fwk_sim_conf['SIM_NAME'])
+                fwk_sim = self.SimulationData(fwk_sim_conf['SIM_NAME'], self.fwk.start_time)
                 fwk_sim.sim_conf = fwk_sim_conf
                 fwk_sim.sim_root = new_sim.sim_root
                 fwk_sim.log_file = self.fwk.log_file  # sys.stdout
@@ -380,6 +382,7 @@ class ConfigurationManager:
                 portal_conf['USER'] = self.sim_map[self.fwk_sim_name].sim_conf['USER']
             except KeyError:
                 portal_conf['USER'] = self.platform_conf['USER']
+            portal_conf['HOST'] = self.platform_conf['HOST']
             if self.fwk.log_level == logging.DEBUG:
                 portal_conf['LOG_LEVEL'] = 'DEBUG'
 
@@ -502,7 +505,6 @@ class ConfigurationManager:
 
         # SIMYAN: removed else conditional, copying files in runspaceInit
         # component now
-
         svc_response_q = Queue(0)
         invocation_q = Queue(0)
         component_id = ComponentID(class_name, sim_name)
@@ -512,7 +514,7 @@ class ConfigurationManager:
         services_proxy = ServicesProxy(self.fwk, fwk_inq, svc_response_q,
                                        sim_data.sim_conf, log_pipe_name)
         new_component = component_class(services_proxy, comp_conf)
-        new_component.__initialize__(component_id, invocation_q, self.fwk.start_time)
+        new_component.__initialize__(component_id, invocation_q, sim_data.start_time)
         services_proxy.__initialize__(new_component)
         self.comp_registry.addEntry(component_id, svc_response_q,
                                     invocation_q, new_component,
@@ -643,7 +645,7 @@ in configuration file %s', config_file)
         self.sim_name_list.append(sim_name)
         self.sim_root_list.append(sim_root)
         self.log_file_list.append(log_file)
-        new_sim = self.SimulationData(sim_name)
+        new_sim = self.SimulationData(sim_name, start_time=self.fwk.start_time if sub_workflow else time.time())
         new_sim.sim_conf = conf
         new_sim.config_file = config_file
         new_sim.sim_root = sim_root

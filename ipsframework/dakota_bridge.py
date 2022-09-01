@@ -136,6 +136,7 @@ class Driver(Component):
             self.old_master_conf['SIM_NAME'] = self.sim_name + '_%s' % (instance_id)
             self.old_master_conf['LOG_FILE'] = self.sim_logfile + '_%s' % (instance_id)
             self.old_master_conf['OUT_REDIRECT'] = 'TRUE'
+            self.old_master_conf['PARENT_PORTAL_RUNID'] = services.get_config_param("PORTAL_RUNID")
             fname = "%s.out" % (self.old_master_conf['SIM_NAME'])
             fname = os.path.join(self.sim_root, fname)
             self.old_master_conf['OUT_REDIRECT_FNAME'] = fname

@@ -81,7 +81,6 @@ class PortalBridge(Component):
         :py:class:`component.Component` object.
         """
         super().__init__(services, config)
-        self.host = ''
         self.curTime = time.localtime()
         self.startTime = self.curTime
         self.sim_map = {}
@@ -109,7 +108,6 @@ class PortalBridge(Component):
             self.portal_url = self.PORTAL_URL
         except AttributeError:
             pass
-        self.host = self.services.get_config_param('HOST')
         self.services.subscribe('_IPS_MONITOR', "process_event")
         try:
             freq = int(self.services.get_config_param("HTML_DUMP_FREQ", silent=True))
@@ -427,7 +425,7 @@ class PortalBridge(Component):
 
         d = datetime.datetime.now()
         date_str = "%s.%03d" % (d.strftime("%Y-%m-%dT%H:%M:%S"), int(d.microsecond / 1000))
-        sim_data.portal_runid = "_".join([self.host, "USER", date_str])
+        sim_data.portal_runid = "_".join([sim_name, getattr(self, "HOST"), getattr(self, "USER"), date_str])
         try:
             self.services.set_config_param('PORTAL_RUNID', sim_data.portal_runid,
                                            target_sim_name=sim_name)
@@ -445,8 +443,7 @@ class PortalBridge(Component):
                                     (sim_log_dir, oserr.errno, oserr.strerror))
             raise
 
-        sim_data.monitor_file_name = os.path.join(sim_log_dir,
-                                                  sim_data.sim_name + '_' + sim_data.portal_runid + '.eventlog')
+        sim_data.monitor_file_name = os.path.join(sim_log_dir, sim_data.portal_runid + '.eventlog')
         try:
             sim_data.monitor_file = open(sim_data.monitor_file_name, 'wb', 0)
         except IOError as oserr:

@@ -603,7 +603,7 @@ class Framework:
         portal_data['eventtype'] = eventType
         portal_data['ok'] = ok
         portal_data['comment'] = comment
-        portal_data['walltime'] = '%.2f' % (event_time - self.start_time)
+        portal_data['walltime'] = '%.2f' % (event_time - self.config_manager.sim_map[sim_name].start_time)
         portal_data['time'] = getTimeString(time.localtime(event_time))
 
         topic_name = '_IPS_MONITOR'
@@ -611,7 +611,7 @@ class Framework:
         get_config = self.config_manager.get_config_parameter
         if eventType == 'IPS_START':
             portal_data['state'] = 'Running'
-            portal_data['host'] = get_config(sim_name, 'HOST')
+            portal_data['host'] = self.config_manager.get_platform_parameter('HOST')
             try:
                 portal_data['outputprefix'] = get_config(sim_name, 'OUTPUT_PREFIX')
             except KeyError:
@@ -647,18 +647,24 @@ class Framework:
                 portal_data['sim_runid'] = get_config(sim_name, 'RUN_ID')
             except KeyError:
                 pass
-            portal_data['startat'] = getTimeString(time.localtime(self.start_time))
+            portal_data['startat'] = getTimeString(time.localtime(self.config_manager.sim_map[sim_name].start_time))
             portal_data['ips_version'] = get_versions()['version']
+
+            try:
+                portal_data['parent_portal_runid'] = get_config(sim_name, 'PARENT_PORTAL_RUNID')
+            except KeyError:
+                pass
+
         elif eventType == 'IPS_END':
             portal_data['state'] = 'Completed'
             portal_data['stopat'] = getTimeString(time.localtime(event_time))
             # Zipkin json format
-            portal_data['trace'] = {"timestamp": int(self.start_time*1e6),
-                                    "duration": int((event_time - self.start_time)*1e6),
+            portal_data['trace'] = {"timestamp": int(self.config_manager.sim_map[sim_name].start_time*1e6),
+                                    "duration": int((event_time - self.config_manager.sim_map[sim_name].start_time)*1e6),
                                     "localEndpoint": {
-                                        "serviceName": str(self.component_id)
+                                        "serviceName": f'{sim_name}@{self.component_id}'
                                     },
-                                    "id": hashlib.md5(str(self.component_id).encode()).hexdigest()[:16],
+                                    "id": hashlib.md5(f'{sim_name}@{self.component_id}'.encode()).hexdigest()[:16],
                                     'tags': {'total_cores': str(self.resource_manager.total_cores)}}
         elif eventType == "IPS_CALL_END":
             trace = {}  # Zipkin json format
@@ -669,7 +675,7 @@ class Framework:
                 trace['localEndpoint'] = {"serviceName": target}
                 trace['name'] = operation
                 trace['id'] = hashlib.md5(f"{target}:{operation}".encode()).hexdigest()[:16]
-                trace["parentId"] = hashlib.md5(str(self.component_id).encode()).hexdigest()[:16]
+                trace["parentId"] = hashlib.md5(f'{sim_name}@{self.component_id}'.encode()).hexdigest()[:16]
 
             if trace:
                 portal_data['trace'] = trace

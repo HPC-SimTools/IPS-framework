@@ -3,6 +3,7 @@ import os
 import shutil
 import glob
 import sys
+import json
 import pytest
 from ipsframework import ips_dakota_dynamic
 
@@ -47,6 +48,44 @@ def test_dakota(tmpdir):
     X = lines[-13].split()[1]
 
     assert float(X) == pytest.approx(0.5, rel=1e-4)
+
+    # Check PARENT CHILD relationship
+    # Get parent PORTAL_RUNID
+    json_files = glob.glob(str(tmpdir.join("DAKOTA_Gaussian_TEST_1").join("simulation_log").join("*.json")))
+    assert len(json_files) == 1
+
+    with open(json_files[0], 'r') as json_file:
+        lines = json_file.readlines()
+
+    lines = [json.loads(line.strip()) for line in lines]
+    assert len(lines) == 9
+
+    # get portal_runid event
+    portal_runid = lines[0]['portal_runid']
+    sim_name, host, user, _ = portal_runid.rsplit('_', maxsplit=3)
+    assert sim_name == "DAKOTA_Gaussian_TEST_1"
+    assert host == "workstation"
+    assert user == "user"
+
+    # Check child run
+    json_files = glob.glob(str(tmpdir.join("DAKOTA_Gaussian_TEST_1").join("simulation_*_0000").join("simulation_log").join("*.json")))
+    assert len(json_files) == 1
+    with open(json_files[0], 'r') as json_file:
+        lines = json_file.readlines()
+
+    lines = [json.loads(line.strip()) for line in lines]
+    assert len(lines) == 8
+    child_portal_runid = lines[0]['portal_runid']
+    assert child_portal_runid != portal_runid
+
+    sim_name, host, user, _ = child_portal_runid.rsplit('_', maxsplit=3)
+    assert sim_name.startswith("DAKOTA_Gaussian_TEST_1")
+    assert len(sim_name) > len("DAKOTA_Gaussian_TEST_1")
+    assert host == "workstation"
+    assert user == "user"
+
+    parent_portal_runid = lines[0]['parent_portal_runid']
+    assert parent_portal_runid == portal_runid
 
 
 @mock.patch('ipsframework.ips_dakota_dynamic.DakotaDynamic')
