@@ -399,7 +399,8 @@ class ServicesProxy:
                             target=None,
                             operation=None,
                             procs_requested=None,
-                            cores_allocated=None):
+                            cores_allocated=None,
+                            call_id=0):
         """
         Construct and send an event populated with the component's
         information, *eventType*, *comment*, *ok*, *state*, and a wall time
@@ -427,9 +428,10 @@ class ServicesProxy:
             trace['name'] = operation
             formatted_args = ['%.3f' % (x) if isinstance(x, float)
                               else str(x) for x in self.component_ref.args]
-            trace['id'] = hashlib.md5(f"{target}:{operation}".encode()).hexdigest()[:16]
-            trace['parentId'] = hashlib.md5(f"{self.component_ref.component_id}:{self.component_ref.method_name}({' ,'.join(formatted_args)})"
-                                            .encode()).hexdigest()[:16]
+            trace['id'] = hashlib.md5(f"{target}:{operation}:{call_id}".encode()).hexdigest()[:16]
+            trace['parentId'] = hashlib.md5(
+                f"{self.component_ref.component_id}:{self.component_ref.method_name}({' ,'.join(formatted_args)}):{self.component_ref.call_id}"
+                .encode()).hexdigest()[:16]
             trace['tags'] = {}
             if procs_requested is not None:
                 trace['tags']['procs_requested'] = str(procs_requested)
@@ -549,7 +551,8 @@ class ServicesProxy:
                                      end_time=time.time(),
                                      elapsed_time=time.time()-start_time,
                                      target=target,
-                                     operation=f'{method_name}({formatted_args})')
+                                     operation=f'{method_name}({formatted_args})',
+                                     call_id=call_id)
         except Exception as e:
             self._send_monitor_event('IPS_CALL_END',
                                      f'Error: "{e}" Target = {target_full}',
@@ -558,6 +561,7 @@ class ServicesProxy:
                                      elapsed_time=time.time()-start_time,
                                      target=target,
                                      operation=f'{method_name}({formatted_args})',
+                                     call_id=call_id,
                                      ok=False)
             raise
 
@@ -929,7 +933,15 @@ class ServicesProxy:
             process.kill()
             task_retval = process.wait()
             self._send_monitor_event('IPS_TASK_END', 'task_id = %s  TIMEOUT elapsed time = %.2f S' %
-                                     (str(task_id), finish_time - start_time))
+                                     (str(task_id), finish_time - start_time),
+                                     start_time=start_time,
+                                     end_time=finish_time,
+                                     elapsed_time=finish_time - start_time,
+                                     procs_requested=nproc,
+                                     cores_allocated=cores,
+                                     target=binary,
+                                     operation=" ".join(args),
+                                     call_id=task_id)
         else:
             self._send_monitor_event('IPS_TASK_END', 'task_id = %s  elapsed time = %.2f S' %
                                      (str(task_id), finish_time - start_time),
@@ -939,7 +951,8 @@ class ServicesProxy:
                                      procs_requested=nproc,
                                      cores_allocated=cores,
                                      target=binary,
-                                     operation=" ".join(args))
+                                     operation=" ".join(args),
+                                     call_id=task_id)
 
         del self.task_map[task_id]
         try:

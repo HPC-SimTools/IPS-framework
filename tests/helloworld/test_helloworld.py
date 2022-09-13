@@ -371,10 +371,10 @@ def test_helloworld_portal(tmpdir, capfd):
     assert 'duration' in trace
     assert 'timestamp' in trace
     assert 'id' in trace
-    assert trace['id'] == hashlib.md5('Hello_world_1@HelloWorker@2:init(0.000)'.encode()).hexdigest()[:16]
+    assert trace['id'] == hashlib.md5('Hello_world_1@HelloWorker@2:init(0.000):7'.encode()).hexdigest()[:16]
     assert 'traceId' in trace
     assert trace['traceId'] == hashlib.md5(event['portal_runid'].encode()).hexdigest()
     assert 'parentId' in trace
-    assert trace['parentId'] == hashlib.md5('Hello_world_1@HelloDriver@1:init(0)'.encode()).hexdigest()[:16]
+    assert trace['parentId'] == hashlib.md5('Hello_world_1@HelloDriver@1:init(0):5'.encode()).hexdigest()[:16]
     assert 'localEndpoint' in trace
     assert trace['localEndpoint']['serviceName'] == 'Hello_world_1@HelloWorker@2'
