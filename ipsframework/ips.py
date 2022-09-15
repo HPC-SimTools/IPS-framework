@@ -517,7 +517,8 @@ class Framework:
                                                  start_time=start_time,
                                                  end_time=time.time(),
                                                  target=comp,
-                                                 operation=f'{method}({arg})')
+                                                 operation=f'{method}({arg})',
+                                                 call_id=msg.call_id)
                     sim_msg_list = self.call_queue_map[msg.call_id]
                     del self.call_queue_map[msg.call_id]
                     if msg.status == Message.FAILURE:
@@ -581,7 +582,7 @@ class Framework:
         self.call_queue_map[call_id] = msg_list
         self.outstanding_calls_list[call_id] = sim_name, comp, method, arg, time.time()
 
-    def _send_monitor_event(self, sim_name='', eventType='', comment='', ok=True, target=None, operation=None, start_time=None, end_time=None):
+    def _send_monitor_event(self, sim_name='', eventType='', comment='', ok=True, target=None, operation=None, start_time=None, end_time=None, call_id=0):
         """
         Publish a portal monitor event to the *_IPS_MONITOR* event topic.
         Event topics that start with an underscore are reserved for use by the
@@ -674,7 +675,7 @@ class Framework:
             if target is not None:
                 trace['localEndpoint'] = {"serviceName": target}
                 trace['name'] = operation
-                trace['id'] = hashlib.md5(f"{target}:{operation}".encode()).hexdigest()[:16]
+                trace['id'] = hashlib.md5(f"{target}:{operation}:{call_id}".encode()).hexdigest()[:16]
                 trace["parentId"] = hashlib.md5(f'{sim_name}@{self.component_id}'.encode()).hexdigest()[:16]
 
             if trace:

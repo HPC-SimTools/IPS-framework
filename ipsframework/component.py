@@ -32,6 +32,7 @@ class Component:
         self.__start_time = 0.0
         self.__sys_exit = None
         self.__method_name = None
+        self.__call_id = 0
         self.__args = None
         for i in config.keys():
             try:
@@ -122,7 +123,7 @@ class Component:
             msg = self.__invocation_q.get()
             self.services.log('Received Message ')
             sender_id = msg.sender_id
-            call_id = msg.call_id
+            self.__call_id = msg.call_id
             self.__method_name = msg.target_method
             self.__args = msg.args
             keywords = msg.keywords
@@ -140,12 +141,12 @@ class Component:
                 self.services.exception('Uncaught Exception in component method.')
                 response_msg = MethodResultMessage(self.component_id,
                                                    sender_id,
-                                                   call_id,
+                                                   self.call_id,
                                                    Message.FAILURE, e)
             else:
                 response_msg = MethodResultMessage(self.component_id,
                                                    sender_id,
-                                                   call_id,
+                                                   self.call_id,
                                                    Message.SUCCESS, retval)
             self.services.fwk_in_q.put(response_msg)
 
@@ -168,6 +169,10 @@ class Component:
     @property
     def method_name(self):
         return self.__method_name
+
+    @property
+    def call_id(self):
+        return self.__call_id
 
     @property
     def args(self):
