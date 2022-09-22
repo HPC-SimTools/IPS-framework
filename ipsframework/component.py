@@ -121,7 +121,7 @@ class Component:
 
         while True:
             msg = self.__invocation_q.get()
-            self.services.log('Received Message ')
+            self.services.debug('Received Message ')
             sender_id = msg.sender_id
             self.__call_id = msg.call_id
             self.__method_name = msg.target_method

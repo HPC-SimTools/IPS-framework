@@ -11,3 +11,4 @@ dependencies:
 - click<8
 - msgpack-python<1
 - coverage!=6.3
+- flask=2.0.3

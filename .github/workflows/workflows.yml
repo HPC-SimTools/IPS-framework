@@ -98,6 +98,7 @@ jobs:
               python3-pytest-cov
               python3-pytest-timeout
               python3-psutil
+              python3-flask
     - name: Install IPS (in develop mode)
       run: python -m pip install -e .
     - name: testing running IPS (--help)

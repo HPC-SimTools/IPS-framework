@@ -6,7 +6,7 @@ import re
 import datetime
 import sys
 import os
-from subprocess import Popen, PIPE
+from multiprocessing import Process, Pipe, Event
 import time
 import inspect
 from collections import defaultdict
@@ -14,9 +14,10 @@ import hashlib
 import glob
 import itertools
 import json
-import shutil
+import urllib3
 from ipsframework import ipsutil, Component
 from ipsframework.convert_log_function import convert_logdata_to_html
+
 
 try:
     from mpo_arg import mpo_methods as mpo
@@ -49,6 +50,33 @@ def hash_file(file_name):  # pragma: no cover
             hasher.update(buf)
             buf = afile.read(BLOCKSIZE)
     return hasher.hexdigest()
+
+
+def send_post(conn, stop, url):
+    fail_count = 0
+
+    http = urllib3.PoolManager(retries=urllib3.util.Retry(3, backoff_factor=0.25),
+                               headers={'Content-Type': 'application/json'})
+
+    while True:
+        if conn.poll(0.1):
+            msgs = []
+            while conn.poll(0.01):
+                msgs.append(conn.recv())
+            try:
+                resp = http.request("POST", url, body=json.dumps(msgs).encode())
+            except urllib3.exceptions.MaxRetryError as e:
+                fail_count += 1
+                conn.send((999, str(e)))
+            else:
+                conn.send((resp.status, resp.data.decode()))
+                fail_count = 0
+
+            if fail_count >= 3:
+                conn.send((-1, "Too many consecutive failed connections"))
+                break
+        elif stop.is_set():
+            break
 
 
 class PortalBridge(Component):
@@ -88,10 +116,10 @@ class PortalBridge(Component):
         self.done = False
         self.first_event = True
         self.childProcess = None
+        self.childProcessStop = None
+        self.parent_conn = None
         self.mpo = None
         self.mpo_name_counter = defaultdict(lambda: 0)
-        self.file_hash_cache = defaultdict(dict)
-        self.file_uid_cache = defaultdict(dict)
         self.counter = 0
         self.dump_freq = 10
         self.min_dump_interval = 300  # Minimum time interval in Sec for HTML dump operation
@@ -208,8 +236,9 @@ class PortalBridge(Component):
 
         if len(self.sim_map) == 0:
             if self.childProcess:
-                self.childProcess.stdin.close()
-                self.childProcess.wait()
+                self.childProcessStop.set()
+                self.childProcess.join()
+                self.check_send_post_responses()
             self.done = True
             self.services.debug('No more simulation to monitor - exiting')
             time.sleep(1)
@@ -248,24 +277,48 @@ class PortalBridge(Component):
                 except Exception:
                     self.services.exception("Error writing html file into USER_W3_DIR directory")
                     self.write_to_htmldir = False
+
         if self.portal_url:
-            webmsg = json.dumps(event_data)
+            if self.first_event:  # First time, launch sendPost.py daemon
+                self.parent_conn, child_conn = Pipe()
+                self.childProcessStop = Event()
+                self.childProcess = Process(target=send_post, args=(child_conn, self.childProcessStop, self.portal_url))
+                self.childProcess.start()
+                self.first_event = False
+
             try:
-                if self.first_event:  # First time, launch sendPost.py daemon
-                    cmd = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'sendPost.py')
-                    python_exec = shutil.which('python3')
-                    self.childProcess = Popen([python_exec, cmd], bufsize=128,
-                                              stdin=PIPE, stdout=PIPE,
-                                              stderr=PIPE, close_fds=True)
-                    self.first_event = False
-                self.childProcess.stdin.write(('%s %s\n' %
-                                               (self.portal_url, webmsg)).encode())
-                self.childProcess.stdin.flush()
-            except Exception as e:
-                self.services.exception('Error transmitting event number %6d to %s : %s',
-                                        sim_data.counter, self.portal_url, str(e))
+                self.parent_conn.send(event_data)
+            except OSError:
+                pass
+
+            self.check_send_post_responses()
+
         if sim_data.mpo_wid:
             self.send_mpo_data(event_data, sim_data)
+
+    def check_send_post_responses(self):
+        while self.parent_conn.poll():
+            try:
+                code, msg = self.parent_conn.recv()
+            except (EOFError, OSError):
+                break
+
+            try:
+                data = json.loads(msg)
+                if "runid" in data:
+                    self.services.info("Run Portal URL = %s/%s", self.portal_url, data.get('runid'))
+
+                msg = json.dumps(data)
+            except (TypeError, json.decoder.JSONDecodeError):
+                pass
+            if code == 200:
+                self.services.debug("Portal Response: %d %s", code, msg)
+            elif code == -1:
+                # disable portal, stop trying to send more data
+                self.portal_url = None
+                self.services.error("Disabling portal because: %s", msg)
+            else:
+                self.services.error("Portal Error: %d %s", code, msg)
 
     def send_mpo_data(self, event_data, sim_data):  # pragma: no cover
         def md5(fname):
