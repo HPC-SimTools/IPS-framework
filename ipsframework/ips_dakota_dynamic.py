@@ -12,7 +12,7 @@ import tempfile
 import re
 import time
 from multiprocessing.connection import Client
-from ipsframework.configobj import ConfigObj
+from configobj import ConfigObj
 from ipsframework import platformspec
 from ipsframework.ipsutil import which
 
