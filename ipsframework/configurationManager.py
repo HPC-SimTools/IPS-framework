@@ -377,7 +377,7 @@ class ConfigurationManager:
             portal_conf['DATA_FILES'] = ''
             portal_conf['OUTPUT_FILES'] = ''
             portal_conf['NPROC'] = 1
-            portal_conf['LOG_LEVEL'] = 'WARNING'
+            portal_conf['LOG_LEVEL'] = 'INFO'
             try:
                 portal_conf['USER'] = self.sim_map[self.fwk_sim_name].sim_conf['USER']
             except KeyError:

@@ -10,3 +10,4 @@ dependencies:
 - dask=2.30.0
 - click<8
 - coverage!=6.3
+- flask=2.0.3

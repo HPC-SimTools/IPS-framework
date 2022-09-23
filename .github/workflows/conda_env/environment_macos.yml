@@ -7,3 +7,4 @@ dependencies:
 - psutil
 - dask=2022.08.1
 - coverage!=6.3
+- flask=2.2.2

@@ -60,5 +60,8 @@ setup(
         "Operating System :: POSIX :: Linux",
     ],
     python_requires='>=3.6',
-    zip_safe=True
+    zip_safe=True,
+    install_requires=[
+        'urllib3'
+    ]
 )
