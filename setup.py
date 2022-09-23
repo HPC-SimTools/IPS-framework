@@ -62,6 +62,7 @@ setup(
     python_requires='>=3.6',
     zip_safe=True,
     install_requires=[
-        'urllib3'
+        'urllib3',
+        'configobj'
     ]
 )

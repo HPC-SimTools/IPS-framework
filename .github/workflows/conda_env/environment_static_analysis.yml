@@ -10,3 +10,4 @@ dependencies:
 - dask=2022.08.1
 - pytest
 - flask=2.2.2
+- configobj

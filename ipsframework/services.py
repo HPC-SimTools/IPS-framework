@@ -17,8 +17,8 @@ import glob
 import json
 import weakref
 from operator import itemgetter
+from configobj import ConfigObj
 from . import messages, ipsutil
-from .configobj import ConfigObj
 from .cca_es_spec import initialize_event_service
 from .ips_es_spec import eventManager
 
