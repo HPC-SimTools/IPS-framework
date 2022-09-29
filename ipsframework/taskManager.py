@@ -13,7 +13,7 @@ from .ipsExceptions import BlockedMessageException, \
 from .ipsutil import which
 
 TaskInit = namedtuple("TaskInit",
-                      ["nproc", "binary", "working_dir", "tppn", "tcpp", "block", "omp", "wnodes", "wsocks", "cmd_args"])
+                      ["nproc", "binary", "working_dir", "tppn", "tcpp", "tgpp", "block", "omp", "wnodes", "wsocks", "cmd_args"])
 
 
 class TaskManager:
@@ -222,7 +222,7 @@ class TaskManager:
 
         try:
             return self._init_task(caller_id, int(taskInit.nproc), taskInit.binary, taskInit.working_dir,
-                                   int(taskInit.tppn), taskInit.tcpp, taskInit.omp, taskInit.wnodes, taskInit.wsocks, taskInit.cmd_args)
+                                   int(taskInit.tppn), taskInit.tcpp, taskInit.omp, taskInit.tgpp, taskInit.wnodes, taskInit.wsocks, taskInit.cmd_args)
         except InsufficientResourcesException:
             if taskInit.block:
                 raise BlockedMessageException(init_task_msg, '***%s waiting for %d resources' %
@@ -240,7 +240,7 @@ class TaskManager:
         except Exception:
             raise
 
-    def _init_task(self, caller_id, nproc, binary, working_dir, tppn, tcpp, omp, wnodes, wsocks, cmd_args):
+    def _init_task(self, caller_id, nproc, binary, working_dir, tppn, tcpp, omp, tgpp, wnodes, wsocks, cmd_args):
         # handle for task related things
         task_id = self.get_task_id()
 
@@ -268,6 +268,7 @@ class TaskManager:
                                                   task_id,
                                                   allocation.cpp,
                                                   omp,
+                                                  tgpp,
                                                   allocation.corelist)
 
         self.curr_task_table[task_id] = {'component': caller_id,
@@ -282,7 +283,7 @@ class TaskManager:
 
     def build_launch_cmd(self, nproc, binary, cmd_args, working_dir, ppn,
                          max_ppn, nodes, accurateNodes, partial_nodes,
-                         task_id, cpp=0, omp=False, core_list=''):
+                         task_id, cpp=0, omp=False, gpp=0, core_list=''):
         """
         Construct task launch command to be executed by the component.
 
@@ -500,11 +501,19 @@ class TaskManager:
             else:
                 cpuptask_flag = '-c'
                 cpubind_flag = '--threads-per-core=1 --cpu-bind=cores'
-                cmd = ' '.join([self.task_launch_cmd,
-                                nnodes_flag, str(num_nodes),
-                                nproc_flag, str(nproc),
-                                cpuptask_flag, str(cpp),
-                                cpubind_flag])
+                if gpp:
+                    gpuflags = f"--gpus-per-task={gpp}"
+                    cmd = ' '.join([self.task_launch_cmd,
+                                    nnodes_flag, str(num_nodes),
+                                    nproc_flag, str(nproc),
+                                    cpuptask_flag, str(cpp),
+                                    cpubind_flag, gpuflags])
+                else:
+                    cmd = ' '.join([self.task_launch_cmd,
+                                    nnodes_flag, str(num_nodes),
+                                    nproc_flag, str(nproc),
+                                    cpuptask_flag, str(cpp),
+                                    cpubind_flag])
                 if omp:
                     env_update = {'OMP_PLACES': 'threads',
                                   'OMP_PROC_BIND': 'spread',

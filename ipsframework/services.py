@@ -195,6 +195,7 @@ class ServicesProxy:
         self.binary_fullpath_cache = {}
         self.ppn = 0
         self.cpp = 0
+        self.gpp = 0
         self.shared_nodes = False
 
     def __initialize__(self, component_ref):
@@ -613,6 +614,7 @@ class ServicesProxy:
 
             * *task_ppn* : the processes per node value for this task
             * *task_cpp* : the cores per process, only used when ``MPIRUN=srun`` commands
+            * *task_gpp* : the gpus per process, only used when ``MPIRUN=srun`` commands
             * *omp* : If ``True`` the task will be launch with the correct OpenMP environment
                variables set, only used when ``MPIRUN=srun``
             * *block* : specifies that this task will block (or raise an
@@ -679,6 +681,7 @@ class ServicesProxy:
 
         task_ppn = keywords.get('task_ppn', self.ppn)
         task_cpp = keywords.get('task_cpp', self.cpp)
+        task_gpp = keywords.get('task_gpp', self.gpp)
         omp = keywords.get('omp', False)
         block = keywords.get('block', True)
         tag = keywords.get('tag', 'None')
@@ -691,7 +694,7 @@ class ServicesProxy:
             msg_id = self._invoke_service(self.fwk.component_id,
                                           'init_task',
                                           TaskInit(int(nproc), binary_fullpath,
-                                                   working_dir, int(task_ppn), task_cpp, block,
+                                                   working_dir, int(task_ppn), task_cpp, task_gpp, block,
                                                    omp, whole_nodes, whole_socks, args))
             (task_id, command, env_update, cores_allocated) = self._get_service_response(msg_id, block=True)
         except Exception:
