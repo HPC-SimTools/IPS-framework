@@ -9,7 +9,8 @@ from .ipsExceptions import BlockedMessageException, \
     IncompleteCallException, \
     InsufficientResourcesException, \
     BadResourceRequestException, \
-    ResourceRequestMismatchException
+    ResourceRequestMismatchException, \
+    GPUResourceRequestMismatchException
 from .ipsutil import which
 
 TaskInit = namedtuple("TaskInit",
@@ -237,6 +238,10 @@ class TaskManager:
             self.fwk.error("There has been a fatal error, %s requested too few processors per node to launch task %d (requested: procs = %d, ppn = %d)",
                            caller_id, e.task_id, e.nproc, e.ppn)
             raise
+        except GPUResourceRequestMismatchException as e:
+            self.fwk.error("There has been a fatal error, %s requested too many GPUs per node to launch task %d (requested: ppn = %d, gpp = %d)",
+                           caller_id, e.task_id, e.ppn, e.gpp)
+            raise
         except Exception:
             raise
 
@@ -250,7 +255,8 @@ class TaskManager:
                                                       wnodes,
                                                       wsocks,
                                                       task_ppn=tppn,
-                                                      task_cpp=tcpp)
+                                                      task_cpp=tcpp,
+                                                      task_gpp=tgpp)
         self.fwk.debug('RM: get_allocation() returned %s', str(allocation))
 
         if allocation.partial_node or allocation.accurateNodes:
