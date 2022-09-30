@@ -786,10 +786,11 @@ class ServicesProxy:
             wnodes = task.keywords.get('whole_nodes', not self.shared_nodes)
             wsocks = task.keywords.get('whole_sockets', not self.shared_nodes)
             task_cpp = task.keywords.get('task_cpp', self.cpp)
+            task_gpp = task.keywords.get('task_gpp', 0)
             omp = task.keywords.get('omp', False)
             submit_dict[task_name] = TaskInit(task.nproc, task.binary,
-                                              task.working_dir, task_ppn, task_cpp, False,
-                                              omp, wnodes, wsocks, task.args)
+                                              task.working_dir, task_ppn, task_cpp, task_gpp,
+                                              False, omp, wnodes, wsocks, task.args)
 
         try:
             msg_id = self._invoke_service(self.fwk.component_id,

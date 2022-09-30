@@ -571,6 +571,13 @@ class TaskManager:
                     self.resource_mgr.release_allocation(task_id, -1)
                     del self.curr_task_table[task_id]
                 raise
+            except GPUResourceRequestMismatchException as e:
+                self.fwk.error("There has been a fatal error, %s requested too many GPUs per node to launch task %d (requested: ppn = %d, gpp = %d)",
+                               caller_id, e.task_id, e.ppn, e.gpp)
+                for task_id, _, _, _ in ret_dict.values():
+                    self.resource_mgr.release_allocation(task_id, -1)
+                    del self.curr_task_table[task_id]
+                raise
             except Exception:
                 self.fwk.exception('TM:init_task_pool(): Allocation exception')
                 raise
