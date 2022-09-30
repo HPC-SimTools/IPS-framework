@@ -195,7 +195,6 @@ class ServicesProxy:
         self.binary_fullpath_cache = {}
         self.ppn = 0
         self.cpp = 0
-        self.gpp = 0
         self.shared_nodes = False
 
     def __initialize__(self, component_ref):
@@ -681,7 +680,7 @@ class ServicesProxy:
 
         task_ppn = keywords.get('task_ppn', self.ppn)
         task_cpp = keywords.get('task_cpp', self.cpp)
-        task_gpp = keywords.get('task_gpp', self.gpp)
+        task_gpp = keywords.get('task_gpp', 0)
         omp = keywords.get('omp', False)
         block = keywords.get('block', True)
         tag = keywords.get('tag', 'None')

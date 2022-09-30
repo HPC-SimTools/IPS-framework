@@ -438,7 +438,7 @@ def test_init_task_srun(tmpdir):
     def init_final_task(nproc, tppn, tcpt=0):
         task_id, cmd, _, cores_allocated = tm.init_task(ServiceRequestMessage('id', 'id', 'c', 'init_task',
                                                                               TaskInit(nproc, 'exe', '/dir', tppn, tcpt,
-                                                                                       True, True, True, False, [])))
+                                                                                       True, 0, True, True, False, [])))
         tm.finish_task(ServiceRequestMessage('id', 'id', 'c', 'finish_task',
                                              task_id, None))
         return task_id, cmd, cores_allocated
@@ -516,17 +516,17 @@ def test_init_task_srun(tmpdir):
     # start two task, second should fail with Insufficient Resources depending on block
     task_id, cmd, _, _ = tm.init_task(ServiceRequestMessage('id', 'id', 'c', 'init_task',
                                                             TaskInit(4, 'exe', '/dir', 0, 0,
-                                                                     True, True, True, False, [])))
+                                                                     True, 0, True, True, False, [])))
 
     with pytest.raises(BlockedMessageException):
         tm.init_task(ServiceRequestMessage('id', 'id', 'c', 'init_task',
                                            TaskInit(1, 'exe', '/dir', 0, 0,
-                                                    True, True, True, False, [])))
+                                                    True, 0, True, True, False, [])))
 
     with pytest.raises(InsufficientResourcesException):
         tm.init_task(ServiceRequestMessage('id', 'id', 'c', 'init_task',
                                            TaskInit(1, 'exe', '/dir', 0, 0,
-                                                    False, True, True, False, [])))
+                                                    False, 0, True, True, False, [])))
 
 
 def test_init_task_pool_srun(tmpdir):

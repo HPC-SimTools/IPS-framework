@@ -554,7 +554,7 @@ class TaskManager:
 
             try:
                 ret_dict[task_name] = self._init_task(caller_id, taskInit.nproc, taskInit.binary, taskInit.working_dir,
-                                                      taskInit.tppn, taskInit.tcpp, taskInit.omp, taskInit.wnodes, taskInit.wsocks, taskInit.cmd_args)
+                                                      taskInit.tppn, taskInit.tcpp, taskInit.omp, taskInit.tgpp, taskInit.wnodes, taskInit.wsocks, taskInit.cmd_args)
             except InsufficientResourcesException:
                 continue
             except BadResourceRequestException as e:
