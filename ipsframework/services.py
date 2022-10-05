@@ -18,6 +18,7 @@ import json
 import weakref
 from operator import itemgetter
 from configobj import ConfigObj
+from .taskManager import TaskInit
 from . import messages, ipsutil
 from .cca_es_spec import initialize_event_service
 from .ips_es_spec import eventManager
@@ -684,9 +685,10 @@ class ServicesProxy:
         try:
             # SIMYAN: added working_dir to component method invocation
             msg_id = self._invoke_service(self.fwk.component_id,
-                                          'init_task', nproc, binary_fullpath,
-                                          working_dir, task_ppn, block,
-                                          whole_nodes, whole_socks, task_cpp, omp, *args)
+                                          'init_task',
+                                          TaskInit(int(nproc), binary_fullpath,
+                                                   working_dir, int(task_ppn), task_cpp, block,
+                                                   omp, whole_nodes, whole_socks, args))
             (task_id, command, env_update, cores_allocated) = self._get_service_response(msg_id, block=True)
         except Exception:
             raise
@@ -779,9 +781,9 @@ class ServicesProxy:
             wsocks = task.keywords.get('whole_sockets', not self.shared_nodes)
             task_cpp = task.keywords.get('task_cpp', self.cpp)
             omp = task.keywords.get('omp', False)
-            submit_dict[task_name] = (task.nproc, task.working_dir,
-                                      task.binary, task.args,
-                                      task_ppn, wnodes, wsocks, task_cpp, omp)
+            submit_dict[task_name] = TaskInit(task.nproc, task.binary,
+                                              task.working_dir, task_ppn, task_cpp, False,
+                                              omp, wnodes, wsocks, task.args)
 
         try:
             msg_id = self._invoke_service(self.fwk.component_id,

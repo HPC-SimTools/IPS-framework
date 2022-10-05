@@ -3,6 +3,7 @@
 # -------------------------------------------------------------------------------
 import os
 from math import ceil
+from collections import namedtuple
 from . import messages, configurationManager
 from .ipsExceptions import BlockedMessageException, \
     IncompleteCallException, \
@@ -10,6 +11,9 @@ from .ipsExceptions import BlockedMessageException, \
     BadResourceRequestException, \
     ResourceRequestMismatchException
 from .ipsutil import which
+
+TaskInit = namedtuple("TaskInit",
+                      ["nproc", "binary", "working_dir", "tppn", "tcpp", "block", "omp", "wnodes", "wsocks", "cmd_args"])
 
 
 class TaskManager:
@@ -214,26 +218,14 @@ class TaskManager:
         7. \+ *cmd_args*: any arguments for the executable
         """
         caller_id = init_task_msg.sender_id
-        nproc = int(init_task_msg.args[0])
-        binary = init_task_msg.args[1]
-        # SIMYAN: working_dir stored
-        working_dir = init_task_msg.args[2]
-        tppn = int(init_task_msg.args[3])  # task processes per node
-        block = init_task_msg.args[4]  # Block waiting for available resources
-        wnodes = init_task_msg.args[5]
-        wsocks = init_task_msg.args[6]
-        tcpp = init_task_msg.args[7]
-        omp = init_task_msg.args[8]
-
-        # SIMYAN: increased arguments
-        cmd_args = init_task_msg.args[9:]
+        taskInit = init_task_msg.args[0]
 
         try:
-            return self._init_task(caller_id, nproc, binary, working_dir, tppn, tcpp, omp, wnodes, wsocks, cmd_args)
+            return self._init_task(caller_id, int(taskInit.nproc), taskInit.binary, taskInit.working_dir, int(taskInit.tppn), taskInit.tcpp, taskInit.omp, taskInit.wnodes, taskInit.wsocks, taskInit.cmd_args)
         except InsufficientResourcesException:
-            if block:
+            if taskInit.block:
                 raise BlockedMessageException(init_task_msg, '***%s waiting for %d resources' %
-                                              (caller_id, nproc))
+                                              (caller_id, taskInit.nproc))
             else:
                 raise
         except BadResourceRequestException as e:
@@ -542,10 +534,10 @@ class TaskManager:
         ret_dict = {}
         for task_name in task_dict:
             # handle for task related things
-            (nproc, working_dir, binary, cmd_args, tppn, wnodes, wsocks, tcpp, omp) = task_dict[task_name]
+            taskInit = task_dict[task_name]
 
             try:
-                ret_dict[task_name] = self._init_task(caller_id, nproc, binary, working_dir, tppn, tcpp, omp, wnodes, wsocks, cmd_args)
+                ret_dict[task_name] = self._init_task(caller_id, taskInit.nproc, taskInit.binary, taskInit.working_dir, taskInit.tppn, taskInit.tcpp, taskInit.omp, taskInit.wnodes, taskInit.wsocks, taskInit.cmd_args)
             except InsufficientResourcesException:
                 continue
             except BadResourceRequestException as e:
