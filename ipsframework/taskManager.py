@@ -251,39 +251,31 @@ class TaskManager:
         # handle for task related things
         task_id = self.get_task_id()
 
-        retval = self.resource_mgr.get_allocation(caller_id,
-                                                  nproc,
-                                                  task_id,
-                                                  wnodes,
-                                                  wsocks,
-                                                  task_ppn=tppn,
-                                                  task_cpp=tcpp)
-        self.fwk.debug('RM: get_allocation() returned %s', str(retval))
-        partial_node = retval[0]
-        if partial_node:
-            (nodelist, corelist, ppn, max_ppn, accurateNodes, cores_allocated) = retval[1:]
-        else:
-            (nodelist, ppn, max_ppn, cpp, accurateNodes, cores_allocated) = retval[1:]
+        allocation = self.resource_mgr.get_allocation(caller_id,
+                                                      nproc,
+                                                      task_id,
+                                                      wnodes,
+                                                      wsocks,
+                                                      task_ppn=tppn,
+                                                      task_cpp=tcpp)
+        self.fwk.debug('RM: get_allocation() returned %s', str(allocation))
 
-        if partial_node:
-            nodes = ','.join(nodelist)
-            (cmd, env_update) = self.build_launch_cmd(nproc, binary, cmd_args,
-                                                      working_dir, ppn,
-                                                      max_ppn, nodes,
-                                                      accurateNodes,
-                                                      partial_node, task_id,
-                                                      core_list=corelist)
+        if allocation.partial_node or allocation.accurateNodes:
+            nodes = ','.join(allocation.nodelist)
         else:
-            if accurateNodes:
-                nodes = ','.join(nodelist)
-            else:
-                nodes = ''
-            (cmd, env_update) = self.build_launch_cmd(nproc, binary, cmd_args,
-                                                      working_dir, ppn,
-                                                      max_ppn, nodes,
-                                                      accurateNodes,
-                                                      False, task_id,
-                                                      cpp, omp)
+            nodes = ''
+
+        (cmd, env_update) = self.build_launch_cmd(nproc, binary, cmd_args,
+                                                  working_dir,
+                                                  allocation.ppn,
+                                                  allocation.max_ppn,
+                                                  nodes,
+                                                  allocation.accurateNodes,
+                                                  allocation.partial_node,
+                                                  task_id,
+                                                  allocation.cpp,
+                                                  omp,
+                                                  allocation.corelist)
 
         self.curr_task_table[task_id] = {'component': caller_id,
                                          'status': 'init_task',
@@ -293,7 +285,7 @@ class TaskManager:
                                          'launch_cmd': cmd,
                                          'env_update': env_update}
 
-        return (task_id, cmd, env_update, cores_allocated)
+        return (task_id, cmd, env_update, allocation.cores_allocated)
 
     def build_launch_cmd(self, nproc, binary, cmd_args, working_dir, ppn,
                          max_ppn, nodes, accurateNodes, partial_nodes,

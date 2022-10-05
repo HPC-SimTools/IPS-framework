@@ -4,6 +4,7 @@
 # local version
 import os
 import time
+from collections import namedtuple
 from math import ceil
 from .ipsExceptions import (InsufficientResourcesException,
                             BadResourceRequestException,
@@ -12,6 +13,9 @@ from .ipsExceptions import (InsufficientResourcesException,
 from .ips_es_spec import eventManager
 from .resourceHelper import getResourceList
 from .node_structure import Node
+
+Allocation = namedtuple("Allocation",
+                        ["partial_node", "nodelist", "corelist", "ppn", "max_ppn", "cpp", "accurateNodes", "cores_allocated"])
 
 
 class ResourceManager:
@@ -443,10 +447,24 @@ class ResourceManager:
 
             if whole_nodes:
                 self.report_RM_status("allocation for task %d using whole nodes" % task_id)
-                return not whole_nodes, nodes, ppn, self.max_ppn, cpp, self.accurateNodes, cores_allocated
+                return Allocation(partial_node=not whole_nodes,
+                                  nodelist=nodes,
+                                  corelist=None,
+                                  ppn=ppn,
+                                  max_ppn=self.max_ppn,
+                                  cpp=cpp,
+                                  accurateNodes=self.accurateNodes,
+                                  cores_allocated=cores_allocated)
             else:
                 self.report_RM_status("allocation for task %d using partial nodes" % task_id)
-                return not whole_nodes, nodes, node_file_entries, ppn, self.max_ppn, self.accurateNodes, cores_allocated
+                return Allocation(partial_node=not whole_nodes,
+                                  nodelist=nodes,
+                                  corelist=node_file_entries,
+                                  ppn=ppn,
+                                  max_ppn=self.max_ppn,
+                                  cpp=None,
+                                  accurateNodes=self.accurateNodes,
+                                  cores_allocated=cores_allocated)
 
     def check_whole_node_cap(self, nproc, ppn):
         """
