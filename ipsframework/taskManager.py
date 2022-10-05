@@ -221,7 +221,8 @@ class TaskManager:
         taskInit = init_task_msg.args[0]
 
         try:
-            return self._init_task(caller_id, int(taskInit.nproc), taskInit.binary, taskInit.working_dir, int(taskInit.tppn), taskInit.tcpp, taskInit.omp, taskInit.wnodes, taskInit.wsocks, taskInit.cmd_args)
+            return self._init_task(caller_id, int(taskInit.nproc), taskInit.binary, taskInit.working_dir,
+                                   int(taskInit.tppn), taskInit.tcpp, taskInit.omp, taskInit.wnodes, taskInit.wsocks, taskInit.cmd_args)
         except InsufficientResourcesException:
             if taskInit.block:
                 raise BlockedMessageException(init_task_msg, '***%s waiting for %d resources' %
@@ -537,7 +538,8 @@ class TaskManager:
             taskInit = task_dict[task_name]
 
             try:
-                ret_dict[task_name] = self._init_task(caller_id, taskInit.nproc, taskInit.binary, taskInit.working_dir, taskInit.tppn, taskInit.tcpp, taskInit.omp, taskInit.wnodes, taskInit.wsocks, taskInit.cmd_args)
+                ret_dict[task_name] = self._init_task(caller_id, taskInit.nproc, taskInit.binary, taskInit.working_dir,
+                                                      taskInit.tppn, taskInit.tcpp, taskInit.omp, taskInit.wnodes, taskInit.wsocks, taskInit.cmd_args)
             except InsufficientResourcesException:
                 continue
             except BadResourceRequestException as e:

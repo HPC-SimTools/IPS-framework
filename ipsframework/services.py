@@ -16,12 +16,16 @@ import signal
 import glob
 import json
 import weakref
+from collections import namedtuple
 from operator import itemgetter
 from configobj import ConfigObj
 from .taskManager import TaskInit
 from . import messages, ipsutil
 from .cca_es_spec import initialize_event_service
 from .ips_es_spec import eventManager
+
+
+RunningTask = namedtuple("RunningTask", ["process", "start_time", "timeout", "nproc", "cores_allocated", "command", "binary", "args"])
 
 
 def launch(binary, task_name, working_dir, *args, **keywords):
@@ -471,9 +475,9 @@ class ServicesProxy:
         method in the base class for components.
 
         """
-        for p, *_ in self.task_map.values():
+        for task in self.task_map.values():
             try:
-                p.kill()
+                task.process.kill()
             except Exception:
                 pass
 
@@ -750,7 +754,7 @@ class ServicesProxy:
 
         # FIXME: process Monitoring Command : ps --no-headers -o pid,state pid1  pid2 pid3 ...
 
-        self.task_map[task_id] = (process, time.time(), timeout, nproc, cores_allocated, command, binary, args)
+        self.task_map[task_id] = RunningTask(process, time.time(), timeout, nproc, cores_allocated, command, binary, args)
         return task_id  # process.pid
 
     def launch_task_pool(self, task_pool_name, launch_interval=0.0):
@@ -831,7 +835,7 @@ class ServicesProxy:
         :rtype: bool
         """
         try:
-            process, *_ = self.task_map[task_id]
+            process = self.task_map[task_id].process
             # TODO: process and start_time will have to be accessed as shown
             #      below if this task can be relaunched to support FT...
         except KeyError:
@@ -877,18 +881,18 @@ class ServicesProxy:
         :return: return value of task if finished else None
         """
         try:
-            process, start_time, timeout, *_ = self.task_map[task_id]
+            task = self.task_map[task_id]
             # TODO: process and start_time will have to be accessed as shown
             #      below if this task can be relaunched to support FT...
         except KeyError:
             self.exception('Error: unrecognizable task_id = %s ', task_id)
             raise
-        task_retval = process.poll()
+        task_retval = task.process.poll()
         if task_retval is None:
-            if start_time + timeout < time.time():
+            if task.start_time + task.timeout < time.time():
                 self.kill_task(task_id)
                 self._send_monitor_event('IPS_TASK_END', 'task_id = %s  TIMEOUT elapsed time = %.2f S' %
-                                         (str(task_id), time.time() - start_time))
+                                         (str(task_id), time.time() - task.start_time))
                 return -1
             else:
                 return None
@@ -914,17 +918,17 @@ class ServicesProxy:
         :return: return value of task
         """
         try:
-            process, start_time, _, nproc, cores, _, binary, args = self.task_map[task_id]
+            task = self.task_map[task_id]
         except KeyError:
             self.exception('Error: unrecognizable task_id = %s ', str(task_id))
             raise
         task_retval = None
         if timeout < 0:
-            task_retval = process.wait()
+            task_retval = task.process.wait()
         else:
-            maxtime = start_time + timeout
+            maxtime = task.start_time + timeout
             while time.time() < maxtime:
-                task_retval = process.poll()
+                task_retval = task.process.poll()
                 if task_retval is None:
                     time.sleep(delay)
                 else:
@@ -932,21 +936,21 @@ class ServicesProxy:
 
         finish_time = time.time()
         if task_retval is None:
-            process.kill()
-            task_retval = process.wait()
-            event_comment = 'task_id = %s  TIMEOUT elapsed time = %.2f S' % (str(task_id), finish_time - start_time)
+            task.process.kill()
+            task_retval = task.process.wait()
+            event_comment = 'task_id = %s  TIMEOUT elapsed time = %.2f S' % (str(task_id), finish_time - task.start_time)
         else:
-            event_comment = 'task_id = %s  elapsed time = %.2f S' % (str(task_id), finish_time - start_time)
+            event_comment = 'task_id = %s  elapsed time = %.2f S' % (str(task_id), finish_time - task.start_time)
 
         self._send_monitor_event('IPS_TASK_END',
                                  event_comment,
-                                 start_time=start_time,
+                                 start_time=task.start_time,
                                  end_time=finish_time,
-                                 elapsed_time=finish_time - start_time,
-                                 procs_requested=nproc,
-                                 cores_allocated=cores,
-                                 target=binary,
-                                 operation=" ".join(args),
+                                 elapsed_time=finish_time - task.start_time,
+                                 procs_requested=task.nproc,
+                                 cores_allocated=task.cores_allocated,
+                                 target=task.binary,
+                                 operation=" ".join(task.args),
                                  call_id=task_id)
 
         del self.task_map[task_id]
@@ -980,7 +984,7 @@ class ServicesProxy:
         running_tasks = list(task_id_list)
         for task_id in task_id_list:
             try:
-                process = self.task_map[task_id][0]
+                process = self.task_map[task_id].process
             except KeyError:
                 self.exception('Error: unknown task id : %s', task_id)
                 raise
@@ -988,7 +992,7 @@ class ServicesProxy:
             for task_id in task_id_list:
                 if task_id not in running_tasks:
                     continue
-                process = self.task_map[task_id][0]
+                process = self.task_map[task_id].process
                 retval = process.poll()
                 if retval is not None:
                     task_retval = self.wait_task(task_id)
