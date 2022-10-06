@@ -426,6 +426,106 @@ the resulting core affinity of the OpenMP threads are:
     Hello from rank 7, thread 0, on nid00026. (core affinity = 18)
     Hello from rank 7, thread 1, on nid00026. (core affinity = 19)
 
+
+Slurm with GPUs examples
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. note::
+
+   New in 0.8.0
+
+The :py:meth:`~ipsframework.services.ServicesProxy.launch_task` method
+has an option ``task_gpp`` which allows you to set the number of GPUs
+per process, used as the ``--gpus-per-task`` in the ``srun``
+command.
+
+IPS will validate the number of GPUs per node requested does not
+exceed the number specified by the ``GPUS_PER_NODE`` parameter in the
+:ref:`plat-conf-sec`. You need to make sure that the number of GPUs
+per process times the number of processes per node does not exceed the
+``GPUS_PER_NODE`` set.
+
+Using the `gpus_for_tasks
+<https://docs.nersc.gov/jobs/affinity/#gpus>`_ program provided for
+Perlmutter (which has 4 GPUs per node) to test the behavior, you will
+see the following:
+
+
+To launch a task with 1 process and 1 GPU per process (``task_gpp``) run:
+
+.. code-block:: python
+
+    self.services.launch_task(1, cwd, "gpu-per-task", task_gpp=1)
+
+will create the command ``srun -N 1 -n 1 -c
+64 --threads-per-core=1 --cpu-bind=cores --gpus-per-task=1
+gpus_for_tasks`` and the output of will be:
+
+.. code-block:: text
+
+   Rank 0 out of 1 processes: I see 1 GPU(s).
+   0 for rank 0: 0000:03:00.0
+
+To launch 8 processes on 2 nodes (so 4 processes per node) with 1 gpu per process run:
+
+.. code-block:: python
+
+    self.services.launch_task(8, cwd, "gpu-per-task", task_ppn=4, task_gpp=1)
+
+will create the command ``srun -N 2 -n 8 -c
+16 --threads-per-core=1 --cpu-bind=cores --gpus-per-task=1
+gpus_for_task`` and the output of will be:
+
+.. code-block:: text
+
+   Rank 0 out of 8 processes: I see 1 GPU(s).
+   0 for rank 0: 0000:03:00.0
+   Rank 1 out of 8 processes: I see 1 GPU(s).
+   0 for rank 1: 0000:41:00.0
+   Rank 2 out of 8 processes: I see 1 GPU(s).
+   0 for rank 2: 0000:82:00.0
+   Rank 3 out of 8 processes: I see 1 GPU(s).
+   0 for rank 3: 0000:C1:00.0
+   Rank 4 out of 8 processes: I see 1 GPU(s).
+   0 for rank 4: 0000:03:00.0
+   Rank 5 out of 8 processes: I see 1 GPU(s).
+   0 for rank 5: 0000:41:00.0
+   Rank 6 out of 8 processes: I see 1 GPU(s).
+   0 for rank 6: 0000:82:00.0
+   Rank 7 out of 8 processes: I see 1 GPU(s).
+   0 for rank 7: 0000:C1:00.0
+
+To launch 2 processes on 2 nodes (so 1 processes per node) with 4 gpu per process run:
+
+.. code-block:: python
+
+    self.services.launch_task(2, cwd, "gpu-per-task", task_ppn=1, task_gpp=4)
+
+will create the command ``srun -N 2 -n 2 -c
+64 --threads-per-core=1 --cpu-bind=cores --gpus-per-task=4
+gpus_per_tasks`` and the output of will be:
+
+.. code-block:: text
+
+   Rank 0 out of 2 processes: I see 4 GPU(s).
+   0 for rank 0: 0000:03:00.0
+   1 for rank 0: 0000:41:00.0
+   2 for rank 0: 0000:82:00.0
+   3 for rank 0: 0000:C1:00.0
+   Rank 1 out of 2 processes: I see 4 GPU(s).
+   0 for rank 1: 0000:03:00.0
+   1 for rank 1: 0000:41:00.0
+   2 for rank 1: 0000:82:00.0
+   3 for rank 1: 0000:C1:00.0
+
+If you try to launch a task with too many GPUs per node, *e.g.*:
+
+.. code-block:: python
+
+    self.services.launch_task(8, cwd, "gpu-per-task", task_gpp=1)
+
+then it will raise an :class:`~ipsframework.ipsExceptions.GPUResourceRequestMismatchException`.
+
 .. automethod:: ipsframework.services.ServicesProxy.launch_task
    :noindex:
 
