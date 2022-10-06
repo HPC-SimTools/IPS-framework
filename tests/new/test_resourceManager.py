@@ -5,6 +5,7 @@ from ipsframework.resourceManager import ResourceManager
 from ipsframework.ipsExceptions import (InsufficientResourcesException,
                                         BadResourceRequestException,
                                         ResourceRequestMismatchException,
+                                        GPUResourceRequestMismatchException,
                                         ResourceRequestUnequalPartitioningException)
 
 
@@ -322,3 +323,75 @@ def test_allocations(tmpdir):
         assert lines[6] == "core: 1  - available"
         assert lines[7] == "core: 2  - available"
         assert lines[8] == "core: 3  - available"
+
+    # test GPUs
+    with pytest.raises(GPUResourceRequestMismatchException) as excinfo:
+        rm.get_allocation(comp_id='comp0',
+                          nproc=1,
+                          task_gpp=1,
+                          task_id=0,
+                          whole_nodes=True,
+                          whole_socks=False)
+
+    assert str(excinfo.value) == "component comp0 requested 1 processes per node with 1 GPUs per process, which is greater than the available 0 GPUS_PER_NODE"
+
+    # set GPUS_PER_NODE to 2
+    rm = ResourceManager(fwk)
+    rm.initialize(dm, tm, cm,
+                  cmd_nodes=2,
+                  cmd_ppn=4)
+    rm.gpn = 2
+
+    with pytest.raises(GPUResourceRequestMismatchException) as excinfo:
+        rm.get_allocation(comp_id='comp0',
+                          nproc=1,
+                          task_gpp=4,
+                          task_id=0,
+                          whole_nodes=True,
+                          whole_socks=False)
+
+    assert str(excinfo.value) == "component comp0 requested 1 processes per node with 4 GPUs per process, which is greater than the available 2 GPUS_PER_NODE"
+
+    with pytest.raises(GPUResourceRequestMismatchException) as excinfo:
+        rm.get_allocation(comp_id='comp0',
+                          nproc=2,
+                          task_gpp=2,
+                          task_id=0,
+                          whole_nodes=True,
+                          whole_socks=False)
+
+    assert str(excinfo.value) == "component comp0 requested 2 processes per node with 2 GPUs per process, which is greater than the available 2 GPUS_PER_NODE"
+
+    rm.get_allocation(comp_id='comp0',
+                      nproc=2,
+                      task_ppn=1,
+                      task_gpp=2,
+                      task_id=0,
+                      whole_nodes=True,
+                      whole_socks=False)
+
+    with io.StringIO() as output:
+        rm.nodes['dummy_node0'].print_sockets(output)
+        lines = [s.strip() for s in output.getvalue().split('\n')]
+        assert lines[0] == "socket: 0"
+        assert lines[1] == "availablilty: 0"
+        assert lines[2] == "task ids: [0]"
+        assert lines[3] == "owners: ['comp0']"
+        assert lines[4] == "cores: 4"
+        assert lines[5] == "core: 0  - task_id: 0  - owner: comp0"
+        assert lines[6] == "core: 1  - task_id: 0  - owner: comp0"
+        assert lines[7] == "core: 2  - task_id: 0  - owner: comp0"
+        assert lines[8] == "core: 3  - task_id: 0  - owner: comp0"
+
+    with io.StringIO() as output:
+        rm.nodes['dummy_node1'].print_sockets(output)
+        lines = [s.strip() for s in output.getvalue().split('\n')]
+        assert lines[0] == "socket: 0"
+        assert lines[1] == "availablilty: 0"
+        assert lines[2] == "task ids: [0]"
+        assert lines[3] == "owners: ['comp0']"
+        assert lines[4] == "cores: 4"
+        assert lines[5] == "core: 0  - task_id: 0  - owner: comp0"
+        assert lines[6] == "core: 1  - task_id: 0  - owner: comp0"
+        assert lines[7] == "core: 2  - task_id: 0  - owner: comp0"
+        assert lines[8] == "core: 3  - task_id: 0  - owner: comp0"

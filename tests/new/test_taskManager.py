@@ -5,6 +5,7 @@ from ipsframework import TaskManager, ResourceManager
 from ipsframework.messages import ServiceRequestMessage
 from ipsframework.ipsExceptions import (BadResourceRequestException,
                                         ResourceRequestMismatchException,
+                                        GPUResourceRequestMismatchException,
                                         BlockedMessageException,
                                         InsufficientResourcesException,
                                         ResourceRequestUnequalPartitioningException)
@@ -411,6 +412,40 @@ def test_build_launch_cmd_srun():
     assert cmd == ('srun -N 2 -n 2 -c 2 --threads-per-core=1 --cpu-bind=cores executable 13 42',
                    {'OMP_PLACES': 'threads', 'OMP_PROC_BIND': 'spread', 'OMP_NUM_THREADS': '2'})
 
+    # now with GPUs
+
+    cmd = tm.build_launch_cmd(nproc=1,
+                              binary='executable',
+                              cmd_args=('13', '42'),
+                              working_dir=None,
+                              ppn=None,
+                              max_ppn=None,
+                              nodes='n1',
+                              accurateNodes=None,
+                              partial_nodes=False,
+                              task_id=None,
+                              cpp=1,
+                              gpp=1,
+                              omp=False)
+
+    assert cmd == ('srun -N 1 -n 1 -c 1 --threads-per-core=1 --cpu-bind=cores --gpus-per-task=1 executable 13 42', None)
+
+    cmd = tm.build_launch_cmd(nproc=1,
+                              binary='executable',
+                              cmd_args=('13', '42'),
+                              working_dir=None,
+                              ppn=None,
+                              max_ppn=None,
+                              nodes='n1',
+                              accurateNodes=None,
+                              partial_nodes=False,
+                              task_id=None,
+                              cpp=1,
+                              gpp=4,
+                              omp=False)
+
+    assert cmd == ('srun -N 1 -n 1 -c 1 --threads-per-core=1 --cpu-bind=cores --gpus-per-task=4 executable 13 42', None)
+
 
 def test_init_task_srun(tmpdir):
     # this will combine calls to ResourceManager.get_allocation and
@@ -527,6 +562,58 @@ def test_init_task_srun(tmpdir):
         tm.init_task(ServiceRequestMessage('id', 'id', 'c', 'init_task',
                                            TaskInit(1, 'exe', '/dir', 0, 0,
                                                     0, False, True, True, False, [])))
+
+    tm.finish_task(ServiceRequestMessage('id', 'id', 'c', 'finish_task',
+                                         task_id, None))
+
+    # request GPUs when there are none
+    with pytest.raises(GPUResourceRequestMismatchException) as e:
+        tm.init_task(ServiceRequestMessage('id', 'id', 'c', 'init_task',
+                                           TaskInit(1, 'exe', '/dir', 0, 0,
+                                                    1, False, True, True, False, [])))
+
+    assert str(e.value) == "component id requested 1 processes per node with 1 GPUs per process, which is greater than the available 0 GPUS_PER_NODE"
+
+    # set GPUS_PER_NODE=2
+    rm.gpn = 2
+    task_id, cmd, _, _, = tm.init_task(ServiceRequestMessage('id', 'id', 'c', 'init_task',
+                                                             TaskInit(1, 'exe', '/dir', 0, 0,
+                                                                      1, False, True, True, False, [])))
+    tm.finish_task(ServiceRequestMessage('id', 'id', 'c', 'finish_task',
+                                         task_id, None))
+    assert task_id == 19
+    assert cmd == "srun -N 1 -n 1 -c 2 --threads-per-core=1 --cpu-bind=cores --gpus-per-task=1 exe "
+
+    task_id, cmd, _, _, = tm.init_task(ServiceRequestMessage('id', 'id', 'c', 'init_task',
+                                                             TaskInit(2, 'exe', '/dir', 1, 0,
+                                                                      1, False, True, True, False, [])))
+    tm.finish_task(ServiceRequestMessage('id', 'id', 'c', 'finish_task',
+                                         task_id, None))
+    assert task_id == 20
+    assert cmd == "srun -N 2 -n 2 -c 2 --threads-per-core=1 --cpu-bind=cores --gpus-per-task=1 exe "
+
+    task_id, cmd, _, _, = tm.init_task(ServiceRequestMessage('id', 'id', 'c', 'init_task',
+                                                             TaskInit(2, 'exe', '/dir', 1, 0,
+                                                                      2, False, True, True, False, [])))
+    tm.finish_task(ServiceRequestMessage('id', 'id', 'c', 'finish_task',
+                                         task_id, None))
+    assert task_id == 21
+    assert cmd == "srun -N 2 -n 2 -c 2 --threads-per-core=1 --cpu-bind=cores --gpus-per-task=2 exe "
+
+    task_id, cmd, _, _, = tm.init_task(ServiceRequestMessage('id', 'id', 'c', 'init_task',
+                                                             TaskInit(2, 'exe', '/dir', 2, 0,
+                                                                      1, False, True, True, False, [])))
+    tm.finish_task(ServiceRequestMessage('id', 'id', 'c', 'finish_task',
+                                         task_id, None))
+    assert task_id == 22
+    assert cmd == "srun -N 1 -n 2 -c 1 --threads-per-core=1 --cpu-bind=cores --gpus-per-task=1 exe "
+
+    with pytest.raises(GPUResourceRequestMismatchException) as e:
+        tm.init_task(ServiceRequestMessage('id', 'id', 'c', 'init_task',
+                                           TaskInit(2, 'exe', '/dir', 2, 0,
+                                                    2, False, True, True, False, [])))
+
+    assert str(e.value) == "component id requested 2 processes per node with 2 GPUs per process, which is greater than the available 2 GPUS_PER_NODE"
 
 
 def test_init_task_pool_srun(tmpdir):
