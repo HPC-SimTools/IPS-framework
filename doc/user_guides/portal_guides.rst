@@ -1,3 +1,5 @@
+.. _ips-portal:
+
 ==========
 IPS Portal
 ==========
