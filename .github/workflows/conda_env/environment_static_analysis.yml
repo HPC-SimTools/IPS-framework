@@ -4,10 +4,10 @@ channels:
 dependencies:
 - python=3.8
 - flake8=5.0.4
-- pylint=2.15.0
+- pylint=2.15.3
 - bandit=1.7.4
 - codespell=2.2.1
-- dask=2022.08.1
+- dask=2022.9.2
 - pytest
 - flask=2.2.2
 - configobj

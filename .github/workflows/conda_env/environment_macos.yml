@@ -2,7 +2,7 @@ name: ips_test
 channels:
 - conda-forge
 dependencies:
-- pytest-cov
+- pytest-cov<4
 - pytest-timeout
 - psutil
 - dask=2022.08.1
