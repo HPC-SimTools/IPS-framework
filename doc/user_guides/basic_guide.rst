@@ -324,7 +324,7 @@ As an example, here is a skeleton of a batch script::
          [--nodes=<number of nodes in this allocation>] \
          [--ppn=<number of processes per node for this allocation>]
 
-Note that you can only run one instance of the IPS per batch submission, however you may run multiple simulations in the same batch allocation by specifying multiple ``--config=<config file>`` entries on the command line.  Each config file must have a unique file name, and *SIM_ROOT*.  The different simulations will share the resources in the allocation, in many cases improving the resource efficiency, however this may make the execution time of each individual simulation a bit longer due to waiting on resources.
+Note that you can only run one instance of the IPS per batch submission, however you may run multiple simulations in the same batch allocation by specifying multiple entries on the command line as a comma-separated list, e.g., ``--config=<config file 1>, <config file 2>``.  Each config file must have a unique file name, and *SIM_ROOT*.  The different simulations will share the resources in the allocation, in many cases improving the resource efficiency, however this may make the execution time of each individual simulation a bit longer due to waiting on resources.
 
 The IPS also needs information about the platform it is running on (``--platform=platform.conf``) and a log file (``--logfile=<name of log file>``)for the framework output.  Platform files for commonly used platforms are provided in the top-level of the ips directory.  It is strongly recommended that you use the appropriate one for launching IPS runs.  See :doc:`platform` for more information on how to use or create these files.
 
