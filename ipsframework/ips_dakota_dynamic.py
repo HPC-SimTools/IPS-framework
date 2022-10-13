@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -------------------------------------------------------------------------------
-# Copyright 2006-2021 UT-Battelle, LLC. See LICENSE for more information.
+# Copyright 2006-2022 UT-Battelle, LLC. See LICENSE for more information.
 # -------------------------------------------------------------------------------
 
 import os

@@ -1,8 +1,9 @@
 # -------------------------------------------------------------------------------
-# Copyright 2006-2021 UT-Battelle, LLC. See LICENSE for more information.
+# Copyright 2006-2022 UT-Battelle, LLC. See LICENSE for more information.
 # -------------------------------------------------------------------------------
 import os
 from math import ceil
+from collections import namedtuple
 from . import messages, configurationManager
 from .ipsExceptions import BlockedMessageException, \
     IncompleteCallException, \
@@ -10,6 +11,9 @@ from .ipsExceptions import BlockedMessageException, \
     BadResourceRequestException, \
     ResourceRequestMismatchException
 from .ipsutil import which
+
+TaskInit = namedtuple("TaskInit",
+                      ["nproc", "binary", "working_dir", "tppn", "tcpp", "block", "omp", "wnodes", "wsocks", "cmd_args"])
 
 
 class TaskManager:
@@ -214,26 +218,15 @@ class TaskManager:
         7. \+ *cmd_args*: any arguments for the executable
         """
         caller_id = init_task_msg.sender_id
-        nproc = int(init_task_msg.args[0])
-        binary = init_task_msg.args[1]
-        # SIMYAN: working_dir stored
-        working_dir = init_task_msg.args[2]
-        tppn = int(init_task_msg.args[3])  # task processes per node
-        block = init_task_msg.args[4]  # Block waiting for available resources
-        wnodes = init_task_msg.args[5]
-        wsocks = init_task_msg.args[6]
-        tcpp = init_task_msg.args[7]
-        omp = init_task_msg.args[8]
-
-        # SIMYAN: increased arguments
-        cmd_args = init_task_msg.args[9:]
+        taskInit = init_task_msg.args[0]
 
         try:
-            return self._init_task(caller_id, nproc, binary, working_dir, tppn, tcpp, omp, wnodes, wsocks, cmd_args)
+            return self._init_task(caller_id, int(taskInit.nproc), taskInit.binary, taskInit.working_dir,
+                                   int(taskInit.tppn), taskInit.tcpp, taskInit.omp, taskInit.wnodes, taskInit.wsocks, taskInit.cmd_args)
         except InsufficientResourcesException:
-            if block:
+            if taskInit.block:
                 raise BlockedMessageException(init_task_msg, '***%s waiting for %d resources' %
-                                              (caller_id, nproc))
+                                              (caller_id, taskInit.nproc))
             else:
                 raise
         except BadResourceRequestException as e:
@@ -251,39 +244,31 @@ class TaskManager:
         # handle for task related things
         task_id = self.get_task_id()
 
-        retval = self.resource_mgr.get_allocation(caller_id,
-                                                  nproc,
-                                                  task_id,
-                                                  wnodes,
-                                                  wsocks,
-                                                  task_ppn=tppn,
-                                                  task_cpp=tcpp)
-        self.fwk.debug('RM: get_allocation() returned %s', str(retval))
-        partial_node = retval[0]
-        if partial_node:
-            (nodelist, corelist, ppn, max_ppn, accurateNodes, cores_allocated) = retval[1:]
-        else:
-            (nodelist, ppn, max_ppn, cpp, accurateNodes, cores_allocated) = retval[1:]
+        allocation = self.resource_mgr.get_allocation(caller_id,
+                                                      nproc,
+                                                      task_id,
+                                                      wnodes,
+                                                      wsocks,
+                                                      task_ppn=tppn,
+                                                      task_cpp=tcpp)
+        self.fwk.debug('RM: get_allocation() returned %s', str(allocation))
 
-        if partial_node:
-            nodes = ','.join(nodelist)
-            (cmd, env_update) = self.build_launch_cmd(nproc, binary, cmd_args,
-                                                      working_dir, ppn,
-                                                      max_ppn, nodes,
-                                                      accurateNodes,
-                                                      partial_node, task_id,
-                                                      core_list=corelist)
+        if allocation.partial_node or allocation.accurateNodes:
+            nodes = ','.join(allocation.nodelist)
         else:
-            if accurateNodes:
-                nodes = ','.join(nodelist)
-            else:
-                nodes = ''
-            (cmd, env_update) = self.build_launch_cmd(nproc, binary, cmd_args,
-                                                      working_dir, ppn,
-                                                      max_ppn, nodes,
-                                                      accurateNodes,
-                                                      False, task_id,
-                                                      cpp, omp)
+            nodes = ''
+
+        (cmd, env_update) = self.build_launch_cmd(nproc, binary, cmd_args,
+                                                  working_dir,
+                                                  allocation.ppn,
+                                                  allocation.max_ppn,
+                                                  nodes,
+                                                  allocation.accurateNodes,
+                                                  allocation.partial_node,
+                                                  task_id,
+                                                  allocation.cpp,
+                                                  omp,
+                                                  allocation.corelist)
 
         self.curr_task_table[task_id] = {'component': caller_id,
                                          'status': 'init_task',
@@ -293,7 +278,7 @@ class TaskManager:
                                          'launch_cmd': cmd,
                                          'env_update': env_update}
 
-        return (task_id, cmd, env_update, cores_allocated)
+        return (task_id, cmd, env_update, allocation.cores_allocated)
 
     def build_launch_cmd(self, nproc, binary, cmd_args, working_dir, ppn,
                          max_ppn, nodes, accurateNodes, partial_nodes,
@@ -550,10 +535,11 @@ class TaskManager:
         ret_dict = {}
         for task_name in task_dict:
             # handle for task related things
-            (nproc, working_dir, binary, cmd_args, tppn, wnodes, wsocks, tcpp, omp) = task_dict[task_name]
+            taskInit = task_dict[task_name]
 
             try:
-                ret_dict[task_name] = self._init_task(caller_id, nproc, binary, working_dir, tppn, tcpp, omp, wnodes, wsocks, cmd_args)
+                ret_dict[task_name] = self._init_task(caller_id, taskInit.nproc, taskInit.binary, taskInit.working_dir,
+                                                      taskInit.tppn, taskInit.tcpp, taskInit.omp, taskInit.wnodes, taskInit.wsocks, taskInit.cmd_args)
             except InsufficientResourcesException:
                 continue
             except BadResourceRequestException as e:

@@ -1,8 +1,9 @@
+# same as NERSC Cori module python/3.8-anaconda-2020.11
 name: ips_test_dask_2.30
 channels:
 - conda-forge
 dependencies:
-- pytest-cov
+- pytest-cov<4
 - pytest-timeout
 - psutil
 - mpi4py

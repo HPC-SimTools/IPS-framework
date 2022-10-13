@@ -19,9 +19,11 @@ The IPS code is currently located on the GitHub repository. In order to checkout
 Dependencies
 ------------
 
-**IPS Proper**
-
-The IPS framework is written in Python_, and requires Python 3.6+.  There are a few other packages that may be needed for certain components or utilities.  The framework does use the Python package ConfigObj_, however the source is already included and no package installation is necessary (likewise for Python 3.6 and the processing module).
+The IPS framework is written in Python_, and requires Python 3.6+.
+There are a few other packages that may be needed for certain
+components or utilities. The framework does use the Python package
+ConfigObj_, and urllib3_ is used to communicate with the
+:ref:`ips-portal`.
 
 Other Utilities
 ---------------
@@ -52,15 +54,18 @@ Other Utilities
 .. _Scipy: https://numpy.org
 .. _ConfigObj: http://configobj.readthedocs.io
 .. _Python: http://python.org
+.. _urllib3: https://urllib3.readthedocs.io
 
 .. _installing-ips:
 
 Building and Setting up Your Environment
 ========================================
 
-IPS itself doesn't have any dependencies to run except python version
-≥ 3.6. There is an optional dependency `Dask <https://dask.org>`_ that
-will enable Dask to be used for task pool scheduling, see
+IPS has two dependencies (ConfigObj_ and urllib3_) required to run in
+addition to python version ≥ 3.6. The dependencies will be
+automatically installed when you install ``ipsframework``. There is an
+optional dependency `Dask <https://dask.org>`_ that will enable Dask
+to be used for task pool scheduling, see
 :meth:`~ipsframework.services.ServicesProxy.submit_tasks`. IPS is
 tested to work with dask and distributed ≥ 2.5.2 but may work with
 earlier versions.

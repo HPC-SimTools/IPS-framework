@@ -1,5 +1,5 @@
 #-------------------------------------------------------------------------------
-# Copyright 2006-2021 UT-Battelle, LLC. See LICENSE for more information.
+# Copyright 2006-2022 UT-Battelle, LLC. See LICENSE for more information.
 #-------------------------------------------------------------------------------
 # -*- coding: utf-8 -*-
 #
@@ -43,7 +43,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'Integrated Plasma Simulator (IPS)'
-copyright = u'2006-2021, UT-Battelle, LLC'
+copyright = u'2006-2022, UT-Battelle, LLC'
 
 from ipsframework._version import get_versions
 # The version info for the project you're documenting, acts as replacement for

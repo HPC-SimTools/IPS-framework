@@ -1,4 +1,5 @@
-name: ips_test
+# same as NERSC Perlmutter module python/3.9-anaconda-2021.11
+name: ips_test_dask_2022.7.0
 channels:
 - conda-forge
 dependencies:
@@ -7,7 +8,6 @@ dependencies:
 - psutil
 - mpi4py
 - openmpi
-- dask=2022.9.2
-- dakota
+- dask=2022.7.0
 - coverage!=6.3
 - flask=2.2.2

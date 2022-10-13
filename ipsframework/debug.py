@@ -1,5 +1,5 @@
 # -------------------------------------------------------------------------------
-# Copyright 2006-2021 UT-Battelle, LLC. See LICENSE for more information.
+# Copyright 2006-2022 UT-Battelle, LLC. See LICENSE for more information.
 # -------------------------------------------------------------------------------
 """
 This file writes debug messages to 'debug.out' file if the environment
