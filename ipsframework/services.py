@@ -1880,7 +1880,7 @@ class ServicesProxy:
                                   *args, keywords=keywords)
 
     def submit_tasks(self, task_pool_name, block=True, use_dask=False, dask_nodes=1,
-                     dask_ppn=None, launch_interval=0.0, use_shifter=False, dask_worker_plugin=None):
+                     dask_ppn=None, launch_interval=0.0, use_shifter=False, dask_worker_plugin=None, dask_worker_per_gpu=False):
         """
         Launch all unfinished tasks in task pool *task_pool_name*.  If *block* is ``True``,
         return when all tasks have been launched.  If *block* is ``False``, return when all
@@ -1892,7 +1892,7 @@ class ServicesProxy:
         start_time = time.time()
         self._send_monitor_event('IPS_TASK_POOL_BEGIN', 'task_pool = %s ' % task_pool_name)
         task_pool: TaskPool = self.task_pools[task_pool_name]
-        retval = task_pool.submit_tasks(block, use_dask, dask_nodes, dask_ppn, launch_interval, use_shifter, dask_worker_plugin)
+        retval = task_pool.submit_tasks(block, use_dask, dask_nodes, dask_ppn, launch_interval, use_shifter, dask_worker_plugin, dask_worker_per_gpu)
         elapsed_time = time.time() - start_time
         self._send_monitor_event('IPS_TASK_POOL_END', 'task_pool = %s  elapsed time = %.2f S' %
                                  (task_pool_name, elapsed_time),
@@ -2098,7 +2098,7 @@ class TaskPool:
         self.queued_tasks[task_name] = Task(task_name, nproc, working_dir, binary_fullpath, *args,
                                             **keywords["keywords"])
 
-    def submit_dask_tasks(self, block=True, dask_nodes=1, dask_ppn=None, use_shifter=False, dask_worker_plugin=None):
+    def submit_dask_tasks(self, block=True, dask_nodes=1, dask_ppn=None, use_shifter=False, dask_worker_plugin=None, dask_worker_per_gpu=False):
         """Launch tasks in *queued_tasks* using dask.
 
         :param block: Unused, this will always return after tasks are submitted
@@ -2111,6 +2111,8 @@ class TaskPool:
         :type use_shifter: bool
         :param dask_worker_plugin: If provided this will be registered as a worker plugin with the dask client
         :type dask_worker_plugin: distributed.diagnostics.plugin.WorkerPlugin
+        :param dask_worker_per_gpu: If true then a separate worker will be started for each GPU and binded to that GPU
+        :type dask_worker_per_gpu: bool
         """
         services: ServicesProxy = self.services
         self.dask_file_name = os.path.join(os.getcwd(),
@@ -2127,7 +2129,18 @@ class TaskPool:
             dask_nodes = 1
 
         nthreads = dask_ppn if dask_ppn else services.get_config_param("PROCS_PER_NODE")
+
+        task_ppn = 1
+        task_gpp = 0
+        if dask_worker_per_gpu:
+            gpn = services.get_config_param("GPUS_PER_NODE")
+            dask_nodes *= gpn
+            nthreads = max(1, nthreads // gpn)
+            task_ppn = gpn
+            task_gpp = 1
+
         nworkers = "--nworkers" if self.distributed.__version__ >= "2022.10" else "--nprocs"
+
         if use_shifter:
             self.dask_workers_tid = services.launch_task(dask_nodes, os.getcwd(),
                                                          self.shifter,
@@ -2137,7 +2150,8 @@ class TaskPool:
                                                          nworkers, 1,
                                                          "--nthreads", nthreads,
                                                          "--no-dashboard",
-                                                         task_ppn=1)
+                                                         task_ppn=task_ppn,
+                                                         task_gpp=task_gpp)
         else:
             self.dask_workers_tid = services.launch_task(dask_nodes, os.getcwd(),
                                                          self.dask_worker,
@@ -2146,7 +2160,8 @@ class TaskPool:
                                                          nworkers, 1,
                                                          "--nthreads", nthreads,
                                                          "--no-dashboard",
-                                                         task_ppn=1)
+                                                         task_ppn=task_ppn,
+                                                         task_gpp=task_gpp)
 
         self.dask_client = self.dask.distributed.Client(scheduler_file=self.dask_file_name)
 
@@ -2173,7 +2188,8 @@ class TaskPool:
         self.queued_tasks = {}
         return len(self.futures)
 
-    def submit_tasks(self, block=True, use_dask=False, dask_nodes=1, dask_ppn=None, launch_interval=0.0, use_shifter=False, dask_worker_plugin=None):
+    def submit_tasks(self, block=True, use_dask=False, dask_nodes=1, dask_ppn=None, launch_interval=0.0,
+                     use_shifter=False, dask_worker_plugin=None, dask_worker_per_gpu=False):
         """Launch tasks in *queued_tasks*.  Finished tasks are handled before
         launching new ones.  If *block* is ``True``, the number of
         tasks submitted is returned after all tasks have been launched
@@ -2197,6 +2213,8 @@ class TaskPool:
         :type use_shifter: bool
         :param dask_worker_plugin: If provided this will be registered as a worker plugin with the dask client
         :type dask_worker_plugin: distributed.diagnostics.plugin.WorkerPlugin
+        :param dask_worker_per_gpu: If true then a separate worker will be started for each GPU and binded to that GPU
+        :type dask_worker_per_gpu: bool
         """
 
         if use_dask:
@@ -2206,7 +2224,7 @@ class TaskPool:
                     self.services.error("Requested to run dask within shifter but shifter not available")
                     raise Exception("shifter not found")
                 else:
-                    return self.submit_dask_tasks(block, dask_nodes, dask_ppn, use_shifter, dask_worker_plugin)
+                    return self.submit_dask_tasks(block, dask_nodes, dask_ppn, use_shifter, dask_worker_plugin, dask_worker_per_gpu)
             elif not TaskPool.dask:
                 self.services.warning("Requested use_dask but cannot because import dask failed")
             elif not self.serial_pool:
