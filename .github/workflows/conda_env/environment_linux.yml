@@ -7,7 +7,7 @@ dependencies:
 - psutil
 - mpi4py
 - openmpi
-- dask=2022.9.2
+- dask=2022.10.0
 - dakota
 - coverage!=6.3
 - flask=2.2.2
