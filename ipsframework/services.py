@@ -2124,13 +2124,14 @@ class TaskPool:
             dask_nodes = 1
 
         nthreads = dask_ppn if dask_ppn else services.get_config_param("PROCS_PER_NODE")
+        nworkers = "--nworkers" if self.distributed.__version__ >= "2022.10" else "--nprocs"
         if use_shifter:
             self.dask_workers_tid = services.launch_task(dask_nodes, os.getcwd(),
                                                          self.shifter,
                                                          "dask-worker",
                                                          "--scheduler-file",
                                                          self.dask_file_name,
-                                                         "--nprocs", 1,
+                                                         nworkers, 1,
                                                          "--nthreads", nthreads,
                                                          "--no-dashboard",
                                                          task_ppn=1)
@@ -2139,7 +2140,7 @@ class TaskPool:
                                                          self.dask_worker,
                                                          "--scheduler-file",
                                                          self.dask_file_name,
-                                                         "--nprocs", 1,
+                                                         nworkers, 1,
                                                          "--nthreads", nthreads,
                                                          "--no-dashboard",
                                                          task_ppn=1)

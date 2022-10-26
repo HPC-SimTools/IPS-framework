@@ -219,9 +219,13 @@ def test_assign_protected_attribute(tmpdir):
     with open(str(tmpdir.join('sim.log')), 'r') as f:
         lines = f.readlines()
 
-    # python 3.10 includes the attribute name in the error message
-    assert "AttributeError: can't set attribute\n" in lines or "AttributeError: can't set attribute 'args'\n" in lines
-    assert "Exception: can't set attribute\n" in lines or "Exception: can't set attribute 'args'\n" in lines
+    # python 3.10 and 3.11 have different AttributeError messages
+    assert ("AttributeError: can't set attribute\n" in lines or
+            "AttributeError: can't set attribute 'args'\n" in lines or
+            "AttributeError: property 'args' of 'assign_protected_attribute' object has no setter\n" in lines)
+    assert ("Exception: can't set attribute\n" in lines or
+            "Exception: can't set attribute 'args'\n" in lines or
+            "Exception: property 'args' of 'assign_protected_attribute' object has no setter\n" in lines)
 
     # remove timestamp
     lines = [line[24:] for line in lines]
@@ -238,9 +242,11 @@ def test_assign_protected_attribute(tmpdir):
     assert worker_call_end_event["code"] == "DRIVER__driver"
     assert worker_call_end_event["eventtype"] == "IPS_CALL_END"
     assert not worker_call_end_event['ok']
-    # python 3.10 includes the attribute name in the error message
+    # python 3.10 and 3.11 have different error messages
     assert worker_call_end_event["comment"] in ("Error: \"can't set attribute\" Target = test@assign_protected_attribute@2:step(0)",
-                                                "Error: \"can't set attribute 'args'\" Target = test@assign_protected_attribute@2:step(0)")
+                                                "Error: \"can't set attribute 'args'\" Target = test@assign_protected_attribute@2:step(0)",
+                                                "Error: \"property 'args' of 'assign_protected_attribute' object has no setter\" "
+                                                "Target = test@assign_protected_attribute@2:step(0)")
 
     sim_end_event = events[10]
     assert sim_end_event["code"] == "Framework"
