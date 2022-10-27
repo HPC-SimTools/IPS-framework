@@ -52,7 +52,7 @@ class HelloWorker(Component):
                                    cwd, myFun, str(duration[i]),
                                    task_env=task_env)
 
-        ret_val = self.services.submit_tasks('pool', use_dask=True, dask_nodes=1, dask_ppn=10)
+        ret_val = self.services.submit_tasks('pool', use_dask=True, dask_nodes=1, dask_ppw=10)
         print('ret_val = ', ret_val)
         exit_status = self.services.get_finished_tasks('pool')
         print(exit_status)
