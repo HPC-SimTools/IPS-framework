@@ -31,7 +31,8 @@ class dask_worker(Component):
         ret_val = self.services.submit_tasks('pool',
                                              use_dask=True,
                                              use_shifter=self.SHIFTER == 'True',
-                                             dask_nodes=nodes)
+                                             dask_nodes=nodes,
+                                             dask_worker_per_gpu=self.GPU == 'True')
         self.services.info('ret_val = %d', ret_val)
         exit_status = self.services.get_finished_tasks('pool')
         for i in range(total_tasks):

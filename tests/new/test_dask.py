@@ -8,16 +8,18 @@ import ipsframework
 from ipsframework import Framework
 
 
-def write_basic_config_and_platform_files(tmpdir, timeout='', logfile='', errfile='', nproc=1, exe='/bin/sleep', value='', shifter=False):
+def write_basic_config_and_platform_files(tmpdir, timeout='', logfile='', errfile='', nproc=1, exe='/bin/sleep', value='', shifter=False, gpus=0):
     platform_file = tmpdir.join('platform.conf')
 
-    platform = """MPIRUN = eval
+    platform = f"""MPIRUN = eval
 NODE_DETECTION = manual
 CORES_PER_NODE = 2
+PROCS_PER_NODE = 2
 SOCKETS_PER_NODE = 1
 NODE_ALLOCATION_MODE = shared
 HOST =
 SCRATCH =
+GPUS_PER_NODE = {gpus}
 """
 
     with open(platform_file, 'w') as f:
@@ -55,6 +57,7 @@ SIMULATION_MODE = NORMAL
     EXECUTABLE = {exe}
     VALUE = {value}
     NPROC = {nproc}
+    GPU = {bool(gpus)}
     INPUT_FILES =
     OUTPUT_FILES =
     SCRIPT =
@@ -231,7 +234,7 @@ def test_dask_fake_shifter(tmpdir, monkeypatch):
     assert lines[0].startswith('Running dask-scheduler --no-dashboard --scheduler-file')
     assert lines[0].endswith('--port 0 in shifter\n')
     assert lines[1].startswith('Running dask-worker --scheduler-file')
-    assert lines[1].endswith('1 --nthreads 0 --no-dashboard in shifter\n')
+    assert lines[1].endswith('1 --nthreads 2 --no-dashboard in shifter\n')
 
 
 def test_dask_timeout(tmpdir):
@@ -467,3 +470,85 @@ def test_dask_shifter_on_cori(tmpdir):
         assert lines[0] == f'Running {i}\n'
         assert lines[1] == 'SHIFTER_RUNTIME=1\n'
         assert lines[2].startswith("SHIFTER_IMAGEREQUEST")
+
+
+def test_dask_with_1_gpu(tmpdir):
+    pytest.importorskip("dask")
+    pytest.importorskip("distributed")
+    platform_file, config_file = write_basic_config_and_platform_files(tmpdir, gpus=1)
+
+    framework = Framework(config_file_list=[str(config_file)],
+                          log_file_name=str(tmpdir.join('ips.log')),
+                          platform_file_name=str(platform_file),
+                          debug=None,
+                          verbose_debug=None,
+                          cmd_nodes=0,
+                          cmd_ppn=0)
+
+    framework.run()
+
+    # check output log file
+    with open(str(tmpdir.join('sim.log')), 'r') as f:
+        lines = f.readlines()
+
+    # remove timestamp
+    lines = [line[24:] for line in lines]
+
+    log = "DASK__dask_worker_2 INFO     {}\n"
+    assert log.format("ret_val = 4") in lines
+
+    # task successful and return 0
+    for i in range(4):
+        assert log.format(f"task_{i} 0") in lines
+
+    # check simulation_log
+    json_files = glob.glob(str(tmpdir.join("simulation_log").join("*.json")))
+    assert len(json_files) == 1
+    with open(json_files[0], 'r') as json_file:
+        comments = [json.loads(line)['comment'].split(', ', maxsplit=5)[2:] for line in json_file.readlines()]
+
+    assert comments[10][0] == "nproc = 1 "
+    assert comments[10][1].startswith("Target = ")
+    assert "dask-worker --scheduler-file" in comments[10][1]
+    assert comments[10][1].endswith("s 1 --nthreads 2 --no-dashboard")
+
+
+def test_dask_with_2_gpus(tmpdir):
+    pytest.importorskip("dask")
+    pytest.importorskip("distributed")
+    platform_file, config_file = write_basic_config_and_platform_files(tmpdir, gpus=2)
+
+    framework = Framework(config_file_list=[str(config_file)],
+                          log_file_name=str(tmpdir.join('ips.log')),
+                          platform_file_name=str(platform_file),
+                          debug=None,
+                          verbose_debug=None,
+                          cmd_nodes=0,
+                          cmd_ppn=0)
+
+    framework.run()
+
+    # check output log file
+    with open(str(tmpdir.join('sim.log')), 'r') as f:
+        lines = f.readlines()
+
+    # remove timestamp
+    lines = [line[24:] for line in lines]
+
+    log = "DASK__dask_worker_2 INFO     {}\n"
+    assert log.format("ret_val = 4") in lines
+
+    # task successful and return 0
+    for i in range(4):
+        assert log.format(f"task_{i} 0") in lines
+
+    # check simulation_log
+    json_files = glob.glob(str(tmpdir.join("simulation_log").join("*.json")))
+    assert len(json_files) == 1
+    with open(json_files[0], 'r') as json_file:
+        comments = [json.loads(line)['comment'].split(', ', maxsplit=5)[2:] for line in json_file.readlines()]
+
+    assert comments[10][0] == "nproc = 2 "
+    assert comments[10][1].startswith("Target = ")
+    assert "dask-worker --scheduler-file" in comments[10][1]
+    assert comments[10][1].endswith("s 1 --nthreads 1 --no-dashboard")

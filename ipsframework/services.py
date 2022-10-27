@@ -2139,7 +2139,8 @@ class TaskPool:
             task_ppn = gpn
             task_gpp = 1
 
-        nworkers = "--nworkers" if self.distributed.__version__ >= "2022.10" else "--nprocs"
+        # --nprocs was removed in version 2022.10.0 and replaced with --nworkers
+        nworkers = "--nworkers" if tuple(map(int, self.distributed.__version__.split('.'))) >= (2022, 10, 0) else "--nprocs"
 
         if use_shifter:
             self.dask_workers_tid = services.launch_task(dask_nodes, os.getcwd(),
