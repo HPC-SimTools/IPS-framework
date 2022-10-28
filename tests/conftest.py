@@ -44,17 +44,24 @@ else:
 
 def pytest_addoption(parser):
     parser.addoption("--runcori", action="store_true", default=False, help="run Cori tests")
+    parser.addoption("--runperlmutter", action="store_true", default=False, help="run Perlmutter tests")
 
 
 def pytest_configure(config):
     config.addinivalue_line("markers", "cori: mark test to only work on Cori")
+    config.addinivalue_line("markers", "perlmutter: mark test to only work on Perlmutter")
 
 
 def pytest_collection_modifyitems(config, items):
-    if config.getoption("--runcori"):
-        # --runslow given in cli: do not skip slow tests
-        return
-    skip_cori = pytest.mark.skip(reason="need --runcori option to run")
-    for item in items:
-        if "cori" in item.keywords:
-            item.add_marker(skip_cori)
+    if not config.getoption("--runcori"):
+        # --runcori given in cli: do not skip slow tests
+        skip_cori = pytest.mark.skip(reason="need --runcori option to run")
+        for item in items:
+            if "cori" in item.keywords:
+                item.add_marker(skip_cori)
+    if not config.getoption("--runperlmutter"):
+        # --runperlmutter given in cli: do not skip slow tests
+        skip_cori = pytest.mark.skip(reason="need --runperlmutter option to run")
+        for item in items:
+            if "perlmutter" in item.keywords:
+                item.add_marker(skip_cori)
