@@ -75,8 +75,6 @@ SIMULATION_MODE = NORMAL
 
 
 def test_dask(tmpdir):
-    pytest.importorskip("dask")
-    pytest.importorskip("distributed")
     platform_file, config_file = write_basic_config_and_platform_files(tmpdir, value=1)
 
     framework = Framework(config_file_list=[str(config_file)],
@@ -128,8 +126,6 @@ def test_dask(tmpdir):
 @pytest.mark.skipif(shutil.which('shifter') is not None,
                     reason="This tests only works if shifter doesn't exist")
 def test_dask_shifter_fail(tmpdir):
-    pytest.importorskip("dask")
-    pytest.importorskip("distributed")
     platform_file, config_file = write_basic_config_and_platform_files(tmpdir, value=1, shifter=True)
 
     framework = Framework(config_file_list=[str(config_file)],
@@ -164,8 +160,6 @@ def test_dask_shifter_fail(tmpdir):
 
 
 def test_dask_fake_shifter(tmpdir, monkeypatch):
-    pytest.importorskip("dask")
-    pytest.importorskip("distributed")
 
     shifter = tmpdir.join("shifter")
     shifter.write("#!/bin/bash\necho Running $@ in shifter >> shifter.log\n$@\n")
@@ -238,8 +232,6 @@ def test_dask_fake_shifter(tmpdir, monkeypatch):
 
 
 def test_dask_timeout(tmpdir):
-    pytest.importorskip("dask")
-    pytest.importorskip("distributed")
     platform_file, config_file = write_basic_config_and_platform_files(tmpdir, timeout=1, value=100)
 
     framework = Framework(config_file_list=[str(config_file)],
@@ -289,8 +281,6 @@ def test_dask_timeout(tmpdir):
 
 
 def test_dask_nproc(tmpdir):
-    pytest.importorskip("dask")
-    pytest.importorskip("distributed")
     platform_file, config_file = write_basic_config_and_platform_files(tmpdir, nproc=2, value=1)
 
     # Running with NPROC=2 should prevent dask from running and revert to normal task pool
@@ -325,8 +315,6 @@ def test_dask_nproc(tmpdir):
 
 
 def test_dask_logfile(tmpdir):
-    pytest.importorskip("dask")
-    pytest.importorskip("distributed")
 
     exe = tmpdir.join("stdouterr_write.sh")
     exe.write("#!/bin/bash\necho Running $1\n>&2 echo ERROR $1\n")
@@ -371,8 +359,6 @@ def test_dask_logfile(tmpdir):
 
 
 def test_dask_logfile_errfile(tmpdir):
-    pytest.importorskip("dask")
-    pytest.importorskip("distributed")
 
     exe = tmpdir.join("stdouterr_write.sh")
     exe.write("#!/bin/bash\necho Running $1\n>&2 echo ERROR $1\n")
@@ -473,8 +459,6 @@ def test_dask_shifter_on_cori(tmpdir):
 
 
 def test_dask_with_1_gpu(tmpdir):
-    pytest.importorskip("dask")
-    pytest.importorskip("distributed")
     platform_file, config_file = write_basic_config_and_platform_files(tmpdir, gpus=1)
 
     framework = Framework(config_file_list=[str(config_file)],
@@ -514,8 +498,6 @@ def test_dask_with_1_gpu(tmpdir):
 
 
 def test_dask_with_2_gpus(tmpdir):
-    pytest.importorskip("dask")
-    pytest.importorskip("distributed")
     platform_file, config_file = write_basic_config_and_platform_files(tmpdir, gpus=2)
 
     framework = Framework(config_file_list=[str(config_file)],

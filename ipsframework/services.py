@@ -2229,15 +2229,15 @@ class TaskPool:
         """
 
         if use_dask:
-            if TaskPool.dask and self.serial_pool:
+            if TaskPool.dask and TaskPool.distributed and self.serial_pool:
                 self.dask_pool = True
                 if use_shifter and not self.shifter:
                     self.services.error("Requested to run dask within shifter but shifter not available")
-                    raise Exception("shifter not found")
+                    raise RuntimeError("shifter not found")
                 else:
                     return self.submit_dask_tasks(block, dask_nodes, dask_ppw, use_shifter, dask_worker_plugin, dask_worker_per_gpu)
-            elif not TaskPool.dask:
-                self.services.warning("Requested use_dask but cannot because import dask failed")
+            elif not TaskPool.dask or not TaskPool.distributed:
+                raise RuntimeError("Requested use_dask but cannot because import dask or distributed failed")
             elif not self.serial_pool:
                 self.services.warning("Requested use_dask but cannot because multiple processors requested")
 

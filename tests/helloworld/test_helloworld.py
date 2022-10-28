@@ -1,7 +1,6 @@
 import os
 import shutil
 import json
-import pytest
 from ipsframework import Framework, TaskPool
 
 
@@ -211,8 +210,6 @@ def test_helloworld_task_pool(tmpdir, capfd):
 
 
 def test_helloworld_task_pool_dask(tmpdir, capfd):
-    pytest.importorskip("dask")
-    pytest.importorskip("distributed")
     assert TaskPool.dask is not None
 
     data_dir = os.path.dirname(__file__)
