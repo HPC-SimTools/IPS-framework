@@ -225,6 +225,7 @@ class ConfigurationManager:
         self.platform_conf['PROCS_PER_NODE'] = int(self.platform_conf.get('PROCS_PER_NODE', 0))
         self.platform_conf['CORES_PER_NODE'] = int(self.platform_conf.get('CORES_PER_NODE', 0))
         self.platform_conf['SOCKETS_PER_NODE'] = int(self.platform_conf.get('SOCKETS_PER_NODE', 0))
+        self.platform_conf['GPUS_PER_NODE'] = int(self.platform_conf.get('GPUS_PER_NODE', 0))
         self.platform_conf['USE_ACCURATE_NODES'] = use_accurate_nodes
         self.platform_conf['MPIRUN_VERSION'] = mpirun_version
 

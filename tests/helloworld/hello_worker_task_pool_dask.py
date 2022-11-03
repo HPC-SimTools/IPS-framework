@@ -43,7 +43,7 @@ class HelloWorker(Component):
 
         worker_plugin = DaskWorkerPlugin()
 
-        ret_val = self.services.submit_tasks('pool', use_dask=True, dask_nodes=1, dask_ppn=10,
+        ret_val = self.services.submit_tasks('pool', use_dask=True, dask_nodes=1, dask_ppw=10,
                                              dask_worker_plugin=worker_plugin)
         print('ret_val = ', ret_val)
         exit_status = self.services.get_finished_tasks('pool')

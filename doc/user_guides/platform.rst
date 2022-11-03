@@ -423,6 +423,9 @@ The platform configuration file contains platform specific information that the 
 	one task can share a node [#nochange]_.  Simulations,
 	components and tasks can set their node usage allocation
 	policies in the configuration file and on task launch.
+**GPUS_PER_NODE**
+        number of GPUs per node, used when validating the launch task
+	commands with ``task_gpp`` set, see :meth:`~ipsframework.services.ServicesProxy.launch_task`.
 
 
 .. [#nochange] This value should not change unless the machine is

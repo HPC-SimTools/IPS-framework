@@ -9,6 +9,7 @@ from math import ceil
 from .ipsExceptions import (InsufficientResourcesException,
                             BadResourceRequestException,
                             ResourceRequestMismatchException,
+                            GPUResourceRequestMismatchException,
                             ResourceRequestUnequalPartitioningException)
 from .ips_es_spec import eventManager
 from .resourceHelper import getResourceList
@@ -64,6 +65,7 @@ class ResourceManager:
         # other stuff
         self.max_ppn = 1   # the ppn for the whole submission (max ppn allowed by *software*)
         self.ppn = 1  # platform config ppn for the whole IPS
+        self.gpn = 0
         self.myTopic = None
         self.service_methods = ['get_allocation', 'release_allocation']
 
@@ -176,6 +178,11 @@ class ResourceManager:
                 self.sockets_per_node = 1
                 self.cores_per_socket = self.cores_per_node
 
+            # -------------------------------
+            # set gpp
+            # -------------------------------
+            self.gpn = int(self.CM.get_platform_parameter('GPUS_PER_NODE'))
+
         # -------------------------------
         # populate nodes
         # -------------------------------
@@ -260,7 +267,7 @@ class ResourceManager:
     # RM getAllocation
     # pylint: disable=inconsistent-return-statements
     def get_allocation(self, comp_id, nproc, task_id,
-                       whole_nodes, whole_socks, task_ppn=0, task_cpp=0):
+                       whole_nodes, whole_socks, task_ppn=0, task_cpp=0, task_gpp=0):
         """
         Traverse available nodes to return:
 
@@ -358,6 +365,11 @@ class ResourceManager:
                                                                   self.total_cores,
                                                                   self.max_ppn)
         else:
+            if not self.check_gpus(ppn, task_gpp):
+                raise GPUResourceRequestMismatchException(comp_id, task_id,
+                                                          ppn, task_gpp,
+                                                          self.gpn)
+
             try:
                 self.processes += nproc
                 cores_allocated = 0
@@ -593,6 +605,9 @@ class ResourceManager:
             return False, "bad"
         else:
             return False, "mismatch"
+
+    def check_gpus(self, ppn, task_gpp):
+        return ppn * task_gpp <= self.gpn
 
     # RM releaseAllocation
     def release_allocation(self, task_id, status):

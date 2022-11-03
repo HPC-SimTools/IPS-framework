@@ -64,6 +64,8 @@ setup(
     zip_safe=True,
     install_requires=[
         'urllib3',
-        'configobj'
+        'configobj',
+        'dask',
+        'distributed'
     ]
 )

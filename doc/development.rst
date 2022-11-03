@@ -169,6 +169,38 @@ An example batch script for running the unit tests is:
 Then check the output in ``pytest.out`` to see that all the tests
 passed.
 
+.. _perlmutter-tests :
+
+Perlmutter only tests
+~~~~~~~~~~~~~~~~~~~~~
+
+The are some tests that only run on Perlmutter at NERSC and these are
+not run as part of the :ref:`CI <continuous integration>` and must be
+run manually. To run those test you need to add the option
+``--runperlmutter`` to the ``pytest``.There are also tests for the
+srun commands built with different ``task_ppn``, ``task_cpp`` and
+``task_gpp`` options in
+:meth:`~ipsframework.services.ServicesProxy.launch_task`.
+
+
+An example batch script for running the unit tests is:
+
+.. code-block:: bash
+
+  #!/bin/bash
+  #SBATCH -p debug
+  #SBATCH --nodes=1
+  #SBATCH -t 00:20:00
+  #SBATCH -C gpu
+  #SBATCH -J pytest
+  #SBATCH -e pytest.err
+  #SBATCH -o pytest.out
+  module load python
+  python -m pytest --runperlmutter
+
+Then check the output in ``pytest.out`` to see that all the tests
+passed.
+
 Writing Tests
 ~~~~~~~~~~~~~
 
@@ -258,4 +290,4 @@ release before the full release to allow feedback from users. Patch
 versions will not normally have an release candidate.
 
 Before a release is finalized the :ref:`Cori only tests<cori-tests>`
-should be run.
+and :ref:`Perlmutter only tests<perlmutter-tests>` should be run.

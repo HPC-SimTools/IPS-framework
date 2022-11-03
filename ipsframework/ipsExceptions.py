@@ -74,6 +74,26 @@ class ResourceRequestMismatchException(Exception):
         return s
 
 
+class GPUResourceRequestMismatchException(Exception):
+    """ Exception raised by the resource manager when it is possible to launch
+    the requested number of GPUs per task
+    """
+
+    def __init__(self, caller_id, tid, ppn, gpp, max_gpp):
+        super().__init__()
+        self.caller_id = caller_id
+        self.task_id = tid
+        self.ppn = ppn
+        self.gpp = gpp
+        self.max_gpp = max_gpp
+        self.args = (caller_id, tid, ppn, gpp, max_gpp)
+
+    def __str__(self):
+        s = "component %s requested %d processes per node with %d GPUs per process, which is greater than the available %d GPUS_PER_NODE" % (
+            self.caller_id, self.ppn, self.gpp, self.max_gpp)
+        return s
+
+
 class ResourceRequestUnequalPartitioningException(Exception):
     """Exception raised by the resource manager when it is possible to
     launch the requested number of processes, but the requested number
