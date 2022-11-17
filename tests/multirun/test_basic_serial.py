@@ -139,11 +139,8 @@ def test_basic_serial_multi(tmpdir, capfd):
 
     # check files copied and created
     for no in ["1", "2"]:
-        # This should also work for 2
-        if no == "2":
-            continue
 
-        driver_files = [os.path.basename(f) for f in glob.glob(str(tmpdir.join(f"test_basic_serial{no}_0/work/drivers_testing_basic_serial1_*/*")))]
+        driver_files = [os.path.basename(f) for f in glob.glob(str(tmpdir.join(f"test_basic_serial{no}_0/work/drivers_testing_basic_serial*_*/*")))]
         for infile in ["file1", "ofile1", "ofile2", "sfile1", "sfile2"]:
             assert infile in driver_files
 
@@ -151,10 +148,16 @@ def test_basic_serial_multi(tmpdir, capfd):
         medium_worker_files = [os.path.basename(f) for f in glob.glob(str(tmpdir.join(f"test_basic_serial{no}_0/work/workers_testing_medium_worker_*/*")))]
         large_worker_files = [os.path.basename(f) for f in glob.glob(str(tmpdir.join(f"test_basic_serial{no}_0/work/workers_testing_large_worker_*/*")))]
 
-        for outfile in ["my_out3.50", "my_out3.60", "my_out3.70"]:
-            assert outfile in small_worker_files
-            assert outfile in medium_worker_files
-            assert outfile in large_worker_files
+        if no == "1":
+            for outfile in ["my_out3.50", "my_out3.60", "my_out3.70"]:
+                assert outfile in small_worker_files
+                assert outfile in medium_worker_files
+                assert outfile in large_worker_files
+        else:
+            for outfile in ["my_out3.40", "my_out3.50", "my_out3.60"]:
+                assert outfile in small_worker_files
+                assert outfile in medium_worker_files
+                assert outfile in large_worker_files
 
     # check contents of my_out files
     for outfile in ["my_out3.50", "my_out3.60", "my_out3.70"]:

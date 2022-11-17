@@ -6,18 +6,6 @@ from ipsframework import Component
 from ipsframework import ipsutil
 
 
-def catch_and_go(func_to_decorate):
-    def new_func(*original_args, **original_kwargs):
-        # Do whatever else you want here
-        obj = original_args[0]
-        try:
-            func_to_decorate(*original_args, **original_kwargs)
-        except Exception as e:
-            obj.services.exception("Exception in call to %s:%s" % (obj.__class__.__name__, func_to_decorate.__name__))
-            print(e)
-    return new_func
-
-
 class runspaceInitComponent(Component):
     """
     Framework component to manage runspace initialization, container file
@@ -34,33 +22,16 @@ class runspaceInitComponent(Component):
         self.simRootDir = services.get_config_param('SIM_ROOT')
         self.cwd = self.config['OS_CWD']
 
-    @catch_and_go
     def init(self, timestamp=0.0, **keywords):
         """
         Creates base directory, copies IPS and FacetsComposer input files.
         """
 
-        services = self.services
-
-        try:
-            os.chdir(self.cwd)
-        except OSError:
-            self.services.debug('Working directory %s does not exist - this is impossibile',
-                                self.cwd)
-            raise
-
         if not self.simRootDir.startswith("/"):
             self.simRootDir = os.path.join(self.cwd, self.simRootDir)
 
-        # try making the simulation root directory
-        try:
-            os.makedirs(self.simRootDir, exist_ok=True)
-        except OSError as oserr:
-            self.services.exception('Error creating directory %s : %s',
-                                    self.simRootDir, oserr.strerror)
-
-        config_files = services.fwk.config_file_list
-        platform_file = services.fwk.platform_file_name
+        config_files = self.services.fwk.config_file_list
+        platform_file = self.services.fwk.platform_file_name
 
         # Determine where the file is...if there's not an absolute path specified,
         # assume that it was in the directory that the IPS was launched from.
@@ -79,29 +50,19 @@ class runspaceInitComponent(Component):
         ipsutil.copyFiles(conf_file_loc, config_files, self.simRootDir)
         ipsutil.copyFiles(plat_file_loc, platform_file, self.simRootDir)
 
-    @catch_and_go
     def step(self, timestamp=0.0, **keywords):
         """
         Copies individual subcomponent input files into working subdirectories.
         """
 
-        services = self.services
-
-        # sim_comps = services.fwk.config_manager.get_component_map()
-        sim_comps = services.fwk.config_manager.get_all_simulation_components_map()
-        registry = services.fwk.comp_registry
+        sim_comps = self.services.fwk.config_manager.get_all_simulation_components_map()
+        sim_roots = self.services.fwk.config_manager.get_all_simulation_sim_root()
+        registry = self.services.fwk.comp_registry
 
         simulation_setup = os.path.join(self.simRootDir, 'simulation_setup')
 
-        # make the simulation_setup directory for scripts
-        try:
-            os.makedirs(simulation_setup, exist_ok=True)
-        except OSError as oserr:
-            self.services.exception('Error creating directory %s : %s',
-                                    simulation_setup, oserr.strerror)
-
         # for each simulation component
-        for comp_list in sim_comps.values():
+        for name, comp_list in sim_comps.items():
             # for each component_id in the list of components
             for comp_id in comp_list:
                 # build the work directory name
@@ -111,7 +72,7 @@ class runspaceInitComponent(Component):
                                          str(comp_id.get_seq_num())])
 
                 # compose the workdir name
-                workdir = os.path.join(self.simRootDir, 'work', full_comp_id)
+                workdir = os.path.join(sim_roots[name], 'work', full_comp_id)
 
                 # make the working directory
                 try:
@@ -130,21 +91,6 @@ class runspaceInitComponent(Component):
                     print('Error copying input files for initialization')
                     raise
 
-                # This is a bit tricky because we want to look either in the same
-                # place as the input files or the data_tree root
-                if 'DATA_FILES' in comp_conf:
-                    filesCopied = False
-                    if 'DATA_TREE_ROOT' in comp_conf:
-                        dtrdir = os.path.abspath(comp_conf['DATA_TREE_ROOT'])
-                        if os.path.exists(os.path.join(dtrdir, comp_conf['DATA_FILES'][0])):
-                            ipsutil.copyFiles(dtrdir, os.path.basename(comp_conf['DATA_FILES']),
-                                              workdir)
-                            filesCopied = True
-                    if not filesCopied:
-                        ipsutil.copyFiles(os.path.abspath(comp_conf['INPUT_DIR']),
-                                          os.path.basename(comp_conf['DATA_FILES']),
-                                          workdir)
-
                 # copy the component's script to the simulation_setup directory
                 if comp_conf['SCRIPT']:
                     if os.path.isabs(comp_conf['SCRIPT']):
@@ -155,14 +101,3 @@ class runspaceInitComponent(Component):
                         ipsutil.copyFiles(comp_conf['BIN_DIR'],
                                           [os.path.basename(comp_conf['SCRIPT'])],
                                           simulation_setup)
-
-            # get the working directory from the runspaceInitComponent
-            workdir = services.get_working_dir()
-
-            # create the working directory for this component
-            try:
-                os.makedirs(workdir, exist_ok=True)
-            except OSError as oserr:
-                self.services.exception('Error creating directory %s : %s',
-                                        workdir, oserr.strerror)
-                raise
