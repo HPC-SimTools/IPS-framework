@@ -443,11 +443,6 @@ class ConfigurationManager:
             if 'IPS_ROOT' not in comp_conf:
                 if 'IPS_ROOT' in sim_conf:
                     comp_conf['IPS_ROOT'] = sim_conf['IPS_ROOT']
-            if 'DATA_TREE_ROOT' not in comp_conf:
-                if 'DATA_TREE_ROOT' in sim_conf:
-                    comp_conf['DATA_TREE_ROOT'] = sim_conf['DATA_TREE_ROOT']
-                else:
-                    comp_conf['DATA_TREE_ROOT'] = sim_data.conf_file_dir
             if 'BIN_DIR' not in comp_conf:
                 if 'BIN_DIR' in sim_conf:
                     comp_conf['BIN_DIR'] = sim_conf['BIN_DIR']
@@ -551,6 +546,10 @@ class ConfigurationManager:
         sim_comps = {name: sim_map.all_comps[:] for name, sim_map in self.sim_map.items()}
         del sim_comps[self.fwk_sim_name]
         return sim_comps
+
+    def get_all_simulation_sim_root(self):
+        sim_roots = {name: sim_map.sim_root for name, sim_map in self.sim_map.items()}
+        return sim_roots
 
     def get_framework_components(self):
         """
