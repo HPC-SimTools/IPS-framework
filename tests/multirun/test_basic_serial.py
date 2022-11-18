@@ -1,6 +1,7 @@
 import os
 import shutil
 import glob
+import json
 import pytest
 from ipsframework import Framework
 
@@ -203,6 +204,26 @@ def test_basic_serial_multi(tmpdir, capfd):
     for worker in ["small_worker_6", "medium_worker_7", "large_worker_8"]:
         for timestamp in ["3.40", "3.50", "3.60"]:
             assert f'workers_testing_{worker} INFO     Stepping Worker timestamp={timestamp}\n' in lines
+
+    # check that the parent_portal_runid is correctly set
+    serial1_json_files = glob.glob(str(tmpdir.join("test_basic_serial1_0").join("simulation_log").join("*.json")))
+    assert len(serial1_json_files) == 1
+    with open(serial1_json_files[0], 'r') as json_file:
+        serial1_lines = json_file.readlines()
+
+    serial1_IPS_START = json.loads(serial1_lines[0])
+    assert serial1_IPS_START['parent_portal_runid'] is None
+    serial1_portal_runid = serial1_IPS_START['portal_runid']
+
+    serial2_json_files = glob.glob(str(tmpdir.join("test_basic_serial2_0").join("simulation_log").join("*.json")))
+    assert len(serial2_json_files) == 1
+    with open(serial2_json_files[0], 'r') as json_file:
+        serial2_lines = json_file.readlines()
+
+    serial2_IPS_START = json.loads(serial2_lines[0])
+    assert serial2_IPS_START['parent_portal_runid'] == serial1_portal_runid
+    assert serial2_IPS_START['portal_runid'] is not None
+    assert serial2_IPS_START['portal_runid'] != serial1_portal_runid
 
 
 @pytest.mark.skipif(not shutil.which('mpirun'), reason="requires mpirun")

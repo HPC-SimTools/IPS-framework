@@ -93,6 +93,7 @@ class PortalBridge(Component):
             self.counter = 0
             self.monitor_file_name = ""
             self.portal_runid = None
+            self.parent_portal_runid = None
             self.sim_name = ''
             self.sim_root = ''
             self.monitor_file = None
@@ -126,6 +127,7 @@ class PortalBridge(Component):
         self.last_dump_time = time.time()
         self.write_to_htmldir = True
         self.html_dir = ""
+        self.first_portal_runid = None
 
     def init(self, timestamp=0.0, **keywords):
         """
@@ -222,6 +224,8 @@ class PortalBridge(Component):
             portal_data['vizurl'] = sim_data.monitor_url
 
         portal_data['portal_runid'] = sim_data.portal_runid
+        if portal_data['eventtype'] == 'IPS_START' and 'parent_portal_runid' not in portal_data:
+            portal_data['parent_portal_runid'] = sim_data.parent_portal_runid
         portal_data['seqnum'] = sim_data.counter
 
         if 'trace' in portal_data:
@@ -485,6 +489,11 @@ class PortalBridge(Component):
         except Exception:
             self.services.error('Simulation %s is not accessible', sim_name)
             return
+
+        if self.first_portal_runid:
+            sim_data.parent_portal_runid = self.first_portal_runid
+        else:
+            self.first_portal_runid = sim_data.portal_runid
 
         if sim_data.sim_root.strip() == '.':
             sim_data.sim_root = os.environ['IPS_INITIAL_CWD']
