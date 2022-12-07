@@ -12,3 +12,4 @@ class HelloWorker(Component):
     def step(self, timestamp=0.0, **keywords):
         print('Hello from HelloWorker - sub')
         self.services.info('Hello from HelloWorker - sub')
+        self.services.send_portal_event(event_comment='Hello from HelloWorker - sub')
