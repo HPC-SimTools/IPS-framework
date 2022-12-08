@@ -1760,7 +1760,9 @@ class ServicesProxy:
         Update time stamp on portal.
         """
         event_data = {}
-        event_data['sim_name'] = self.sim_name
+        event_data['sim_name'] = self.sim_conf['__PORTAL_SIM_NAME']
+        event_data['real_sim_name'] = self.sim_name
+
         portal_data = {}
         portal_data['phystimestamp'] = new_time_stamp
         portal_data['eventtype'] = 'PORTALBRIDGE_UPDATE_TIMESTAMP'

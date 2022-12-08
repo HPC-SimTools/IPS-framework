@@ -1,5 +1,7 @@
 import os
 import shutil
+import json
+import glob
 from ipsframework import Framework
 
 
@@ -98,3 +100,26 @@ def test_hello_world_nested(tmpdir, capfd):
         lines = f.readlines()
 
     assert lines[0] == "SUB INPUT FILE\n"
+
+    # check the simulation log json
+    json_files = glob.glob(str(tmpdir.join("hello_example_SUPER").join("simulation_log").join("*.json")))
+    assert len(json_files) == 1
+    with open(json_files[0], 'r') as json_file:
+        events = [json.loads(event) for event in json_file.readlines()]
+
+    assert len(events) == 25
+    assert events[-1]['eventtype'] == "IPS_END"
+
+    codes = set(event["code"] for event in events)
+
+    # Check that the sub wortflow writes to the same json file
+    assert len(codes) == 5
+    assert "Framework" in codes
+    assert "DRIVERS_HELLO_HelloDriver" in codes
+    assert "WORKERS_HELLO_HelloWorker" in codes
+    assert "DRIVERS_HELLOSUB_HelloDriver" in codes
+    assert "WORKERSSUB_HELLO_HelloWorker" in codes
+
+    # Check that phystimestamp get updated by the sub workflow
+    assert events[0]["phystimestamp"] == -1
+    assert events[-1]["phystimestamp"] == 1
