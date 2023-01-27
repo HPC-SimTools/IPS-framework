@@ -67,7 +67,10 @@ be found `here
 
 An option `use_shifter` has been added to
 :meth:`~ipsframework.services.ServicesProxy.submit_tasks` that will
-run the Dask scheduler and workers run inside the shifter container.
+run the Dask scheduler and workers run inside the shifter
+container. Additional arguments to be passed to shifter when launching
+dask (such as `--image` and `--module`) can be set by the
+`shifter_args` parameters,
 
 You will need to match the versions of Dask within the shifter
 container to the version running outside. This is because the Dask

@@ -634,6 +634,7 @@ class ServicesProxy:
               access to any sockets of nodes it is assigned.  If ``False``,
               the task may be assigned sockets that other tasks are using or
               may use.
+            * *launch_cmd_extra_args* : extra command arguments added the the MPIRUN command
 
         Return *task_id* if successful.  May raise exceptions related to
         opening the logfile, being unable to obtain enough resources to launch
@@ -684,6 +685,7 @@ class ServicesProxy:
         omp = keywords.get('omp', False)
         block = keywords.get('block', True)
         tag = keywords.get('tag', 'None')
+        launch_cmd_extra_args = keywords.get("launch_cmd_extra_args")
 
         whole_nodes = keywords.get('whole_nodes', not self.shared_nodes)
         whole_socks = keywords.get('whole_sockets', not self.shared_nodes)
@@ -694,7 +696,7 @@ class ServicesProxy:
                                           'init_task',
                                           TaskInit(int(nproc), binary_fullpath,
                                                    working_dir, int(task_ppn), task_cpp, task_gpp, block,
-                                                   omp, whole_nodes, whole_socks, args))
+                                                   omp, whole_nodes, whole_socks, args, launch_cmd_extra_args))
             (task_id, command, env_update, cores_allocated) = self._get_service_response(msg_id, block=True)
         except Exception:
             raise
@@ -788,9 +790,10 @@ class ServicesProxy:
             task_cpp = task.keywords.get('task_cpp', self.cpp)
             task_gpp = task.keywords.get('task_gpp', 0)
             omp = task.keywords.get('omp', False)
+            launch_cmd_extra_args = task.keywords.get('launch_cmd_extra_args')
             submit_dict[task_name] = TaskInit(task.nproc, task.binary,
                                               task.working_dir, task_ppn, task_cpp, task_gpp,
-                                              False, omp, wnodes, wsocks, task.args)
+                                              False, omp, wnodes, wsocks, task.args, launch_cmd_extra_args)
 
         try:
             msg_id = self._invoke_service(self.fwk.component_id,
@@ -1882,7 +1885,8 @@ class ServicesProxy:
                                   *args, keywords=keywords)
 
     def submit_tasks(self, task_pool_name, block=True, use_dask=False, dask_nodes=1,
-                     dask_ppw=None, launch_interval=0.0, use_shifter=False, dask_worker_plugin=None, dask_worker_per_gpu=False):
+                     dask_ppw=None, launch_interval=0.0, use_shifter=False, shifter_args=None,
+                     dask_worker_plugin=None, dask_worker_per_gpu=False):
         """
         Launch all unfinished tasks in task pool *task_pool_name*.  If *block* is ``True``,
         return when all tasks have been launched.  If *block* is ``False``, return when all
@@ -1894,7 +1898,9 @@ class ServicesProxy:
         start_time = time.time()
         self._send_monitor_event('IPS_TASK_POOL_BEGIN', 'task_pool = %s ' % task_pool_name)
         task_pool: TaskPool = self.task_pools[task_pool_name]
-        retval = task_pool.submit_tasks(block, use_dask, dask_nodes, dask_ppw, launch_interval, use_shifter, dask_worker_plugin, dask_worker_per_gpu)
+        retval = task_pool.submit_tasks(block, use_dask, dask_nodes, dask_ppw, launch_interval,
+                                        use_shifter, shifter_args,
+                                        dask_worker_plugin, dask_worker_per_gpu)
         elapsed_time = time.time() - start_time
         self._send_monitor_event('IPS_TASK_POOL_END', 'task_pool = %s  elapsed time = %.2f S' %
                                  (task_pool_name, elapsed_time),
@@ -2100,7 +2106,8 @@ class TaskPool:
         self.queued_tasks[task_name] = Task(task_name, nproc, working_dir, binary_fullpath, *args,
                                             **keywords["keywords"])
 
-    def submit_dask_tasks(self, block=True, dask_nodes=1, dask_ppw=None, use_shifter=False, dask_worker_plugin=None, dask_worker_per_gpu=False):
+    def submit_dask_tasks(self, block=True, dask_nodes=1, dask_ppw=None, use_shifter=False, shifter_args=None,
+                          dask_worker_plugin=None, dask_worker_per_gpu=False):
         """Launch tasks in *queued_tasks* using dask.
 
         One dask worker will be started for each node unless
@@ -2125,9 +2132,15 @@ class TaskPool:
         services: ServicesProxy = self.services
         self.dask_file_name = os.path.join(os.getcwd(),
                                            f".{self.name}_dask_shed_{time.time()}.json")
+
         if use_shifter:
-            self.dask_sched_pid = subprocess.Popen([self.shifter, "dask-scheduler", "--no-dashboard",
-                                                    "--scheduler-file", self.dask_file_name, "--port", "0"]).pid
+            if shifter_args:
+                self.dask_sched_pid = subprocess.Popen([self.shifter, shifter_args, "dask-scheduler", "--no-dashboard",
+                                                        "--scheduler-file", self.dask_file_name, "--port", "0"]).pid
+            else:
+                self.dask_sched_pid = subprocess.Popen([self.shifter, "dask-scheduler", "--no-dashboard",
+                                                        "--scheduler-file", self.dask_file_name, "--port", "0"]).pid
+
         else:
             self.dask_sched_pid = subprocess.Popen([self.dask_scheduler, "--no-dashboard",
                                                     "--scheduler-file", self.dask_file_name, "--port", "0"]).pid
@@ -2151,16 +2164,29 @@ class TaskPool:
         nworkers = "--nworkers" if tuple(map(int, self.distributed.__version__.split('.'))) >= (2022, 10, 0) else "--nprocs"
 
         if use_shifter:
-            self.dask_workers_tid = services.launch_task(dask_nodes, os.getcwd(),
-                                                         self.shifter,
-                                                         "dask-worker",
-                                                         "--scheduler-file",
-                                                         self.dask_file_name,
-                                                         nworkers, 1,
-                                                         "--nthreads", nthreads,
-                                                         "--no-dashboard",
-                                                         task_ppn=task_ppn,
-                                                         task_gpp=task_gpp)
+            if shifter_args:
+                self.dask_workers_tid = services.launch_task(dask_nodes, os.getcwd(),
+                                                             self.shifter,
+                                                             shifter_args,
+                                                             "dask-worker",
+                                                             "--scheduler-file",
+                                                             self.dask_file_name,
+                                                             nworkers, 1,
+                                                             "--nthreads", nthreads,
+                                                             "--no-dashboard",
+                                                             task_ppn=task_ppn,
+                                                             task_gpp=task_gpp)
+            else:
+                self.dask_workers_tid = services.launch_task(dask_nodes, os.getcwd(),
+                                                             self.shifter,
+                                                             "dask-worker",
+                                                             "--scheduler-file",
+                                                             self.dask_file_name,
+                                                             nworkers, 1,
+                                                             "--nthreads", nthreads,
+                                                             "--no-dashboard",
+                                                             task_ppn=task_ppn,
+                                                             task_gpp=task_gpp)
         else:
             self.dask_workers_tid = services.launch_task(dask_nodes, os.getcwd(),
                                                          self.dask_worker,
@@ -2198,7 +2224,7 @@ class TaskPool:
         return len(self.futures)
 
     def submit_tasks(self, block=True, use_dask=False, dask_nodes=1, dask_ppw=None, launch_interval=0.0,
-                     use_shifter=False, dask_worker_plugin=None, dask_worker_per_gpu=False):
+                     use_shifter=False, shifter_args=None, dask_worker_plugin=None, dask_worker_per_gpu=False):
         """Launch tasks in *queued_tasks*.  Finished tasks are handled before
         launching new ones.  If *block* is ``True``, the number of
         tasks submitted is returned after all tasks have been launched
@@ -2223,6 +2249,8 @@ class TaskPool:
         :type launch_internal: float
         :param use_shifter:  Option to launch dask scheduler and workers in shifter container
         :type use_shifter: bool
+        :param shifter_args:  Optional arguments added to shifter when launching dask scheduler and workers
+        :type shifter_args: str
         :param dask_worker_plugin: If provided this will be registered as a worker plugin with the dask client
         :type dask_worker_plugin: distributed.diagnostics.plugin.WorkerPlugin
         :param dask_worker_per_gpu: If true then a separate worker will be started for each GPU and binded to that GPU
@@ -2237,7 +2265,7 @@ class TaskPool:
                     self.services.error("Requested to run dask within shifter but shifter not available")
                     raise RuntimeError("shifter not found")
                 else:
-                    return self.submit_dask_tasks(block, dask_nodes, dask_ppw, use_shifter, dask_worker_plugin, dask_worker_per_gpu)
+                    return self.submit_dask_tasks(block, dask_nodes, dask_ppw, use_shifter, shifter_args, dask_worker_plugin, dask_worker_per_gpu)
             elif not TaskPool.dask or not TaskPool.distributed:
                 raise RuntimeError("Requested use_dask but cannot because import dask or distributed failed")
             elif not self.serial_pool:
