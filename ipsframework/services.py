@@ -634,6 +634,7 @@ class ServicesProxy:
               access to any sockets of nodes it is assigned.  If ``False``,
               the task may be assigned sockets that other tasks are using or
               may use.
+            * *launch_cmd_extra_args* : extra command arguments added the the MPIRUN command
 
         Return *task_id* if successful.  May raise exceptions related to
         opening the logfile, being unable to obtain enough resources to launch
@@ -684,6 +685,7 @@ class ServicesProxy:
         omp = keywords.get('omp', False)
         block = keywords.get('block', True)
         tag = keywords.get('tag', 'None')
+        launch_cmd_extra_args = keywords.get("launch_cmd_extra_args")
 
         whole_nodes = keywords.get('whole_nodes', not self.shared_nodes)
         whole_socks = keywords.get('whole_sockets', not self.shared_nodes)
@@ -694,7 +696,7 @@ class ServicesProxy:
                                           'init_task',
                                           TaskInit(int(nproc), binary_fullpath,
                                                    working_dir, int(task_ppn), task_cpp, task_gpp, block,
-                                                   omp, whole_nodes, whole_socks, args))
+                                                   omp, whole_nodes, whole_socks, args, launch_cmd_extra_args))
             (task_id, command, env_update, cores_allocated) = self._get_service_response(msg_id, block=True)
         except Exception:
             raise
@@ -788,9 +790,10 @@ class ServicesProxy:
             task_cpp = task.keywords.get('task_cpp', self.cpp)
             task_gpp = task.keywords.get('task_gpp', 0)
             omp = task.keywords.get('omp', False)
+            launch_cmd_extra_args = task.keywords.get('launch_cmd_extra_args')
             submit_dict[task_name] = TaskInit(task.nproc, task.binary,
                                               task.working_dir, task_ppn, task_cpp, task_gpp,
-                                              False, omp, wnodes, wsocks, task.args)
+                                              False, omp, wnodes, wsocks, task.args, launch_cmd_extra_args)
 
         try:
             msg_id = self._invoke_service(self.fwk.component_id,

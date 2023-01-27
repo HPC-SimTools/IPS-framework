@@ -14,7 +14,7 @@ from .ipsExceptions import BlockedMessageException, \
 from .ipsutil import which
 
 TaskInit = namedtuple("TaskInit",
-                      ["nproc", "binary", "working_dir", "tppn", "tcpp", "tgpp", "block", "omp", "wnodes", "wsocks", "cmd_args"])
+                      ["nproc", "binary", "working_dir", "tppn", "tcpp", "tgpp", "block", "omp", "wnodes", "wsocks", "cmd_args", "launch_cmd_extra_args"])
 
 
 class TaskManager:
@@ -223,7 +223,8 @@ class TaskManager:
 
         try:
             return self._init_task(caller_id, int(taskInit.nproc), taskInit.binary, taskInit.working_dir,
-                                   int(taskInit.tppn), taskInit.tcpp, taskInit.omp, taskInit.tgpp, taskInit.wnodes, taskInit.wsocks, taskInit.cmd_args)
+                                   int(taskInit.tppn), taskInit.tcpp, taskInit.omp, taskInit.tgpp, taskInit.wnodes, taskInit.wsocks,
+                                   taskInit.cmd_args, taskInit.launch_cmd_extra_args)
         except InsufficientResourcesException:
             if taskInit.block:
                 raise BlockedMessageException(init_task_msg, '***%s waiting for %d resources' %
@@ -245,7 +246,7 @@ class TaskManager:
         except Exception:
             raise
 
-    def _init_task(self, caller_id, nproc, binary, working_dir, tppn, tcpp, omp, tgpp, wnodes, wsocks, cmd_args):
+    def _init_task(self, caller_id, nproc, binary, working_dir, tppn, tcpp, omp, tgpp, wnodes, wsocks, cmd_args, launch_cmd_extra_args):
         # handle for task related things
         task_id = self.get_task_id()
 
@@ -275,7 +276,8 @@ class TaskManager:
                                                   allocation.cpp,
                                                   omp,
                                                   tgpp,
-                                                  allocation.corelist)
+                                                  allocation.corelist,
+                                                  launch_cmd_extra_args)
 
         self.curr_task_table[task_id] = {'component': caller_id,
                                          'status': 'init_task',
@@ -289,7 +291,8 @@ class TaskManager:
 
     def build_launch_cmd(self, nproc, binary, cmd_args, working_dir, ppn,
                          max_ppn, nodes, accurateNodes, partial_nodes,
-                         task_id, cpp=0, omp=False, gpp=0, core_list=''):
+                         task_id, cpp=0, omp=False, gpp=0, core_list='',
+                         launch_cmd_extra_args=None):
         """
         Construct task launch command to be executed by the component.
 
@@ -529,6 +532,8 @@ class TaskManager:
             raise RuntimeError("invalid task launch command.")
 
         cmd_args = ' '.join(cmd_args)
+        if launch_cmd_extra_args:
+            cmd = ' '.join([cmd, launch_cmd_extra_args])
         cmd = ' '.join([cmd, binary, cmd_args])
 
         return cmd, env_update
@@ -555,7 +560,7 @@ class TaskManager:
             try:
                 ret_dict[task_name] = self._init_task(caller_id, taskInit.nproc, taskInit.binary, taskInit.working_dir,
                                                       taskInit.tppn, taskInit.tcpp, taskInit.omp, taskInit.tgpp, taskInit.wnodes,
-                                                      taskInit.wsocks, taskInit.cmd_args)
+                                                      taskInit.wsocks, taskInit.cmd_args, taskInit.launch_cmd_extra_args)
             except InsufficientResourcesException:
                 continue
             except BadResourceRequestException as e:
