@@ -6,4 +6,4 @@ dependencies:
 - pytest-timeout
 - psutil
 - coverage!=6.3
-- dask<=2022.10.0
+- dask<=2023.3.2
