@@ -2,8 +2,10 @@
 # Copyright 2006-2022 UT-Battelle, LLC. See LICENSE for more information.
 # -------------------------------------------------------------------------------
 import os
+import sys
 from math import ceil
 from collections import namedtuple
+from typing import List
 from . import messages, configurationManager
 from .ipsExceptions import BlockedMessageException, \
     IncompleteCallException, \
@@ -80,7 +82,7 @@ class TaskManager:
         try:
             self.task_launch_cmd = self.config_mgr.get_platform_parameter('MPIRUN')
         except Exception:
-            print('Error accessing platform parameter MPIRUN')
+            print('Error accessing platform parameter MPIRUN', file=sys.stderr)
             raise
 
         # do later - subscribe to events, set up event publishing structure
@@ -160,7 +162,7 @@ class TaskManager:
         self.finished_calls[call_id] = (caller_id, response_msg)
         del self.outstanding_calls[call_id]
 
-    def wait_call(self, wait_msg):
+    def wait_call(self, wait_msg: messages.ServiceRequestMessage):
         """
         Determine if the call has finished.  If finished, return any data or
         errors.  If not finished raise the appropriate blocking or nonblocking
@@ -189,7 +191,7 @@ class TaskManager:
         else:
             raise BlockedMessageException(wait_msg, '***call %s not finished' % call_id)
 
-    def init_task(self, init_task_msg):
+    def init_task(self, init_task_msg: messages.ServiceRequestMessage):
         r"""
         Allocate resources needed for a new task and build the task
         launch command using the binary and arguments provided by
@@ -289,9 +291,9 @@ class TaskManager:
 
         return (task_id, cmd, env_update, allocation.cores_allocated)
 
-    def build_launch_cmd(self, nproc, binary, cmd_args, working_dir, ppn,
-                         max_ppn, nodes, accurateNodes, partial_nodes,
-                         task_id, cpp=0, omp=False, gpp=0, core_list='',
+    def build_launch_cmd(self, nproc: int, binary: str, cmd_args: List[str], working_dir, ppn: int,
+                         max_ppn: int, nodes: str, accurateNodes: bool, partial_nodes: bool,
+                         task_id: int, cpp=0, omp=False, gpp=0, core_list='',
                          launch_cmd_extra_args=None):
         """
         Construct task launch command to be executed by the component.
@@ -538,7 +540,7 @@ class TaskManager:
 
         return cmd, env_update
 
-    def init_task_pool(self, init_task_msg):
+    def init_task_pool(self, init_task_msg: messages.ServiceRequestMessage):
         """
         Allocate resources needed for a new task and build the task
         launch command using the binary and arguments provided by
@@ -590,7 +592,7 @@ class TaskManager:
 
         return ret_dict
 
-    def finish_task(self, finish_task_msg):
+    def finish_task(self, finish_task_msg: messages.ServiceRequestMessage):
         """
         Cleanup after a task launched by a component terminates
 
@@ -608,6 +610,6 @@ class TaskManager:
             self.resource_mgr.release_allocation(task_id, task_data)
             del self.curr_task_table[task_id]
         except Exception:
-            print('Error finishing task ', task_id)
+            print('Error finishing task ', task_id, file=sys.stderr)
             raise
         return 0

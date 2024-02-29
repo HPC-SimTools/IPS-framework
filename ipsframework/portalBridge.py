@@ -18,23 +18,6 @@ import urllib3
 from ipsframework import ipsutil, Component
 from ipsframework.convert_log_function import convert_logdata_to_html
 
-
-try:
-    from mpo_arg import mpo_methods as mpo
-except ImportError:
-    pass
-mpo_cert = '/home/elwasif/Projects/atom/MPO/MPO Demo User.pem'
-mpo_api = 'https://mpo.psfc.mit.edu/test-api'
-
-
-def configure_mpo():  # pragma: no cover
-    # Use this if you want to include modules from a subfolder or relative path.
-    cmd_subfolder = os.path.realpath(os.path.abspath(os.path.join(os.path.split(
-        inspect.getfile(inspect.currentframe()))[0], "/home/elwasif/Projects/atom/MPO/client/python")))
-    if cmd_subfolder not in sys.path:
-        sys.path.insert(0, cmd_subfolder)
-
-
 def hash_file(file_name):  # pragma: no cover
     '''
     Return the MD5 hash of a file
@@ -145,21 +128,6 @@ class PortalBridge(Component):
             pass
         else:
             self.dump_freq = freq
-
-        try:  # pragma: no cover
-            ENABLE_MPO = os.environ['ENABLE_MPO']
-        except KeyError:
-            ENABLE_MPO = False
-        else:
-            ENABLE_MPO = True
-        if ENABLE_MPO:  # pragma: no cover
-            configure_mpo()
-            try:
-                self.mpo = mpo(api_url=mpo_api, cert=mpo_cert, debug=True)
-                self.mpo.debug = False
-                self.mpo.filter = 'json'
-            except NameError as e:
-                print("#################", e)
 
         try:
             self.html_dir = self.services.get_config_param("USER_W3_DIR", silent=True)

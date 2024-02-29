@@ -2,6 +2,7 @@
 # Copyright 2006-2022 UT-Battelle, LLC. See LICENSE for more information.
 # -------------------------------------------------------------------------------
 import os
+import sys
 from ipsframework import Component
 from ipsframework import ipsutil
 
@@ -88,7 +89,7 @@ class runspaceInitComponent(Component):
                                       comp_conf['INPUT_FILES'],
                                       workdir)
                 except Exception:
-                    print('Error copying input files for initialization')
+                    print('Error copying input files for initialization', file=sys.stderr)
                     raise
 
                 # copy the component's script to the simulation_setup directory

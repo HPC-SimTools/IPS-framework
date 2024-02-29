@@ -104,7 +104,7 @@ class ConfigurationManager:
             if abs_path not in self.config_file_list:
                 self.config_file_list.append(abs_path)
             else:
-                print('Ignoring duplicate configuration file ', abs_path)
+                print('Ignoring duplicate configuration file ', abs_path, file=sys.stderr)
 
         # sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 0)
         sys.stdout = Unbuffered(sys.stdout)
@@ -748,7 +748,7 @@ in configuration file %s', config_file)
             for sim_name in list(self.sim_map.keys()):
                 self.terminate_sim(sim_name)
         except Exception:
-            print('Encountered exception when terminating simulation')
+            print('Encountered exception when terminating simulation', file=sys.stderr)
             raise
         for k in list(self.sim_map.keys()):
             del self.sim_map[k]

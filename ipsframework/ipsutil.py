@@ -9,6 +9,7 @@ try:
     import Pyro4
 except ImportError:
     pass
+import sys
 
 
 def which(program, alt_paths=None):
@@ -89,7 +90,7 @@ def copyFiles(src_dir, src_file_list, target_dir, prefix='', keep_old=False):
         try:
             os.makedirs(head, exist_ok=True)
         except OSError as oserr:
-            print('Error creating directory %s : %s' % (head, oserr.strerror))
+            print('Error creating directory %s : %s' % (head, oserr.strerror), file=sys.stderr)
             raise
         try:
             shutil.copy(src_file, target_file)

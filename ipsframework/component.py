@@ -6,7 +6,9 @@ import sys
 import os
 import weakref
 from copy import copy
+from typing import Any, Dict, Literal
 from .messages import Message, MethodResultMessage
+from .services import ServicesProxy
 
 
 class Component:
@@ -21,7 +23,7 @@ class Component:
     :type config: dict
     """
 
-    def __init__(self, services, config):
+    def __init__(self, services: ServicesProxy, config: Dict[str, Any]):
         """
         Set up config values and reference to services.
         """
@@ -38,7 +40,7 @@ class Component:
             try:
                 setattr(self, i, config[i])
             except Exception as e:
-                print('Error setting Component parameter : ', i, ' - ', e)
+                print('Error setting Component parameter : ', i, ' - ', e, file=sys.stderr)
                 raise
 
     def __copy__(self):
@@ -88,7 +90,7 @@ class Component:
                 if 'OUT_REDIRECT_FNAME' not in self.services.sim_conf:
                     fname = "%s.out" % (self.services.sim_conf['SIM_NAME'])
                     fname = os.path.join(self.services.sim_conf['PWD'], fname)
-                    print('Redirecting stdout to ', fname)
+                    print('Redirecting stdout to ', fname, file=sys.stderr)
                 else:
                     fname = self.services.sim_conf['OUT_REDIRECT_FNAME']
                 original_stdout_fd = sys.stdout.fileno()
@@ -213,7 +215,8 @@ class Component:
         """
         self.services.debug('checkpoint() method called')
 
-    def terminate(self, status):
+    # TODO fix typing when Message is no longer an enum
+    def terminate(self, status: Literal[0, 1]):
         """
         Clean up services and call :py:obj:`sys_exit`.
         """

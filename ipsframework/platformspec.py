@@ -3,10 +3,11 @@
 # -------------------------------------------------------------------------------
 import os
 import sys
+from typing import Optional, Tuple
 from .messages import Message
 
 
-def get_share_and_platform(platform_file_name, ipsPathName):
+def get_share_and_platform(platform_file_name: Optional[str], ipsPathName: str) -> Tuple[str, str]:
     if platform_file_name:
         return platform_file_name, ''
     else:
@@ -21,7 +22,7 @@ def get_share_and_platform(platform_file_name, ipsPathName):
         elif os.path.exists(os.path.join(ipsPDir2, pconf)):
             ipsShareDir = os.path.join(ipsPDir2, 'share')
         else:
-            print("Need to specify a platform file")
+            print("Need to specify a platform file", file=sys.stderr)
             sys.exit(Message.FAILURE)
         platform_file_name = os.path.join(ipsShareDir, 'platform.conf')
         return os.path.abspath(platform_file_name), ipsShareDir

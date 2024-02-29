@@ -73,7 +73,7 @@ class Event:
     def getBody(self):
         return self.body
 
-    def __str__(self):
+    def __str__(self) -> str:
         return str(self.body)
 
 

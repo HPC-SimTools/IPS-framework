@@ -60,6 +60,8 @@ import logging
 import os
 import time
 import hashlib
+from typing import List, Optional
+
 from ipsframework import platformspec
 from ipsframework.messages import Message, ServiceRequestMessage, \
     ServiceResponseMessage, MethodInvokeMessage, MethodResultMessage
@@ -75,8 +77,8 @@ from ipsframework.ips_es_spec import eventManager
 from ipsframework.ipsutil import getTimeString
 from ipsframework._version import get_versions
 
-if sys.version[0] != '3':  # noqa: E402
-    print("IPS can is only compatible with Python 3.5 or higher")
+if sys.version_info[0] != 3 or sys.version_info[1] < 5:  # noqa: E402
+    print("IPS is only compatible with Python 3.5 or higher", file=sys.stderr)
     sys.exit(1)
 
 
@@ -123,11 +125,12 @@ class Framework:
     :param cmd_ppn: Computer processor per nodes (default = 0)
     :type cmd_ppn: int
     """
-    def __init__(self, config_file_list, log_file_name, platform_file_name=None,
+    def __init__(self, config_file_list: List[str], log_file_name: str, platform_file_name: Optional[str] = None,
                  debug=False, verbose_debug=False, cmd_nodes=0, cmd_ppn=0):
         # added compset_list for list of components to load config files for
         # command line option
-        print("Starting IPS", get_versions()['version'])
+        # TODO check to see if printing to sys.stderr breaks anything
+        print("Starting IPS", get_versions()['version'], file=sys.stderr)
         os.environ['IPS_INITIAL_CWD'] = os.getcwd()
 
         self.log_file_name = log_file_name
@@ -232,7 +235,7 @@ class Framework:
         for svc in service_list:
             self.service_handler[svc] = handler
 
-    def _dispatch_service_request(self, msg):
+    def _dispatch_service_request(self, msg: ServiceRequestMessage):
         """
         Find and execute handler that corresponds to the *target_method* of
         *msg*, a :class:`messages.ServiceRequestMessage` object.  If handler
@@ -724,7 +727,7 @@ class Framework:
                 invocation_q.put(msg)
             except Exception as e:
                 self.exception('exception encountered while terminating comp %s', comp_id)
-                print(e)
+                print(e, file=sys.stderr)
 
     def terminate_all_sims(self, status=Message.SUCCESS):
         """Terminate all active component instances.
@@ -752,11 +755,12 @@ def main(argv=None):
     """
     Check and parse args, create and run the framework.
     """
+    # TODO don't think this is necessary
     sys.stdout.flush()
 
     platform_default = os.environ.get("IPS_PLATFORM_FILE")
     if platform_default:
-        print("IPS using platform file :", platform_default)
+        print("IPS using platform file :", platform_default, file=sys.stderr)
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--version', action='version', version="%(prog)s " + get_versions()['version'])

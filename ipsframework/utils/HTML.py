@@ -427,11 +427,11 @@ class List (object):
 # === FUNCTIONS ================================================================
 
 # much simpler definition of a link as a function:
-def Link(text, url):
+def Link(text: str, url: str):
     return '<a href="%s">%s</a>' % (url, text)
 
 
-def link(text, url):
+def link(text: str, url: str):
     return '<a href="%s">%s</a>' % (url, text)
 
 

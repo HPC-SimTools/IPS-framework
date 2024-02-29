@@ -1696,7 +1696,7 @@ class ServicesProxy:
                                           'update_state', files, workdir, state_dir)
             self._get_service_response(msg_id, block=True)
         except Exception as e:
-            print('Error updating state files', str(e))
+            print('Error updating state files', str(e), file=sys.stderr)
             self._send_monitor_event('IPS_UPDATE_STATE',
                                      ' Exception raised : ' + str(e),
                                      ok=False)
@@ -1739,7 +1739,7 @@ class ServicesProxy:
                                           source_plasma_file, logfile, full_path_binary)
             ret_val = self._get_service_response(msg_id, block=True)
         except Exception as e:
-            print('Error merging state files', str(e))
+            print('Error merging state files', str(e), file=sys.stderr)
             self._send_monitor_event('IPS_MERGE_PLASMA_STATE',
                                      ' Exception raised : ' + str(e),
                                      ok=False)
@@ -2394,7 +2394,7 @@ class Task:
     :param \*\*keywords: keyword arguments for launching the task.  See :py:meth:`ServicesProxy.launch_task` for details.
     """
 
-    def __init__(self, task_name, nproc, working_dir, binary, *args, **keywords):
+    def __init__(self, task_name: str, nproc: int, working_dir: str, binary: str, *args, **keywords):
         self.name = task_name
         self.nproc = int(nproc)
         self.working_dir = working_dir
