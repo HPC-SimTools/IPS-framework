@@ -2,8 +2,6 @@
 
 This directory is meant to showcase concrete code examples on how to use the IPS framework.
 
-## Running the examples
+Each example folder contains specific instructions on how to run it. Each example is standalone and can be copy/pasted into its own file.
 
-1) Make sure your environment has the `ipsframework` dependency installed. (To run from the repository, you can run `pip install -e .`)
-2) Change directory into the specific folder (i.e. `001-hello-world`)
-3) Run `ips.py --config config.conf --platform platform.conf`
+Note that each example will explicitly need to be installed into its own virtual environment - this is because the IPS framework needs all of your Components to be contained in a valid Python package.

@@ -1,3 +1,12 @@
+# temporary files
+*.tmp.*
+
+# example code
+simulation_log/
+log
+resource_usage
+work/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
