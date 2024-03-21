@@ -3,6 +3,9 @@ from ipsframework import Component
 
 class hello_driver(Component):
     def __init__(self, services, config):
+        """
+        All component constructors are called before any functions are invoked.
+        """
         super().__init__(services, config)
         print('Created %s' % (self.__class__))
 
