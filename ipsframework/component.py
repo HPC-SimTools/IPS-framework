@@ -8,7 +8,6 @@ import weakref
 from copy import copy
 from typing import Any, Dict, Literal
 from .messages import Message, MethodResultMessage
-from .services import ServicesProxy
 
 
 class Component:
@@ -23,7 +22,7 @@ class Component:
     :type config: dict
     """
 
-    def __init__(self, services: ServicesProxy, config: Dict[str, Any]):
+    def __init__(self, services, config: Dict[str, Any]):
         """
         Set up config values and reference to services.
         """

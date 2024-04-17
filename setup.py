@@ -50,22 +50,24 @@ setup(
         ]
     },
     classifiers=[
-        "Programming Language :: Python :: 3",
+        'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',
         'Programming Language :: Python :: 3.10',
-        "License :: OSI Approved :: BSD License",
-        "Operating System :: MacOS :: MacOS X",
-        "Operating System :: POSIX :: Linux",
+        'License :: OSI Approved :: BSD License',
+        'Operating System :: MacOS :: MacOS X',
+        'Operating System :: POSIX :: Linux',
     ],
-    python_requires='>=3.6',
+    python_requires='>=3.8',
     zip_safe=True,
     install_requires=[
         'urllib3',
         'configobj',
-        'dask',
+        # CHECK DASK VERSIONS ON NERSC PERLMUTTER - this is what matters
+        'dask==2022.10.0',
+        #'dask==2023.12.1', # TODO need a version compatible with 3.8
         'distributed'
     ]
 )

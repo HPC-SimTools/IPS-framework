@@ -2135,10 +2135,10 @@ class TaskPool:
 
         if use_shifter:
             if shifter_args:
-                self.dask_sched_pid = subprocess.Popen([self.shifter, shifter_args, "dask-scheduler", "--no-dashboard",
+                self.dask_sched_pid = subprocess.Popen([self.shifter, shifter_args, "dask", "scheduler", "--no-dashboard",
                                                         "--scheduler-file", self.dask_file_name, "--port", "0"]).pid
             else:
-                self.dask_sched_pid = subprocess.Popen([self.shifter, "dask-scheduler", "--no-dashboard",
+                self.dask_sched_pid = subprocess.Popen([self.shifter, "dask", "scheduler", "--no-dashboard",
                                                         "--scheduler-file", self.dask_file_name, "--port", "0"]).pid
 
         else:
@@ -2168,7 +2168,8 @@ class TaskPool:
                 self.dask_workers_tid = services.launch_task(dask_nodes, os.getcwd(),
                                                              self.shifter,
                                                              shifter_args,
-                                                             "dask-worker",
+                                                             "dask",
+                                                             "worker",
                                                              "--scheduler-file",
                                                              self.dask_file_name,
                                                              nworkers, 1,
@@ -2179,7 +2180,8 @@ class TaskPool:
             else:
                 self.dask_workers_tid = services.launch_task(dask_nodes, os.getcwd(),
                                                              self.shifter,
-                                                             "dask-worker",
+                                                             "dask",
+                                                             "worker",
                                                              "--scheduler-file",
                                                              self.dask_file_name,
                                                              nworkers, 1,
@@ -2300,6 +2302,9 @@ class TaskPool:
         """
         result = self.dask_client.gather(self.futures)
         worker_names = [''.join(c for c in worker['name'] if c.isalnum()) for worker in self.dask_client.scheduler_info()['workers'].values()]
+
+        # NOTE: You may get an exception stack trace from Dask, this is currently not believed to cause an issue.
+
         self.dask_client.shutdown()
         self.dask_client.close()
         time.sleep(1)

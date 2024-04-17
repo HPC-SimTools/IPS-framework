@@ -60,7 +60,7 @@ import logging
 import os
 import time
 import hashlib
-from typing import List, Optional
+from typing import Callable, Dict, Iterable, List, Optional
 
 from ipsframework import platformspec
 from ipsframework.messages import Message, ServiceRequestMessage, \
@@ -77,7 +77,7 @@ from ipsframework.ips_es_spec import eventManager
 from ipsframework.ipsutil import getTimeString
 from ipsframework._version import get_versions
 
-if sys.version_info[0] != 3 or sys.version_info[1] < 5:  # noqa: E402
+if sys.version_info[0] != 3 or sys.version_info[1] < 5:
     print("IPS is only compatible with Python 3.5 or higher", file=sys.stderr)
     sys.exit(1)
 
@@ -145,7 +145,7 @@ class Framework:
         # reference to this class's component ID
         self.component_id = ComponentID(self.__class__.__name__, 'FRAMEWORK')
         # map of ports
-        self.port_map = {}
+        self.port_map: Dict[int, str] = {}
 
         current_dir = inspect.getfile(inspect.currentframe())
         (self.platform_file_name, self.ipsShareDir) = \
@@ -157,7 +157,6 @@ class Framework:
 
         # host is set in the configuration manager, not needed here???????
         self.host = socket.gethostname()
-        self.logger = None
         self.service_handler = {}
         self.cur_time = time.time()
         self.start_time = self.cur_time
@@ -221,7 +220,7 @@ class Framework:
         """
         return self.in_queue
 
-    def register_service_handler(self, service_list, handler):
+    def register_service_handler(self, service_list: Iterable[str], handler: Callable[[ServiceRequestMessage], None]):
         """
         Register a call back method to handle a list of framework service
         invocations.
@@ -282,49 +281,49 @@ class Framework:
                                                              'svc_response_q')
         response_q.put(response_msg)
 
-    def log(self, msg, *args):
+    def log(self, msg: object, *args):
         """
         Wrapper for :meth:`Framework.info`.
         """
         return self.info(msg, *args)
 
-    def debug(self, msg, *args):
+    def debug(self, msg: object, *args):
         """
         Produce **debugging** message in simulation log file. See :func:`logging.debug` for usage.
         """
         self.logger.debug(msg, *args)
 
-    def info(self, msg, *args):
+    def info(self, msg: object, *args):
         """
         Produce **informational** message in simulation log file. See :func:`logging.info` for usage.
         """
         self.logger.info(msg, *args)
 
-    def warning(self, msg, *args):
+    def warning(self, msg: object, *args):
         """
         Produce **warning** message in simulation log file. See :func:`logging.warning` for usage.
         """
         self.logger.warning(msg, *args)
 
-    def error(self, msg, *args):
+    def error(self, msg: object, *args):
         """
         Produce **error** message in simulation log file. See :func:`logging.error` for usage.
         """
         self.logger.error(msg, *args)
 
-    def exception(self, msg, *args):
+    def exception(self, msg: object, *args):
         """
         Produce **exception** message in simulation log file. See :func:`logging.exception` for usage.
         """
         self.logger.exception(msg, *args)
 
-    def critical(self, msg, *args):
+    def critical(self, msg: object, *args):
         """
         Produce **critical** message in simulation log file. See :func:`logging.critical` for usage.
         """
         self.logger.critical(msg, *args)
 
-    def _invoke_framework_comps(self, fwk_comps, method_name):
+    def _invoke_framework_comps(self, fwk_comps: Iterable[ComponentID], method_name: str):
         """
         Invoke *method_name* on components in *fwk_comps* (list of component
         ids).  Typically, this is
@@ -367,7 +366,7 @@ class Framework:
                     self.error('Framework received unexpected message : %s',
                                str(msg.__dict__))
 
-    def run(self):
+    def run(self) -> bool:
         """
         Run the communication outer loop of the framework.
 
@@ -561,7 +560,7 @@ class Framework:
         self.logger.removeHandler(self.ch)
         return True
 
-    def initiate_new_simulation(self, sim_name):
+    def initiate_new_simulation(self, sim_name: str):
         '''
         This is to be called by the configuration manager as part of dynamically creating
         a new simulation. The purpose here is to initiate the method invocations for the
@@ -703,7 +702,8 @@ class Framework:
         self.debug('Publishing %s', str(event_data))
         self.event_manager.publish(topic_name, 'IPS_DYNAMIC_SIM', event_data)
 
-    def send_terminate_msg(self, sim_name, status=Message.SUCCESS):
+    # TODO mark status as a "Literal" if we move to Python >= 3.8
+    def send_terminate_msg(self, sim_name: str, status = Message.SUCCESS):
         """This method remotely invokes the method
         :meth:`component.Component.terminate` on all componnets in the
         IPS simulation ``sim_name``.
@@ -751,7 +751,7 @@ class Framework:
         # sys.exit(status)
 
 
-def main(argv=None):
+def main():
     """
     Check and parse args, create and run the framework.
     """
