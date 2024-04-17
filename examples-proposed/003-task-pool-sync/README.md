@@ -17,5 +17,5 @@ You will also need to have `dask` installed for this example.
 To run the code, run:
 
 ```bash
-ips.py --config=helloworld.config --platform=platform.conf
+ips.py --config=dask_sim.config --platform=platform.conf
 ```
