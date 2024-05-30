@@ -1,11 +1,14 @@
 # -------------------------------------------------------------------------------
 # Copyright 2006-2022 UT-Battelle, LLC. See LICENSE for more information.
 # -------------------------------------------------------------------------------
+from __future__ import annotations
+
 import sys
+from typing import ClassVar
 
 
 class SingletonMeta(type):
-    __instances = {}
+    __instances: ClassVar[dict] = {}
 
     def __call__(cls, *args, **kwargs):
         if cls not in cls.__instances:
@@ -21,7 +24,7 @@ class ComponentID:
 
     delimiter = '@'
     seq_num = 0
-    all_ids = {}
+    all_ids: ClassVar[dict[str, ComponentID]] = {}
 
     @staticmethod
     def deserialize(comp_id_string):

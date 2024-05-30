@@ -15,11 +15,11 @@ extend-exclude = [
 isort = { known-first-party = ['ipsframework'] }
 #pydocstyle = { convention = 'google' }
 flake8-quotes = { inline-quotes = 'single', multiline-quotes = 'double' }
-#mccabe = { max-complexity = 20 }
+mccabe = { max-complexity = 45 } # TODO drop this to 20
 #pylint = { max-args = 10, max-branches = 20, max-returns = 10 }
 # pyflakes and the relevant pycodestyle rules are already configured
 extend-select = [
-    #'C90',   # mccabe complexity
+    'C90',   # mccabe complexity
     'I',     # isort
     #'N',     # pep8-naming
     #'D',     # pydocstyle
@@ -32,7 +32,7 @@ extend-select = [
     #'B',     # flake8-bugbear
     #'A',     # flake8-builtins
     #'COM',   # flake8-commas
-    #'C4',    # flake8-comprehensions
+    'C4',    # flake8-comprehensions
     #'DTZ',   # flake8-datetimez
     #'T10',   # flake8-debugger
     #'EM',    # flake8-error-message
@@ -58,7 +58,7 @@ extend-select = [
     #'PL',    # pylint
     #'TRY',   # tryceratops
     #'FLY',   # flynt
-    #'RUF',   # RUFF additional rules
+    'RUF',   # RUFF additional rules
 ]
 # If you're seeking to disable a rule, first consider whether the rule is overbearing, or if it should only be turned off for your usecase.
 ignore = [

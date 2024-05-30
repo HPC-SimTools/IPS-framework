@@ -78,7 +78,7 @@ class ConfigurationManager:
         # in the component-generic.conf file, which allows you to point to a
         # directory that contains physics and other binaries on a global level
         # i.e. removing the requirement that it be specified for each component
-        self.required_fields = set(['CLASS', 'SUB_CLASS', 'NAME', 'SCRIPT', 'INPUT_FILES', 'OUTPUT_FILES', 'NPROC'])
+        self.required_fields = {'CLASS', 'SUB_CLASS', 'NAME', 'SCRIPT', 'INPUT_FILES', 'OUTPUT_FILES', 'NPROC'}
         self.config_file_list = []
         self.sim_name_list = None
         self.sim_root_list = None

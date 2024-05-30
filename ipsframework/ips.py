@@ -333,7 +333,7 @@ class Framework:
             self.debug('Framework waiting for message')
             msg = self.in_queue.get()
             self.debug('Framework received Message : %s', str(msg.__dict__))
-            msg_list = [msg] + self.blocked_messages
+            msg_list = [msg, *self.blocked_messages]
             self.blocked_messages = []
             for msg in msg_list:
                 self.debug('Framework processing message %s ', msg.message_id)
@@ -469,7 +469,7 @@ class Framework:
                 self.debug('Framework received Message : %s', str(msg.__dict__))
 
             # add blocked messages to message list for reprocessing
-            msg_list = [msg] + self.blocked_messages
+            msg_list = [msg, *self.blocked_messages]
             self.blocked_messages = []
             # process new and blocked messages
             for msg in msg_list:

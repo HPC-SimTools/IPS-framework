@@ -32,7 +32,7 @@ class DakotaDynamic:
         self.master_conf = ConfigObj()
         self.restart_file = restart_file
 
-    def run(self):  # noqa: C901
+    def run(self):
         alt_paths = []
 
         """

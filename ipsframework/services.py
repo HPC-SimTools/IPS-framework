@@ -3,6 +3,7 @@
 # -------------------------------------------------------------------------------
 """IPS Services"""
 
+import functools
 import glob
 import hashlib
 import json
@@ -18,7 +19,7 @@ import threading
 import time
 import weakref
 from collections import namedtuple
-from operator import itemgetter
+from operator import iadd, itemgetter
 
 from configobj import ConfigObj
 
@@ -1469,7 +1470,7 @@ class ServicesProxy:
         output_dir = os.path.join(sim_root, out_root, str(timeStamp), 'components', self.full_comp_id)
         if isinstance(file_list, str):
             file_list = file_list.split()
-        all_files = sum([glob.glob(f) for f in file_list], [])
+        all_files = functools.reduce(iadd, [glob.glob(f) for f in file_list], [])
         try:
             ipsutil.copyFiles(workdir, all_files, output_dir, outprefix, keep_old=keep_old_files)
         except Exception as e:
@@ -1535,7 +1536,7 @@ class ServicesProxy:
             self.exception('Error creating directory %s : %s', symlink_dir, e.strerror)
             raise
 
-        all_files = sum([glob.glob(f) for f in file_list], [])
+        all_files = functools.reduce(iadd, [glob.glob(f) for f in file_list], [])
 
         for f in all_files:
             real_file = os.path.join(output_dir, outprefix + f)
