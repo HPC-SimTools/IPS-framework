@@ -1,8 +1,11 @@
 # temporary files
 *.tmp.*
 
+
 # example code
 simulation_log/
+sim/
+www/
 log
 resource_usage
 work/
