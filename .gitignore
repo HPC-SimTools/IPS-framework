@@ -4,6 +4,7 @@
 
 # example code
 simulation_log/
+simulation_setup/
 sim/
 www/
 log
