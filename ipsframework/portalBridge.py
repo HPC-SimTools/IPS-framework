@@ -191,7 +191,7 @@ class PortalBridge(Component):
 
         portal_data['portal_runid'] = sim_data.portal_runid
 
-        if portal_data['eventtype'] == "PORTAL_DATA":
+        if portal_data['eventtype'] == 'PORTAL_DATA':
             self.send_data(sim_data, portal_data)
             return
 
@@ -308,7 +308,7 @@ class PortalBridge(Component):
             if self.data_first_event:  # First time, launch sendPost.py daemon
                 self.data_parent_conn, child_conn = Pipe()
                 self.data_childProcessStop = Event()
-                self.data_childProcess = Process(target=send_post, args=(child_conn, self.childProcessStop, self.portal_url+"/api/data"))
+                self.data_childProcess = Process(target=send_post, args=(child_conn, self.childProcessStop, self.portal_url + '/api/data'))
                 self.data_childProcess.start()
                 self.data_first_event = False
 
@@ -328,20 +328,20 @@ class PortalBridge(Component):
 
             try:
                 data = json.loads(msg)
-                if "runid" in data:
-                    self.services.info("Run Portal URL = %s/%s", self.portal_url, data.get('runid'))
+                if 'runid' in data:
+                    self.services.info('Run Portal URL = %s/%s', self.portal_url, data.get('runid'))
 
                 msg = json.dumps(data)
             except (TypeError, json.decoder.JSONDecodeError):
                 pass
             if code == 200:
-                self.services.debug("Portal Response: %d %s", code, msg)
+                self.services.debug('Portal Response: %d %s', code, msg)
             elif code == -1:
                 # disable portal, stop trying to send more data
                 self.portal_url = None
-                self.services.error("Disabling portal because: %s", msg)
+                self.services.error('Disabling portal because: %s', msg)
             else:
-                self.services.error("Portal Error: %d %s", code, msg)
+                self.services.error('Portal Error: %d %s', code, msg)
 
     def send_mpo_data(self, event_data, sim_data):  # pragma: no cover
         def md5(fname):
