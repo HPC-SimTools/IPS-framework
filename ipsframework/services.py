@@ -1014,6 +1014,25 @@ class ServicesProxy:
         Return the value of the configuration parameter ``param``.  Raise
         exception if not found and silent is False.
 
+        Config params with special meaning to the framework include:
+
+        - SIM_ROOT (mandatory)
+        - SIM_NAME (mandatory)
+        - LOG_FILE (mandatory)
+        - LOG_LEVEL
+        - RUN_ID
+        - TOKOMAK_ID
+        - SHOT_NUMBER
+        - OUTPUT_PREFIX
+        - SIMULATION_MODE (either NORMAL or RESTART)
+        - NODE_ALLOCATION_MODE (either SHARED or EXCLUSIVE)
+        - RESTART_TIME
+        - RESTART_ROOT
+        - CHECKPOINT
+        - TIME_LOOP (this should generally be accessed via `self.services.get_time_loop()`)
+
+        Any variable defined in the config file can be accessed via this function.
+
         :param param: The parameter requested from simulation config
         :type param: str
 

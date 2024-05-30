@@ -6,9 +6,11 @@ import sys
 import os
 import weakref
 from copy import copy
-from typing import Any, Dict, Literal
+from typing import Any, Dict, Literal, TYPE_CHECKING
 from .messages import Message, MethodResultMessage
 
+if TYPE_CHECKING:
+    from .services import ServicesProxy
 
 class Component:
     """
@@ -28,7 +30,7 @@ class Component:
         """
         self.__component_id = None
         self.__invocation_q = None
-        self.__services = weakref.proxy(services)
+        self.__services : ServicesProxy = weakref.proxy(services)
         self.__config = config
         self.__start_time = 0.0
         self.__sys_exit = None
