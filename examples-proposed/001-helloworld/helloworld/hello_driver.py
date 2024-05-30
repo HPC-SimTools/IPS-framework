@@ -6,6 +6,7 @@ class hello_driver(Component):
     The IPS framework will always call into helloworld.hello_driver initially, as
     this module and name (helloworld.hello_driver.hello_driver) were defined in helloworld.conf
     """
+
     def __init__(self, services, config):
         """
         All component constructors are called before any functions are invoked.

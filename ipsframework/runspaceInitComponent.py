@@ -28,7 +28,7 @@ class runspaceInitComponent(Component):
         Creates base directory, copies IPS and FacetsComposer input files.
         """
 
-        if not self.simRootDir.startswith("/"):
+        if not self.simRootDir.startswith('/'):
             self.simRootDir = os.path.join(self.cwd, self.simRootDir)
 
         config_files = self.services.fwk.config_file_list
@@ -37,12 +37,12 @@ class runspaceInitComponent(Component):
         # Determine where the file is...if there's not an absolute path specified,
         # assume that it was in the directory that the IPS was launched from.
         # NOTE: This is not necessarily where the IPS is installed.
-        if not config_files[0].startswith("/"):
+        if not config_files[0].startswith('/'):
             conf_file_loc = self.cwd
         else:
             (head, _) = os.path.split(os.path.abspath(config_files[0]))
             conf_file_loc = head
-        if not platform_file.startswith("/"):
+        if not platform_file.startswith('/'):
             plat_file_loc = self.cwd
         else:
             (head, _) = os.path.split(os.path.abspath(platform_file))
@@ -68,9 +68,7 @@ class runspaceInitComponent(Component):
             for comp_id in comp_list:
                 # build the work directory name
                 comp_conf = registry.getEntry(comp_id).component_ref.config
-                full_comp_id = '_'.join([comp_conf['CLASS'], comp_conf['SUB_CLASS'],
-                                         comp_conf['NAME'],
-                                         str(comp_id.get_seq_num())])
+                full_comp_id = '_'.join([comp_conf['CLASS'], comp_conf['SUB_CLASS'], comp_conf['NAME'], str(comp_id.get_seq_num())])
 
                 # compose the workdir name
                 workdir = os.path.join(sim_roots[name], 'work', full_comp_id)
@@ -79,15 +77,12 @@ class runspaceInitComponent(Component):
                 try:
                     os.makedirs(workdir, exist_ok=True)
                 except OSError as oserr:
-                    self.services.exception('Error creating directory %s : %s',
-                                            workdir, oserr.strerror)
+                    self.services.exception('Error creating directory %s : %s', workdir, oserr.strerror)
                     raise
 
                 # copy the input files into the working directory
                 try:
-                    ipsutil.copyFiles(os.path.abspath(comp_conf['INPUT_DIR']),
-                                      comp_conf['INPUT_FILES'],
-                                      workdir)
+                    ipsutil.copyFiles(os.path.abspath(comp_conf['INPUT_DIR']), comp_conf['INPUT_FILES'], workdir)
                 except Exception:
                     print('Error copying input files for initialization', file=sys.stderr)
                     raise
@@ -95,10 +90,6 @@ class runspaceInitComponent(Component):
                 # copy the component's script to the simulation_setup directory
                 if comp_conf['SCRIPT']:
                     if os.path.isabs(comp_conf['SCRIPT']):
-                        ipsutil.copyFiles(os.path.dirname(comp_conf['SCRIPT']),
-                                          [os.path.basename(comp_conf['SCRIPT'])],
-                                          simulation_setup)
+                        ipsutil.copyFiles(os.path.dirname(comp_conf['SCRIPT']), [os.path.basename(comp_conf['SCRIPT'])], simulation_setup)
                     else:
-                        ipsutil.copyFiles(comp_conf['BIN_DIR'],
-                                          [os.path.basename(comp_conf['SCRIPT'])],
-                                          simulation_setup)
+                        ipsutil.copyFiles(comp_conf['BIN_DIR'], [os.path.basename(comp_conf['SCRIPT'])], simulation_setup)

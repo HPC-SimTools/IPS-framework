@@ -1,0 +1,95 @@
+[tool.ruff]
+line-length = 160
+format = { quote-style = 'single' }
+extend-exclude = [
+    "tests/*",
+    "components/*",
+    "doc/*",
+    "versioneer.py",
+    "ipsframework/_version.py",
+    "ipsframework/utils",
+]
+
+# TODO - gradually uncomment these as they are fixed
+[tool.ruff.lint]
+isort = { known-first-party = ['ipsframework'] }
+#pydocstyle = { convention = 'google' }
+flake8-quotes = { inline-quotes = 'single', multiline-quotes = 'double' }
+#mccabe = { max-complexity = 20 }
+#pylint = { max-args = 10, max-branches = 20, max-returns = 10 }
+# pyflakes and the relevant pycodestyle rules are already configured
+extend-select = [
+    #'C90',   # mccabe complexity
+    #'I',     # isort
+    #'N',     # pep8-naming
+    #'D',     # pydocstyle
+    #'UP',    # pyupgrade
+    #'YTT',   # flake8-2020
+    #'ANN',   # flake8-annotations
+    #'ASYNC', # flake8-async
+    #'S',     # flake8-bandit
+    #'BLE',   # flake8-blind-except
+    #'B',     # flake8-bugbear
+    #'A',     # flake8-builtins
+    #'COM',   # flake8-commas
+    #'C4',    # flake8-comprehensions
+    #'DTZ',   # flake8-datetimez
+    #'T10',   # flake8-debugger
+    #'EM',    # flake8-error-message
+    #'FA',    # flake8-future-annotations
+    #'ISC',   # flake8-implicit-string-concat
+    #'ICN',   # flake8-import-conventions
+    #'G',     # flake8-logging-format
+    #'INP',   # flake8-no-pep420
+    #'PIE',   # flake8-PIE
+    #'T20',   # flake8-T20
+    #'PYI',   # flake8-pyi
+    #'PT',    # flake8-pytest-style
+    'Q',     # flake8-quotes
+    #'RSE',   # flake8-raise
+    #'RET',   # flake8-return
+    #'SLF',   # flake8-self
+    #'SLOT',  # flake8-slots
+    #'SIM',   # flake8-simplify
+    #'TCH',   # flake8-type-checking
+    #'ARG',   # flake8-unused-arguments
+    #'PTH',   # flake8-use-pathlib
+    #'PGH',   # pygrep-hooks
+    #'PL',    # pylint
+    #'TRY',   # tryceratops
+    #'FLY',   # flynt
+    #'RUF',   # RUFF additional rules
+]
+# If you're seeking to disable a rule, first consider whether the rule is overbearing, or if it should only be turned off for your usecase.
+ignore = [
+    'COM812',  # formatter, handled by Ruff format
+    'ISC001',  # formatter, handled by Ruff format
+    'SIM105',  # "with contextlib.suppress():" is slower than try-except-pass
+    'ANN101',  # don't need to annotate "self" typing
+    'ANN102',  # don't need to annotate "cls" typing for class methods
+    'ANN401',  # allow explicit "Any" typing, use with care
+    'PLR2004', # allow "magic numbers"
+]
+
+[tool.ruff.lint.extend-per-file-ignores]
+'__init__.py' = ['F401'] # __init__.py commonly has unused imports
+'doc/*' = [
+    'D',      # the documentation folder does not need documentation
+    'INP001', # docs are not a namespace package
+]
+'examples-proposed/*' = [
+    'N999',   # module names for examples are not standard
+    'T20',    # allow print/pprint statements in examples
+    'S106',   # don't care about credentials in examples
+    'D100',   # documenting modules in examples is unhelpful
+    'D104',   # documenting packages in examples is unhelpful
+    'TRY002', # examples can raise their own exception
+]
+'tests/*' = [
+    'S101',   # allow assert statements in tests
+    'S106',   # don't care about credentials in tests
+    'SLF001', # allow private member access in tests
+    'ANN201', # don't need to annotate return types in tests
+    'ARG',    # allow unused parameters in tests
+    'D',      # ignore documentation in tests
+]

@@ -8,10 +8,13 @@ from ipsframework import Component
 
 class Init(Component):
     """Empty init component."""
+
     pass
+
 
 class Driver(Component):
     """In this example, the driver iterates through the time loop and calls both the worker and the monitor component on each timestep."""
+
     def step(self, timestamp=0.0):
         worker = self.services.get_port('WORKER')
         monitor = self.services.get_port('MONITOR')
@@ -43,14 +46,16 @@ class Worker(Component):
         self.services.send_portal_event(event_comment=msg)
 
         data = {
-            "y1": float,
-            "y2": float,
-            "y3": float,
+            'y1': float,
+            'y2': float,
+            'y3': float,
         }
 
-        data = {"y1": math.sin(self.start+timestamp/50*math.pi),
-                "y2": math.sin(self.start+timestamp/50*math.pi)**2,
-                "y3": math.sin(self.start+timestamp/50*math.pi)**3}
+        data = {
+            'y1': math.sin(self.start + timestamp / 50 * math.pi),
+            'y2': math.sin(self.start + timestamp / 50 * math.pi) ** 2,
+            'y3': math.sin(self.start + timestamp / 50 * math.pi) ** 3,
+        }
 
         state_file = self.services.get_config_param('STATE_FILES')
         with open(state_file, 'w') as f:
@@ -65,7 +70,7 @@ class Monitor(Component):
     """
 
     def step(self, timestamp=0.0, **keywords):
-        msg = f"Running Monitor step with timestamp={timestamp}"
+        msg = f'Running Monitor step with timestamp={timestamp}'
         print(msg, file=stderr)
         self.services.send_portal_event(event_comment=msg)
 
@@ -76,4 +81,4 @@ class Monitor(Component):
             data = json.load(f)
 
         print('SEND PORTAL DATA', timestamp, data, file=stderr)
-        #self.services.send_portal_data(timestamp, data)
+        # self.services.send_portal_data(timestamp, data)

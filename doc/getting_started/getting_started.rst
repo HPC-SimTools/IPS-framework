@@ -19,7 +19,7 @@ The IPS code is currently located on the GitHub repository. In order to checkout
 Dependencies
 ------------
 
-The IPS framework is written in Python_, and requires Python 3.6+.
+The IPS framework is written in Python_, and requires Python 3.9+.
 There are a few other packages that may be needed for certain
 components or utilities. The framework does use the Python package
 ConfigObj_, and urllib3_ is used to communicate with the

@@ -5,6 +5,7 @@ import os
 import shutil
 import time
 import glob
+
 try:
     import Pyro4
 except ImportError:
@@ -21,7 +22,7 @@ def which(program, alt_paths=None):
         if is_exe(program):
             return program
     else:
-        for path in os.environ["PATH"].split(os.pathsep):
+        for path in os.environ['PATH'].split(os.pathsep):
             exe_file = os.path.join(path, program)
             if is_exe(exe_file):
                 return exe_file
@@ -36,16 +37,16 @@ def which(program, alt_paths=None):
 
 def copyFiles(src_dir, src_file_list, target_dir, prefix='', keep_old=False):
     """
-       Copy files in *src_file_list* from *src_dir* to *target_dir* with an
-       optional prefix.  If *keep_old* is ``True``, existing files in
-       *target_dir* will not be overridden, otherwise files can be clobbered
-       (default).
-       Wild-cards in file name specification are allowed.
+    Copy files in *src_file_list* from *src_dir* to *target_dir* with an
+    optional prefix.  If *keep_old* is ``True``, existing files in
+    *target_dir* will not be overridden, otherwise files can be clobbered
+    (default).
+    Wild-cards in file name specification are allowed.
     """
 
-    use_data_server = os.getenv('USE_DATA_SERVER', "DATA_SERVER_NOT_USED")
-    if use_data_server != "DATA_SERVER_NOT_USED":
-        data_server = Pyro4.Proxy("PYRONAME:DataServer")
+    use_data_server = os.getenv('USE_DATA_SERVER', 'DATA_SERVER_NOT_USED')
+    if use_data_server != 'DATA_SERVER_NOT_USED':
+        data_server = Pyro4.Proxy('PYRONAME:DataServer')
         data_server.copyFiles(src_dir, src_file_list, target_dir, prefix, keep_old)
         return
 
@@ -56,7 +57,6 @@ def copyFiles(src_dir, src_file_list, target_dir, prefix='', keep_old=False):
 
     globbed_file_list = []
     for src_file in file_list:
-
         if not target_dir == src_dir:
             src_file_full = os.path.join(src_dir, src_file)
 
@@ -75,10 +75,10 @@ def copyFiles(src_dir, src_file_list, target_dir, prefix='', keep_old=False):
     for src_file in globbed_file_list:
         target = prefix + os.path.basename(src_file)
         target_file = os.path.join(target_dir, target)
-        if (os.path.isfile(target_file) and os.path.samefile(src_file, target_file)):
+        if os.path.isfile(target_file) and os.path.samefile(src_file, target_file):
             continue
-    # Do not overwrite existing target files.
-        if (keep_old and os.path.isfile(target_file)):
+        # Do not overwrite existing target files.
+        if keep_old and os.path.isfile(target_file):
             for i in range(1000):
                 new_name = target_file + '.' + str(i)
                 if os.path.isfile(new_name):

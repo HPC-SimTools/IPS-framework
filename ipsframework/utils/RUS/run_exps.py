@@ -1,6 +1,6 @@
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 # Copyright 2006-2012 UT-Battelle, LLC. See LICENSE for more information.
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 """
 Run Experiements
 ----------------
@@ -10,34 +10,37 @@ by Samantha Foley, ORNL
 Creates, runs, and post-processes runs of RUS to model fault tolerant capabilities.
 
 """
+
 import os, sys
 import getopt
 import random
 import matplotlib
+
 matplotlib.use('AGG')
 import matplotlib.pyplot as plt
 import subprocess
 from time import gmtime, strftime
 
+
 def usage():
-    print("This script will run and process the results from executing an ensemble of RUS runs.")
-    print("Please use the following options to specify what experiments to perform and graph:")
-    print("   -i, --interleave : number of simulations that execute at the same time.")
-    print("   -p, --ppn : processes per node")
-    print("   -t, --trials : number of times to run each experiment")
-    print("   -n, --name : name of experiment to help with identification")
-    print("   -m, --minnodes : minimum number of nodes needed to run the sim(s)")
-    print("   -f, --cfile : path to config file to simulate")
-    print("   -j, --nodeinterval : number of nodes between allocation sizes to simulate")
+    print('This script will run and process the results from executing an ensemble of RUS runs.')
+    print('Please use the following options to specify what experiments to perform and graph:')
+    print('   -i, --interleave : number of simulations that execute at the same time.')
+    print('   -p, --ppn : processes per node')
+    print('   -t, --trials : number of times to run each experiment')
+    print('   -n, --name : name of experiment to help with identification')
+    print('   -m, --minnodes : minimum number of nodes needed to run the sim(s)')
+    print('   -f, --cfile : path to config file to simulate')
+    print('   -j, --nodeinterval : number of nodes between allocation sizes to simulate')
 
 
-
-class experiment_suite():
+class experiment_suite:
     """
     contains everything that is needed to create, run and keep track of an ensemble of rus runs.
     """
+
     def __init__(self):
-        self.trials = 1 # default
+        self.trials = 1  # default
         self.id = ''
         self.cfiles = list()
         self.rfiles = list()
@@ -46,12 +49,12 @@ class experiment_suite():
             opts, args = getopt.getopt(sys.argv[1:], 't:c:r:n:', ['trials=', 'config_list=', 'res_list=', 'name='])
         except getopt.GetoptError as err:
             # print help information and exit:
-            print(str(err)) # will print something like "option -a not recognized"
+            print(str(err))  # will print something like "option -a not recognized"
             usage()
             sys.exit(2)
 
         try:
-            for o,a in opts:
+            for o, a in opts:
                 if o == '-c' or o == '--config_list':
                     cfname = a
                 elif o == '-r' or o == '--res_list':
@@ -81,17 +84,17 @@ class experiment_suite():
         """
         Create list of *experiment* objects.
         """
-        #=======================================================================
+        # =======================================================================
         # # generate experiment list
-        #=======================================================================
+        # =======================================================================
         ltm = 'logTypeMap'
         log = 'gen' + self.id
         self.my_exps = list()
 
         for c in self.cfiles:
-            #------------------
+            # ------------------
             # determine ft mode
-            #------------------
+            # ------------------
             if c.find('_cr_') > 0:
                 ft_mode = 'simcr'
             elif c.find('_tr_') > 0:
@@ -103,9 +106,9 @@ class experiment_suite():
             elif c.find('_restart') > 0:
                 ft_mode = 'restart'
 
-            #------------------------
+            # ------------------------
             # determine ckpt interval
-            #------------------------
+            # ------------------------
             if c.find('_i29') > 0:
                 interval = 29
             elif c.find('_i2') > 0:
@@ -121,9 +124,9 @@ class experiment_suite():
             else:
                 interval = 0
             for r in self.rfiles:
-                #-----------------------
+                # -----------------------
                 # determine fault model
-                #-----------------------
+                # -----------------------
                 if r.find('_p4_e') > 0:
                     fault_model = 'exponential'
                 elif r.find('_p4_w7') > 0:
@@ -153,34 +156,39 @@ class experiment_suite():
                     e.trials.ts[i].ts_set(False, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
                     print('launch str:', e.launch_str)
                     print('problems with execution of %s using %s, trial %d' % (e.config, e.res, i))
-                    #raise
+                    # raise
 
     def post_analysis(self):
         """
         output data to a file to be parsed separately for viz work
         """
-        tm = strftime("%H.%M.%S", gmtime())
+        tm = strftime('%H.%M.%S', gmtime())
         dump = open('dump_plot_data' + tm, 'w')
-        print("# this file contains the output from %d trials of the following resource and config files" % self.trials, file=dump)
-        print("# ---------------------------------------- ", file=dump)
-        print("# Config Files:", file=dump)
+        print('# this file contains the output from %d trials of the following resource and config files' % self.trials, file=dump)
+        print('# ---------------------------------------- ', file=dump)
+        print('# Config Files:', file=dump)
         for c in self.cfiles:
             print('#', c, file=dump)
-        print("# ---------------------------------------- ", file=dump)
-        print("# Resource Files:", file=dump)
+        print('# ---------------------------------------- ', file=dump)
+        print('# Resource Files:', file=dump)
         for r in self.rfiles:
             print('#', r, file=dump)
-        print("# ---------------------------------------- ", file=dump)
-        print('# success/failure | fault model | ft_strategy | total time | allocation size | work | rework | ckpt | restart | launch delay | resubmit | overhead | # node failures | # ckpts | # fault | # relaunch | # restart | # resubmit | % work | % rework | % ckpt | % overhead', file=dump)
-        print("# ---------------------------------------- ", file=dump)
+        print('# ---------------------------------------- ', file=dump)
+        print(
+            '# success/failure | fault model | ft_strategy | total time | allocation size | work | rework | ckpt | restart | launch delay | resubmit | overhead | # node failures | # ckpts | # fault | # relaunch | # restart | # resubmit | % work | % rework | % ckpt | % overhead',
+            file=dump,
+        )
+        print('# ---------------------------------------- ', file=dump)
         for e in self.my_exps:
             e.trials.minmaxavg()
             e.print_to_file(dump)
 
-class trial_stats():
+
+class trial_stats:
     """
     container class for trial statistics.
     """
+
     def __init__(self):
         self.total_time = 0
         self.cores = 0
@@ -280,7 +288,6 @@ class trial_stats():
         self.percent_resubmit = ts.percent_resubmit
         self.percent_overhead = ts.percent_overhead
 
-
     def ts_accum(self, ts):
         """
         add the values of ``ts`` to ``self``
@@ -362,10 +369,12 @@ class trial_stats():
             self.percent_overhead = 0
             self.success = False
 
-class trial_tracker():
+
+class trial_tracker:
     """
     keeps track of all the trials for a particular experiment variation (distinct combination of config files, resource files and command line options)
     """
+
     def __init__(self, t):
         """
         create a new trial_tracker object with ``t`` trials
@@ -399,14 +408,15 @@ class trial_tracker():
                 sts += 1
         a.ts_div(float(sts))
 
-        #=======================================================================
+        # =======================================================================
         # # set min, max and avg
-        #=======================================================================
+        # =======================================================================
         self.min.ts_copy(min)
         self.max.ts_copy(max)
         self.avg.ts_copy(a)
 
-class experiment():
+
+class experiment:
     def __init__(self, cf, rf, mode, interval, model, t, tag):
         """
         create a new experiment
@@ -426,31 +436,29 @@ class experiment():
         self.trials = trial_tracker(t)
         self.gen_launch_str()
 
-
-
     def gen_launch_str(self):
         """
         constructs the command to launch the experiment
         """
         c = '-c'  #' -c ' + self.sim.fname
         cval = self.config
-        r = '-r' #' -r res_n' + str(self.nodes) + '_p' + str(self.ppn)
+        r = '-r'  #' -r res_n' + str(self.nodes) + '_p' + str(self.ppn)
         rval = self.res
-        l = '-l' #+ self.tag
+        l = '-l'  # + self.tag
         lval = self.tag
         f = '-f'
         b = '-b'
         self.launch_str = ['python', 'rus.py', l, lval, r, rval, c, cval, f, b]
-        #self.launch_str = ['python', 'rus.py', l, lval, r, rval, c, cval]
+        # self.launch_str = ['python', 'rus.py', l, lval, r, rval, c, cval]
 
     def print_to_file(self, fhandle):
-        '''
+        """
         Prints the experiment's data to ``fhandle`` prettily.
-        '''
+        """
         header = ''
-        #---------------------------------------
+        # ---------------------------------------
         # ft mode
-        #---------------------------------------
+        # ---------------------------------------
         if self.ft_mode == 'none':
             header += 'none '
         if self.ft_mode == 'restart':
@@ -461,9 +469,9 @@ class experiment():
             header += 'simcr_' + str(self.ckpt_interval) + ' '
         elif self.ft_mode == 'task relaunch no cr':
             header += 'trncr '
-        #---------------------------------------
+        # ---------------------------------------
         # fault model
-        #---------------------------------------
+        # ---------------------------------------
         if self.fault_model == 'exponential':
             header += 'exponential '
         elif self.fault_model == 'weibull 0.7':
@@ -471,22 +479,32 @@ class experiment():
         elif self.fault_model == 'weibull 0.8':
             header += 'weibull_0.8 '
         for t in self.trials.ts:
-            #---------------------------------------
+            # ---------------------------------------
             # success or failure
-            #---------------------------------------
+            # ---------------------------------------
             if t.success:
                 print('Success ', end=' ', file=fhandle)
             else:
                 print('Failed ', end=' ', file=fhandle)
-            #---------------------------------------
+            # ---------------------------------------
             # the rest of the data
-            #---------------------------------------
+            # ---------------------------------------
             print(header, t.total_time, t.cores, end=' ', file=fhandle)
             print(t.work_time, t.rework_time, t.ckpt_time, t.restart_time, t.launch_delay, t.resubmit_time, t.overhead_time, end=' ', file=fhandle)
             print(t.num_node_failures, t.num_ckpts, t.num_faults, t.num_relaunch, t.num_restart, t.num_resubmit, end=' ', file=fhandle)
-            print(t.percent_work, t.percent_rework, t.percent_ckpt, t.percent_restart, t.percent_launch_delay, t.percent_resubmit, t.percent_overhead, file=fhandle)
+            print(
+                t.percent_work,
+                t.percent_rework,
+                t.percent_ckpt,
+                t.percent_restart,
+                t.percent_launch_delay,
+                t.percent_resubmit,
+                t.percent_overhead,
+                file=fhandle,
+            )
 
-if __name__ == "__main__":
+
+if __name__ == '__main__':
     my_experiments = experiment_suite()
     my_experiments.set_up()
     my_experiments.run()

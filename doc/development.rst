@@ -32,7 +32,7 @@ optional dependency `Dask <https://dask.org>`_ that will enable Dask
 to be used for task pool scheduling, see
 :meth:`~ipsframework.services.ServicesProxy.submit_tasks`.
 
-IPS-framework will work with python version ≥ 3.6. It is tested to work with
+IPS-framework will work with python version ≥ 3.9. It is tested to work with
 Dask and distributed ≥ 2.5.2 but may work with earlier versions.
 
 IPS-framework will work on Linux and macOS. It won't work on Windows

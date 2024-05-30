@@ -1,3 +1,0 @@
-#!/bin/bash
-echo /bin/sleep $1
-/bin/sleep $1

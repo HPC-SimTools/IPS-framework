@@ -2,6 +2,7 @@
 # Copyright 2006-2022 UT-Battelle, LLC. See LICENSE for more information.
 # -------------------------------------------------------------------------------
 """IPS Framework Component"""
+
 import sys
 import os
 import weakref
@@ -11,6 +12,7 @@ from .messages import Message, MethodResultMessage
 
 if TYPE_CHECKING:
     from .services import ServicesProxy
+
 
 class Component:
     """
@@ -30,7 +32,7 @@ class Component:
         """
         self.__component_id = None
         self.__invocation_q = None
-        self.__services : ServicesProxy = weakref.proxy(services)
+        self.__services: ServicesProxy = weakref.proxy(services)
         self.__config = config
         self.__start_time = 0.0
         self.__sys_exit = None
@@ -48,7 +50,7 @@ class Component:
         cls = self.__class__
         result = cls.__new__(cls)
         for k, v in self.__dict__.items():
-            if k in ["_Component__invocation_q", "_Component__sys_exit", "_Component__services"]:
+            if k in ['_Component__invocation_q', '_Component__sys_exit', '_Component__services']:
                 setattr(result, k, None)
             else:
                 setattr(result, k, copy(v))
@@ -61,7 +63,8 @@ class Component:
         self.__component_id = component_id
         self.__invocation_q = invocation_q
         self.__start_time = start_time
-#        setattr(sys, 'exit', sys.exit)
+
+    #        setattr(sys, 'exit', sys.exit)
 
     def __my_exit__(self, arg=0):
         """
@@ -89,14 +92,14 @@ class Component:
         else:
             if str(redirect).strip() != '':
                 if 'OUT_REDIRECT_FNAME' not in self.services.sim_conf:
-                    fname = "%s.out" % (self.services.sim_conf['SIM_NAME'])
+                    fname = '%s.out' % (self.services.sim_conf['SIM_NAME'])
                     fname = os.path.join(self.services.sim_conf['PWD'], fname)
                     print('Redirecting stdout to ', fname, file=sys.stderr)
                 else:
                     fname = self.services.sim_conf['OUT_REDIRECT_FNAME']
                 original_stdout_fd = sys.stdout.fileno()
                 original_stderr_fd = sys.stderr.fileno()
-                outf = open(fname, "a")
+                outf = open(fname, 'a')
                 outf_fno = outf.fileno()
                 # sys.stdout.close()
                 os.dup2(outf_fno, original_stdout_fd)
@@ -113,12 +116,10 @@ class Component:
         try:
             os.makedirs(workdir, exist_ok=True)
         except OSError as oserr:
-            self.services.exception('Error creating directory %s : %s',
-                                    workdir, oserr.strerror)
+            self.services.exception('Error creating directory %s : %s', workdir, oserr.strerror)
             raise
         os.chdir(workdir)
-        self.services.debug('Running - CompID =  %s',
-                            self.component_id.get_serialization())
+        self.services.debug('Running - CompID =  %s', self.component_id.get_serialization())
 
         self.services._init_event_service()
 
@@ -130,27 +131,19 @@ class Component:
             self.__method_name = msg.target_method
             self.__args = msg.args
             keywords = msg.keywords
-            formatted_args = ['%.3f' % (x) if isinstance(x, float)
-                              else str(x) for x in self.__args]
+            formatted_args = ['%.3f' % (x) if isinstance(x, float) else str(x) for x in self.__args]
             if keywords:
-                formatted_args += [" %s=" % k + str(v) for (k, v) in keywords.items()]
+                formatted_args += [' %s=' % k + str(v) for (k, v) in keywords.items()]
 
-            self.services.debug('Calling method ' + self.method_name +
-                                "(" + ' ,'.join(formatted_args) + ")")
+            self.services.debug('Calling method ' + self.method_name + '(' + ' ,'.join(formatted_args) + ')')
             try:
                 method = getattr(self, self.method_name)
                 retval = method(*self.args, **keywords)
             except Exception as e:
                 self.services.exception('Uncaught Exception in component method.')
-                response_msg = MethodResultMessage(self.component_id,
-                                                   sender_id,
-                                                   self.call_id,
-                                                   Message.FAILURE, e)
+                response_msg = MethodResultMessage(self.component_id, sender_id, self.call_id, Message.FAILURE, e)
             else:
-                response_msg = MethodResultMessage(self.component_id,
-                                                   sender_id,
-                                                   self.call_id,
-                                                   Message.SUCCESS, retval)
+                response_msg = MethodResultMessage(self.component_id, sender_id, self.call_id, Message.SUCCESS, retval)
             self.services.fwk_in_q.put(response_msg)
 
     @property

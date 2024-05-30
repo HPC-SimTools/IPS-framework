@@ -48,25 +48,20 @@ class DakotaDynamic:
         # parse file
         try:
             current_dir = inspect.getfile(inspect.currentframe())
-            (self.platform_fname, ipsShareDir) = \
-                platformspec.get_share_and_platform(self.platform_fname,
-                                                    current_dir)
+            (self.platform_fname, ipsShareDir) = platformspec.get_share_and_platform(self.platform_fname, current_dir)
 
             if ipsShareDir:
                 haveComp = False
                 if os.path.exists(os.path.join(ipsShareDir, 'component-generic.conf')):
                     comp_conf_file = os.path.join(ipsShareDir, 'component-generic.conf')
-                    comp_confgobj = ConfigObj(comp_conf_file, interpolation='template',
-                                              file_error=True)
+                    comp_confgobj = ConfigObj(comp_conf_file, interpolation='template', file_error=True)
                     haveComp = True
 
-                self.platform_conf = ConfigObj(self.platform_fname, interpolation='template',
-                                               file_error=True)
+                self.platform_conf = ConfigObj(self.platform_fname, interpolation='template', file_error=True)
                 if haveComp:
                     self.platform_conf.merge(comp_confgobj)
             else:
-                self.platform_conf = ConfigObj(self.platform_fname, interpolation='template',
-                                               file_error=True)
+                self.platform_conf = ConfigObj(self.platform_fname, interpolation='template', file_error=True)
 
         except (IOError, SyntaxError):
             raise
@@ -85,7 +80,7 @@ class DakotaDynamic:
 
         # Import environment variables into config file
         # giving precedence to config file definitions in case of duplicates
-        for (k, v) in os.environ.items():
+        for k, v in os.environ.items():
             if k not in self.template_conf and not any(x in v for x in '{}()$'):
                 self.template_conf[k] = v
 
@@ -137,7 +132,7 @@ class DakotaDynamic:
         driver_conf['INPUT_DIR'] = '/dev/null'
         driver_conf['INPUT_FILES'] = ''
         driver_conf['OUTPUT_FILES'] = ''
-        driver_conf['SCRIPT'] = ""
+        driver_conf['SCRIPT'] = ''
         driver_conf['MODULE'] = 'ipsframework.dakota_bridge'
         self.master_conf['DAKOTA_BRIDGE'] = driver_conf
 
@@ -154,11 +149,10 @@ class DakotaDynamic:
         try:
             os.makedirs(sim_root, exist_ok=True)
         except OSError as oserr:
-            print('Error creating Simulation directory %s : %d %s' %
-                  (sim_root, oserr.errno, oserr.strerror))
+            print('Error creating Simulation directory %s : %d %s' % (sim_root, oserr.errno, oserr.strerror))
             raise
 
-        for (k, v) in self.template_conf.items():
+        for k, v in self.template_conf.items():
             if k not in self.master_conf:
                 try:
                     list(v.keys())
@@ -184,10 +178,9 @@ class DakotaDynamic:
 
         if self.restart_file:
             if not os.path.isfile(self.restart_file):
-                raise Exception("Error accessing DAKOTA restart file %s" % (self.restart_file))
+                raise Exception('Error accessing DAKOTA restart file %s' % (self.restart_file))
 
-        cmd = '%s --simulation=%s --platform=%s --verbose' % (ips, self.master_conf.filename,
-                                                              os.environ['IPS_DAKOTA_platform'])
+        cmd = '%s --simulation=%s --platform=%s --verbose' % (ips, self.master_conf.filename, os.environ['IPS_DAKOTA_platform'])
         if self.log_file:
             cmd += ' --log=' + self.log_file
 
@@ -196,7 +189,7 @@ class DakotaDynamic:
 
         print('cmd =', cmd)
         ips_server_proc = subprocess.Popen(cmd.split())
-        print('%s  Launched IPS' % (time.strftime("%b %d %Y %H:%M:%S", time.localtime())))
+        print('%s  Launched IPS' % (time.strftime('%b %d %Y %H:%M:%S', time.localtime())))
         sys.stdout.flush()
         msg = {'SIMSTATUS': 'START'}
         num_trials = 30
@@ -206,9 +199,11 @@ class DakotaDynamic:
                 conn.send(msg)
                 response = conn.recv()
             except Exception as inst:
-                print('%s  %d ips_dakota_dynamic connecting to IPS dakota bridge' %
-                      (time.strftime("%b %d %Y %H:%M:%S", time.localtime()),
-                       trials), type(inst), str(inst))
+                print(
+                    '%s  %d ips_dakota_dynamic connecting to IPS dakota bridge' % (time.strftime('%b %d %Y %H:%M:%S', time.localtime()), trials),
+                    type(inst),
+                    str(inst),
+                )
                 sys.stdout.flush()
                 if trials == num_trials - 1:
                     ips_server_proc.kill()
@@ -216,18 +211,17 @@ class DakotaDynamic:
                 else:
                     time.sleep(5)
             else:
-                print('%s  ips_dakota_dynamic received response from IPS ' %
-                      (time.strftime("%b %d %Y %H:%M:%S", time.localtime())), str(response))
+                print('%s  ips_dakota_dynamic received response from IPS ' % (time.strftime('%b %d %Y %H:%M:%S', time.localtime())), str(response))
                 conn.close()
                 break
 
         if self.restart_file:
-            command = "dakota -read_restart %s -input %s" % (self.restart_file, new_dakota_config)
+            command = 'dakota -read_restart %s -input %s' % (self.restart_file, new_dakota_config)
         else:
             command = 'dakota %s ' % new_dakota_config
         dakota_logfile = open('dakota_%s.log' % (str(os.getpid())), 'w')
         proc = subprocess.Popen(command.split(), stdout=dakota_logfile, stderr=subprocess.STDOUT)
-        print('%s  Launched DAKOTA' % (time.strftime("%b %d %Y %H:%M:%S", time.localtime())))
+        print('%s  Launched DAKOTA' % (time.strftime('%b %d %Y %H:%M:%S', time.localtime())))
         sys.stdout.flush()
         proc.wait()
 
@@ -239,8 +233,11 @@ class DakotaDynamic:
                 conn.send(msg)
                 response = conn.recv()
             except Exception as inst:
-                print('%s  %d ips_dakota_dynamic connecting to IPS dakota bridge' %
-                      (time.strftime("%b %d %Y %H:%M:%S", time.localtime()), trials), type(inst), str(inst))
+                print(
+                    '%s  %d ips_dakota_dynamic connecting to IPS dakota bridge' % (time.strftime('%b %d %Y %H:%M:%S', time.localtime()), trials),
+                    type(inst),
+                    str(inst),
+                )
                 sys.stdout.flush()
                 if trials == num_trials - 1:
                     ips_server_proc.kill()
@@ -248,8 +245,7 @@ class DakotaDynamic:
                 else:
                     time.sleep(5)
             else:
-                print('%s  ips_dakota_dynamic received response from IPS ' %
-                      (time.strftime("%b %d %Y %H:%M:%S", time.localtime())), str(response))
+                print('%s  ips_dakota_dynamic received response from IPS ' % (time.strftime('%b %d %Y %H:%M:%S', time.localtime())), str(response))
                 conn.close()
                 break
 
@@ -257,12 +253,13 @@ class DakotaDynamic:
 
 
 def printUsageMessage():
-    print("Usage: ips_dakota_dynamic --dakotaconfig=DAKOTA_CONFIG_FILE --simulation=CONFIG_FILE_NAME "
-          "--platform=PLATFORM_FILE_NAME --log=LOG_FILE_NAME --restart=DAKOTA_RESTART_FILE [--debug]")
+    print(
+        'Usage: ips_dakota_dynamic --dakotaconfig=DAKOTA_CONFIG_FILE --simulation=CONFIG_FILE_NAME '
+        '--platform=PLATFORM_FILE_NAME --log=LOG_FILE_NAME --restart=DAKOTA_RESTART_FILE [--debug]'
+    )
 
 
 def main(argv=None):
-
     ips_config_file = None
     platform_filename = ''
     # parse command line arguments
@@ -273,8 +270,7 @@ def main(argv=None):
         first_arg = 0
 
     try:
-        opts, _ = getopt.gnu_getopt(argv[first_arg:], '',
-                                    ["dakotaconfig=", "simulation=", "platform=", "log=", "restart=", "debug"])
+        opts, _ = getopt.gnu_getopt(argv[first_arg:], '', ['dakotaconfig=', 'simulation=', 'platform=', 'log=', 'restart=', 'debug'])
     except getopt.error as msg:
         print('Invalid command line arguments', msg)
         printUsageMessage()
@@ -298,7 +294,7 @@ def main(argv=None):
         elif arg == '--debug':
             debug = True
 
-    if (not ips_config_file or not dakota_cfg):
+    if not ips_config_file or not dakota_cfg:
         printUsageMessage()
         return 1
     try:
@@ -308,9 +304,10 @@ def main(argv=None):
         raise
     return 0
 
+
 # ----- end main -----
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     sys.stdout.flush()
     sys.exit(main())

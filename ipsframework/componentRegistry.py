@@ -18,6 +18,7 @@ class ComponentID:
     Object to facilitate the creation, serialization and deserialization of
     component ids.
     """
+
     delimiter = '@'
     seq_num = 0
     all_ids = {}
@@ -98,14 +99,12 @@ class ComponentID:
 
 
 class ComponentRegistry(metaclass=SingletonMeta):
-
     class RegistryEntry:
         """
         Container for queues and references associated with a component.
         """
 
-        def __init__(self, svc_response_q, invocation_q, component_ref,
-                     services, config):
+        def __init__(self, svc_response_q, invocation_q, component_ref, services, config):
             self.svc_response_q = svc_response_q
             self.invocation_q = invocation_q
             self.component_ref = component_ref
@@ -119,26 +118,21 @@ class ComponentRegistry(metaclass=SingletonMeta):
         """
         Return all of the component ids associated with sim *sim_name*
         """
-        ids = [ComponentID.deserialize(i) for i in self.registry
-               if ComponentID.deserialize(i).get_sim_name() == sim_name]
+        ids = [ComponentID.deserialize(i) for i in self.registry if ComponentID.deserialize(i).get_sim_name() == sim_name]
         return ids
 
-    def addEntry(self, component_id, svc_response_q, invocation_q,
-                 component_ref, services, config):
+    def addEntry(self, component_id, svc_response_q, invocation_q, component_ref, services, config):
         """
         Create a component registry entry for *component_id* and its
         associated queues, component ref, services and configuration
         information.
         """
         key = component_id.get_serialization()
-        value = self.RegistryEntry(svc_response_q, invocation_q,
-                                   component_ref,
-                                   services, config)
+        value = self.RegistryEntry(svc_response_q, invocation_q, component_ref, services, config)
         try:
             self.registry[key] = value
         except KeyError as e:
-            print('Error creating component registry entry for ', key,
-                  ' : ', str(e), file=sys.stderr)
+            print('Error creating component registry entry for ', key, ' : ', str(e), file=sys.stderr)
             raise e
 
     def removeEntry(self, component_id):
@@ -146,8 +140,7 @@ class ComponentRegistry(metaclass=SingletonMeta):
         try:
             del self.registry[key]
         except KeyError as e:
-            print('Error removing component registry entry for ', key,
-                  ' : ', str(e), file=sys.stderr)
+            print('Error removing component registry entry for ', key, ' : ', str(e), file=sys.stderr)
             raise
 
     # SIMYAN: this was added to provide an easy way to use the component

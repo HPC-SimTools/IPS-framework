@@ -14,4 +14,3 @@ class driver(Component):
             self.services.call(w, 'step', t, script_name='multiply_script.sh')
             print('now performing second call at same timestamp', timestamp, file=stderr)
             self.services.call(w, 'step', t, script_name='xor_script.sh')
-

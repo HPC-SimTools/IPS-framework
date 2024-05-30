@@ -28,39 +28,38 @@ management, along with the event service, to provide these features.
 """
 
 setup(
-    name="ipsframework",
+    name='ipsframework',
     version=versioneer.get_version(),
     cmdclass=versioneer.get_cmdclass(),
-    url="https://ips-framework.readthedocs.io",
+    url='https://ips-framework.readthedocs.io',
     project_urls={
         'Documentation': 'https://ips-framework.readthedocs.io',
         'Source': 'https://github.com/HPC-SimTools/IPS-framework',
         'Tracker': 'https://github.com/HPC-SimTools/IPS-framework/issues',
     },
-    description="Integrated Plasma Simulator (IPS) Framework",
+    description='Integrated Plasma Simulator (IPS) Framework',
     license='BSD',
     long_description=long_description,
-    long_description_content_type="text/markdown",
+    long_description_content_type='text/markdown',
     packages=find_packages(),
     entry_points={
         'console_scripts': [
             'ips.py = ipsframework.ips:main',
             'ips_dakota_dynamic.py = ipsframework.ips_dakota_dynamic:main',
-            'ips_dakota_client.py = ipsframework.ips_dakota_client:main'
+            'ips_dakota_client.py = ipsframework.ips_dakota_client:main',
         ]
     },
     classifiers=[
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.6',
-        'Programming Language :: Python :: 3.7',
-        'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',
         'Programming Language :: Python :: 3.10',
+        'Programming Language :: Python :: 3.11',
+        'Programming Language :: Python :: 3.12',
         'License :: OSI Approved :: BSD License',
         'Operating System :: MacOS :: MacOS X',
         'Operating System :: POSIX :: Linux',
     ],
-    python_requires='>=3.8',
+    python_requires='>=3.9',
     zip_safe=True,
     install_requires=[
         'urllib3',
@@ -68,6 +67,6 @@ setup(
         # CHECK DASK VERSIONS ON NERSC PERLMUTTER - this is what matters
         'dask==2022.10.0',
         #'dask==2023.12.1', # TODO need a version compatible with 3.8
-        'distributed'
-    ]
+        'distributed',
+    ],
 )

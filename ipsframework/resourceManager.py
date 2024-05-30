@@ -6,17 +6,18 @@ import os
 import time
 from collections import namedtuple
 from math import ceil
-from .ipsExceptions import (InsufficientResourcesException,
-                            BadResourceRequestException,
-                            ResourceRequestMismatchException,
-                            GPUResourceRequestMismatchException,
-                            ResourceRequestUnequalPartitioningException)
+from .ipsExceptions import (
+    InsufficientResourcesException,
+    BadResourceRequestException,
+    ResourceRequestMismatchException,
+    GPUResourceRequestMismatchException,
+    ResourceRequestUnequalPartitioningException,
+)
 from .ips_es_spec import eventManager
 from .resourceHelper import getResourceList
 from .node_structure import Node
 
-Allocation = namedtuple("Allocation",
-                        ["partial_node", "nodelist", "corelist", "ppn", "max_ppn", "cpp", "accurateNodes", "cores_allocated"])
+Allocation = namedtuple('Allocation', ['partial_node', 'nodelist', 'corelist', 'ppn', 'max_ppn', 'cpp', 'accurateNodes', 'cores_allocated'])
 
 
 class ResourceManager:
@@ -25,6 +26,7 @@ class ResourceManager:
     to the framework, allocating resources to task requests, and maintaining
     the associated bookkeeping.
     """
+
     # RM init
 
     def __init__(self, fwk):
@@ -63,18 +65,17 @@ class ResourceManager:
         self.cores_per_socket = 1
 
         # other stuff
-        self.max_ppn = 1   # the ppn for the whole submission (max ppn allowed by *software*)
+        self.max_ppn = 1  # the ppn for the whole submission (max ppn allowed by *software*)
         self.ppn = 1  # platform config ppn for the whole IPS
         self.gpn = 0
         self.myTopic = None
         self.service_methods = ['get_allocation', 'release_allocation']
 
-        self.fwk.register_service_handler(self.service_methods,
-                                          getattr(self, 'process_service_request'))
+        self.fwk.register_service_handler(self.service_methods, getattr(self, 'process_service_request'))
+
     # RM initialize
 
-    def initialize(self, dataMngr, taskMngr, configMngr,
-                   cmd_nodes=0, cmd_ppn=0):
+    def initialize(self, dataMngr, taskMngr, configMngr, cmd_nodes=0, cmd_ppn=0):
         """
         Initialize resource management structures, references to other
         managers (*dataMngr*, *taskMngr*, *configMngr*).
@@ -94,18 +95,18 @@ class ResourceManager:
         self.CM = configMngr
         self.node_alloc_mode = self.CM.get_platform_parameter('NODE_ALLOCATION_MODE')
 
-        rfile_name = os.path.join(self.CM.sim_map[self.CM.fwk_sim_name].sim_root, "resource_usage")
+        rfile_name = os.path.join(self.CM.sim_map[self.CM.fwk_sim_name].sim_root, 'resource_usage')
         # SIMYAN: try to safely make the directory...
         os.makedirs(self.CM.sim_map[self.CM.fwk_sim_name].sim_root, exist_ok=True)
 
-        self.reporting_file = open(rfile_name, "w")
+        self.reporting_file = open(rfile_name, 'w')
 
         # -------------------------------
         # check cmd line resource spec
         # -------------------------------
         if cmd_nodes != 0 and cmd_ppn != 0:
             # use cmd resource specification
-            self.host = "override_%s" % self.CM.get_platform_parameter('HOST')
+            self.host = 'override_%s' % self.CM.get_platform_parameter('HOST')
             self.max_ppn = cmd_ppn
             self.cores_per_node = int(cmd_ppn)
             self.ppn = int(cmd_ppn)
@@ -113,7 +114,7 @@ class ResourceManager:
             self.accurateNodes = False
             listOfNodes = []
             for i in range(cmd_nodes):
-                listOfNodes.append(("dummy_node%d" % i, cmd_ppn))
+                listOfNodes.append(('dummy_node%d' % i, cmd_ppn))
         else:
             self.ppn = 0
             # -------------------------------
@@ -122,9 +123,7 @@ class ResourceManager:
             self.host = self.CM.get_platform_parameter('HOST')
             self.fwk.debug('RM: Host = %s', self.host)
             try:
-                listOfNodes, self.cores_per_node, self.sockets_per_node,  \
-                    self.max_ppn, self.accurateNodes = \
-                    getResourceList(self.CM, self.host)
+                listOfNodes, self.cores_per_node, self.sockets_per_node, self.max_ppn, self.accurateNodes = getResourceList(self.CM, self.host)
                 self.fwk.warning('RM: listOfNodes = %s', str(listOfNodes))
                 self.fwk.warning('RM: max_ppn = %d ', int(self.max_ppn))
                 if self.accurateNodes is True and not self.CM.get_platform_parameter('USE_ACCURATE_NODES'):
@@ -148,10 +147,10 @@ class ResourceManager:
                 for i, (node, count) in enumerate(listOfNodes):
                     if count > self.ppn:
                         listOfNodes[i] = (node, self.ppn)
-                self.fwk.warning("Using user set procs per node: %d", user_ppn)
+                self.fwk.warning('Using user set procs per node: %d', user_ppn)
             else:
-                self.fwk.warning("Platform specified  PROCS_PER_NODE = %d is greater than batch job specification = %d." % (user_ppn, self.max_ppn))
-                self.fwk.warning("Will use batch job specification to launch tasks")
+                self.fwk.warning('Platform specified  PROCS_PER_NODE = %d is greater than batch job specification = %d.' % (user_ppn, self.max_ppn))
+                self.fwk.warning('Will use batch job specification to launch tasks')
                 self.ppn = self.max_ppn
 
             try:
@@ -161,8 +160,8 @@ class ResourceManager:
                         if count > self.ppn:
                             listOfNodes[i] = (node, self.ppn)
                 else:
-                    self.fwk.warning("Platform specified  PROCS_PER_NODE is greater than batch job specification.")
-                    self.fwk.warning("Will use batch job specification to launch tasks")
+                    self.fwk.warning('Platform specified  PROCS_PER_NODE is greater than batch job specification.')
+                    self.fwk.warning('Will use batch job specification to launch tasks')
                     self.ppn = self.max_ppn
             except Exception:
                 # this stipulation doesn't make sense for explicitly named cores
@@ -174,7 +173,7 @@ class ResourceManager:
             if (self.cores_per_node % self.sockets_per_node) == 0:
                 self.cores_per_socket = self.cores_per_node // self.sockets_per_node
             else:
-                self.fwk.warning("cpn (%d) not divisible by spn(%d) - setting spn to 1" % (self.cores_per_node, self.sockets_per_node))
+                self.fwk.warning('cpn (%d) not divisible by spn(%d) - setting spn to 1' % (self.cores_per_node, self.sockets_per_node))
                 self.sockets_per_node = 1
                 self.cores_per_socket = self.cores_per_node
 
@@ -198,16 +197,16 @@ class ResourceManager:
         """
         Print header information for resource usage reporting file.
         """
-        print("# host:", self.host, file=self.reporting_file)
-        print("# total nodes:", self.num_nodes, file=self.reporting_file)
-        print("# processors per node:", self.ppn, file=self.reporting_file)
-        print("using accurate nodes:", self.accurateNodes, file=self.reporting_file)
-        print("# time (in seconds since the | available | allocated | percent allocated | processes | percent used | notes ", file=self.reporting_file)
-        print("#   resource manager started |           |           |                   |           |              |", file=self.reporting_file)
-        print("#-----------------------------------------------------------------------------------------------------------", file=self.reporting_file)
+        print('# host:', self.host, file=self.reporting_file)
+        print('# total nodes:', self.num_nodes, file=self.reporting_file)
+        print('# processors per node:', self.ppn, file=self.reporting_file)
+        print('using accurate nodes:', self.accurateNodes, file=self.reporting_file)
+        print('# time (in seconds since the | available | allocated | percent allocated | processes | percent used | notes ', file=self.reporting_file)
+        print('#   resource manager started |           |           |                   |           |              |', file=self.reporting_file)
+        print('#-----------------------------------------------------------------------------------------------------------', file=self.reporting_file)
         self.report_RM_status('initial state of resources')
 
-    def report_RM_status(self, notes=""):
+    def report_RM_status(self, notes=''):
         """
         Print current RM status to the reporting_file ("resource_usage")
         Entries consist of:
@@ -220,12 +219,12 @@ class ResourceManager:
          - % cores used by processes
          - notes (a description of the event that changed the resource usage)
         """
-        print(" %27.5f |" % (time.time() - self.rm_start_of_time), end=' ', file=self.reporting_file)
-        print(" %8d |" % self.avail_cores, end=' ', file=self.reporting_file)
-        print(" %8d |" % self.alloc_cores, end=' ', file=self.reporting_file)
-        print(" %16.2f |" % (100 * (float(self.alloc_cores) / self.total_cores)), end=' ', file=self.reporting_file)
-        print(" %8d |" % self.processes, end=' ', file=self.reporting_file)
-        print(" %10.2f  # " % (100 * (float(self.processes) / self.total_cores)), end=' ', file=self.reporting_file)
+        print(' %27.5f |' % (time.time() - self.rm_start_of_time), end=' ', file=self.reporting_file)
+        print(' %8d |' % self.avail_cores, end=' ', file=self.reporting_file)
+        print(' %8d |' % self.alloc_cores, end=' ', file=self.reporting_file)
+        print(' %16.2f |' % (100 * (float(self.alloc_cores) / self.total_cores)), end=' ', file=self.reporting_file)
+        print(' %8d |' % self.processes, end=' ', file=self.reporting_file)
+        print(' %10.2f  # ' % (100 * (float(self.processes) / self.total_cores)), end=' ', file=self.reporting_file)
         print(notes, file=self.reporting_file)
         self.reporting_file.flush()
 
@@ -233,11 +232,11 @@ class ResourceManager:
         """
         Print the node tree to ``stdout``.
         """
-        print("*** RM.nodeTable ***")
+        print('*** RM.nodeTable ***')
         for n, i in self.nodes.items():
             print(n)
             i.print_sockets()
-        print("=====================")
+        print('=====================')
 
     def add_nodes(self, listOfNodes):
         """
@@ -254,8 +253,7 @@ class ResourceManager:
         tot_cores = 0
         for n, p in listOfNodes:
             if n not in self.nodes:
-                self.nodes.update({n: Node(n, self.sockets_per_node,
-                                           self.cores_per_node, p)})
+                self.nodes.update({n: Node(n, self.sockets_per_node, self.cores_per_node, p)})
                 self.num_nodes += 1
                 self.avail_nodes.append(n)
                 if isinstance(p, int):
@@ -266,8 +264,7 @@ class ResourceManager:
 
     # RM getAllocation
     # pylint: disable=inconsistent-return-statements
-    def get_allocation(self, comp_id, nproc, task_id,
-                       whole_nodes, whole_socks, task_ppn=0, task_cpp=0, task_gpp=0):
+    def get_allocation(self, comp_id, nproc, task_id, whole_nodes, whole_socks, task_ppn=0, task_cpp=0, task_gpp=0):
         """
         Traverse available nodes to return:
 
@@ -303,7 +300,7 @@ class ResourceManager:
         if task_ppn > 0:
             if task_ppn > self.ppn:
                 if task_ppn > self.max_ppn:
-                    self.fwk.warning("task ppn exceeds machine ppn, using machine ppn instead")
+                    self.fwk.warning('task ppn exceeds machine ppn, using machine ppn instead')
                     ppn = self.max_ppn
                 else:
                     ppn = task_ppn
@@ -316,9 +313,9 @@ class ResourceManager:
             ppn = nproc
 
         # check if partial node allocation is possible
-        if self.node_alloc_mode == "EXCLUSIVE":
+        if self.node_alloc_mode == 'EXCLUSIVE':
             if not (whole_nodes and whole_socks):
-                self.fwk.warning("No partial node allocation available on this platform, using whole nodes instead.")
+                self.fwk.warning('No partial node allocation available on this platform, using whole nodes instead.')
             whole_nodes = True
             whole_socks = True
 
@@ -330,11 +327,13 @@ class ResourceManager:
 
             if allocation_possible:
                 num_cores = self.cores_per_node
-                max_cpp = num_cores//ppn
+                max_cpp = num_cores // ppn
                 if task_cpp > 0:
                     if task_cpp > max_cpp:
-                        self.fwk.warning(f"task cpp ({task_cpp}) exceeds maximum possible for {ppn} procs per node "
-                                         f"with {num_cores} cores per node, using {max_cpp} cpus per proc instead")
+                        self.fwk.warning(
+                            f'task cpp ({task_cpp}) exceeds maximum possible for {ppn} procs per node '
+                            f'with {num_cores} cores per node, using {max_cpp} cpus per proc instead'
+                        )
                         cpp = max_cpp
                     else:
                         cpp = task_cpp
@@ -347,28 +346,19 @@ class ResourceManager:
             allocation_possible, nodes = self.check_core_cap(nproc, ppn)
 
         if not allocation_possible:
-            if nodes == "bad":
+            if nodes == 'bad':
                 c = ceil(float(nproc) / ppn)
                 raise BadResourceRequestException(comp_id, task_id, c, c - len(self.avail_nodes))
-            if nodes == "mismatch":
-                raise ResourceRequestMismatchException(comp_id, task_id,
-                                                       nproc, ppn,
-                                                       self.total_cores,
-                                                       self.max_ppn)
-            if nodes == "insufficient":
+            if nodes == 'mismatch':
+                raise ResourceRequestMismatchException(comp_id, task_id, nproc, ppn, self.total_cores, self.max_ppn)
+            if nodes == 'insufficient':
                 c = ceil(float(nproc) / ppn)
-                raise InsufficientResourcesException(comp_id, task_id,
-                                                     c, c - len(self.avail_nodes))
-            if nodes == "unequal":
-                raise ResourceRequestUnequalPartitioningException(comp_id, task_id,
-                                                                  nproc, ppn,
-                                                                  self.total_cores,
-                                                                  self.max_ppn)
+                raise InsufficientResourcesException(comp_id, task_id, c, c - len(self.avail_nodes))
+            if nodes == 'unequal':
+                raise ResourceRequestUnequalPartitioningException(comp_id, task_id, nproc, ppn, self.total_cores, self.max_ppn)
         else:
             if not self.check_gpus(ppn, task_gpp):
-                raise GPUResourceRequestMismatchException(comp_id, task_id,
-                                                          ppn, task_gpp,
-                                                          self.gpn)
+                raise GPUResourceRequestMismatchException(comp_id, task_id, ppn, task_gpp, self.gpn)
 
             try:
                 self.processes += nproc
@@ -380,10 +370,7 @@ class ResourceManager:
                     # whole node allocation
                     # -------------------------------
                     for n in nodes:
-                        procs, cores = self.nodes[n].allocate(whole_nodes,
-                                                              whole_socks,
-                                                              task_id, comp_id,
-                                                              ppn)
+                        procs, cores = self.nodes[n].allocate(whole_nodes, whole_socks, task_id, comp_id, ppn)
                         self.avail_nodes.remove(n)
                         self.alloc_nodes.append(n)
                         node_file_entries.append((n, cores))
@@ -398,12 +385,8 @@ class ResourceManager:
                     for n in nodes:
                         node = self.nodes[n]
                         if node.avail_cores > 0:
-                            to_alloc = min([ppn, node.avail_cores,
-                                            nproc - alloc_procs])
-                            procs, cores = node.allocate(whole_nodes,
-                                                         whole_socks,
-                                                         task_id, comp_id,
-                                                         to_alloc)
+                            to_alloc = min([ppn, node.avail_cores, nproc - alloc_procs])
+                            procs, cores = node.allocate(whole_nodes, whole_socks, task_id, comp_id, to_alloc)
                             cores_allocated += len(cores)
                             alloc_procs = min([ppn, len(cores)])
                             node_file_entries.append((n, cores))
@@ -422,13 +405,9 @@ class ResourceManager:
                     for n in nodes:
                         node = self.nodes[n]
                         if node.avail_cores > 0:
-                            to_alloc = min([ppn, node.avail_cores,
-                                            nproc - cores_allocated])
-                            self.fwk.debug("allocate task_id %d node %s %d cores" % (task_id, n, to_alloc))
-                            procs, cores = node.allocate(whole_nodes,
-                                                         whole_socks,
-                                                         task_id, comp_id,
-                                                         to_alloc)
+                            to_alloc = min([ppn, node.avail_cores, nproc - cores_allocated])
+                            self.fwk.debug('allocate task_id %d node %s %d cores' % (task_id, n, to_alloc))
+                            procs, cores = node.allocate(whole_nodes, whole_socks, task_id, comp_id, to_alloc)
                             cores_allocated += procs
                             node_file_entries.append((n, cores))
                             if n not in self.alloc_nodes:
@@ -440,17 +419,17 @@ class ResourceManager:
                     self.avail_cores -= cores_allocated
                     self.active_tasks.update({task_id: (comp_id, nproc, cores_allocated)})
             except Exception:
-                print("Available Nodes:")
+                print('Available Nodes:')
                 for nm in self.avail_nodes:
                     n = self.nodes[nm]
                     print(n.name, n.avail_cores)
                     n.print_sockets()
-                print("\nAllocated Nodes:")
+                print('\nAllocated Nodes:')
                 for nm in self.alloc_nodes:
                     n = self.nodes[nm]
                     print(n.name, n.avail_cores)
                     n.print_sockets()
-                print("\n ***** Neither List!")
+                print('\n ***** Neither List!')
                 for nm, n in self.nodes.items():
                     if nm not in self.avail_nodes and nm not in self.alloc_nodes:
                         print(nm, n.avail_cores)
@@ -458,25 +437,29 @@ class ResourceManager:
                 raise
 
             if whole_nodes:
-                self.report_RM_status("allocation for task %d using whole nodes" % task_id)
-                return Allocation(partial_node=not whole_nodes,
-                                  nodelist=nodes,
-                                  corelist=None,
-                                  ppn=ppn,
-                                  max_ppn=self.max_ppn,
-                                  cpp=cpp,
-                                  accurateNodes=self.accurateNodes,
-                                  cores_allocated=cores_allocated)
+                self.report_RM_status('allocation for task %d using whole nodes' % task_id)
+                return Allocation(
+                    partial_node=not whole_nodes,
+                    nodelist=nodes,
+                    corelist=None,
+                    ppn=ppn,
+                    max_ppn=self.max_ppn,
+                    cpp=cpp,
+                    accurateNodes=self.accurateNodes,
+                    cores_allocated=cores_allocated,
+                )
             else:
-                self.report_RM_status("allocation for task %d using partial nodes" % task_id)
-                return Allocation(partial_node=not whole_nodes,
-                                  nodelist=nodes,
-                                  corelist=node_file_entries,
-                                  ppn=ppn,
-                                  max_ppn=self.max_ppn,
-                                  cpp=None,
-                                  accurateNodes=self.accurateNodes,
-                                  cores_allocated=cores_allocated)
+                self.report_RM_status('allocation for task %d using partial nodes' % task_id)
+                return Allocation(
+                    partial_node=not whole_nodes,
+                    nodelist=nodes,
+                    corelist=node_file_entries,
+                    ppn=ppn,
+                    max_ppn=self.max_ppn,
+                    cpp=None,
+                    accurateNodes=self.accurateNodes,
+                    cores_allocated=cores_allocated,
+                )
 
     def check_whole_node_cap(self, nproc, ppn):
         """
@@ -497,23 +480,23 @@ class ResourceManager:
                     nodes.append(n)
                     if whole_cap >= nproc:
                         if nproc > ppn and nproc % ppn != 0:
-                            return False, "unequal"
+                            return False, 'unequal'
                         else:
                             return True, nodes
         except Exception:
-            self.fwk.exception("problem in RM.check_whole_node_cap")
+            self.fwk.exception('problem in RM.check_whole_node_cap')
             raise
         # check to see if it is possible to satisfy the request
         tot_cap = 0
         for n in self.nodes.values():
             tot_cap += min([ppn, n.total_cores])
             if tot_cap >= nproc:
-                return False, "insufficient"
+                return False, 'insufficient'
 
         if self.total_cores < nproc:
-            return False, "bad"
+            return False, 'bad'
         else:
-            return False, "mismatch"
+            return False, 'mismatch'
 
     def check_whole_sock_cap(self, nproc, ppn):
         """
@@ -545,19 +528,19 @@ class ResourceManager:
                 if k >= nproc:
                     return True, nodes
         except Exception:
-            self.fwk.exception("problem in RM.check_whole_sock_cap")
+            self.fwk.exception('problem in RM.check_whole_sock_cap')
             raise
         # check to see if it is possible to satisfy the request
         tot_cap = 0
         for n in self.nodes.values():
             tot_cap += min([ppn, n.total_cores])
             if tot_cap >= nproc:
-                return False, "insufficient"
+                return False, 'insufficient'
 
         if self.total_cores < nproc:
-            return False, "bad"
+            return False, 'bad'
         else:
-            return False, "mismatch"
+            return False, 'mismatch'
 
     def check_core_cap(self, nproc, ppn):
         """
@@ -577,7 +560,7 @@ class ResourceManager:
                     if node.avail_cores >= nproc - k:
                         k = nproc
                         nodes.append(n)
-                        self.fwk.debug("found nodes (%s) and returning" % nodes)
+                        self.fwk.debug('found nodes (%s) and returning' % nodes)
                         return True, nodes
                     elif node.avail_cores > 0:
                         k += node.avail_cores
@@ -592,19 +575,19 @@ class ResourceManager:
                 if k >= nproc:
                     return True, nodes
         except Exception:
-            self.fwk.exception("problem in RM.check_core_cap")
+            self.fwk.exception('problem in RM.check_core_cap')
             raise
         # check to see if it is possible to satisfy the request
         tot_cap = 0
         for n in self.nodes.values():
             tot_cap += min([ppn, n.total_cores])
             if tot_cap >= nproc:
-                return False, "insufficient"
+                return False, 'insufficient'
 
         if self.total_cores < nproc:
-            return False, "bad"
+            return False, 'bad'
         else:
-            return False, "mismatch"
+            return False, 'mismatch'
 
     def check_gpus(self, ppn, task_gpp):
         return ppn * task_gpp <= self.gpn
@@ -646,7 +629,6 @@ class ResourceManager:
         # -------------------------------
         # populate event body
         eventBody = {}
-        eventBody.update({'event name': eventName, 'topic': 'test', 'sender': 'RM',
-                          'data': 'A resource event has occured'})
+        eventBody.update({'event name': eventName, 'topic': 'test', 'sender': 'RM', 'data': 'A resource event has occured'})
         eventBody.update(info)
         # send event on topic

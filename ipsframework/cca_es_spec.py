@@ -8,6 +8,7 @@ https://www.cca-forum.org/wiki/tiki-index.php?page=Event+Specification+Proposal
 It pretty much forwards calls to an event proxy which in turn talks to the
 central event service.
 """
+
 from copy import deepcopy
 
 _proxy = None
@@ -32,9 +33,7 @@ class PublisherEventService:
     """
 
     def getTopic(self, topicName):
-        """
-
-        """
+        """ """
         return _proxy.getTopic(topicName)
 
     def existsTopic(self, topicName):
@@ -107,8 +106,7 @@ class Subscription:
         self.subscriptionName = subscriptionName
 
     def registerEventListener(self, listenerKey, theListener):
-        _proxy.registerEventListener(self.subscriberid, self.subscriptionName,
-                                     listenerKey, theListener.listenerid, theListener)
+        _proxy.registerEventListener(self.subscriberid, self.subscriptionName, listenerKey, theListener.listenerid, theListener)
 
     def unregisterEventListener(self, listenerKey):
         _proxy.unregisterEventListener(self.subscriberid, self.subscriptionName, listenerKey)

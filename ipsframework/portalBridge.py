@@ -4,11 +4,9 @@
 import re
 
 import datetime
-import sys
 import os
 from multiprocessing import Process, Pipe, Event
 import time
-import inspect
 from collections import defaultdict
 import hashlib
 import glob
@@ -18,13 +16,14 @@ import urllib3
 from ipsframework import ipsutil, Component
 from ipsframework.convert_log_function import convert_logdata_to_html
 
+
 def hash_file(file_name):  # pragma: no cover
-    '''
+    """
     Return the MD5 hash of a file
     :rtype: str
     :param file_name: Full path to file
     :return: MD5 of file_name
-    '''
+    """
     BLOCKSIZE = 65536
     hasher = hashlib.md5()
     with open(file_name, 'rb') as afile:
@@ -38,8 +37,7 @@ def hash_file(file_name):  # pragma: no cover
 def send_post(conn, stop, url):
     fail_count = 0
 
-    http = urllib3.PoolManager(retries=urllib3.util.Retry(3, backoff_factor=0.25),
-                               headers={'Content-Type': 'application/json'})
+    http = urllib3.PoolManager(retries=urllib3.util.Retry(3, backoff_factor=0.25), headers={'Content-Type': 'application/json'})
 
     while True:
         if conn.poll(0.1):
@@ -47,7 +45,7 @@ def send_post(conn, stop, url):
             while conn.poll(0.01):
                 msgs.append(conn.recv())
             try:
-                resp = http.request("POST", url, body=json.dumps(msgs).encode())
+                resp = http.request('POST', url, body=json.dumps(msgs).encode())
             except urllib3.exceptions.MaxRetryError as e:
                 fail_count += 1
                 conn.send((999, str(e)))
@@ -56,7 +54,7 @@ def send_post(conn, stop, url):
                 fail_count = 0
 
             if fail_count >= 3:
-                conn.send((-1, "Too many consecutive failed connections"))
+                conn.send((-1, 'Too many consecutive failed connections'))
                 break
         elif stop.is_set():
             break
@@ -74,7 +72,7 @@ class PortalBridge(Component):
 
         def __init__(self):
             self.counter = 0
-            self.monitor_file_name = ""
+            self.monitor_file_name = ''
             self.portal_runid = None
             self.parent_portal_runid = None
             self.sim_name = ''
@@ -85,7 +83,7 @@ class PortalBridge(Component):
             self.monitor_url = None
             self.mpo_steps = [None]
             self.mpo_wid = None
-            self.bigbuf = ""
+            self.bigbuf = ''
 
     def __init__(self, services, config):
         """
@@ -109,7 +107,7 @@ class PortalBridge(Component):
         self.min_dump_interval = 300  # Minimum time interval in Sec for HTML dump operation
         self.last_dump_time = time.time()
         self.write_to_htmldir = True
-        self.html_dir = ""
+        self.html_dir = ''
         self.first_portal_runid = None
 
     def init(self, timestamp=0.0, **keywords):
@@ -121,22 +119,22 @@ class PortalBridge(Component):
             self.portal_url = self.PORTAL_URL
         except AttributeError:
             pass
-        self.services.subscribe('_IPS_MONITOR', "process_event")
+        self.services.subscribe('_IPS_MONITOR', 'process_event')
         try:
-            freq = int(self.services.get_config_param("HTML_DUMP_FREQ", silent=True))
+            freq = int(self.services.get_config_param('HTML_DUMP_FREQ', silent=True))
         except Exception:
             pass
         else:
             self.dump_freq = freq
 
         try:
-            self.html_dir = self.services.get_config_param("USER_W3_DIR", silent=True)
+            self.html_dir = self.services.get_config_param('USER_W3_DIR', silent=True)
         except Exception:
-            self.services.warning("Missing USER_W3_DIR configuration - disabling web-visible logging")
+            self.services.warning('Missing USER_W3_DIR configuration - disabling web-visible logging')
             self.write_to_htmldir = False
         else:
             if self.html_dir.strip() == '':
-                self.services.warning("Empty USER_W3_DIR configuration - disabling web-visible logging")
+                self.services.warning('Empty USER_W3_DIR configuration - disabling web-visible logging')
                 self.write_to_htmldir = False
             else:
                 try:
@@ -144,7 +142,7 @@ class PortalBridge(Component):
                 except FileExistsError:
                     pass
                 except Exception:
-                    self.services.warning("Unable to create HTML directory - disabling web-visible logging")
+                    self.services.warning('Unable to create HTML directory - disabling web-visible logging')
                     self.write_to_htmldir = False
 
     def step(self, timestamp=0.0, **keywords):
@@ -171,9 +169,9 @@ class PortalBridge(Component):
         sim_name = event_body['sim_name']
         portal_data = event_body['portal_data']
         try:
-            portal_data["sim_name"] = event_body['real_sim_name']
+            portal_data['sim_name'] = event_body['real_sim_name']
         except KeyError:
-            portal_data["sim_name"] = sim_name
+            portal_data['sim_name'] = sim_name
 
         if portal_data['eventtype'] == 'IPS_START':
             sim_root = event_body['sim_root']
@@ -221,11 +219,11 @@ class PortalBridge(Component):
         """
         timestamp = ipsutil.getTimeString()
         buf = '%8d %s ' % (sim_data.counter, timestamp)
-        for (k, v) in event_data.items():
+        for k, v in event_data.items():
             if len(str(v).strip()) == 0:
                 continue
             if ' ' in str(v):
-                buf += '%s=\'%s\' ' % (k, str(v))
+                buf += "%s='%s' " % (k, str(v))
             else:
                 buf += '%s=%s ' % (k, str(v))
         buf += '\n'
@@ -233,21 +231,20 @@ class PortalBridge(Component):
         sim_data.bigbuf += buf
 
         buf = json.dumps(event_data)
-        sim_data.json_monitor_file.write("%s\n" % buf)
+        sim_data.json_monitor_file.write('%s\n' % buf)
 
         freq = self.dump_freq
-        if (((self.counter % freq == 0) and (time.time() - self.last_dump_time > self.min_dump_interval)) or
-                (event_data['eventtype'] == 'IPS_END')):
+        if ((self.counter % freq == 0) and (time.time() - self.last_dump_time > self.min_dump_interval)) or (event_data['eventtype'] == 'IPS_END'):
             self.last_dump_time = time.time()
             html_filename = sim_data.monitor_file_name.replace('eventlog', 'html')
             html_page = convert_logdata_to_html(sim_data.bigbuf)
-            open(html_filename, "w").writelines(html_page)
+            open(html_filename, 'w').writelines(html_page)
             if self.write_to_htmldir:
                 html_file = os.path.join(self.html_dir, os.path.basename(html_filename))
                 try:
-                    open(html_file, "w").writelines(html_page)
+                    open(html_file, 'w').writelines(html_page)
                 except Exception:
-                    self.services.exception("Error writing html file into USER_W3_DIR directory")
+                    self.services.exception('Error writing html file into USER_W3_DIR directory')
                     self.write_to_htmldir = False
 
         if self.portal_url:
@@ -277,27 +274,27 @@ class PortalBridge(Component):
 
             try:
                 data = json.loads(msg)
-                if "runid" in data:
-                    self.services.info("Run Portal URL = %s/%s", self.portal_url, data.get('runid'))
+                if 'runid' in data:
+                    self.services.info('Run Portal URL = %s/%s', self.portal_url, data.get('runid'))
 
                 msg = json.dumps(data)
             except (TypeError, json.decoder.JSONDecodeError):
                 pass
             if code == 200:
-                self.services.debug("Portal Response: %d %s", code, msg)
+                self.services.debug('Portal Response: %d %s', code, msg)
             elif code == -1:
                 # disable portal, stop trying to send more data
                 self.portal_url = None
-                self.services.error("Disabling portal because: %s", msg)
+                self.services.error('Disabling portal because: %s', msg)
             else:
-                self.services.error("Portal Error: %d %s", code, msg)
+                self.services.error('Portal Error: %d %s', code, msg)
 
     def send_mpo_data(self, event_data, sim_data):  # pragma: no cover
         def md5(fname):
             "Courtesy of stackoverflow 3431825"
             hash_md5 = hashlib.md5()
-            with open(fname, "rb") as f:
-                for chunk in iter(lambda: f.read(4096), b""):
+            with open(fname, 'rb') as f:
+                for chunk in iter(lambda: f.read(4096), b''):
                     hash_md5.update(chunk)
             return hash_md5.hexdigest()
 
@@ -319,7 +316,7 @@ class PortalBridge(Component):
             try:
                 checksum = md5(file)
             except Exception:
-                print(("checksum could not find file:", file))
+                print(('checksum could not find file:', file))
                 raise
 
             is_checksum = self.mpo.search('metadata', params={'key': 'ips_checksum', 'value': checksum})
@@ -369,16 +366,14 @@ class PortalBridge(Component):
             return
         try:
             if event_type == 'IPS_STAGE_INPUTS':
-                r = re.compile(r"^Elapsed time = ([0-9]*\.[0-9]*) Path = ([^ ]*) Files = (.*)")
+                r = re.compile(r'^Elapsed time = ([0-9]*\.[0-9]*) Path = ([^ ]*) Files = (.*)')
                 o = r.match(comment)
                 (_, path, files) = o.groups()
                 glist = [glob.glob(os.path.join(path, f)) for f in files.split()]
                 for file_name in [os.path.basename(f) for f in itertools.chain(*glist)]:
-                    mpo_data_obj = mpo_add_file(sim_data.mpo_wid,
-                                                sim_data.mpo_wid['uid'],
-                                                os.path.join(path, file_name),
-                                                shortname=file_name,
-                                                longdesc="An input file")
+                    mpo_data_obj = mpo_add_file(
+                        sim_data.mpo_wid, sim_data.mpo_wid['uid'], os.path.join(path, file_name), shortname=file_name, longdesc='An input file'
+                    )
                     inp_objs.append(mpo_data_obj['uid'])
 
             if event_type == 'IPS_STAGE_INPUTS' and not inp_objs:
@@ -387,22 +382,19 @@ class PortalBridge(Component):
             count = self.mpo_name_counter[sim_data.sim_name + event_data['code']]
             if event_type == 'IPS_CALL_BEGIN':
                 target = event_data['comment'].split()[-1]
-                step_name = "%s %d" % (target, count)
+                step_name = '%s %d' % (target, count)
             else:
-                step_name = "{0:s} {1:s} {2:d}" \
-                    .format(event_data['code'].split('_')[-1], event_type, count)
+                step_name = '{0:s} {1:s} {2:d}'.format(event_data['code'].split('_')[-1], event_type, count)
 
             if event_type == 'IPS_STAGE_OUTPUTS':
-                r = re.compile(r"^Elapsed time = ([0-9]*\.[0-9]*) Path = ([^ ]*) Files = (.*)")
+                r = re.compile(r'^Elapsed time = ([0-9]*\.[0-9]*) Path = ([^ ]*) Files = (.*)')
                 o = r.match(comment)
                 (_, path, files) = o.groups()
                 if not files:
                     return
-            activity = self.mpo.step(workflow_ID=sim_data.mpo_wid,
-                                     parentobj_ID=sim_data.mpo_steps[-1],
-                                     input_objs=inp_objs,
-                                     name=step_name,
-                                     desc="%s" % event_data['comment'])
+            activity = self.mpo.step(
+                workflow_ID=sim_data.mpo_wid, parentobj_ID=sim_data.mpo_steps[-1], input_objs=inp_objs, name=step_name, desc='%s' % event_data['comment']
+            )
             self.mpo_name_counter[sim_data.sim_name + event_data['code']] += 1
             if event_type == 'IPS_STAGE_OUTPUTS':
                 glist = [glob.glob(os.path.join(path, f)) for f in files.split()]
@@ -424,15 +416,17 @@ class PortalBridge(Component):
                                                 desc="An output file",
                                                 uri='file:' + os.path.join(path, file_name))
                     """
-                    mpo_data_obj = mpo_add_file(sim_data.mpo_wid,
-                                                activity['uid'],
-                                                # sim_data.mpo_wid['uid'],
-                                                os.path.join(path, file_name),
-                                                shortname=file_name,
-                                                longdesc="An output file")
+                    mpo_data_obj = mpo_add_file(
+                        sim_data.mpo_wid,
+                        activity['uid'],
+                        # sim_data.mpo_wid['uid'],
+                        os.path.join(path, file_name),
+                        shortname=file_name,
+                        longdesc='An output file',
+                    )
 
         except Exception as e:
-            print("*************", e)
+            print('*************', e)
         else:
             if event_type in recordable_mpo_activities:
                 sim_data.mpo_steps.append(activity['uid'])
@@ -449,11 +443,10 @@ class PortalBridge(Component):
         sim_data.sim_root = sim_root
 
         d = datetime.datetime.now()
-        date_str = "%s.%03d" % (d.strftime("%Y-%m-%dT%H:%M:%S"), int(d.microsecond / 1000))
-        sim_data.portal_runid = "_".join([sim_name, getattr(self, "HOST"), getattr(self, "USER"), date_str])
+        date_str = '%s.%03d' % (d.strftime('%Y-%m-%dT%H:%M:%S'), int(d.microsecond / 1000))
+        sim_data.portal_runid = '_'.join([sim_name, getattr(self, 'HOST'), getattr(self, 'USER'), date_str])
         try:
-            self.services.set_config_param('PORTAL_RUNID', sim_data.portal_runid,
-                                           target_sim_name=sim_name)
+            self.services.set_config_param('PORTAL_RUNID', sim_data.portal_runid, target_sim_name=sim_name)
         except Exception:
             self.services.error('Simulation %s is not accessible', sim_name)
             return
@@ -469,16 +462,14 @@ class PortalBridge(Component):
         try:
             os.makedirs(sim_log_dir, exist_ok=True)
         except OSError as oserr:
-            self.services.exception('Error creating Simulation Log directory %s : %d %s' %
-                                    (sim_log_dir, oserr.errno, oserr.strerror))
+            self.services.exception('Error creating Simulation Log directory %s : %d %s' % (sim_log_dir, oserr.errno, oserr.strerror))
             raise
 
         sim_data.monitor_file_name = os.path.join(sim_log_dir, sim_data.portal_runid + '.eventlog')
         try:
             sim_data.monitor_file = open(sim_data.monitor_file_name, 'wb', 0)
         except IOError as oserr:
-            self.services.error("Error opening file %s: error(%s): %s" %
-                                (sim_data.monitor_file_name, oserr.errno, oserr.strerror))
+            self.services.error('Error opening file %s: error(%s): %s' % (sim_data.monitor_file_name, oserr.errno, oserr.strerror))
             self.services.error('Using /dev/null instead')
             sim_data.monitor_file = open('/dev/null', 'w')
         json_fname = sim_data.monitor_file_name.replace('eventlog', 'json')
@@ -486,13 +477,11 @@ class PortalBridge(Component):
 
         if self.mpo:  # pragma: no cover
             try:
-                sim_data.mpo_wid = self.mpo.init(name="SWIM Workflow " + os.environ["USER"],
-                                                 desc=sim_data.sim_name,
-                                                 wtype="SWIM")
-                print("sim_data.mpo_wid = ", sim_data.mpo_wid)
+                sim_data.mpo_wid = self.mpo.init(name='SWIM Workflow ' + os.environ['USER'], desc=sim_data.sim_name, wtype='SWIM')
+                print('sim_data.mpo_wid = ', sim_data.mpo_wid)
             except Exception as e:
                 print(e)
-                print("sim_data.mpo_wid = ", sim_data.mpo_wid)
+                print('sim_data.mpo_wid = ', sim_data.mpo_wid)
                 sim_data.mpo_wid = None
             else:
                 sim_data.mpo_steps = [sim_data.mpo_wid['uid']]

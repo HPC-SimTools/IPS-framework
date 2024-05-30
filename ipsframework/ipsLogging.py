@@ -16,12 +16,9 @@ import select
 
 
 class myLogRecordStreamHandler(socketserver.StreamRequestHandler):
-
     def __init__(self, request, client_address, server, handler):
         self.handler = handler
-        super().__init__(request,
-                         client_address,
-                         server)
+        super().__init__(request, client_address, server)
 
     def handle(self):
         """
@@ -33,7 +30,7 @@ class myLogRecordStreamHandler(socketserver.StreamRequestHandler):
             chunk = self.connection.recv(4)
             if len(chunk) < 4:
                 break
-            slen = struct.unpack(">L", chunk)[0]
+            slen = struct.unpack('>L', chunk)[0]
             chunk = self.connection.recv(slen)
             while len(chunk) < slen:
                 chunk = chunk + self.connection.recv(slen - len(chunk))
@@ -60,13 +57,11 @@ class myLogRecordStreamHandler(socketserver.StreamRequestHandler):
 
 
 class LogRecordSocketReceiver(socketserver.ThreadingUnixStreamServer):
-    """simple TCP socket-based logging receiver suitable for testing.
-    """
+    """simple TCP socket-based logging receiver suitable for testing."""
 
     allow_reuse_address = True
 
-    def __init__(self, log_pipe,
-                 handler=myLogRecordStreamHandler):
+    def __init__(self, log_pipe, handler=myLogRecordStreamHandler):
         super().__init__(log_pipe, handler)
 
     def get_file_no(self):
@@ -78,11 +73,11 @@ class ipsLogger:
         self.log_map = {}
         self.server_map = {}
         self.stdout_handler = logging.StreamHandler(sys.stdout)
-        self.formatter = logging.Formatter("%(asctime)s %(name)-15s %(levelname)-8s %(message)s")
+        self.formatter = logging.Formatter('%(asctime)s %(name)-15s %(levelname)-8s %(message)s')
         self.log_dynamic_sim_queue = dynamic_sim_queue
 
     def add_sim_log(self, log_pipe_name, log_file=sys.stdout):
-        if (log_file == sys.stdout or log_file is None):
+        if log_file == sys.stdout or log_file is None:
             log_handler = self.stdout_handler
         else:
             if log_file.__class__.__name__ == 'TextIOWrapper':
@@ -92,14 +87,12 @@ class ipsLogger:
                 try:
                     os.makedirs(directory, exist_ok=True)
                 except OSError as oserr:
-                    print('Error creating directory %s : %s-%s' %
-                          (directory, oserr.errno, oserr.strerror), file=sys.stderr)
+                    print('Error creating directory %s : %s-%s' % (directory, oserr.errno, oserr.strerror), file=sys.stderr)
                     sys.exit(1)
                 log_handler = logging.FileHandler(log_file, mode='w')
 
         log_handler.setFormatter(self.formatter)
-        partial_handler = functools.partial(myLogRecordStreamHandler,
-                                            handler=log_handler)
+        partial_handler = functools.partial(myLogRecordStreamHandler, handler=log_handler)
         recvr = LogRecordSocketReceiver(log_pipe_name, handler=partial_handler)
         fileno = recvr.get_file_no()
         self.log_map[fileno] = (recvr, log_handler, log_pipe_name)
@@ -109,9 +102,7 @@ class ipsLogger:
         while 1:
             read_set = self.log_map.keys()
             if read_set:
-                rd, _, _ = select.select(read_set,
-                                         [], [],
-                                         time_out)
+                rd, _, _ = select.select(read_set, [], [], time_out)
             else:
                 time.sleep(time_out)
                 rd = []

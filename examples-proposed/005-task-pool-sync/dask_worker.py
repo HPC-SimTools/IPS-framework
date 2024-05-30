@@ -24,9 +24,7 @@ class DaskWorker(Component):
         self.services.add_task('pool', 'function', 1, cwd, myFun, duration)
         self.services.add_task('pool', 'method', 1, cwd, copy.copy(self).myMethod, duration)
 
-        ret_val = self.services.submit_tasks('pool',
-                                             use_dask=True,
-                                             dask_nodes=1)
+        ret_val = self.services.submit_tasks('pool', use_dask=True, dask_nodes=1)
         print('ret_val =', ret_val, file=stderr)
         # Calling get_finished_tasks will effectively either "join" the disparate threads, or throw an exception.
         # NOTE: After executing get_finished_tasks, you may see warning/error log messages from either Dask or Tornado.

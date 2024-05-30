@@ -8,6 +8,7 @@ class Message:
     Base class for all IPS messages. **Should not be used in actual
     communication.**
     """
+
     SUCCESS = 0
     FAILURE = 1
     delimiter = ''
@@ -22,10 +23,7 @@ class Message:
     def get_message_id(self):
         if self.message_id is None:
             delim = self.delimiter
-            self.message_id = delim.join([self.identifier,
-                                          str(self.sender_id),
-                                          str(self.receiver_id),
-                                          str(self.counter)])
+            self.message_id = delim.join([self.identifier, str(self.sender_id), str(self.receiver_id), str(self.counter)])
             self.__class__.counter += 1
         return self.message_id
 
@@ -41,6 +39,7 @@ class ServiceRequestMessage(Message):
       * *target_method*: name of method to be invoked on component *target_comp_id*
       * *\*args*: any number of arguments.  These are specific to the target method.
     """
+
     counter = 0
     delimiter = '|'
     identifier = 'REQUEST'
@@ -65,6 +64,7 @@ class ServiceResponseMessage(Message):
       * *status*: either Message.SUCCESS or Message.FAILURE
       * *\*args*: any number of arguments.  These are specific to type of response.
     """
+
     counter = 0
     delimiter = '|'
     identifier = 'RESPONSE'
@@ -77,8 +77,10 @@ class ServiceResponseMessage(Message):
         self.message_id = self.get_message_id()
 
     def __repr__(self):
-        return (f'ServiceResponseMessage(sender_id={self.sender_id}, receiver_id={self.receiver_id}, request_msg_id={self.request_msg_id},'
-                f'status={self.status}, args={self.args}, message_id={self.message_id})')
+        return (
+            f'ServiceResponseMessage(sender_id={self.sender_id}, receiver_id={self.receiver_id}, request_msg_id={self.request_msg_id},'
+            f'status={self.status}, args={self.args}, message_id={self.message_id})'
+        )
 
 
 class MethodInvokeMessage(Message):
@@ -91,6 +93,7 @@ class MethodInvokeMessage(Message):
       * *target_method*: method to be invoked on the receiver
       * *\*args*: arguments to be passed to the *target_method*
     """
+
     counter = 0
     delimiter = '|'
     identifier = 'INVOKE'
@@ -114,6 +117,7 @@ class MethodResultMessage(Message):
       * *status*: either Message.SUCCESS or Message.FAILURE indicating the success of failure of the invocation.
       * *\*args*: other information to be passed back to the caller.
     """
+
     counter = 0
     delimiter = '|'
     identifier = 'RESULT'

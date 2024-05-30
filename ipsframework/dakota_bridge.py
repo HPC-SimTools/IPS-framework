@@ -11,7 +11,6 @@ from .component import Component
 
 
 class Driver(Component):
-
     def __init__(self, services, config):
         super().__init__(services, config)
         self.done = False
@@ -29,10 +28,9 @@ class Driver(Component):
         self.idle_timeout = 300
 
     def init(self, timestamp=0, **keywords):
-        self.services.subscribe('_IPS_DYNAMIC_SIMULATION', "process_event")
+        self.services.subscribe('_IPS_DYNAMIC_SIMULATION', 'process_event')
 
     def step(self, timestamp=0, **keywords):  # pragma: no cover
-
         services = self.services
         sim_root = services.get_config_param('SIM_ROOT')
         sim_name = services.get_config_param('SIM_NAME')
@@ -55,13 +53,11 @@ class Driver(Component):
 
         sim_config_files = []
         idx = 0
-        print('%s  About to Create Listener %s' % (
-            time.strftime("%b %d %Y %H:%M:%S", time.localtime()), str(self.socket_address)))
+        print('%s  About to Create Listener %s' % (time.strftime('%b %d %Y %H:%M:%S', time.localtime()), str(self.socket_address)))
         sys.stdout.flush()
         listener = Listener(str(self.socket_address), 'AF_UNIX')
         self.services.warning('Created listener %s', str(self.socket_address))
-        print('%s  Created Listener %s' % (
-            time.strftime("%b %d %Y %H:%M:%S", time.localtime()), str(self.socket_address)))
+        print('%s  Created Listener %s' % (time.strftime('%b %d %Y %H:%M:%S', time.localtime()), str(self.socket_address)))
         sys.stdout.flush()
         sim_cache = {}
         sock_fileno = listener._listener._socket.fileno()
@@ -105,8 +101,7 @@ class Driver(Component):
             try:
                 msg = conn.recv()
             except Exception as inst:
-                print('%s EXCEPTION in conn.recv(): failed connections = ' % (
-                    time.strftime("%b %d %Y %H:%M:%S", time.localtime())), type(inst), str(inst))
+                print('%s EXCEPTION in conn.recv(): failed connections = ' % (time.strftime('%b %d %Y %H:%M:%S', time.localtime())), type(inst), str(inst))
                 if failed_connections > 5:
                     raise
                 else:
@@ -125,7 +120,7 @@ class Driver(Component):
                 if status == 'START':
                     continue
                 else:
-                    print('%s ' % (time.strftime("%b %d %Y %H:%M:%S", time.localtime())), end=' ')
+                    print('%s ' % (time.strftime('%b %d %Y %H:%M:%S', time.localtime())), end=' ')
                     print('Received status = ' + status + ', returning from dakota_bridge.')
                     break
             instance_id = '%s_%04d' % (dakota_runid, idx)
@@ -136,16 +131,15 @@ class Driver(Component):
             self.old_master_conf['SIM_NAME'] = self.sim_name + '_%s' % (instance_id)
             self.old_master_conf['LOG_FILE'] = self.sim_logfile + '_%s' % (instance_id)
             self.old_master_conf['OUT_REDIRECT'] = 'TRUE'
-            self.old_master_conf['PARENT_PORTAL_RUNID'] = services.get_config_param("PORTAL_RUNID")
-            fname = "%s.out" % (self.old_master_conf['SIM_NAME'])
+            self.old_master_conf['PARENT_PORTAL_RUNID'] = services.get_config_param('PORTAL_RUNID')
+            fname = '%s.out' % (self.old_master_conf['SIM_NAME'])
             fname = os.path.join(self.sim_root, fname)
             self.old_master_conf['OUT_REDIRECT_FNAME'] = fname
             print('Redirecting stdout for %s to %s ' % (self.old_master_conf['SIM_NAME'], fname))
             try:
                 os.makedirs(self.old_master_conf['SIM_ROOT'], exist_ok=True)
             except OSError as oserr:
-                print('Error creating Simulation directory %s : %d %s' %
-                      (self.old_master_conf['SIM_ROOT'], oserr.errno, oserr.strerror))
+                print('Error creating Simulation directory %s : %d %s' % (self.old_master_conf['SIM_ROOT'], oserr.errno, oserr.strerror))
                 raise
             if first_sim:
                 summary_file = open(os.path.join(self.sim_root, 'SIMULATION_LIST.%s' % (dakota_runid)), 'a', 1)
@@ -154,7 +148,7 @@ class Driver(Component):
             param_string = ''
             summary_string = 'simulation_%s    ' % (instance_id)
             title_string = 'SIMULATION    '
-            for (comp, param, val) in msg:
+            for comp, param, val in msg:
                 if comp == '*':
                     self.old_master_conf[param] = val
                 else:
@@ -164,7 +158,7 @@ class Driver(Component):
                 title_string += '%s:%s    ' % (comp, param)
                 summary_string += '%s    ' % (val)
             if first_sim:
-                summary_file.write("%s\n" % (title_string))
+                summary_file.write('%s\n' % (title_string))
                 first_sim = False
             summary_file.write('%s\n' % (summary_string))
             summary_file.flush()

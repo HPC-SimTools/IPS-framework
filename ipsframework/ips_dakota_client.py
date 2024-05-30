@@ -30,8 +30,7 @@ class IPSDakotaClient:
         """
         # parse file
         try:
-            self.platform_conf = ConfigObj(self.platform_fname, interpolation='template',
-                                           file_error=True)
+            self.platform_conf = ConfigObj(self.platform_fname, interpolation='template', file_error=True)
         except (IOError, SyntaxError):
             raise
         """
@@ -44,7 +43,7 @@ class IPSDakotaClient:
             raise
         # Import environment variables into config file
         # giving precedence to config file definitions in case of duplicates
-        for (k, v) in os.environ.items():
+        for k, v in os.environ.items():
             if k not in self.old_master_conf:
                 self.old_master_conf[k] = v
 
@@ -63,7 +62,7 @@ class IPSDakotaClient:
                 print('Invalid variable specification %s' % (var_spec))
                 raise
             if comp == '':  # This is a global configuration variable
-                parameter_list.append(("*", var_name, val))
+                parameter_list.append(('*', var_name, val))
             else:
                 try:
                     comp_conf = self.old_master_conf[comp]
@@ -84,9 +83,7 @@ class IPSDakotaClient:
             try:
                 conn = Client(str(server_address), 'AF_UNIX')
             except Exception:
-                print('%s: %d Failed to connect to %s: %s' %
-                      (time.strftime("%b %d %Y %H:%M:%S", time.localtime()),
-                       trials, server_address, str(sys.argv)))
+                print('%s: %d Failed to connect to %s: %s' % (time.strftime('%b %d %Y %H:%M:%S', time.localtime()), trials, server_address, str(sys.argv)))
                 sys.stdout.flush()
                 if trials == num_trials - 1:
                     raise
@@ -124,6 +121,6 @@ def main(argv=None):
     return 0
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     sys.stdout.flush()
     sys.exit(main())

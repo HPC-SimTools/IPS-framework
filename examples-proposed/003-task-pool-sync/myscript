@@ -1,3 +1,0 @@
-#!/bin/sh
-echo "executing: sleep $1"
-sleep $1

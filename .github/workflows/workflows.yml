@@ -19,12 +19,16 @@ jobs:
         auto-update-conda: true
         miniforge-variant: Mambaforge
         environment-file: .github/workflows/conda_env/environment_static_analysis.yml
-    - name: flake8
-      run: flake8
-    - name: pylint
-      run: pylint ipsframework tests
-    - name: bandit
-      run: bandit -lll ipsframework/*.py
+    #- name: flake8
+      #run: flake8
+    #- name: pylint
+      #run: pylint ipsframework tests
+    #- name: bandit
+      #run: bandit -lll ipsframework/*.py
+    - name: ruff-lint
+      run: ruff check
+    - name: ruff-format
+      run: ruff format --check
     - name: codespell
       run: codespell
 
@@ -40,15 +44,15 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: ubuntu-latest
-            python-version: 3.6
-            conda_env: 'minimal'
-          - os: ubuntu-latest
-            python-version: 3.7
-            conda_env: 'dask_2.5.2'
-          - os: ubuntu-latest
-            python-version: 3.8
-            conda_env: 'dask_2.30.0'
+          #- os: ubuntu-latest
+            #python-version: 3.6
+            #conda_env: 'minimal'
+          #- os: ubuntu-latest
+            #python-version: 3.7
+            #conda_env: 'dask_2.5.2'
+          #- os: ubuntu-latest
+            #python-version: 3.8
+            #conda_env: 'dask_2.30.0'
           - os: ubuntu-latest
             python-version: 3.9
             conda_env: 'dask_2022.7.0'

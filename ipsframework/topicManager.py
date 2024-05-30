@@ -23,7 +23,7 @@ from .debug import debug
 
 class TopicManager:
     def __init__(self, limitPendingEvents=10):
-        """ eventList is the common listing of events posted to a topic. """
+        """eventList is the common listing of events posted to a topic."""
         self.eventList = []
 
         """
@@ -45,7 +45,7 @@ class TopicManager:
         """
         self.limitPendingEvents = limitPendingEvents
 
-        debug.output("TopicManager.__init__")
+        debug.output('TopicManager.__init__')
         self.printEventsAndListeners()
 
     """
@@ -67,7 +67,7 @@ class TopicManager:
             eventList_len = len(self.eventList)
             if eventList_len > self.maxPendingEvents:
                 self.maxPendingEvents = eventList_len
-        debug.output("TopicManager.sendEvent")
+        debug.output('TopicManager.sendEvent')
         self.printEventsAndListeners()
 
     def registerListener(self, listenerid):
@@ -78,10 +78,10 @@ class TopicManager:
         """
         if listenerid not in self.listenerDirectory:
             self.listenerDirectory[listenerid] = len(self.eventList)
-            debug.output("TopicManager.registerListener")
+            debug.output('TopicManager.registerListener')
             self.printEventsAndListeners()
         else:
-            raise EventServiceException("Event listener registered earlier.")
+            raise EventServiceException('Event listener registered earlier.')
 
     """
     A listener activity like unregistering or processing triggers cleanup of
@@ -112,7 +112,7 @@ class TopicManager:
     def unregisterListener(self, listenerid):
         self.cleanupEvents(listenerid)
         del self.listenerDirectory[listenerid]
-        debug.output("TopicManager.unregisterListener")
+        debug.output('TopicManager.unregisterListener')
         self.printEventsAndListeners()
 
     """
@@ -121,10 +121,10 @@ class TopicManager:
 
     def getEventListForListener(self, listenerid):
         eventListForListener = []
-        for theEvent in self.eventList[self.listenerDirectory[listenerid]:]:
+        for theEvent in self.eventList[self.listenerDirectory[listenerid] :]:
             eventListForListener.append(Event(theEvent.header, theEvent.body))
         self.cleanupEvents(listenerid)
-        debug.output("TopicManager.getEventListForListener")
+        debug.output('TopicManager.getEventListForListener')
         self.printEventsAndListeners()
         return eventListForListener
 
@@ -133,17 +133,17 @@ class TopicManager:
     """
 
     def printEventsAndListeners(self):
-        string = ":::::::::\n" + "List of events:"
+        string = ':::::::::\n' + 'List of events:'
         i = 0
         for i, e in enumerate(self.eventList):
-            string += "\n" + str(i) + "---" + str(e)
-        string += "\n\n" + "List of listeners:"
+            string += '\n' + str(i) + '---' + str(e)
+        string += '\n\n' + 'List of listeners:'
         debug.output(string)
         sortedKeys = sorted(self.listenerDirectory.keys())
         for listenerid in sortedKeys:
-            string = "event = " + str(self.listenerDirectory[listenerid])
+            string = 'event = ' + str(self.listenerDirectory[listenerid])
             debug.output(string, listenerid)
-        debug.output(":::::::::")
+        debug.output(':::::::::')
 
     """
     Gives a profile of events posted to this topic, currently just
