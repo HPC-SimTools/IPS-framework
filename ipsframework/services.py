@@ -181,7 +181,7 @@ class ServicesProxy:
         self.counter = 0
         self.monitor_url = None
         self.call_targets = {}
-        self.task_pools = {}
+        self.task_pools: dict[str, TaskPool] = {}
         self.time_loop = None
         self.last_ckpt_walltime = self.start_time
         self.last_ckpt_phystime = None
