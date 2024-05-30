@@ -28,9 +28,9 @@ extend-select = [
     #'ASYNC', # flake8-async
     #'S',     # flake8-bandit
     #'BLE',   # flake8-blind-except
-    #'B',     # flake8-bugbear
+    'B',     # flake8-bugbear
     #'A',     # flake8-builtins
-    #'COM',   # flake8-commas
+    'COM',   # flake8-commas
     'C4',    # flake8-comprehensions
     #'DTZ',   # flake8-datetimez
     #'T10',   # flake8-debugger
@@ -54,9 +54,9 @@ extend-select = [
     #'ARG',   # flake8-unused-arguments
     #'PTH',   # flake8-use-pathlib
     #'PGH',   # pygrep-hooks
-    #'PL',    # pylint
+    'PL',    # pylint
     #'TRY',   # tryceratops
-    #'FLY',   # flynt
+    'FLY',   # flynt
     'RUF',   # RUFF additional rules
 ]
 # If you're seeking to disable a rule, first consider whether the rule is overbearing, or if it should only be turned off for your usecase.
@@ -68,6 +68,10 @@ ignore = [
     'ANN102',  # don't need to annotate "cls" typing for class methods
     'ANN401',  # allow explicit "Any" typing, use with care
     'PLR2004', # allow "magic numbers"
+    'PLR0911', # allow "too many return statements"
+    'PLR0912', # allow "too many branches",
+    'PLR0913', # allow "too many arguments in function defintion"
+    'PLR0915', # allow "too many statements"
 ]
 
 [tool.ruff.lint.extend-per-file-ignores]

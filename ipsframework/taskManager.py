@@ -49,8 +49,8 @@ class TaskManager:
             'init_task_pool',
             'finish_task',
         ]
-        # **** this si where service methods are registered
-        self.fwk.register_service_handler(self.service_methods, getattr(self, 'process_service_request'))
+        # **** this is where service methods are registered
+        self.fwk.register_service_handler(self.service_methods, self.process_service_request)
         self.task_map = {}
         self.task_launch_cmd = ''
 
@@ -239,9 +239,9 @@ class TaskManager:
                 taskInit.cmd_args,
                 taskInit.launch_cmd_extra_args,
             )
-        except InsufficientResourcesException:
+        except InsufficientResourcesException as e:
             if taskInit.block:
-                raise BlockedMessageException(init_task_msg, '***%s waiting for %d resources' % (caller_id, taskInit.nproc))
+                raise BlockedMessageException(init_task_msg, '***%s waiting for %d resources' % (caller_id, taskInit.nproc)) from e
             else:
                 raise
         except BadResourceRequestException as e:
@@ -352,7 +352,7 @@ class TaskManager:
             # cmd = binary
             if len(cmd_args) > 0:
                 cmd_args = ' '.join(cmd_args)
-                cmd = ' '.join([binary, cmd_args])
+                cmd = f'{binary} {cmd_args}'
             else:
                 cmd = binary
             return cmd, env_update
@@ -384,7 +384,7 @@ class TaskManager:
                     cmd = ' '.join([mpicmd, nproc_flag, str(nproc), ppn_flag, str(ppn)])
                 cmd = f'{cmd} -x PYTHONPATH'  # Propagate PYTHONPATH to compute nodes
                 if accurateNodes:
-                    cmd = ' '.join([cmd, host_select, nodes])
+                    cmd = f'{cmd} {host_select} {nodes}'
             elif version == 'SGI':
                 if accurateNodes:
                     core_dict = {}
@@ -430,7 +430,7 @@ class TaskManager:
                 cfg_fname = os.path.join(working_dir, cfg_fname)
                 cfg_file = open(cfg_fname, 'w')
                 cmd_args = ' '.join(cmd_args)
-                node_command = ' '.join([binary, cmd_args])
+                node_command = f'{binary} {cmd_args}'
                 node_spec = ''
                 if partial_nodes:
                     for node, cores in core_list:
@@ -440,7 +440,7 @@ class TaskManager:
                         node_spec += ('%s ' % (node)) * ppn
                 print('%s: %s' % (node_spec, node_command), file=cfg_file)
                 config_option = '-config=' + cfg_fname
-                cmd = ' '.join([self.task_launch_cmd, config_option])
+                cmd = f'{self.task_launch_cmd} {config_option}'
                 self.curr_task_table[task_id]['node_file'] = cfg_fname
                 return cmd, env_update
             elif accurateNodes:  # Need to assign tasks to nodes explicitly
@@ -484,14 +484,11 @@ class TaskManager:
                         if nproc < ppn:
                             ppn = nproc
                         cmd = ' '.join([self.task_launch_cmd, nproc_flag, str(nproc), ppn_flag, str(ppn), by_numanode_flag, str(per_numa)])
+            elif accurateNodes:
+                nlist_flag = '-L'
+                cmd = ' '.join([self.task_launch_cmd, nproc_flag, str(nproc), ppn_flag, str(ppn), nlist_flag, nodes])
             else:
-                if accurateNodes:
-                    nlist_flag = '-L'
-                    cmd = ' '.join([self.task_launch_cmd, nproc_flag, str(nproc), ppn_flag, str(ppn), nlist_flag, nodes])
-                else:
-                    cmd = ' '.join(
-                        [self.task_launch_cmd, nproc_flag, str(nproc), cpu_assign_flag, '%d-%d' % (max_ppn - 1, max_ppn - int(ppn)), ppn_flag, str(ppn)]
-                    )
+                cmd = ' '.join([self.task_launch_cmd, nproc_flag, str(nproc), cpu_assign_flag, '%d-%d' % (max_ppn - 1, max_ppn - int(ppn)), ppn_flag, str(ppn)])
         # ------------------------------------
         # numactl (single process launcher)
         # ------------------------------------
@@ -505,7 +502,7 @@ class TaskManager:
             else:
                 self.fwk.warning('numactl needs accurateNodes')
                 proc_flag = ''
-            cmd = ' '.join([self.task_launch_cmd, proc_flag])
+            cmd = f'{self.task_launch_cmd} {proc_flag}'
         elif self.task_launch_cmd == 'srun':
             nproc_flag = '-n'
             nnodes_flag = '-N'
@@ -528,8 +525,8 @@ class TaskManager:
 
         cmd_args = ' '.join(cmd_args)
         if launch_cmd_extra_args:
-            cmd = ' '.join([cmd, launch_cmd_extra_args])
-        cmd = ' '.join([cmd, binary, cmd_args])
+            cmd = f'{cmd} {launch_cmd_extra_args}'
+        cmd = f'{cmd} {binary} {cmd_args}'
 
         return cmd, env_update
 

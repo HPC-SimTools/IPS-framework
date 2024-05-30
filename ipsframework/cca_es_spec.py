@@ -122,7 +122,7 @@ class Subscription:
 
 
 def initialize_event_service(service):
-    global _proxy
+    global _proxy  # noqa: PLW0603
 
     if isinstance(service, EventService):
         _proxy = EventServiceFwkProxy(service)

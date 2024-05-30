@@ -162,12 +162,12 @@ def get_checkjob_info():
         # small node number format
         try:
             for j in data_lines:
-                j = j[1 : len(j) - 1]  # strip off first [ and last ]
-                pairs = j.split('][')
+                clean = j[1 : len(j) - 1]  # strip off first [ and last ]
+                pairs = clean.split('][')
                 for i in pairs:
                     ndata.append(i.split(':'))
             # parse allocated nodes data [nid:nprocs]...
-            for m, p in ndata:
+            for m, _ in ndata:
                 nodes.append(m)
         except Exception as e:
             print('problem parsing - small format')

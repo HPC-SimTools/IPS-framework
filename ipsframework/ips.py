@@ -445,7 +445,7 @@ class Framework:
         # send off first round of invocations...
         try:
             for sim_name, msg_list in outstanding_sim_calls.items():
-                msg, sim_name, comp, method, arg = msg_list.pop(0)
+                msg, sim_name, comp, method, arg = msg_list.pop(0)  # noqa: PLW2901 (TODO: make sure this is intended behavior, change variable name if it is and refactor if not)
                 self.debug('Framework sending message %s ', msg.__dict__)
                 if sim_name is not None:
                     self._send_monitor_event(sim_name=sim_name, comment=f'Target = {comp}:{method}({arg})', eventType='IPS_CALL_BEGIN')

@@ -91,7 +91,7 @@ def launch(binary, task_name, working_dir, *args, **keywords):
             )
 
         cmd_lst = cmd.split()
-        process = subprocess.Popen(cmd_lst, stdout=task_stdout, stderr=task_stderr, cwd=working_dir, preexec_fn=os.setsid, env=new_env)
+        process = subprocess.Popen(cmd_lst, stdout=task_stdout, stderr=task_stderr, cwd=working_dir, preexec_fn=os.setsid, env=new_env)  # noqa: PLW1509 (TODO: look into this to potentially avoid deadlocks)
         try:
             ret_val = process.wait(timeout)
             finish_time = time.time()
@@ -342,7 +342,7 @@ class ServicesProxy:
         except KeyError:
             if msg_id not in self.incomplete_calls:
                 self.error('Invalid call ID : %s ', str(msg_id))
-                raise Exception('Invalid message request ID argument')
+                raise Exception('Invalid message request ID argument') from None
 
         keep_going = True
         while keep_going:
@@ -426,7 +426,7 @@ class ServicesProxy:
         stamp, to the portal bridge to pass on to the web portal.
         """
         portal_data = {}
-        portal_data['code'] = '_'.join([self.component_ref.CLASS, self.component_ref.SUB_CLASS, self.component_ref.NAME])
+        portal_data['code'] = f'{self.component_ref.CLASS}_{self.component_ref.SUB_CLASS}_{self.component_ref.NAME}'
         portal_data['eventtype'] = eventType
         portal_data['ok'] = ok
         if event_time is None:
@@ -1420,7 +1420,7 @@ class ServicesProxy:
                 subflow_dict[subflow_name] = self.sub_flows[subflow_name]
             except KeyError:
                 self.exception('Subflow name %s not found' % subflow_name)
-                raise Exception('Subflow name %s not found' % subflow_name)
+                raise Exception('Subflow name %s not found' % subflow_name) from None
 
         return_dict = {}
         for sim_name, (sub_conf_new, _, _, driver_comp) in subflow_dict.items():

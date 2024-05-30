@@ -34,11 +34,10 @@ class Debug:  # pragma: no cover
                     self.file.write(s1 + ' ' + str(ret) + '\n')
                 else:
                     self.file.write(s1 + '\n')
+            elif ret != 99:
+                self.file.write(s1 + ' ' + str(ret) + ' ' + s2 + '\n')
             else:
-                if ret != 99:
-                    self.file.write(s1 + ' ' + str(ret) + ' ' + s2 + '\n')
-                else:
-                    self.file.write(s1 + ' ' + s2 + '\n')
+                self.file.write(s1 + ' ' + s2 + '\n')
 
     def __del__(self):
         if self.file:

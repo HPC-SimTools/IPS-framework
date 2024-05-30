@@ -445,7 +445,7 @@ class PortalBridge(Component):
 
         d = datetime.datetime.now()
         date_str = '%s.%03d' % (d.strftime('%Y-%m-%dT%H:%M:%S'), int(d.microsecond / 1000))
-        sim_data.portal_runid = '_'.join([sim_name, getattr(self, 'HOST'), getattr(self, 'USER'), date_str])
+        sim_data.portal_runid = f'{sim_name}_{self.HOST}_{self.USER}_{date_str}'
         try:
             self.services.set_config_param('PORTAL_RUNID', sim_data.portal_runid, target_sim_name=sim_name)
         except Exception:

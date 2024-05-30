@@ -30,7 +30,7 @@ class DataManager:
         self.statedir = ''
         self.state_files = []
         self.service_methods = ['stage_state', 'update_state', 'merge_current_plasma_state']
-        self.fwk.register_service_handler(self.service_methods, getattr(self, 'process_service_request'))
+        self.fwk.register_service_handler(self.service_methods, self.process_service_request)
 
     def process_service_request(self, msg):
         """

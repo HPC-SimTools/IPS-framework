@@ -72,7 +72,7 @@ class ResourceManager:
         self.myTopic = None
         self.service_methods = ['get_allocation', 'release_allocation']
 
-        self.fwk.register_service_handler(self.service_methods, getattr(self, 'process_service_request'))
+        self.fwk.register_service_handler(self.service_methods, self.process_service_request)
 
     # RM initialize
 
@@ -566,7 +566,7 @@ class ResourceManager:
                     elif node.avail_cores > 0:
                         k += node.avail_cores
                         nodes.append(n)
-                else:
+                else:  # noqa: PLR5501
                     if node.avail_cores >= ppn:
                         k += ppn
                         nodes.append(n)

@@ -11,6 +11,7 @@ import tempfile
 import time
 import uuid
 from multiprocessing import Process, Queue, set_start_method
+from typing import Optional
 
 from configobj import ConfigObj
 
@@ -43,8 +44,8 @@ class ConfigurationManager:
         entry in the configurationManager class
         """
 
-        def __init__(self, sim_name, start_time=time.time()):
-            self.start_time = start_time
+        def __init__(self, sim_name, start_time: Optional[float] = None):
+            self.start_time = start_time if start_time else time.time()
             self.sim_name = sim_name
             self.portal_sim_name = None
             self.sim_root = None
@@ -117,7 +118,7 @@ class ConfigurationManager:
         self.platform_keywords = loc_keys + mach_keys + prov_keys
 
         self.service_methods = ['get_port', 'get_config_parameter', 'set_config_parameter', 'get_time_loop', 'create_simulation']
-        self.fwk.register_service_handler(self.service_methods, getattr(self, 'process_service_request'))
+        self.fwk.register_service_handler(self.service_methods, self.process_service_request)
         self.sim_map = {}
         self.finished_sim_map = {}
         self.fwk_sim_name = None  # "Fake" simconf for framework components

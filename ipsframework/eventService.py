@@ -61,7 +61,7 @@ class EventService:
                 'unregisterEventListener',
                 'removeSubscription',
             ]
-            fwk.register_service_handler(service_methods, getattr(self, 'process_service_request'))
+            fwk.register_service_handler(service_methods, self.process_service_request)
 
     def _print_stats(self):
         if self.fwk:

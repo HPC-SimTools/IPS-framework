@@ -79,17 +79,16 @@ class ipsLogger:
     def add_sim_log(self, log_pipe_name, log_file=sys.stdout):
         if log_file == sys.stdout or log_file is None:
             log_handler = self.stdout_handler
+        elif log_file.__class__.__name__ == 'TextIOWrapper':
+            log_handler = logging.StreamHandler(log_file)
         else:
-            if log_file.__class__.__name__ == 'TextIOWrapper':
-                log_handler = logging.StreamHandler(log_file)
-            else:
-                directory = os.path.dirname(os.path.abspath(log_file))
-                try:
-                    os.makedirs(directory, exist_ok=True)
-                except OSError as oserr:
-                    print('Error creating directory %s : %s-%s' % (directory, oserr.errno, oserr.strerror), file=sys.stderr)
-                    sys.exit(1)
-                log_handler = logging.FileHandler(log_file, mode='w')
+            directory = os.path.dirname(os.path.abspath(log_file))
+            try:
+                os.makedirs(directory, exist_ok=True)
+            except OSError as oserr:
+                print('Error creating directory %s : %s-%s' % (directory, oserr.errno, oserr.strerror), file=sys.stderr)
+                sys.exit(1)
+            log_handler = logging.FileHandler(log_file, mode='w')
 
         log_handler.setFormatter(self.formatter)
         partial_handler = functools.partial(myLogRecordStreamHandler, handler=log_handler)
