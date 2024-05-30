@@ -7,13 +7,11 @@ from ipsframework import Component
 
 
 class simple_sleep(Component):
-    def step(self, timestamp=0.0, script_arg=""):
-        time.sleep(1)
+    def step(self, timestamp: float, script_name: str):
         this_dir = self.services.get_config_param('SIM_ROOT')
         self.services.wait_task(
             self.services.launch_task(1,
                                       this_dir,
-                                      f'{this_dir}{os.path.sep}myscript',
-                                      script_arg)
+                                      f'{this_dir}{os.path.sep}{script_name}',
+                                      int(timestamp))
         )
-        time.sleep(1)
