@@ -4,10 +4,11 @@
 # -------------------------------------------------------------------------------
 
 import os
-import sys
 import shutil
+import sys
 import time
 from multiprocessing.connection import Client
+
 from configobj import ConfigObj
 
 

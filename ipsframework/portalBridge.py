@@ -1,19 +1,20 @@
 # -------------------------------------------------------------------------------
 # Copyright 2006-2022 UT-Battelle, LLC. See LICENSE for more information.
 # -------------------------------------------------------------------------------
-import re
-
 import datetime
-import os
-from multiprocessing import Process, Pipe, Event
-import time
-from collections import defaultdict
-import hashlib
 import glob
+import hashlib
 import itertools
 import json
+import os
+import re
+import time
+from collections import defaultdict
+from multiprocessing import Event, Pipe, Process
+
 import urllib3
-from ipsframework import ipsutil, Component
+
+from ipsframework import Component, ipsutil
 from ipsframework.convert_log_function import convert_logdata_to_html
 
 

@@ -3,17 +3,18 @@
 # -------------------------------------------------------------------------------
 import os
 import sys
-from math import ceil
 from collections import namedtuple
+from math import ceil
 from typing import List
-from . import messages, configurationManager
+
+from . import configurationManager, messages
 from .ipsExceptions import (
+    BadResourceRequestException,
     BlockedMessageException,
+    GPUResourceRequestMismatchException,
     IncompleteCallException,
     InsufficientResourcesException,
-    BadResourceRequestException,
     ResourceRequestMismatchException,
-    GPUResourceRequestMismatchException,
 )
 from .ipsutil import which
 

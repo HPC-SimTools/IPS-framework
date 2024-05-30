@@ -1,9 +1,10 @@
 # -------------------------------------------------------------------------------
 # Copyright 2006-2022 UT-Battelle, LLC. See LICENSE for more information.
 # -------------------------------------------------------------------------------
-import sys
 import os
 import subprocess
+import sys
+
 from . import ipsutil
 
 

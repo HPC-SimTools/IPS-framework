@@ -1,20 +1,22 @@
 # -------------------------------------------------------------------------------
 # Copyright 2006-2022 UT-Battelle, LLC. See LICENSE for more information.
 # -------------------------------------------------------------------------------
-import os
-import sys
 import importlib
 import importlib.util
-import tempfile
-import uuid
 import logging
+import os
 import socket
+import sys
+import tempfile
 import time
-from multiprocessing import Queue, Process, set_start_method
+import uuid
+from multiprocessing import Process, Queue, set_start_method
+
 from configobj import ConfigObj
+
 from . import ipsLogging
-from .services import ServicesProxy
 from .componentRegistry import ComponentID, ComponentRegistry
+from .services import ServicesProxy
 
 # Try using fork for starting subprocesses, this is the default on
 # Linux but not macOS with python >= 3.8

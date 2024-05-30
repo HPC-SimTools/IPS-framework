@@ -3,8 +3,8 @@
 # -------------------------------------------------------------------------------
 import os
 import sys
-from ipsframework import Component
-from ipsframework import ipsutil
+
+from ipsframework import Component, ipsutil
 
 
 class runspaceInitComponent(Component):

@@ -6,16 +6,17 @@ import os
 import time
 from collections import namedtuple
 from math import ceil
+
+from .ips_es_spec import eventManager
 from .ipsExceptions import (
-    InsufficientResourcesException,
     BadResourceRequestException,
-    ResourceRequestMismatchException,
     GPUResourceRequestMismatchException,
+    InsufficientResourcesException,
+    ResourceRequestMismatchException,
     ResourceRequestUnequalPartitioningException,
 )
-from .ips_es_spec import eventManager
-from .resourceHelper import getResourceList
 from .node_structure import Node
+from .resourceHelper import getResourceList
 
 Allocation = namedtuple('Allocation', ['partial_node', 'nodelist', 'corelist', 'ppn', 'max_ppn', 'cpp', 'accurateNodes', 'cores_allocated'])
 

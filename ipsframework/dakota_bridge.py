@@ -2,11 +2,13 @@
 # Copyright 2006-2022 UT-Battelle, LLC. See LICENSE for more information.
 # -------------------------------------------------------------------------------
 import os
-import sys
 import select
+import sys
 import time
 from multiprocessing.connection import Listener
+
 from configobj import ConfigObj
+
 from .component import Component
 
 

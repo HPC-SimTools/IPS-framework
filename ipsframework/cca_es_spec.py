@@ -132,4 +132,4 @@ def initialize_event_service(service):
 
 # pylint: disable=wrong-import-position
 from .eventService import EventService  # noqa: E402
-from .eventServiceProxy import EventServiceFwkProxy, EventServiceCmpProxy  # noqa: E402
+from .eventServiceProxy import EventServiceCmpProxy, EventServiceFwkProxy  # noqa: E402

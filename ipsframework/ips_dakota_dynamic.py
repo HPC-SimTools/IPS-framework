@@ -3,16 +3,18 @@
 # Copyright 2006-2022 UT-Battelle, LLC. See LICENSE for more information.
 # -------------------------------------------------------------------------------
 
-import os
-import sys
 import getopt
 import inspect
-import subprocess
-import tempfile
+import os
 import re
+import subprocess
+import sys
+import tempfile
 import time
 from multiprocessing.connection import Client
+
 from configobj import ConfigObj
+
 from ipsframework import platformspec
 from ipsframework.ipsutil import which
 

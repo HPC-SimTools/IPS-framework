@@ -52,30 +52,30 @@ For further design information see
 
 """
 
-import sys
 import argparse
-import multiprocessing
-import inspect
-import socket
-import logging
-import os
-import time
 import hashlib
+import inspect
+import logging
+import multiprocessing
+import os
+import socket
+import sys
+import time
 from typing import Callable, Dict, Iterable, List, Optional
 
 from ipsframework import platformspec
-from ipsframework.messages import Message, ServiceRequestMessage, ServiceResponseMessage, MethodInvokeMessage, MethodResultMessage
-from ipsframework.configurationManager import ConfigurationManager
-from ipsframework.taskManager import TaskManager
-from ipsframework.resourceManager import ResourceManager
-from ipsframework.dataManager import DataManager
-from ipsframework.componentRegistry import ComponentRegistry, ComponentID
-from ipsframework.ipsExceptions import BlockedMessageException
-from ipsframework.eventService import EventService
-from ipsframework.cca_es_spec import initialize_event_service
-from ipsframework.ips_es_spec import eventManager
-from ipsframework.ipsutil import getTimeString
 from ipsframework._version import get_versions
+from ipsframework.cca_es_spec import initialize_event_service
+from ipsframework.componentRegistry import ComponentID, ComponentRegistry
+from ipsframework.configurationManager import ConfigurationManager
+from ipsframework.dataManager import DataManager
+from ipsframework.eventService import EventService
+from ipsframework.ips_es_spec import eventManager
+from ipsframework.ipsExceptions import BlockedMessageException
+from ipsframework.ipsutil import getTimeString
+from ipsframework.messages import Message, MethodInvokeMessage, MethodResultMessage, ServiceRequestMessage, ServiceResponseMessage
+from ipsframework.resourceManager import ResourceManager
+from ipsframework.taskManager import TaskManager
 
 if sys.version_info[0] != 3 or sys.version_info[1] < 9:
     print('IPS is only compatible with Python 3.9 or higher', file=sys.stderr)

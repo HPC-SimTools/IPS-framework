@@ -2,17 +2,17 @@
 This file implements several objects that customize logging in the IPS.
 """
 
-import logging
-import sys
-import pickle
-import socketserver
-import struct
 import functools
+import logging
 import os
 import os.path
+import pickle
 import queue
-import time
 import select
+import socketserver
+import struct
+import sys
+import time
 
 
 class myLogRecordStreamHandler(socketserver.StreamRequestHandler):

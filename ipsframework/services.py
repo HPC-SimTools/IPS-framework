@@ -3,28 +3,29 @@
 # -------------------------------------------------------------------------------
 """IPS Services"""
 
-import sys
-import queue
-import os
-import subprocess
-import threading
+import glob
 import hashlib
-import time
-import shutil
+import json
 import logging
 import logging.handlers
+import os
+import queue
+import shutil
 import signal
-import glob
-import json
+import subprocess
+import sys
+import threading
+import time
 import weakref
 from collections import namedtuple
 from operator import itemgetter
+
 from configobj import ConfigObj
-from .taskManager import TaskInit
-from . import messages, ipsutil
+
+from . import ipsutil, messages
 from .cca_es_spec import initialize_event_service
 from .ips_es_spec import eventManager
-
+from .taskManager import TaskInit
 
 RunningTask = namedtuple('RunningTask', ['process', 'start_time', 'timeout', 'nproc', 'cores_allocated', 'command', 'binary', 'args'])
 

@@ -20,7 +20,7 @@ flake8-quotes = { inline-quotes = 'single', multiline-quotes = 'double' }
 # pyflakes and the relevant pycodestyle rules are already configured
 extend-select = [
     #'C90',   # mccabe complexity
-    #'I',     # isort
+    'I',     # isort
     #'N',     # pep8-naming
     #'D',     # pydocstyle
     #'UP',    # pyupgrade

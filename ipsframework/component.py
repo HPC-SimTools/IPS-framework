@@ -3,11 +3,12 @@
 # -------------------------------------------------------------------------------
 """IPS Framework Component"""
 
-import sys
 import os
+import sys
 import weakref
 from copy import copy
-from typing import Any, Dict, Literal, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Dict, Literal
+
 from .messages import Message, MethodResultMessage
 
 if TYPE_CHECKING:

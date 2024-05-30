@@ -8,8 +8,8 @@ with calls on the interface being routed here via the proxy. The CCA event
 interface is straightforwardly mapped onto matching methods in this file.
 """
 
+from .cca_es_spec import Event, EventServiceException, Topic
 from .debug import debug
-from .cca_es_spec import EventServiceException, Event, Topic
 from .topicManager import TopicManager
 
 

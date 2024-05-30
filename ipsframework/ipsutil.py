@@ -1,10 +1,10 @@
 # -------------------------------------------------------------------------------
 # Copyright 2006-2022 UT-Battelle, LLC. See LICENSE for more information.
 # -------------------------------------------------------------------------------
+import glob
 import os
 import shutil
 import time
-import glob
 
 try:
     import Pyro4
