@@ -20,8 +20,8 @@ SCRATCH =
 
     config = f"""RUN_COMMENT = testing
 SIM_NAME = test
-LOG_FILE = {str(tmpdir)}/log.warning
-SIM_ROOT = {str(tmpdir)}
+LOG_FILE = {tmpdir!s}/log.warning
+SIM_ROOT = {tmpdir!s}
 SIMULATION_MODE = NORMAL
 [PORTS]
     NAMES = DRIVER WORKER
@@ -60,13 +60,15 @@ SIMULATION_MODE = NORMAL
 def test_using_module_components(tmpdir, capfd):
     platform_file, config_file = write_basic_config_and_platform_files(tmpdir)
 
-    framework = Framework(config_file_list=[str(config_file)],
-                          log_file_name=str(tmpdir.join('test.log')),
-                          platform_file_name=str(platform_file),
-                          debug=None,
-                          verbose_debug=None,
-                          cmd_nodes=0,
-                          cmd_ppn=0)
+    framework = Framework(
+        config_file_list=[str(config_file)],
+        log_file_name=str(tmpdir.join('test.log')),
+        platform_file_name=str(platform_file),
+        debug=None,
+        verbose_debug=None,
+        cmd_nodes=0,
+        cmd_ppn=0,
+    )
 
     assert framework.log_file_name.endswith('test.log')
 
@@ -89,7 +91,7 @@ def test_using_module_components(tmpdir, capfd):
     captured = capfd.readouterr()
 
     captured_out = captured.out.split('\n')
-    assert captured_out[0].startswith("Starting IPS")
-    assert captured_out[1] == "Created <class 'helloworld.hello_driver.HelloDriver'>"
-    assert captured_out[2] == "Created <class 'helloworld.hello_worker.HelloWorker'>"
-    assert captured.err == ''
+    captured_err = captured.err.split('\n')
+    assert captured_err[0].startswith('Starting IPS')
+    assert captured_out[0] == "Created <class 'helloworld.hello_driver.HelloDriver'>"
+    assert captured_out[1] == "Created <class 'helloworld.hello_worker.HelloWorker'>"

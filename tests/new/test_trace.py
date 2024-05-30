@@ -1,6 +1,7 @@
 import glob
-import json
 import hashlib
+import json
+
 from ipsframework import Framework
 
 
@@ -23,9 +24,9 @@ SCRATCH =
 
     config = f"""RUN_COMMENT = trace testing
 SIM_NAME = trace
-LOG_FILE = {str(tmpdir)}/sim.log
+LOG_FILE = {tmpdir!s}/sim.log
 LOG_LEVEL = INFO
-SIM_ROOT = {str(tmpdir)}
+SIM_ROOT = {tmpdir!s}
 SIMULATION_MODE = NORMAL
 [PORTS]
     NAMES = DRIVER WORKER
@@ -64,18 +65,20 @@ SIMULATION_MODE = NORMAL
 def test_trace_info(tmpdir):
     platform_file, config_file = write_basic_config_and_platform_files(tmpdir, value=1)
 
-    framework = Framework(config_file_list=[str(config_file)],
-                          log_file_name=str(tmpdir.join('ips.log')),
-                          platform_file_name=str(platform_file),
-                          debug=None,
-                          verbose_debug=None,
-                          cmd_nodes=0,
-                          cmd_ppn=0)
+    framework = Framework(
+        config_file_list=[str(config_file)],
+        log_file_name=str(tmpdir.join('ips.log')),
+        platform_file_name=str(platform_file),
+        debug=None,
+        verbose_debug=None,
+        cmd_nodes=0,
+        cmd_ppn=0,
+    )
 
     framework.run()
 
     # check simulation_log, make sure it includes events from dask tasks
-    json_files = glob.glob(str(tmpdir.join("simulation_log").join("*.json")))
+    json_files = glob.glob(str(tmpdir.join('simulation_log').join('*.json')))
     assert len(json_files) == 1
     with open(json_files[0], 'r') as json_file:
         lines = json_file.readlines()
@@ -84,35 +87,23 @@ def test_trace_info(tmpdir):
 
     portal_runid = lines[0]['portal_runid']
 
-    traces = [e['trace'] for e in lines if "trace" in e]
+    traces = [e['trace'] for e in lines if 'trace' in e]
 
     assert len(traces) == 8
 
     call_ids = [5, 1, 8, 2, 9, 7, 10, None]
-    service_names = ['trace@driver@1',
-                     '/bin/sleep',
-                     'trace@simple_sleep@2',
-                     '/bin/sleep',
-                     'trace@simple_sleep@2',
-                     'trace@driver@1',
-                     'trace@driver@1',
-                     'trace@FRAMEWORK@Framework@0']
-    names = ['init(0)',
-             '1',
-             'step(0)',
-             '1',
-             'step(0)',
-             'step(0)',
-             'finalize(0)',
-             None]
-    tags = [None,
-            {"procs_requested": "1",  "cores_allocated": "1"},
-            {},
-            {"procs_requested": "1",  "cores_allocated": "1"},
-            {},
-            None,
-            None,
-            {'total_cores': '2'}]
+    service_names = [
+        'trace@driver@1',
+        '/bin/sleep',
+        'trace@simple_sleep@2',
+        '/bin/sleep',
+        'trace@simple_sleep@2',
+        'trace@driver@1',
+        'trace@driver@1',
+        'trace@FRAMEWORK@Framework@0',
+    ]
+    names = ['init(0)', '1', 'step(0)', '1', 'step(0)', 'step(0)', 'finalize(0)', None]
+    tags = [None, {'procs_requested': '1', 'cores_allocated': '1'}, {}, {'procs_requested': '1', 'cores_allocated': '1'}, {}, None, None, {'total_cores': '2'}]
     parents = [7, 2, 5, 4, 5, 7, 7, None]
 
     for n, trace in enumerate(traces):
@@ -120,7 +111,7 @@ def test_trace_info(tmpdir):
         assert isinstance(trace['duration'], int)
         assert trace['traceId'] == hashlib.md5(portal_runid.encode()).hexdigest()
         assert trace['localEndpoint']['serviceName'] == service_names[n]
-        assert "id" in trace
+        assert 'id' in trace
         assert trace.get('tags') == tags[n]
 
         if names[n]:
@@ -131,6 +122,6 @@ def test_trace_info(tmpdir):
 
         if parents[n]:
             if names[parents[n]]:
-                assert trace['parentId'] == hashlib.md5(f"{service_names[parents[n]]}:{names[parents[n]]}:{call_ids[parents[n]]}".encode()).hexdigest()[:16]
+                assert trace['parentId'] == hashlib.md5(f'{service_names[parents[n]]}:{names[parents[n]]}:{call_ids[parents[n]]}'.encode()).hexdigest()[:16]
             else:
-                assert trace['parentId'] == hashlib.md5(f"{service_names[parents[n]]}".encode()).hexdigest()[:16]
+                assert trace['parentId'] == hashlib.md5(f'{service_names[parents[n]]}'.encode()).hexdigest()[:16]

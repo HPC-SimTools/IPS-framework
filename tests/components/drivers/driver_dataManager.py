@@ -18,6 +18,4 @@ class driver_dataManager(Component):
 
         self.services.update_state()
 
-        self.services.merge_current_state('partial_state_file',
-                                          logfile='merge_current_state.log',
-                                          merge_binary='echo')
+        self.services.merge_current_state('partial_state_file', logfile='merge_current_state.log', merge_binary='echo')

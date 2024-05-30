@@ -2,7 +2,6 @@
 line-length = 160
 format = { quote-style = 'single' }
 extend-exclude = [
-    "tests/*",
     "components/*",
     "doc/*",
     "versioneer.py",

@@ -5,7 +5,7 @@ from ipsframework import Component
 class timeloop_comp(Component):
     def init(self, timestamp=0.0, **keywords):
         self.output_files = self.OUTPUT_FILES.split()
-        self.output_files.append(self.services.get_config_param("CURRENT_STATE"))
+        self.output_files.append(self.services.get_config_param('CURRENT_STATE'))
         self.services.stage_state()
         for output_file in self.output_files:
             with open(output_file, 'a') as f:
@@ -16,7 +16,7 @@ class timeloop_comp(Component):
         self.services.log(f'restart({timestamp})')
 
         self.output_files = self.OUTPUT_FILES.split()
-        self.output_files.append(self.services.get_config_param("CURRENT_STATE"))
+        self.output_files.append(self.services.get_config_param('CURRENT_STATE'))
 
         restart_root = self.services.get_config_param('RESTART_ROOT')
         restart_time = self.services.get_config_param('RESTART_TIME')
@@ -29,7 +29,7 @@ class timeloop_comp(Component):
         self.services.update_state()
 
     def step(self, timestamp=0.0, **keywords):
-        self.services.log(f"step({timestamp})")
+        self.services.log(f'step({timestamp})')
         self.services.stage_state()
         for output_file in self.output_files:
             with open(output_file, 'a') as f:

@@ -70,7 +70,7 @@ class basic_concurrent1(Component):
         services.call(w3, 'finalize', 99)
 
     def process_event(self, topicName, theEvent):
-        print("Driver: processed ", (topicName, str(theEvent)))
+        print('Driver: processed ', (topicName, str(theEvent)))
 
     def terminate(self, status):
         self.services.log('Really Calling terminate()')

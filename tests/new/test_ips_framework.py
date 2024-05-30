@@ -1,11 +1,13 @@
 import glob
 import json
+
 import pytest
+
 from ipsframework import Framework
 
 
 def write_basic_config_and_platform_files(tmpdir):
-    test_component = tmpdir.join("test_component.py")
+    test_component = tmpdir.join('test_component.py')
 
     driver = """#!/usr/bin/env python3
 from ipsframework.component import Component
@@ -35,8 +37,8 @@ SCRATCH =
 
     config = f"""RUN_COMMENT = testing
 SIM_NAME = test
-LOG_FILE = {str(tmpdir)}/log.warning
-SIM_ROOT = {str(tmpdir)}
+LOG_FILE = {tmpdir!s}/log.warning
+SIM_ROOT = {tmpdir!s}
 SIMULATION_MODE = NORMAL
 [PORTS]
     NAMES = DRIVER
@@ -63,13 +65,15 @@ SIMULATION_MODE = NORMAL
 def test_framework_simple(tmpdir, capfd):
     platform_file, config_file = write_basic_config_and_platform_files(tmpdir)
 
-    framework = Framework(config_file_list=[str(config_file)],
-                          log_file_name=str(tmpdir.join('test.log')),
-                          platform_file_name=str(platform_file),
-                          debug=None,
-                          verbose_debug=None,
-                          cmd_nodes=0,
-                          cmd_ppn=0)
+    framework = Framework(
+        config_file_list=[str(config_file)],
+        log_file_name=str(tmpdir.join('test.log')),
+        platform_file_name=str(platform_file),
+        debug=None,
+        verbose_debug=None,
+        cmd_nodes=0,
+        cmd_ppn=0,
+    )
 
     assert framework.log_file_name.endswith('test.log')
 
@@ -89,38 +93,40 @@ def test_framework_simple(tmpdir, capfd):
 
     # check all registered service handlers
     service_handlers = sorted(framework.service_handler.keys())
-    assert service_handlers == ['createListener',
-                                'create_simulation',
-                                'existsTopic',
-                                'finish_task',
-                                'getSubscription',
-                                'getTopic',
-                                'get_allocation',
-                                'get_config_parameter',
-                                'get_port',
-                                'get_time_loop',
-                                'init_call',
-                                'init_task',
-                                'init_task_pool',
-                                'launch_task',
-                                'merge_current_plasma_state',
-                                'processEvents',
-                                'registerEventListener',
-                                'registerSubscriber',
-                                'release_allocation',
-                                'removeSubscription',
-                                'sendEvent',
-                                'set_config_parameter',
-                                'stage_state',
-                                'unregisterEventListener',
-                                'unregisterSubscriber',
-                                'update_state',
-                                'wait_call']
+    assert service_handlers == [
+        'createListener',
+        'create_simulation',
+        'existsTopic',
+        'finish_task',
+        'getSubscription',
+        'getTopic',
+        'get_allocation',
+        'get_config_parameter',
+        'get_port',
+        'get_time_loop',
+        'init_call',
+        'init_task',
+        'init_task_pool',
+        'launch_task',
+        'merge_current_plasma_state',
+        'processEvents',
+        'registerEventListener',
+        'registerSubscriber',
+        'release_allocation',
+        'removeSubscription',
+        'sendEvent',
+        'set_config_parameter',
+        'stage_state',
+        'unregisterEventListener',
+        'unregisterSubscriber',
+        'update_state',
+        'wait_call',
+    ]
 
     framework.run()
 
     # check simulation_log
-    json_files = glob.glob(str(tmpdir.join("simulation_log").join("*.json")))
+    json_files = glob.glob(str(tmpdir.join('simulation_log').join('*.json')))
     assert len(json_files) == 1
     with open(json_files[0], 'r') as json_file:
         json_lines = json_file.readlines()
@@ -140,22 +146,23 @@ def test_framework_simple(tmpdir, capfd):
         assert event['sim_name'] == 'test'
 
     captured = capfd.readouterr()
-    assert captured.out.startswith('Starting IPS')
-    assert captured.err == ''
+    assert captured.err.startswith('Starting IPS')
+    assert captured.out == ''
 
 
 def test_framework_empty_config_list(tmpdir):
-
     with pytest.raises(ValueError) as excinfo:
-        Framework(config_file_list=[],
-                  log_file_name=str(tmpdir.join('test.log')),
-                  platform_file_name='platform.conf',
-                  debug=None,
-                  verbose_debug=None,
-                  cmd_nodes=0,
-                  cmd_ppn=0)
+        Framework(
+            config_file_list=[],
+            log_file_name=str(tmpdir.join('test.log')),
+            platform_file_name='platform.conf',
+            debug=None,
+            verbose_debug=None,
+            cmd_nodes=0,
+            cmd_ppn=0,
+        )
 
-    assert str(excinfo.value).endswith("Missing config file? Something is very wrong")
+    assert str(excinfo.value).endswith('Missing config file? Something is very wrong')
 
     # check output log file
     with open(str(tmpdir.join('test.log')), 'r') as f:
@@ -163,38 +170,40 @@ def test_framework_empty_config_list(tmpdir):
 
     assert len(lines) == 8
 
-    assert "Traceback (most recent call last):\n" in lines
+    assert 'Traceback (most recent call last):\n' in lines
     assert "    raise ValueError('Missing config file? Something is very wrong')\n" in lines
-    assert "ValueError: Missing config file? Something is very wrong\n" in lines
+    assert 'ValueError: Missing config file? Something is very wrong\n' in lines
 
     # remove timestamp
     lines = [line[24:] for line in lines]
 
-    assert "FRAMEWORK       ERROR    Missing config file? Something is very wrong\n" in lines
-    assert "FRAMEWORK       ERROR    Problem initializing managers\n" in lines
+    assert 'FRAMEWORK       ERROR    Missing config file? Something is very wrong\n' in lines
+    assert 'FRAMEWORK       ERROR    Problem initializing managers\n' in lines
 
 
 def test_framework_log_output(tmpdir):
     platform_file, config_file = write_basic_config_and_platform_files(tmpdir)
 
-    framework = Framework(config_file_list=[str(config_file)],
-                          log_file_name=str(tmpdir.join('framework_log_test.log')),
-                          platform_file_name=str(platform_file),
-                          debug=None,
-                          verbose_debug=None,
-                          cmd_nodes=0,
-                          cmd_ppn=0)
+    framework = Framework(
+        config_file_list=[str(config_file)],
+        log_file_name=str(tmpdir.join('framework_log_test.log')),
+        platform_file_name=str(platform_file),
+        debug=None,
+        verbose_debug=None,
+        cmd_nodes=0,
+        cmd_ppn=0,
+    )
 
-    framework.log("log message")
-    framework.debug("debug message")
-    framework.info("info message")
-    framework.warning("warning message")
-    framework.error("error message")
+    framework.log('log message')
+    framework.debug('debug message')
+    framework.info('info message')
+    framework.warning('warning message')
+    framework.error('error message')
     try:
-        raise RuntimeError("an error has occurred")
+        raise RuntimeError('an error has occurred')
     except RuntimeError:
-        framework.exception("exception message")
-    framework.critical("critical message")
+        framework.exception('exception message')
+    framework.critical('critical message')
 
     framework.terminate_all_sims()
 
@@ -204,43 +213,45 @@ def test_framework_log_output(tmpdir):
 
     assert len(lines) == 13
 
-    assert "Traceback (most recent call last):\n" in lines
+    assert 'Traceback (most recent call last):\n' in lines
     assert '    raise RuntimeError("an error has occurred")\n' in lines
-    assert "RuntimeError: an error has occurred\n" in lines
+    assert 'RuntimeError: an error has occurred\n' in lines
 
     # remove timestamp
     lines = [line[24:] for line in lines]
 
-    assert "FRAMEWORK       WARNING  warning message\n" in lines
-    assert "FRAMEWORK       ERROR    error message\n" in lines
-    assert "FRAMEWORK       ERROR    exception message\n" in lines
-    assert "FRAMEWORK       CRITICAL critical message\n" in lines
-    assert "FRAMEWORK       INFO     log message\n" not in lines
-    assert "FRAMEWORK       DEBUG    debug message\n" not in lines
-    assert "FRAMEWORK       INFO     info message\n" not in lines
+    assert 'FRAMEWORK       WARNING  warning message\n' in lines
+    assert 'FRAMEWORK       ERROR    error message\n' in lines
+    assert 'FRAMEWORK       ERROR    exception message\n' in lines
+    assert 'FRAMEWORK       CRITICAL critical message\n' in lines
+    assert 'FRAMEWORK       INFO     log message\n' not in lines
+    assert 'FRAMEWORK       DEBUG    debug message\n' not in lines
+    assert 'FRAMEWORK       INFO     info message\n' not in lines
 
 
 def test_framework_log_output_debug(tmpdir):
     platform_file, config_file = write_basic_config_and_platform_files(tmpdir)
 
-    framework = Framework(config_file_list=[str(config_file)],
-                          log_file_name=str(tmpdir.join('framework_log_debug_test.log')),
-                          platform_file_name=str(platform_file),
-                          debug=True,
-                          verbose_debug=False,
-                          cmd_nodes=0,
-                          cmd_ppn=0)
+    framework = Framework(
+        config_file_list=[str(config_file)],
+        log_file_name=str(tmpdir.join('framework_log_debug_test.log')),
+        platform_file_name=str(platform_file),
+        debug=True,
+        verbose_debug=False,
+        cmd_nodes=0,
+        cmd_ppn=0,
+    )
 
-    framework.log("log message")
-    framework.debug("debug message")
-    framework.info("info message")
-    framework.warning("warning message")
-    framework.error("error message")
+    framework.log('log message')
+    framework.debug('debug message')
+    framework.info('info message')
+    framework.warning('warning message')
+    framework.error('error message')
     try:
-        raise ValueError("wrong value")
+        raise ValueError('wrong value')
     except ValueError:
-        framework.exception("exception message")
-    framework.critical("critical message")
+        framework.exception('exception message')
+    framework.critical('critical message')
 
     framework.terminate_all_sims()
 
@@ -250,20 +261,20 @@ def test_framework_log_output_debug(tmpdir):
 
     assert len(lines) == 32
 
-    assert "Traceback (most recent call last):\n" in lines
+    assert 'Traceback (most recent call last):\n' in lines
     assert '    raise ValueError("wrong value")\n' in lines
-    assert "ValueError: wrong value\n" in lines
+    assert 'ValueError: wrong value\n' in lines
 
     # remove timestamp
     lines = [line[24:] for line in lines]
 
-    assert "FRAMEWORK       INFO     log message\n" in lines
-    assert "FRAMEWORK       DEBUG    debug message\n" in lines
-    assert "FRAMEWORK       INFO     info message\n" in lines
-    assert "FRAMEWORK       WARNING  warning message\n" in lines
-    assert "FRAMEWORK       ERROR    error message\n" in lines
-    assert "FRAMEWORK       ERROR    exception message\n" in lines
-    assert "FRAMEWORK       CRITICAL critical message\n" in lines
+    assert 'FRAMEWORK       INFO     log message\n' in lines
+    assert 'FRAMEWORK       DEBUG    debug message\n' in lines
+    assert 'FRAMEWORK       INFO     info message\n' in lines
+    assert 'FRAMEWORK       WARNING  warning message\n' in lines
+    assert 'FRAMEWORK       ERROR    error message\n' in lines
+    assert 'FRAMEWORK       ERROR    exception message\n' in lines
+    assert 'FRAMEWORK       CRITICAL critical message\n' in lines
 
 
 def test_framework_missing_platform(capfd):
@@ -271,5 +282,5 @@ def test_framework_missing_platform(capfd):
         Framework(config_file_list=[], log_file_name='log')
     assert excinfo.value.code == 1
     captured = capfd.readouterr()
-    assert captured.out.endswith('Need to specify a platform file\n')
-    assert captured.err == ''
+    assert captured.err.endswith('Need to specify a platform file\n')
+    assert captured.out == ''

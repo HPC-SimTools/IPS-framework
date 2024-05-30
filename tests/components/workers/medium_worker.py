@@ -2,6 +2,7 @@
 # Copyright 2006-2022 UT-Battelle, LLC. See LICENSE for more information.
 # -------------------------------------------------------------------------------
 import os
+
 from ipsframework import Component
 
 
@@ -21,11 +22,7 @@ class medium_worker(Component):
         sleep_time = 1
         self.services.log('Stepping Worker timestamp=%s', timestamp)
         cwd = self.services.get_working_dir()
-        pid = self.services.launch_task(int(self.NPROC),
-                                        cwd,
-                                        os.path.join(self.BIN_PATH, self.BIN),
-                                        str(sleep_time),
-                                        logfile='my_out'+timestamp)
+        pid = self.services.launch_task(int(self.NPROC), cwd, os.path.join(self.BIN_PATH, self.BIN), str(sleep_time), logfile='my_out' + timestamp)
         retval = self.services.wait_task(pid)
         return retval
 
@@ -33,7 +30,7 @@ class medium_worker(Component):
         self.services.log('Finalizing Worker')
 
     def process_event(self, topicName, theEvent):
-        print("Worker: processed ", (topicName, str(theEvent)))
+        print('Worker: processed ', (topicName, str(theEvent)))
 
     def terminate(self, status):
         self.services.log('Really Calling terminate()')

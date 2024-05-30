@@ -1,4 +1,5 @@
 import os
+
 from ipsframework import Framework
 
 
@@ -21,8 +22,8 @@ SCRATCH =
 
     config = f"""RUN_COMMENT = testing
 SIM_NAME = test
-LOG_FILE = {str(tmpdir)}/sim.log
-SIM_ROOT = {str(tmpdir)}
+LOG_FILE = {tmpdir!s}/sim.log
+SIM_ROOT = {tmpdir!s}
 SIMULATION_MODE = NORMAL
 CURRENT_STATE = state.dat
 STATE_FILES = $CURRENT_STATE state100.dat
@@ -65,13 +66,15 @@ STATE_WORK_DIR = $SIM_ROOT/work/state
 def test_dataManager_state_file(tmpdir):
     platform_file, config_file = write_basic_config_and_platform_files(tmpdir)
 
-    framework = Framework(config_file_list=[str(config_file)],
-                          log_file_name=str(tmpdir.join('ips.log')),
-                          platform_file_name=str(platform_file),
-                          debug=None,
-                          verbose_debug=None,
-                          cmd_nodes=0,
-                          cmd_ppn=0)
+    framework = Framework(
+        config_file_list=[str(config_file)],
+        log_file_name=str(tmpdir.join('ips.log')),
+        platform_file_name=str(platform_file),
+        debug=None,
+        verbose_debug=None,
+        cmd_nodes=0,
+        cmd_ppn=0,
+    )
 
     framework.run()
 
@@ -82,13 +85,15 @@ def test_dataManager_state_file(tmpdir):
         assert os.path.exists(str(tmpdir.join('work').join('state').join(filename)))
 
     # check output log file
-    test_map = (('DATA_INIT__init_dataManager_1', 'state.dat', 1),
-                ('DATA_INIT__init_dataManager_1', 'state100.dat', 100),
-                ('DATA_DRIVER__driver_dataManager_2', 'state.dat', 2),
-                ('DATA_DRIVER__driver_dataManager_2', 'state100.dat', 101),
-                ('state', 'state.dat', 2),
-                ('state', 'state100.dat', 101))
-    for (direc, filename, result) in test_map:
+    test_map = (
+        ('DATA_INIT__init_dataManager_1', 'state.dat', 1),
+        ('DATA_INIT__init_dataManager_1', 'state100.dat', 100),
+        ('DATA_DRIVER__driver_dataManager_2', 'state.dat', 2),
+        ('DATA_DRIVER__driver_dataManager_2', 'state100.dat', 101),
+        ('state', 'state.dat', 2),
+        ('state', 'state100.dat', 101),
+    )
+    for direc, filename, result in test_map:
         with open(str(tmpdir.join('work').join(direc).join(filename)), 'r') as f:
             value = int(f.readline())
         assert value == result

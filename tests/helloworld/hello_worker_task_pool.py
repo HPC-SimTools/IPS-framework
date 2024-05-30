@@ -19,15 +19,15 @@ class HelloWorker(Component):
         cwd = self.services.get_working_dir()
         self.services.create_task_pool('pool')
         for i in range(total_tasks):
-            self.services.add_task('pool', 'task_'+str(i), 1, cwd, exe, str(duration[i]))
+            self.services.add_task('pool', 'task_' + str(i), 1, cwd, exe, str(duration[i]))
         ret_val = self.services.submit_tasks('pool')
         print('ret_val = ', ret_val)
         exit_status = self.services.get_finished_tasks('pool')
         print(exit_status)
 
-        print("====== Non Blocking ")
+        print('====== Non Blocking ')
         for i in range(total_tasks):
-            self.services.add_task('pool', 'Nonblock_task_'+str(i), 1, cwd, exe, str(duration[i]))
+            self.services.add_task('pool', 'Nonblock_task_' + str(i), 1, cwd, exe, str(duration[i]))
         active_tasks = self.services.submit_tasks('pool', block=False)
         finished_tasks = 0
         while finished_tasks < total_tasks:
@@ -43,7 +43,7 @@ class HelloWorker(Component):
 
         # Create task pool but then remove task pool, should terminate all tasks
         for i in range(total_tasks):
-            self.services.add_task('pool', 'task_'+str(i), 1, cwd, exe, str(10000))
+            self.services.add_task('pool', 'task_' + str(i), 1, cwd, exe, str(10000))
         ret_val = self.services.submit_tasks('pool', block=False)
         print('ret_val = ', ret_val)
         self.services.remove_task_pool('pool')

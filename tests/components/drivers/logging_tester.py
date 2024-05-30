@@ -1,16 +1,9 @@
 from ipsframework import Component
 
-log_types = ["log",
-             "debug",
-             "info",
-             "warning",
-             "error",
-             "exception",
-             "critical"]
+log_types = ['log', 'debug', 'info', 'warning', 'error', 'exception', 'critical']
 
 
 class logging_tester(Component):
-
     def init(self, timestamp=0.0, **keywords):
         print(f'{self.component_id}.init')
         for log_type in log_types:

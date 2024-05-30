@@ -3,14 +3,16 @@ from ipsframework import Component
 
 class timeloop_driver(Component):
     def init(self, timestamp=0.0, **keywords):
-        self.state_file = self.services.get_config_param("CURRENT_STATE")  # pylint: disable=attribute-defined-outside-init
-        self.workers = [self.services.get_port(port)  # pylint: disable=attribute-defined-outside-init
-                        for port in self.services.get_config_param('PORTS')['NAMES'].split()
-                        if port not in ('INIT', 'DRIVER')]
+        self.state_file = self.services.get_config_param('CURRENT_STATE')  # pylint: disable=attribute-defined-outside-init
+        self.workers = [
+            self.services.get_port(port)  # pylint: disable=attribute-defined-outside-init
+            for port in self.services.get_config_param('PORTS')['NAMES'].split()
+            if port not in ('INIT', 'DRIVER')
+        ]
 
-        mode = 'restart' if self.services.get_config_param("SIMULATION_MODE").lower() == 'restart' else 'init'
+        mode = 'restart' if self.services.get_config_param('SIMULATION_MODE').lower() == 'restart' else 'init'
 
-        if mode == "init":
+        if mode == 'init':
             with open(self.state_file, 'w') as f:
                 f.write(f'{self.component_id} init()\n')
         else:
@@ -23,7 +25,6 @@ class timeloop_driver(Component):
             self.services.call(port, mode, timestamp)
 
     def step(self, timestamp=0.0, **keywords):
-
         timeloop = self.services.get_time_loop()
 
         for t in timeloop:
