@@ -214,7 +214,7 @@ def test_framework_log_output(tmpdir):
     assert len(lines) == 13
 
     assert 'Traceback (most recent call last):\n' in lines
-    assert '    raise RuntimeError("an error has occurred")\n' in lines
+    assert "    raise RuntimeError('an error has occurred')\n" in lines
     assert 'RuntimeError: an error has occurred\n' in lines
 
     # remove timestamp
@@ -262,7 +262,7 @@ def test_framework_log_output_debug(tmpdir):
     assert len(lines) == 32
 
     assert 'Traceback (most recent call last):\n' in lines
-    assert '    raise ValueError("wrong value")\n' in lines
+    assert "    raise ValueError('wrong value')\n" in lines
     assert 'ValueError: wrong value\n' in lines
 
     # remove timestamp

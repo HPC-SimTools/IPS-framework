@@ -44,17 +44,18 @@ def test_basic_serial1(tmpdir, capfd):
     # Check stdout
     captured = capfd.readouterr()
     captured_out = captured.out.split('\n')
+    captured_err = captured.err.split('\n')
 
-    assert captured_out[0].startswith('Starting IPS')
-    assert captured_out[1] == "Created <class 'small_worker.small_worker'>"
-    assert captured_out[2] == "Created <class 'medium_worker.medium_worker'>"
-    assert captured_out[3] == "Created <class 'large_worker.large_worker'>"
-    assert captured_out[4] == 'small_worker : init() called'
-    assert captured_out[6] == 'medium_worker : init() called'
-    assert captured_out[8] == 'large_worker : init() called'
-    assert captured_out[10] == 'Current time =  3.50'
-    assert captured_out[11] == 'Current time =  3.60'
-    assert captured_out[12] == 'Current time =  3.70'
+    assert captured_err[0].startswith('Starting IPS')
+    assert captured_out[0] == "Created <class 'small_worker.small_worker'>"
+    assert captured_out[1] == "Created <class 'medium_worker.medium_worker'>"
+    assert captured_out[2] == "Created <class 'large_worker.large_worker'>"
+    assert captured_out[3] == 'small_worker : init() called'
+    assert captured_out[5] == 'medium_worker : init() called'
+    assert captured_out[7] == 'large_worker : init() called'
+    assert captured_out[9] == 'Current time =  3.50'
+    assert captured_out[10] == 'Current time =  3.60'
+    assert captured_out[11] == 'Current time =  3.70'
 
     # check files copied and created
     driver_files = [os.path.basename(f) for f in glob.glob(str(tmpdir.join('test_basic_serial1_0/work/drivers_testing_basic_serial1_*/*')))]
@@ -254,20 +255,21 @@ def test_basic_concurrent1(tmpdir, capfd):
     # Check stdout
     captured = capfd.readouterr()
     captured_out = captured.out.split('\n')
+    captured_err = captured.err.split('\n')
 
-    assert captured_out[0].startswith('Starting IPS')
-    assert captured_out[1] == "Created <class 'small_worker.small_worker'>"
-    assert captured_out[2] == "Created <class 'medium_worker.medium_worker'>"
-    assert captured_out[3] == "Created <class 'large_worker.large_worker'>"
-    assert captured_out[4] == 'small_worker : init() called'
-    assert captured_out[6] == 'medium_worker : init() called'
-    assert captured_out[8] == 'large_worker : init() called'
-    assert captured_out[10] == 'Current time =  3.50'
-    assert captured_out[11] == 'nonblocking wait_call() invoked before call 10 finished'
-    assert captured_out[12] == 'Current time =  3.60'
-    assert captured_out[13] == 'nonblocking wait_call() invoked before call 13 finished'
-    assert captured_out[14] == 'Current time =  3.70'
-    assert captured_out[15] == 'nonblocking wait_call() invoked before call 16 finished'
+    assert captured_err[0].startswith('Starting IPS')
+    assert captured_out[0] == "Created <class 'small_worker.small_worker'>"
+    assert captured_out[1] == "Created <class 'medium_worker.medium_worker'>"
+    assert captured_out[2] == "Created <class 'large_worker.large_worker'>"
+    assert captured_out[3] == 'small_worker : init() called'
+    assert captured_out[5] == 'medium_worker : init() called'
+    assert captured_out[7] == 'large_worker : init() called'
+    assert captured_out[9] == 'Current time =  3.50'
+    assert captured_out[10] == 'nonblocking wait_call() invoked before call 10 finished'
+    assert captured_out[11] == 'Current time =  3.60'
+    assert captured_out[12] == 'nonblocking wait_call() invoked before call 13 finished'
+    assert captured_out[13] == 'Current time =  3.70'
+    assert captured_out[14] == 'nonblocking wait_call() invoked before call 16 finished'
 
     # check files copied and created
     driver_files = [os.path.basename(f) for f in glob.glob(str(tmpdir.join('test_basic_concurrent1_0/work/drivers_testing_basic_concurrent1_*/*')))]
