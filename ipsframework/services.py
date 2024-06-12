@@ -1756,6 +1756,22 @@ class ServicesProxy:
         self.publish('_IPS_MONITOR', 'PORTALBRIDGE_UPDATE_TIMESTAMP', event_data)
         self._send_monitor_event('IPS_UPDATE_TIME_STAMP', 'Timestamp = ' + str(new_time_stamp))
 
+    def send_portal_data(self, tag, data):
+        """
+        Send data to the portal
+        """
+        event_data = {}
+        event_data['sim_name'] = self.sim_conf['__PORTAL_SIM_NAME']
+        event_data['real_sim_name'] = self.sim_name
+
+        portal_data = {}
+        portal_data['tag'] = str(tag)
+        portal_data['data'] = data
+        portal_data['eventtype'] = 'PORTAL_DATA'
+        event_data['portal_data'] = portal_data
+        self.publish('_IPS_MONITOR', 'PORTAL_DATA', event_data)
+        self._send_monitor_event('IPS_PORTAL_DATA', f'Tag = {tag}')
+
     def setMonitorURL(self, url=''):
         """
         Send event to portal setting the URL where the monitor component will

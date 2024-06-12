@@ -101,6 +101,10 @@ class PortalBridge(Component):
         self.childProcess = None
         self.childProcessStop = None
         self.parent_conn = None
+        self.data_first_event = True
+        self.data_childProcess = None
+        self.data_childProcessStop = None
+        self.data_parent_conn = None
         self.mpo = None
         self.mpo_name_counter = defaultdict(lambda: 0)
         self.counter = 0
@@ -185,12 +189,17 @@ class PortalBridge(Component):
         else:
             portal_data['phystimestamp'] = sim_data.phys_time_stamp
 
+        portal_data['portal_runid'] = sim_data.portal_runid
+
+        if portal_data['eventtype'] == 'PORTAL_DATA':
+            self.send_data(sim_data, portal_data)
+            return
+
         if portal_data['eventtype'] == 'IPS_SET_MONITOR_URL':
             sim_data.monitor_url = portal_data['vizurl']
         elif sim_data.monitor_url:
             portal_data['vizurl'] = sim_data.monitor_url
 
-        portal_data['portal_runid'] = sim_data.portal_runid
         if portal_data['eventtype'] == 'IPS_START' and 'parent_portal_runid' not in portal_data:
             portal_data['parent_portal_runid'] = sim_data.parent_portal_runid
         portal_data['seqnum'] = sim_data.counter
@@ -267,6 +276,50 @@ class PortalBridge(Component):
             self.send_mpo_data(event_data, sim_data)
 
     def check_send_post_responses(self):
+        while self.parent_conn.poll():
+            try:
+                code, msg = self.parent_conn.recv()
+            except (EOFError, OSError):
+                break
+
+            try:
+                data = json.loads(msg)
+                if 'runid' in data:
+                    self.services.info('Run Portal URL = %s/%s', self.portal_url, data.get('runid'))
+
+                msg = json.dumps(data)
+            except (TypeError, json.decoder.JSONDecodeError):
+                pass
+            if code == 200:
+                self.services.debug('Portal Response: %d %s', code, msg)
+            elif code == -1:
+                # disable portal, stop trying to send more data
+                self.portal_url = None
+                self.services.error('Disabling portal because: %s', msg)
+            else:
+                self.services.error('Portal Error: %d %s', code, msg)
+
+    def send_data(self, sim_data, event_data):
+        """
+        Send contents of *event_data* and *sim_data* to portal.
+        """
+
+        if self.portal_url:
+            if self.data_first_event:  # First time, launch sendPost.py daemon
+                self.data_parent_conn, child_conn = Pipe()
+                self.data_childProcessStop = Event()
+                self.data_childProcess = Process(target=send_post, args=(child_conn, self.childProcessStop, self.portal_url + '/api/data'))
+                self.data_childProcess.start()
+                self.data_first_event = False
+
+            try:
+                self.data_parent_conn.send(event_data)
+            except OSError:
+                pass
+
+            self.check_data_send_post_responses()
+
+    def check_data_send_post_responses(self):
         while self.parent_conn.poll():
             try:
                 code, msg = self.parent_conn.recv()
