@@ -20,6 +20,7 @@ import time
 import weakref
 from collections import namedtuple
 from operator import iadd, itemgetter
+from typing import Any
 
 from configobj import ConfigObj
 
@@ -1756,15 +1757,24 @@ class ServicesProxy:
         self.publish('_IPS_MONITOR', 'PORTALBRIDGE_UPDATE_TIMESTAMP', event_data)
         self._send_monitor_event('IPS_UPDATE_TIME_STAMP', 'Timestamp = ' + str(new_time_stamp))
 
-    def send_portal_data(self, tag, data):
+    # instead of explicit content_type_enum - parse file? Focus just on E2E for now
+    def send_portal_data(self, tag: float, data: bytes):
         """
         Send data to the portal
+
+        Params:
+          - tag: currently, use the timestep for this
+          - data: raw data of statefile - must be in bytes format
         """
+        if not isinstance(data, bytes):
+            self.error('Data argument passed to "services.send_portal_data" must be bytes')
+            return
+
         event_data = {}
         event_data['sim_name'] = self.sim_conf['__PORTAL_SIM_NAME']
         event_data['real_sim_name'] = self.sim_name
 
-        portal_data = {}
+        portal_data: dict[str, Any] = {}
         portal_data['tag'] = str(tag)
         portal_data['data'] = data
         portal_data['eventtype'] = 'PORTAL_DATA'

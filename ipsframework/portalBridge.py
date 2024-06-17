@@ -11,6 +11,9 @@ import re
 import time
 from collections import defaultdict
 from multiprocessing import Event, Pipe, Process
+from multiprocessing.connection import Connection
+from multiprocessing.synchronize import Event as EventType
+from typing import Any
 
 import urllib3
 
@@ -35,7 +38,7 @@ def hash_file(file_name):  # pragma: no cover
     return hasher.hexdigest()
 
 
-def send_post(conn, stop, url):
+def send_post(conn: Connection, stop: EventType, url: str):
     fail_count = 0
 
     http = urllib3.PoolManager(retries=urllib3.util.Retry(3, backoff_factor=0.25), headers={'Content-Type': 'application/json'})
@@ -47,6 +50,40 @@ def send_post(conn, stop, url):
                 msgs.append(conn.recv())
             try:
                 resp = http.request('POST', url, body=json.dumps(msgs).encode())
+            except urllib3.exceptions.MaxRetryError as e:
+                fail_count += 1
+                conn.send((999, str(e)))
+            else:
+                conn.send((resp.status, resp.data.decode()))
+                fail_count = 0
+
+            if fail_count >= 3:
+                conn.send((-1, 'Too many consecutive failed connections'))
+                break
+        elif stop.is_set():
+            break
+
+
+def send_post_data(conn: Connection, stop: EventType, url: str):
+    fail_count = 0
+
+    http = urllib3.PoolManager(retries=urllib3.util.Retry(3, backoff_factor=0.25))
+
+    while True:
+        if conn.poll(0.1):
+            next_val: dict[str, Any] = conn.recv()
+            # TODO - consider using multipart/form-data instead
+            try:
+                resp = http.request(
+                    'POST',
+                    url,
+                    body=next_val['data'],
+                    headers={
+                        'Content-Type': 'application/octet-stream',
+                        'X-IPS-Tag': next_val['tag'],
+                        'X-IPS-Portal-Runid': next_val['portal_runid'],
+                    },
+                )
             except urllib3.exceptions.MaxRetryError as e:
                 fail_count += 1
                 conn.send((999, str(e)))
@@ -308,7 +345,7 @@ class PortalBridge(Component):
             if self.data_first_event:  # First time, launch sendPost.py daemon
                 self.data_parent_conn, child_conn = Pipe()
                 self.data_childProcessStop = Event()
-                self.data_childProcess = Process(target=send_post, args=(child_conn, self.childProcessStop, self.portal_url + '/api/data'))
+                self.data_childProcess = Process(target=send_post_data, args=(child_conn, self.childProcessStop, self.portal_url + '/api/data'))
                 self.data_childProcess.start()
                 self.data_first_event = False
 
@@ -334,12 +371,12 @@ class PortalBridge(Component):
                 msg = json.dumps(data)
             except (TypeError, json.decoder.JSONDecodeError):
                 pass
-            if code == 200:
-                self.services.debug('Portal Response: %d %s', code, msg)
-            elif code == -1:
+            if code == -1:
                 # disable portal, stop trying to send more data
                 self.portal_url = None
                 self.services.error('Disabling portal because: %s', msg)
+            elif code < 400:
+                self.services.debug('Portal Response: %d %s', code, msg)
             else:
                 self.services.error('Portal Error: %d %s', code, msg)
 
