@@ -17,16 +17,18 @@ import subprocess
 import sys
 import threading
 import time
+import uuid
 import weakref
 from collections import namedtuple
 from operator import iadd, itemgetter
-from typing import Any
+from typing import Any, List, Optional
 
 from configobj import ConfigObj
 
 from . import ipsutil, messages
 from .cca_es_spec import initialize_event_service
 from .ips_es_spec import eventManager
+from .jupyter import create_multi_state_file_notebook
 from .taskManager import TaskInit
 
 RunningTask = namedtuple('RunningTask', ['process', 'start_time', 'timeout', 'nproc', 'cores_allocated', 'command', 'binary', 'args'])
@@ -219,6 +221,8 @@ class ServicesProxy:
         self.ppn = 0
         self.cpp = 0
         self.shared_nodes = False
+        self._jupyterhub_dir = None
+        """This value will potentially be initialized to the JupyterHub path later on"""
 
     def __initialize__(self, component_ref):
         """
@@ -1758,6 +1762,7 @@ class ServicesProxy:
         self._send_monitor_event('IPS_UPDATE_TIME_STAMP', 'Timestamp = ' + str(new_time_stamp))
 
     # instead of explicit content_type_enum - parse file? Focus just on E2E for now
+    # TODO - change API to send a file path instead of raw data
     def send_portal_data(self, tag: float, data: bytes):
         """
         Send data to the portal
@@ -1789,6 +1794,150 @@ class ServicesProxy:
         """
         self.monitor_url = url
         self._send_monitor_event(eventType='IPS_SET_MONITOR_URL', comment='SUCCESS')
+
+    def _get_jupyter_runid(self) -> str:
+        """Get the runid Jupyter will associate with this run.
+        Generally this will be the Portal RUNID but we will try to allow for fallbacks in certain cases.
+        """
+        try:
+            return self.get_config_param('PORTAL_RUNID')
+        except Exception:
+            # TODO this does NOT work across components.
+            self.warning('_get_root_path: PORTAL_RUNID was not defined, falling back to random ID')
+            return str(uuid.uuid4())
+
+    def _init_jupyter(self) -> bool:
+        """
+        initialization logic for Jupyter directory, should only execute once per Component.
+
+        return true if init successful, false if we shouldn't proceed with further Jupyter
+        """
+        root_dir: str = self.get_config_param('JUPYTERHUB_DIR')
+        if not root_dir:
+            self.warning('JUPYTERHUB_DIR was not defined, skipping Jupyter config')
+            return False
+        if not os.path.isabs(root_dir):
+            self.warning('JUPYTERHUB_DIR should be an absolute path, skipping Jupyter config')
+            return False
+
+        root_dir = os.path.join(root_dir, 'ipsframework', 'runs', self._get_jupyter_runid()) + os.path.sep
+
+        # TODO - it may make sense to also reattempt to create this, especially with long simulations
+        try:
+            os.makedirs(os.path.join(root_dir, 'data'), exist_ok=True)
+        except OSError as e:
+            self.warning(f'Could not make directories with provided JUPYTERHUB_DIR value "{root_dir}", full error: {e}')
+            return False
+
+        self._jupyterhub_dir = root_dir
+        return True
+
+    def get_staged_jupyterhub_files(self) -> List[str]:
+        """Get files which have already been saved to the JupyterHub data directory.
+
+        Raises exception only if we aren't able to create the directory, or if it was somehow deleted while running.
+        """
+        if not self._jupyterhub_dir:
+            if not self._init_jupyter():
+                # TODO generic exception
+                raise Exception('Unable to initialize base JupyterHub dir')
+
+        return os.listdir(os.path.join(self._jupyterhub_dir, 'data'))
+
+    def jupyterhub_make_state(self, state_file_path: str, timestamp: float) -> str:
+        """
+        Move a state file into the JupyterHub directory.
+
+        Returns:
+          - the path to the state file in the JupyterHub directory
+
+        Raises:
+          - Exception, if unable to move file to the provided JUPYTERHUB_DIR
+        """
+        if not self._jupyterhub_dir:
+            if not self._init_jupyter():
+                # TODO generic exception
+                raise Exception('Unable to initialize base JupyterHub dir')
+
+        file_parts = state_file_path.split('.')
+        if len(file_parts) > 2:
+            extension = f'.{file_parts[-1]}'
+        else:
+            extension = ''
+        new_state_file_path = os.path.join(self._jupyterhub_dir, 'data', f'{timestamp}{extension}')
+        # this may raise an OSError, it is the responsibility of the caller to handle it.
+        shutil.copyfile(state_file_path, new_state_file_path)
+        return new_state_file_path
+
+    def _get_jupyterhub_url(self, notebook_name: str) -> Optional[str]:
+        url: str = self.get_config_param('JUPYTERHUB_URL')
+        if not url:
+            self.warning('JUPYTERHUB_URL was not defined in config file, skipping notebook association on portal')
+            return None
+        if not url.endswith('/'):
+            url += '/'
+        try:
+            runid = self.get_config_param('PORTAL_RUNID')
+        except Exception:
+            # TODO Figure out how to associate value across components (may need to use a state file?)
+            self.warning("Couldn't get PORTAL_RUNID, skipping Jupyter URL association of data")
+            return None
+        url += f'ipsframework/runs/{runid}/'
+        return url
+
+    def create_jupyterhub_notebook(self, state_file_paths: List[str], name: str) -> str:
+        """
+        Create a JupyterHub Notebook which involves several state file paths.
+
+        Params:
+          - state_file_paths: list of state files (state files should NOT include the directory)
+          - name: name you want to call the Jupyter Notebook (should NOT include the directory)
+
+        NOTE: state files and the JupyterNotebook are created in the same folder by default.
+
+        Returns:
+          - the path to the notebook file in the JupyterHub directory
+
+        Raises:
+          - Exception, if unable to create notebook in JUPYTERHUB_DIR
+        """
+
+        if not self._jupyterhub_dir:
+            if not self._init_jupyter():
+                raise Exception('Unable to initialize base JupyterHub dir')
+
+        jupyter_file = f'{self._jupyterhub_dir}{name}'
+        if not jupyter_file.endswith('.ipynb'):
+            jupyter_file = f'{jupyter_file}.ipynb'
+        create_multi_state_file_notebook(state_file_paths, jupyter_file)
+        return jupyter_file
+
+    def portal_register_jupyter_notebook(self, notebook_name: str, tags: List[str]) -> None:
+        """Associate a JupyterNotebook with tags on the IPS Portal
+
+        NOTE: It's best to ONLY run this if you're wanting to associate multiple data files with a single notebook.
+        If you just want to save a single file, set the appropriate parameter on send_portal_data instead.
+
+        Params
+          - notebook_name: name of the notebook (do not provide any directories, use the config file for this)
+          - tags: list of tags to associate the notebook with
+        """
+        url = self._get_jupyterhub_url(notebook_name)
+        if not url:
+            return
+        url += notebook_name
+
+        event_data = {}
+        event_data['sim_name'] = self.sim_conf['__PORTAL_SIM_NAME']
+        event_data['real_sim_name'] = self.sim_name
+
+        portal_data: dict[str, Any] = {}
+        portal_data['url'] = url
+        portal_data['tags'] = tags
+        portal_data['eventtype'] = 'PORTAL_REGISTER_NOTEBOOK'
+        event_data['portal_data'] = portal_data
+        self.publish('_IPS_MONITOR', 'PORTAL_REGISTER_NOTEBOOK', event_data)
+        self._send_monitor_event('IPS_PORTAL_REGISTER_NOTEBOOK', f'URL = {url}')
 
     def publish(self, topicName, eventName, eventBody):
         """

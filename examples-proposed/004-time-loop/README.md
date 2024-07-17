@@ -19,5 +19,5 @@ pip install -e .
 To run the code, run:
 
 ```bash
-ips.py --config=sim.conf --platform=platform.conf
+./run.sh
 ```

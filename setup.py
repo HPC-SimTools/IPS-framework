@@ -69,5 +69,6 @@ setup(
         'dask==2022.10.0',
         #'dask==2023.12.1', # TODO need a version compatible with 3.8
         'distributed',
+        'nbformat',
     ],
 )

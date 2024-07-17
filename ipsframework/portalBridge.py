@@ -98,6 +98,38 @@ def send_post_data(conn: Connection, stop: EventType, url: str):
             break
 
 
+def send_put_jupyter_url(conn: Connection, stop: EventType, url: str):
+    fail_count = 0
+
+    http = urllib3.PoolManager(retries=urllib3.util.Retry(3, backoff_factor=0.25))
+
+    while True:
+        if conn.poll(0.1):
+            next_val: dict[str, Any] = conn.recv()
+            # TODO - consider using multipart/form-data instead
+            try:
+                resp = http.request(
+                    'PUT',
+                    url,
+                    body=json.dumps({'url': next_val['url'], 'tags': next_val['tags'], 'portal_runid': next_val['portal_runid']}).encode(),
+                    headers={
+                        'Content-Type': 'application/json',
+                    },
+                )
+            except urllib3.exceptions.MaxRetryError as e:
+                fail_count += 1
+                conn.send((999, str(e)))
+            else:
+                conn.send((resp.status, resp.data.decode()))
+                fail_count = 0
+
+            if fail_count >= 3:
+                conn.send((-1, 'Too many consecutive failed connections'))
+                break
+        elif stop.is_set():
+            break
+
+
 class PortalBridge(Component):
     """
     Framework component to communicate with the SWIM web portal.
@@ -142,6 +174,10 @@ class PortalBridge(Component):
         self.data_childProcess = None
         self.data_childProcessStop = None
         self.data_parent_conn = None
+        self.dataurl_first_event = True
+        self.dataurl_childProcess = None
+        self.dataurl_childProcessStop = None
+        self.dataurl_parent_conn = None
         self.mpo = None
         self.mpo_name_counter = defaultdict(lambda: 0)
         self.counter = 0
@@ -230,6 +266,10 @@ class PortalBridge(Component):
 
         if portal_data['eventtype'] == 'PORTAL_DATA':
             self.send_data(sim_data, portal_data)
+            return
+
+        if portal_data['eventtype'] == 'PORTAL_REGISTER_NOTEBOOK':
+            self.send_notebook_url(sim_data, portal_data)
             return
 
         if portal_data['eventtype'] == 'IPS_SET_MONITOR_URL':
@@ -345,7 +385,7 @@ class PortalBridge(Component):
             if self.data_first_event:  # First time, launch sendPost.py daemon
                 self.data_parent_conn, child_conn = Pipe()
                 self.data_childProcessStop = Event()
-                self.data_childProcess = Process(target=send_post_data, args=(child_conn, self.childProcessStop, self.portal_url + '/api/data'))
+                self.data_childProcess = Process(target=send_post_data, args=(child_conn, self.data_childProcessStop, self.portal_url + '/api/data'))
                 self.data_childProcess.start()
                 self.data_first_event = False
 
@@ -357,9 +397,9 @@ class PortalBridge(Component):
             self.check_data_send_post_responses()
 
     def check_data_send_post_responses(self):
-        while self.parent_conn.poll():
+        while self.data_parent_conn.poll():
             try:
-                code, msg = self.parent_conn.recv()
+                code, msg = self.data_parent_conn.recv()
             except (EOFError, OSError):
                 break
 
@@ -379,6 +419,49 @@ class PortalBridge(Component):
                 self.services.debug('Portal Response: %d %s', code, msg)
             else:
                 self.services.error('Portal Error: %d %s', code, msg)
+
+    def send_notebook_url(self, sim_data, event_data):
+        """
+        Send notebook contents
+        """
+        if self.portal_url:
+            if self.dataurl_first_event:  # First time, launch sendPost.py daemon
+                self.dataurl_parent_conn, child_conn = Pipe()
+                self.dataurl_childProcessStop = Event()
+                self.dataurl_childProcess = Process(
+                    target=send_put_jupyter_url, args=(child_conn, self.dataurl_childProcessStop, self.portal_url + '/api/data/add_url')
+                )
+                self.dataurl_childProcess.start()
+                self.dataurl_first_event = False
+
+            try:
+                self.dataurl_parent_conn.send(event_data)
+            except OSError:
+                pass
+
+            while self.dataurl_parent_conn.poll():
+                try:
+                    code, msg = self.dataurl_parent_conn.recv()
+                except (EOFError, OSError):
+                    break
+
+                print('PUT RESPONSE', code, msg)
+                try:
+                    data = json.loads(msg)
+                    if 'runid' in data:
+                        self.services.info('Run Portal URL = %s/%s', self.portal_url, data.get('runid'))
+
+                    msg = json.dumps(data)
+                except (TypeError, json.decoder.JSONDecodeError):
+                    pass
+                if code == -1:
+                    # disable portal, stop trying to send more data
+                    self.portal_url = None
+                    self.services.error('Disabling portal because: %s', msg)
+                elif code < 400:
+                    self.services.debug('Portal Response: %d %s', code, msg)
+                else:
+                    self.services.error('Portal Error: %d %s', code, msg)
 
     def send_mpo_data(self, event_data, sim_data):  # pragma: no cover
         def md5(fname):
