@@ -31,11 +31,11 @@ class Driver(Component):
 
         # create notebook here
         NOTEBOOK_NAME = 'full_state.ipynb'
-        jupyter_files = self.services.get_staged_jupyterhub_files()
-        self.services.create_jupyterhub_notebook(jupyter_files, NOTEBOOK_NAME)
+        jupyter_state_files = self.services.get_staged_jupyterhub_files()
+        self.services.create_jupyterhub_notebook(jupyter_state_files, NOTEBOOK_NAME)
         # NOTE: depending on the names of the files, you may have to use a custom mapping function to get the tag
         # You MUST store the tag somewhere in the file name
-        tags = jupyter_files
+        tags = jupyter_state_files
         self.services.portal_register_jupyter_notebook(NOTEBOOK_NAME, tags)
 
         self.services.call(worker, 'finalize', 0)
@@ -90,7 +90,15 @@ class Monitor(Component):
             data = f.read()
 
         # example of updating Jupyter state
-        _jupyterhub_state_file = self.services.jupyterhub_make_state(state_file, timestamp)
-        # if you wanted to create a notebook per timestep, call send_portal_data with _jupyterhub_state_file as the argument.
-        print('SEND PORTAL DATA', timestamp, data, file=stderr)
-        self.services.send_portal_data(timestamp, data)
+        jupyterhub_state_file = self.services.jupyterhub_make_state(state_file, timestamp)
+        notebook_param = None
+        # create two notebooks on certain timestamps, create no notebooks otherwise
+        if int(timestamp) % 10 == 0:
+            notebook_param = []
+            for ident in (1, 2):
+                notebook_name = f'state_{timestamp}_{ident}.ipynb'
+                self.services.create_jupyterhub_notebook([jupyterhub_state_file], notebook_name)
+                notebook_param.append(notebook_name)
+
+        print('SEND PORTAL DATA', timestamp, data, notebook_param, file=stderr)
+        self.services.send_portal_data(timestamp, data, notebook_param)

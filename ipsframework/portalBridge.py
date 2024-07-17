@@ -74,15 +74,19 @@ def send_post_data(conn: Connection, stop: EventType, url: str):
             next_val: dict[str, Any] = conn.recv()
             # TODO - consider using multipart/form-data instead
             try:
+                headers = {
+                    'Content-Type': 'application/octet-stream',
+                    'X-IPS-Tag': next_val['tag'],
+                    'X-IPS-Portal-Runid': next_val['portal_runid'],
+                }
+                links = next_val.get('jupyter_links')
+                if links:
+                    headers['X-IPS-Jupyter-Links'] = '\x01'.join(links)
                 resp = http.request(
                     'POST',
                     url,
                     body=next_val['data'],
-                    headers={
-                        'Content-Type': 'application/octet-stream',
-                        'X-IPS-Tag': next_val['tag'],
-                        'X-IPS-Portal-Runid': next_val['portal_runid'],
-                    },
+                    headers=headers,
                 )
             except urllib3.exceptions.MaxRetryError as e:
                 fail_count += 1

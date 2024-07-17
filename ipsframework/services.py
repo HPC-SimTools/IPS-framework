@@ -1763,13 +1763,15 @@ class ServicesProxy:
 
     # instead of explicit content_type_enum - parse file? Focus just on E2E for now
     # TODO - change API to send a file path instead of raw data
-    def send_portal_data(self, tag: float, data: bytes):
+    def send_portal_data(self, tag: float, data: bytes, juypter_notebooks: Optional[List[str]] = None):
         """
         Send data to the portal
 
         Params:
           - tag: currently, use the timestep for this
           - data: raw data of statefile - must be in bytes format
+          - jupyter_notebooks: optional list of Jupyter notebooks.
+              If provided, associate these urls with this run
         """
         if not isinstance(data, bytes):
             self.error('Data argument passed to "services.send_portal_data" must be bytes')
@@ -1782,6 +1784,10 @@ class ServicesProxy:
         portal_data: dict[str, Any] = {}
         portal_data['tag'] = str(tag)
         portal_data['data'] = data
+        if juypter_notebooks:
+            url = self._get_jupyterhub_url()
+            if url:
+                portal_data['jupyter_links'] = [f'{url}{nb}' for nb in juypter_notebooks]
         portal_data['eventtype'] = 'PORTAL_DATA'
         event_data['portal_data'] = portal_data
         self.publish('_IPS_MONITOR', 'PORTAL_DATA', event_data)
@@ -1869,7 +1875,7 @@ class ServicesProxy:
         shutil.copyfile(state_file_path, new_state_file_path)
         return new_state_file_path
 
-    def _get_jupyterhub_url(self, notebook_name: str) -> Optional[str]:
+    def _get_jupyterhub_url(self) -> Optional[str]:
         url: str = self.get_config_param('JUPYTERHUB_URL')
         if not url:
             self.warning('JUPYTERHUB_URL was not defined in config file, skipping notebook association on portal')
@@ -1922,7 +1928,7 @@ class ServicesProxy:
           - notebook_name: name of the notebook (do not provide any directories, use the config file for this)
           - tags: list of tags to associate the notebook with
         """
-        url = self._get_jupyterhub_url(notebook_name)
+        url = self._get_jupyterhub_url()
         if not url:
             return
         url += notebook_name
