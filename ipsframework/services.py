@@ -21,14 +21,14 @@ import uuid
 import weakref
 from collections import namedtuple
 from operator import iadd, itemgetter
-from typing import Any, List, Optional
+from typing import Any, Iterable, List, Optional, Union
 
 from configobj import ConfigObj
 
 from . import ipsutil, messages
 from .cca_es_spec import initialize_event_service
 from .ips_es_spec import eventManager
-from .jupyter import create_multi_state_file_notebook
+from .jupyter import stage_jupyter_notebook
 from .taskManager import TaskInit
 
 RunningTask = namedtuple('RunningTask', ['process', 'start_time', 'timeout', 'nproc', 'cores_allocated', 'command', 'binary', 'args'])
@@ -1353,7 +1353,7 @@ class ServicesProxy:
         return self.workdir
 
     # DM stageInput
-    def stage_input_files(self, input_file_list):
+    def stage_input_files(self, input_file_list: Union[str, Iterable[str]]):
         """
         Copy component input files to the component working directory
         (as obtained via a call to :py:meth:`ServicesProxy.get_working_dir`). Input files
@@ -1763,15 +1763,13 @@ class ServicesProxy:
 
     # instead of explicit content_type_enum - parse file? Focus just on E2E for now
     # TODO - change API to send a file path instead of raw data
-    def send_portal_data(self, tag: float, data: bytes, juypter_notebooks: Optional[List[str]] = None):
+    def send_portal_data(self, tag: float, data: bytes):
         """
         Send data to the portal
 
         Params:
           - tag: currently, use the timestep for this
           - data: raw data of statefile - must be in bytes format
-          - jupyter_notebooks: optional list of Jupyter notebooks.
-              If provided, associate these urls with this run
         """
         if not isinstance(data, bytes):
             self.error('Data argument passed to "services.send_portal_data" must be bytes')
@@ -1784,10 +1782,6 @@ class ServicesProxy:
         portal_data: dict[str, Any] = {}
         portal_data['tag'] = str(tag)
         portal_data['data'] = data
-        if juypter_notebooks:
-            url = self._get_jupyterhub_url()
-            if url:
-                portal_data['jupyter_links'] = [f'{url}{nb}' for nb in juypter_notebooks]
         portal_data['eventtype'] = 'PORTAL_DATA'
         event_data['portal_data'] = portal_data
         self.publish('_IPS_MONITOR', 'PORTAL_DATA', event_data)
@@ -1891,34 +1885,33 @@ class ServicesProxy:
         url += f'ipsframework/runs/{runid}/'
         return url
 
-    def create_jupyterhub_notebook(self, state_file_paths: List[str], name: str) -> str:
-        """
-        Create a JupyterHub Notebook which involves several state file paths.
+    def stage_jupyter_notebook(self, 
+                                        dest_notebook_name: str,
+                                        source_notebook_path: str,
+                                        tags: List[str],
+                                        variable_name: str = 'FILES',
+                                        cell_to_modify: int = 0,
+                                    ) -> None:
+        """Loads a notebook from source_notebook_path, adds a cell to load the data, and then saves it to source_notebook_path.
 
+        Does not modify the source notebook.
+        
         Params:
-          - state_file_paths: list of state files (state files should NOT include the directory)
-          - name: name you want to call the Jupyter Notebook (should NOT include the directory)
-
-        NOTE: state files and the JupyterNotebook are created in the same folder by default.
-
-        Returns:
-          - the path to the notebook file in the JupyterHub directory
-
-        Raises:
-          - Exception, if unable to create notebook in JUPYTERHUB_DIR
+          - dest_notebook_name: name of the JupyterNotebook you want to write (do not include file paths).
+          - source_notebook_path: location you want to load the source notebook from
+          - tags: list of state files you want to load in the notebook.
+          - variable_name: name of the variable you want to load files from (default: "FILES")
+          - cell_to_modify: which cell in the JupyterNotebook you want to add the data call to (0-indexed).
+               (This will not overwrite any cells, just appends.)
+               By default, the data listing will happen in the FIRST cell.
         """
-
         if not self._jupyterhub_dir:
             if not self._init_jupyter():
                 raise Exception('Unable to initialize base JupyterHub dir')
+        
+        stage_jupyter_notebook(f'{self._jupyterhub_dir}{dest_notebook_name}', source_notebook_path, tags, variable_name, cell_to_modify)
 
-        jupyter_file = f'{self._jupyterhub_dir}{name}'
-        if not jupyter_file.endswith('.ipynb'):
-            jupyter_file = f'{jupyter_file}.ipynb'
-        create_multi_state_file_notebook(state_file_paths, jupyter_file)
-        return jupyter_file
-
-    def portal_register_jupyter_notebook(self, notebook_name: str, tags: List[str]) -> None:
+    def portal_register_jupyter_notebook(self, notebook_name: str) -> None:
         """Associate a JupyterNotebook with tags on the IPS Portal
 
         NOTE: It's best to ONLY run this if you're wanting to associate multiple data files with a single notebook.
@@ -1939,7 +1932,6 @@ class ServicesProxy:
 
         portal_data: dict[str, Any] = {}
         portal_data['url'] = url
-        portal_data['tags'] = tags
         portal_data['eventtype'] = 'PORTAL_REGISTER_NOTEBOOK'
         event_data['portal_data'] = portal_data
         self.publish('_IPS_MONITOR', 'PORTAL_REGISTER_NOTEBOOK', event_data)

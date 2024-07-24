@@ -16,10 +16,14 @@ class Driver(Component):
     """In this example, the driver iterates through the time loop and calls both the worker and the monitor component on each timestep."""
 
     def step(self, timestamp=0.0):
+        NOTEBOOK_TEMPLATE = 'base-notebook.ipynb'
+
         worker = self.services.get_port('WORKER')
         monitor = self.services.get_port('MONITOR')
 
         self.services.call(worker, 'init', 0)
+        # Needed for notebook template
+        self.services.stage_input_files(NOTEBOOK_TEMPLATE)
 
         # The time loop is configured in its own section of sim.conf
         # It is shared across all components
@@ -32,11 +36,12 @@ class Driver(Component):
         # create notebook here
         NOTEBOOK_NAME = 'full_state.ipynb'
         jupyter_state_files = self.services.get_staged_jupyterhub_files()
-        self.services.create_jupyterhub_notebook(jupyter_state_files, NOTEBOOK_NAME)
-        # NOTE: depending on the names of the files, you may have to use a custom mapping function to get the tag
-        # You MUST store the tag somewhere in the file name
-        tags = jupyter_state_files
-        self.services.portal_register_jupyter_notebook(NOTEBOOK_NAME, tags)
+        self.services.stage_jupyter_notebook(
+            dest_notebook_name=NOTEBOOK_NAME, # path is relative to JupyterHub directory
+            source_notebook_path='base-notebook.ipynb', # path is relative to input directory
+            tags=jupyter_state_files,
+        )
+        self.services.portal_register_jupyter_notebook(NOTEBOOK_NAME)
 
         self.services.call(worker, 'finalize', 0)
 
@@ -89,16 +94,8 @@ class Monitor(Component):
         with open(state_file, 'rb') as f:
             data = f.read()
 
-        # example of updating Jupyter state
-        jupyterhub_state_file = self.services.jupyterhub_make_state(state_file, timestamp)
-        notebook_param = None
-        # create two notebooks on certain timestamps, create no notebooks otherwise
-        if int(timestamp) % 10 == 0:
-            notebook_param = []
-            for ident in (1, 2):
-                notebook_name = f'state_{timestamp}_{ident}.ipynb'
-                self.services.create_jupyterhub_notebook([jupyterhub_state_file], notebook_name)
-                notebook_param.append(notebook_name)
+        # stage the state file in the JupyterHub directory
+        self.services.jupyterhub_make_state(state_file, timestamp)
 
-        print('SEND PORTAL DATA', timestamp, data, notebook_param, file=stderr)
-        self.services.send_portal_data(timestamp, data, notebook_param)
+        print('SEND PORTAL DATA', timestamp, data, file=stderr)
+        self.services.send_portal_data(timestamp, data)

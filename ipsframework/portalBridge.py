@@ -79,9 +79,6 @@ def send_post_data(conn: Connection, stop: EventType, url: str):
                     'X-IPS-Tag': next_val['tag'],
                     'X-IPS-Portal-Runid': next_val['portal_runid'],
                 }
-                links = next_val.get('jupyter_links')
-                if links:
-                    headers['X-IPS-Jupyter-Links'] = '\x01'.join(links)
                 resp = http.request(
                     'POST',
                     url,
@@ -115,7 +112,7 @@ def send_put_jupyter_url(conn: Connection, stop: EventType, url: str):
                 resp = http.request(
                     'PUT',
                     url,
-                    body=json.dumps({'url': next_val['url'], 'tags': next_val['tags'], 'portal_runid': next_val['portal_runid']}).encode(),
+                    body=json.dumps({'url': next_val['url'], 'portal_runid': next_val['portal_runid']}).encode(),
                     headers={
                         'Content-Type': 'application/json',
                     },
