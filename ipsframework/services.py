@@ -1885,17 +1885,18 @@ class ServicesProxy:
         url += f'ipsframework/runs/{runid}/'
         return url
 
-    def stage_jupyter_notebook(self, 
-                                        dest_notebook_name: str,
-                                        source_notebook_path: str,
-                                        tags: List[str],
-                                        variable_name: str = 'FILES',
-                                        cell_to_modify: int = 0,
-                                    ) -> None:
+    def stage_jupyter_notebook(
+        self,
+        dest_notebook_name: str,
+        source_notebook_path: str,
+        tags: List[str],
+        variable_name: str = 'FILES',
+        cell_to_modify: int = 0,
+    ) -> None:
         """Loads a notebook from source_notebook_path, adds a cell to load the data, and then saves it to source_notebook_path.
 
         Does not modify the source notebook.
-        
+
         Params:
           - dest_notebook_name: name of the JupyterNotebook you want to write (do not include file paths).
           - source_notebook_path: location you want to load the source notebook from
@@ -1908,7 +1909,7 @@ class ServicesProxy:
         if not self._jupyterhub_dir:
             if not self._init_jupyter():
                 raise Exception('Unable to initialize base JupyterHub dir')
-        
+
         stage_jupyter_notebook(f'{self._jupyterhub_dir}{dest_notebook_name}', source_notebook_path, tags, variable_name, cell_to_modify)
 
     def portal_register_jupyter_notebook(self, notebook_name: str) -> None:

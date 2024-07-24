@@ -37,8 +37,8 @@ class Driver(Component):
         NOTEBOOK_NAME = 'full_state.ipynb'
         jupyter_state_files = self.services.get_staged_jupyterhub_files()
         self.services.stage_jupyter_notebook(
-            dest_notebook_name=NOTEBOOK_NAME, # path is relative to JupyterHub directory
-            source_notebook_path='base-notebook.ipynb', # path is relative to input directory
+            dest_notebook_name=NOTEBOOK_NAME,  # path is relative to JupyterHub directory
+            source_notebook_path='base-notebook.ipynb',  # path is relative to input directory
             tags=jupyter_state_files,
         )
         self.services.portal_register_jupyter_notebook(NOTEBOOK_NAME)
