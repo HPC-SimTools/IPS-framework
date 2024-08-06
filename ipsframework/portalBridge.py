@@ -99,7 +99,7 @@ def send_post_data(conn: Connection, stop: EventType, url: str):
             break
 
 
-def send_put_jupyter_url(conn: Connection, stop: EventType, url: str):
+def send_post_jupyter_url(conn: Connection, stop: EventType, url: str):
     fail_count = 0
 
     http = urllib3.PoolManager(retries=urllib3.util.Retry(3, backoff_factor=0.25))
@@ -110,7 +110,7 @@ def send_put_jupyter_url(conn: Connection, stop: EventType, url: str):
             # TODO - consider using multipart/form-data instead
             try:
                 resp = http.request(
-                    'PUT',
+                    'POST',
                     url,
                     body=json.dumps({'url': next_val['url'], 'portal_runid': next_val['portal_runid']}).encode(),
                     headers={
@@ -430,7 +430,7 @@ class PortalBridge(Component):
                 self.dataurl_parent_conn, child_conn = Pipe()
                 self.dataurl_childProcessStop = Event()
                 self.dataurl_childProcess = Process(
-                    target=send_put_jupyter_url, args=(child_conn, self.dataurl_childProcessStop, self.portal_url + '/api/data/add_url')
+                    target=send_post_jupyter_url, args=(child_conn, self.dataurl_childProcessStop, self.portal_url + '/api/data/add_url')
                 )
                 self.dataurl_childProcess.start()
                 self.dataurl_first_event = False

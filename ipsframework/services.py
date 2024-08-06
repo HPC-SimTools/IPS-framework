@@ -10,6 +10,7 @@ import json
 import logging
 import logging.handlers
 import os
+import pathlib
 import queue
 import shutil
 import signal
@@ -28,7 +29,7 @@ from configobj import ConfigObj
 from . import ipsutil, messages
 from .cca_es_spec import initialize_event_service
 from .ips_es_spec import eventManager
-from .jupyter import stage_jupyter_notebook
+from .jupyter import add_data_file_to_notebook, initialize_jupyter_notebook
 from .taskManager import TaskInit
 
 RunningTask = namedtuple('RunningTask', ['process', 'start_time', 'timeout', 'nproc', 'cores_allocated', 'command', 'binary', 'args'])
@@ -1842,14 +1843,15 @@ class ServicesProxy:
                 # TODO generic exception
                 raise Exception('Unable to initialize base JupyterHub dir')
 
-        return os.listdir(os.path.join(self._jupyterhub_dir, 'data'))
+        data_dir = pathlib.Path(pathlib.Path(self._jupyterhub_dir) / 'data')
+        return [str(p.resolve()) for p in data_dir.glob('*')]
 
     def jupyterhub_make_state(self, state_file_path: str, timestamp: float) -> str:
         """
         Move a state file into the JupyterHub directory.
 
         Returns:
-          - the path to the state file in the JupyterHub directory
+          - the path to the state file in the JupyterHub directory. This will be an absolute path.
 
         Raises:
           - Exception, if unable to move file to the provided JUPYTERHUB_DIR
@@ -1885,22 +1887,21 @@ class ServicesProxy:
         url += f'ipsframework/runs/{runid}/'
         return url
 
-    def stage_jupyter_notebook(
+    def initialize_jupyter_notebook(
         self,
         dest_notebook_name: str,
         source_notebook_path: str,
-        tags: List[str],
+        initial_data_files: Optional[List[str]] = None,
         variable_name: str = 'FILES',
         cell_to_modify: int = 0,
     ) -> None:
-        """Loads a notebook from source_notebook_path, adds a cell to load the data, and then saves it to source_notebook_path.
+        """Loads a notebook from source_notebook_path, adds a cell to load the data, and then saves it to source_notebook_path. Will also try to register the notebook with the IPS Portal, if available.
 
         Does not modify the source notebook.
 
         Params:
           - dest_notebook_name: name of the JupyterNotebook you want to write (do not include file paths).
           - source_notebook_path: location you want to load the source notebook from
-          - tags: list of state files you want to load in the notebook.
           - variable_name: name of the variable you want to load files from (default: "FILES")
           - cell_to_modify: which cell in the JupyterNotebook you want to add the data call to (0-indexed).
                (This will not overwrite any cells, just appends.)
@@ -1910,22 +1911,14 @@ class ServicesProxy:
             if not self._init_jupyter():
                 raise Exception('Unable to initialize base JupyterHub dir')
 
-        stage_jupyter_notebook(f'{self._jupyterhub_dir}{dest_notebook_name}', source_notebook_path, tags, variable_name, cell_to_modify)
+        # adds notebook to JupyterHub
+        initialize_jupyter_notebook(f'{self._jupyterhub_dir}{dest_notebook_name}', source_notebook_path, variable_name, cell_to_modify, initial_data_files)
 
-    def portal_register_jupyter_notebook(self, notebook_name: str) -> None:
-        """Associate a JupyterNotebook with tags on the IPS Portal
-
-        NOTE: It's best to ONLY run this if you're wanting to associate multiple data files with a single notebook.
-        If you just want to save a single file, set the appropriate parameter on send_portal_data instead.
-
-        Params
-          - notebook_name: name of the notebook (do not provide any directories, use the config file for this)
-          - tags: list of tags to associate the notebook with
-        """
+        # register notebook with IPS Portal
         url = self._get_jupyterhub_url()
         if not url:
             return
-        url += notebook_name
+        url += dest_notebook_name
 
         event_data = {}
         event_data['sim_name'] = self.sim_conf['__PORTAL_SIM_NAME']
@@ -1937,6 +1930,22 @@ class ServicesProxy:
         event_data['portal_data'] = portal_data
         self.publish('_IPS_MONITOR', 'PORTAL_REGISTER_NOTEBOOK', event_data)
         self._send_monitor_event('IPS_PORTAL_REGISTER_NOTEBOOK', f'URL = {url}')
+
+    def add_data_file_to_notebook(self, notebook_name: str, state_file: str, index: Optional[int] = None):
+        """Add data file to notebook list.
+
+        This function assumes that a notebook has already been created with intialize_jupyter_notebook. Using this function does not call the IPS Portal.
+
+        Params:
+        - notebook_name: name of notebook which will be modified. Note that this path is relative to the JupyterHub directory.
+        - data_file: data file we add to the notebook (simple string). This value should almost always be the return value from "self.services.jupyterhub_make_state".
+        - index: optional index of the IPS notebook cell. If not provided, the IPS Framework will attempt to automatically find the cell it created,
+            which should work for every usecase where you don't anticipate modifying the notebook until after the run is complete.
+        """
+        if not self._jupyterhub_dir:
+            if not self._init_jupyter():
+                raise Exception('Unable to initialize base JupyterHub dir')
+        add_data_file_to_notebook(f'{self._jupyterhub_dir}{notebook_name}', state_file, index)
 
     def publish(self, topicName, eventName, eventBody):
         """
