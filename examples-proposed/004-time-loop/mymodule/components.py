@@ -43,13 +43,6 @@ class Driver(Component):
             # TODO - perhaps monitor timestep does not need to be called every step, but only every 20 steps?
             self.services.call(monitor, 'step', t)
 
-        # With this second "example" notebook, we only create it once and only write to it once.
-        self.services.initialize_jupyter_notebook(
-            dest_notebook_name=NOTEBOOK_2_NAME,  # path is relative to JupyterHub directory
-            source_notebook_path=NOTEBOOK_2_TEMPLATE,  # path is relative to input directory
-            initial_data_files=self.services.get_staged_jupyterhub_files(),
-        )
-
         self.services.call(worker, 'finalize', 0)
 
 
@@ -102,9 +95,9 @@ class Monitor(Component):
             data = f.read()
 
         # stage the state file in the JupyterHub directory
-        data_file = self.services.jupyterhub_make_state(state_file, timestamp)
-        print('ADD DATA FILE', data_file)
-        self.services.add_data_file_to_notebook(NOTEBOOK_1_NAME, data_file)
+        self.services.add_data_file_to_notebook(state_file, timestamp, NOTEBOOK_1_NAME)
 
         print('SEND PORTAL DATA', timestamp, data, file=stderr)
         self.services.send_portal_data(timestamp, data)
+
+        # TODO add a basic sleep to this example for demonstration purposes

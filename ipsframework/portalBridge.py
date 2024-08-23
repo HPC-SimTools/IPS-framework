@@ -362,8 +362,9 @@ class PortalBridge(Component):
 
             try:
                 data = json.loads(msg)
-                if 'runid' in data:
+                if 'runid' in data and 'simname' in data:
                     self.services.info('Run Portal URL = %s/%s', self.portal_url, data.get('runid'))
+                    self.services.set_config_param('_IPS_PORTAL_RUNID', str(data.get('runid')), target_sim_name=data.get('simname'))
 
                 msg = json.dumps(data)
             except (TypeError, json.decoder.JSONDecodeError):
@@ -404,14 +405,6 @@ class PortalBridge(Component):
             except (EOFError, OSError):
                 break
 
-            try:
-                data = json.loads(msg)
-                if 'runid' in data:
-                    self.services.info('Run Portal URL = %s/%s', self.portal_url, data.get('runid'))
-
-                msg = json.dumps(data)
-            except (TypeError, json.decoder.JSONDecodeError):
-                pass
             if code == -1:
                 # disable portal, stop trying to send more data
                 self.portal_url = None
@@ -446,15 +439,6 @@ class PortalBridge(Component):
                 except (EOFError, OSError):
                     break
 
-                print('PUT RESPONSE', code, msg)
-                try:
-                    data = json.loads(msg)
-                    if 'runid' in data:
-                        self.services.info('Run Portal URL = %s/%s', self.portal_url, data.get('runid'))
-
-                    msg = json.dumps(data)
-                except (TypeError, json.decoder.JSONDecodeError):
-                    pass
                 if code == -1:
                     # disable portal, stop trying to send more data
                     self.portal_url = None
@@ -616,6 +600,7 @@ class PortalBridge(Component):
         sim_data = self.SimulationData()
         sim_data.sim_name = sim_name
         sim_data.sim_root = sim_root
+        self.services.set_config_param('_IPS_PORTAL_URL_HOST', self._IPS_PORTAL_URL_HOST, target_sim_name=sim_name)
 
         d = datetime.datetime.now()
         date_str = '%s.%03d' % (d.strftime('%Y-%m-%dT%H:%M:%S'), int(d.microsecond / 1000))

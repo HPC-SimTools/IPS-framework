@@ -1796,15 +1796,49 @@ class ServicesProxy:
         self.monitor_url = url
         self._send_monitor_event(eventType='IPS_SET_MONITOR_URL', comment='SUCCESS')
 
+    def _get_jupyter_host_directory(self) -> str:
+        """Get the runid Jupyter will associate with this run.
+        Generally this will be the portal url's hostname, but we will try to allow for fallbacks in certain cases.
+        """
+        try:
+            return self.get_config_param('_IPS_PORTAL_URL_HOST')
+        except Exception:
+            self.warning('_get_jupyter_host_directory: PORTAL_URL_HOST was not defined, falling back to random ID')
+            return str(uuid.uuid4())
+
     def _get_jupyter_runid(self) -> str:
         """Get the runid Jupyter will associate with this run.
         Generally this will be the Portal RUNID but we will try to allow for fallbacks in certain cases.
         """
+
+        # first, check to see if the portal URL was even initialized, fall back if not
+        try:
+            self.get_config_param('_IPS_PORTAL_URL_HOST')
+        except Exception:
+            self.warning('_get_jupyter_runid: PORTAL_URL was not defined, falling back to random ID')
+            return str(uuid.uuid4())
+
+        # see if the portal response has updated
+        attempts = 0
+        max_attempts = 30
+        while True:
+            try:
+                return self.get_config_param('_IPS_PORTAL_RUNID')
+            except Exception:
+                attempts += 1
+                if attempts >= max_attempts:
+                    break
+                time.sleep(1.0)
+
+        # at this point, we must fall back to using an ID the framework generates
+        self.warning('_get_jupyter_runid: Unable to get RUNID directly from remote portal, using fallback identifier')
         try:
             return self.get_config_param('PORTAL_RUNID')
         except Exception:
-            # TODO this does NOT work across components.
-            self.warning('_get_root_path: PORTAL_RUNID was not defined, falling back to random ID')
+            # this code shouldn't execute unless the user forgot a configuration value somewhere
+            self.warning(
+                '_get_jupyter_runid: PORTAL_RUNID not defined - the simulation configuration probably forgot to specify PORTAL_URL and USE_PORTAL. Using randomly generated ID instead'
+            )
             return str(uuid.uuid4())
 
     def _init_jupyter(self) -> bool:
@@ -1821,7 +1855,7 @@ class ServicesProxy:
             self.warning('JUPYTERHUB_DIR should be an absolute path, skipping Jupyter config')
             return False
 
-        root_dir = os.path.join(root_dir, 'ipsframework', 'runs', self._get_jupyter_runid()) + os.path.sep
+        root_dir = os.path.join(root_dir, 'ipsframework', 'runs', self._get_jupyter_host_directory(), self._get_jupyter_runid()) + os.path.sep
 
         # TODO - it may make sense to also reattempt to create this, especially with long simulations
         try:
@@ -1846,31 +1880,6 @@ class ServicesProxy:
         data_dir = pathlib.Path(pathlib.Path(self._jupyterhub_dir) / 'data')
         return [str(p.resolve()) for p in data_dir.glob('*')]
 
-    def jupyterhub_make_state(self, state_file_path: str, timestamp: float) -> str:
-        """
-        Move a state file into the JupyterHub directory.
-
-        Returns:
-          - the path to the state file in the JupyterHub directory. This will be an absolute path.
-
-        Raises:
-          - Exception, if unable to move file to the provided JUPYTERHUB_DIR
-        """
-        if not self._jupyterhub_dir:
-            if not self._init_jupyter():
-                # TODO generic exception
-                raise Exception('Unable to initialize base JupyterHub dir')
-
-        file_parts = state_file_path.split('.')
-        if len(file_parts) > 2:
-            extension = f'.{file_parts[-1]}'
-        else:
-            extension = ''
-        new_state_file_path = os.path.join(self._jupyterhub_dir, 'data', f'{timestamp}{extension}')
-        # this may raise an OSError, it is the responsibility of the caller to handle it.
-        shutil.copyfile(state_file_path, new_state_file_path)
-        return new_state_file_path
-
     def _get_jupyterhub_url(self) -> Optional[str]:
         url: str = self.get_config_param('JUPYTERHUB_URL')
         if not url:
@@ -1878,21 +1887,28 @@ class ServicesProxy:
             return None
         if not url.endswith('/'):
             url += '/'
+
+        try:
+            portal_url_host = self.get_config_param('_IPS_PORTAL_URL_HOST')
+        except Exception:
+            self.warning('PORTAL_URL was not defined, skipping JupyterHub configuration')
+            return None
+
         try:
             runid = self.get_config_param('PORTAL_RUNID')
         except Exception:
             # TODO Figure out how to associate value across components (may need to use a state file?)
             self.warning("Couldn't get PORTAL_RUNID, skipping Jupyter URL association of data")
             return None
-        url += f'ipsframework/runs/{runid}/'
+
+        url += f'ipsframework/runs/{portal_url_host}/{runid}/'
         return url
 
     def initialize_jupyter_notebook(
         self,
         dest_notebook_name: str,
         source_notebook_path: str,
-        initial_data_files: Optional[List[str]] = None,
-        variable_name: str = 'FILES',
+        variable_name: str = 'IPS_STATE_FILES',
         cell_to_modify: int = 0,
     ) -> None:
         """Loads a notebook from source_notebook_path, adds a cell to load the data, and then saves it to source_notebook_path. Will also try to register the notebook with the IPS Portal, if available.
@@ -1902,7 +1918,7 @@ class ServicesProxy:
         Params:
           - dest_notebook_name: name of the JupyterNotebook you want to write (do not include file paths).
           - source_notebook_path: location you want to load the source notebook from
-          - variable_name: name of the variable you want to load files from (default: "FILES")
+          - variable_name: name of the variable you want to load files from (default: "IPS_STATE_FILES")
           - cell_to_modify: which cell in the JupyterNotebook you want to add the data call to (0-indexed).
                (This will not overwrite any cells, just appends.)
                By default, the data listing will happen in the FIRST cell.
@@ -1912,7 +1928,7 @@ class ServicesProxy:
                 raise Exception('Unable to initialize base JupyterHub dir')
 
         # adds notebook to JupyterHub
-        initialize_jupyter_notebook(f'{self._jupyterhub_dir}{dest_notebook_name}', source_notebook_path, variable_name, cell_to_modify, initial_data_files)
+        initialize_jupyter_notebook(f'{self._jupyterhub_dir}{dest_notebook_name}', source_notebook_path, variable_name, cell_to_modify)
 
         # register notebook with IPS Portal
         url = self._get_jupyterhub_url()
@@ -1931,21 +1947,37 @@ class ServicesProxy:
         self.publish('_IPS_MONITOR', 'PORTAL_REGISTER_NOTEBOOK', event_data)
         self._send_monitor_event('IPS_PORTAL_REGISTER_NOTEBOOK', f'URL = {url}')
 
-    def add_data_file_to_notebook(self, notebook_name: str, state_file: str, index: Optional[int] = None):
+    def add_data_file_to_notebook(self, state_file_path: str, timestamp: float, notebook_name: str, index: Optional[int] = None):
         """Add data file to notebook list.
 
         This function assumes that a notebook has already been created with intialize_jupyter_notebook. Using this function does not call the IPS Portal.
 
         Params:
+        - state_file_path: location of the current state file we want to copy to the Jupyter directory
+        - timestamp: label to assign to the data (currently must be a floating point value)
         - notebook_name: name of notebook which will be modified. Note that this path is relative to the JupyterHub directory.
-        - data_file: data file we add to the notebook (simple string). This value should almost always be the return value from "self.services.jupyterhub_make_state".
         - index: optional index of the IPS notebook cell. If not provided, the IPS Framework will attempt to automatically find the cell it created,
             which should work for every usecase where you don't anticipate modifying the notebook until after the run is complete.
         """
+
         if not self._jupyterhub_dir:
             if not self._init_jupyter():
+                # TODO generic exception
                 raise Exception('Unable to initialize base JupyterHub dir')
-        add_data_file_to_notebook(f'{self._jupyterhub_dir}{notebook_name}', state_file, index)
+
+        file_parts = state_file_path.split('.')
+        if len(file_parts) > 2:  # name of the file could just be a floating point value with no extension
+            extension = f'.{file_parts[-1]}'
+        else:
+            extension = ''
+
+        state_file_name = f'{timestamp}{extension}'
+        jupyter_data_dir = os.path.join(self._jupyterhub_dir, 'data', state_file_name)
+        # this may raise an OSError, it is the responsibility of the caller to handle it.
+        shutil.copyfile(state_file_path, jupyter_data_dir)
+
+        # TODO - maybe add flag which allows us to replace old state files
+        add_data_file_to_notebook(f'{self._jupyterhub_dir}{notebook_name}', state_file_name, index)
 
     def publish(self, topicName, eventName, eventBody):
         """
