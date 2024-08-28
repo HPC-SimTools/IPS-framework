@@ -22,14 +22,14 @@ import uuid
 import weakref
 from collections import namedtuple
 from operator import iadd, itemgetter
-from typing import Any, Iterable, List, Optional, Union
+from typing import Any, Callable, Iterable, List, Optional, Union
 
 from configobj import ConfigObj
 
 from . import ipsutil, messages
 from .cca_es_spec import initialize_event_service
 from .ips_es_spec import eventManager
-from .jupyter import add_data_file_to_notebook, initialize_jupyter_notebook
+from .jupyter import add_data_file_to_notebook, initialize_jupyter_notebook, remove_data_file_from_notebook, remove_last_data_file_from_notebook
 from .taskManager import TaskInit
 
 RunningTask = namedtuple('RunningTask', ['process', 'start_time', 'timeout', 'nproc', 'cores_allocated', 'command', 'binary', 'args'])
@@ -1894,12 +1894,7 @@ class ServicesProxy:
             self.warning('PORTAL_URL was not defined, skipping JupyterHub configuration')
             return None
 
-        try:
-            runid = self.get_config_param('PORTAL_RUNID')
-        except Exception:
-            # TODO Figure out how to associate value across components (may need to use a state file?)
-            self.warning("Couldn't get PORTAL_RUNID, skipping Jupyter URL association of data")
-            return None
+        runid = self._get_jupyter_runid()
 
         url += f'ipsframework/runs/{portal_url_host}/{runid}/'
         return url
@@ -1948,7 +1943,7 @@ class ServicesProxy:
         self._send_monitor_event('IPS_PORTAL_REGISTER_NOTEBOOK', f'URL = {url}')
 
     def add_data_file_to_notebook(self, state_file_path: str, timestamp: float, notebook_name: str, index: Optional[int] = None):
-        """Add data file to notebook list.
+        """Add data file to JupyterHub directory, and reference it in the notebook.
 
         This function assumes that a notebook has already been created with intialize_jupyter_notebook. Using this function does not call the IPS Portal.
 
@@ -1979,7 +1974,62 @@ class ServicesProxy:
         # TODO - maybe add flag which allows us to replace old state files
         add_data_file_to_notebook(f'{self._jupyterhub_dir}{notebook_name}', state_file_name, index)
 
-    def publish(self, topicName, eventName, eventBody):
+    def remove_data_file_from_notebook(self, state_file_path: str, timestamp: float, notebook_name: str, index: Optional[int] = None):
+        """Remove data file from JupyterHub data directory and from being referenced in the notebook.
+
+        This function assumes that a notebook has already been created with intialize_jupyter_notebook. Using this function does not call the IPS Portal.
+
+        Params:
+        - state_file_path: location of the current state file we want to copy to the Jupyter directory
+        - timestamp: label to assign to the data (currently must be a floating point value)
+        - notebook_name: name of notebook which will be modified. Note that this path is relative to the JupyterHub directory.
+        - index: optional index of the IPS notebook cell. If not provided, the IPS Framework will attempt to automatically find the cell it created,
+            which should work for every usecase where you don't anticipate modifying the notebook until after the run is complete.
+        """
+
+        if not self._jupyterhub_dir:
+            if not self._init_jupyter():
+                # TODO generic exception
+                raise Exception('Unable to initialize base JupyterHub dir')
+
+        file_parts = state_file_path.split('.')
+        if len(file_parts) > 2:  # name of the file could just be a floating point value with no extension
+            extension = f'.{file_parts[-1]}'
+        else:
+            extension = ''
+
+        state_file_name = f'{timestamp}{extension}'
+        jupyter_data_dir = os.path.join(self._jupyterhub_dir, 'data', state_file_name)
+
+        # if this errors out, we can safely ignore them
+        shutil.rmtree(jupyter_data_dir, ignore_errors=True)
+
+        # TODO - maybe add flag which allows us to replace old state files
+        remove_data_file_from_notebook(f'{self._jupyterhub_dir}{notebook_name}', state_file_name, index)
+
+    def remove_last_data_file_from_notebook(self, notebook_name: str, index: Optional[int] = None):
+        """Remove the last added data file from a notebook and from the filesystem.
+
+        This function assumes that a notebook has already been created with intialize_jupyter_notebook. Using this function does not call the IPS Portal.
+
+        Params:
+        - notebook_name: name of notebook which will be modified. Note that this path is relative to the JupyterHub directory.
+        - index: optional index of the IPS notebook cell. If not provided, the IPS Framework will attempt to automatically find the cell it created,
+            which should work for every usecase where you don't anticipate modifying the notebook until after the run is complete.
+        """
+
+        if not self._jupyterhub_dir:
+            if not self._init_jupyter():
+                # TODO generic exception
+                raise Exception('Unable to initialize base JupyterHub dir')
+
+        last_state_file = remove_last_data_file_from_notebook(notebook_name, index)
+        if last_state_file is None:
+            return
+        data_file = os.path.join(self._jupyterhub_dir, 'data', last_state_file)
+        shutil.rmtree(data_file, ignore_errors=True)
+
+    def publish(self, topicName: str, eventName: str, eventBody: Any):
         """
         Publish event consisting of *eventName* and *eventBody* to topic *topicName* to the IPS event service.
         """
@@ -1987,7 +2037,7 @@ class ServicesProxy:
             topicName = self.sim_name + '_' + topicName
         self.event_service.publish(topicName, eventName, eventBody)
 
-    def subscribe(self, topicName, callback):
+    def subscribe(self, topicName: str, callback: Callable):
         """
         Subscribe to topic *topicName* on the IPS event service and register *callback* as the method to be invoked when an event is published to that topic.
         """
@@ -1995,7 +2045,7 @@ class ServicesProxy:
             topicName = self.sim_name + '_' + topicName
         self.event_service.subscribe(topicName, callback)
 
-    def unsubscribe(self, topicName):
+    def unsubscribe(self, topicName: str):
         """
         Remove subscription to topic *topicName*.
         """

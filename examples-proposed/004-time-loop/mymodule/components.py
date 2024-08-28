@@ -1,14 +1,18 @@
 import json
 import math
+import os
 import random
+import time
 from sys import stderr
 
 from ipsframework import Component
 
-NOTEBOOK_1_TEMPLATE = 'base-notebook-iterative.ipynb'
-NOTEBOOK_1_NAME = 'full_state_iterative.ipynb'
-NOTEBOOK_2_TEMPLATE = 'base-notebook-one-pass.ipynb'
-NOTEBOOK_2_NAME = 'full_state_one_pass.ipynb'
+DELAY = bool(os.environ.get('EXAMPLE_DELAY'))
+
+NOTEBOOK_1_TEMPLATE = 'basic.ipynb'
+NOTEBOOK_1_NAME = 'basic.ipynb'
+NOTEBOOK_2_TEMPLATE = 'bokeh-plots.ipynb'
+NOTEBOOK_2_NAME = 'bokeh-plots.ipynb'
 
 
 class Init(Component):
@@ -28,12 +32,16 @@ class Driver(Component):
         # Needed for notebook template
         self.services.stage_input_files([NOTEBOOK_1_TEMPLATE, NOTEBOOK_2_TEMPLATE])
 
-        # Example of a notebook we want to initialize and then periodically append to during the run
+        # Example of initializing two separate notebooks
+        # Both notebooks should be initialized before the time loop and appended to inside the time loop
         self.services.initialize_jupyter_notebook(
             dest_notebook_name=NOTEBOOK_1_NAME,  # path is relative to JupyterHub directory
             source_notebook_path=NOTEBOOK_1_TEMPLATE,  # path is relative to input directory
         )
-        # Initialize second notebook
+        self.services.initialize_jupyter_notebook(
+            dest_notebook_name=NOTEBOOK_2_NAME,  # path is relative to JupyterHub directory
+            source_notebook_path=NOTEBOOK_2_TEMPLATE,  # path is relative to input directory
+        )
 
         # The time loop is configured in its own section of sim.conf
         # It is shared across all components
@@ -86,6 +94,9 @@ class Monitor(Component):
     def step(self, timestamp=0.0, **keywords):
         msg = f'Running Monitor step with timestamp={timestamp}'
         print(msg, file=stderr)
+        if DELAY:
+            print('simulating fake delay for 10 seconds', file=stderr)
+            time.sleep(10.0)
         self.services.send_portal_event(event_comment=msg)
 
         self.services.stage_state()
@@ -96,8 +107,7 @@ class Monitor(Component):
 
         # stage the state file in the JupyterHub directory
         self.services.add_data_file_to_notebook(state_file, timestamp, NOTEBOOK_1_NAME)
+        self.services.add_data_file_to_notebook(state_file, timestamp, NOTEBOOK_2_NAME)
 
         print('SEND PORTAL DATA', timestamp, data, file=stderr)
         self.services.send_portal_data(timestamp, data)
-
-        # TODO add a basic sleep to this example for demonstration purposes
