@@ -1903,7 +1903,7 @@ class ServicesProxy:
         self,
         dest_notebook_name: str,
         source_notebook_path: str,
-        variable_name: str = 'ANALYSIS_FILES',
+        variable_name: str = 'DATA_FILES',
         cell_to_modify: int = 0,
     ) -> None:
         """Loads a notebook from source_notebook_path, adds a cell to load the data, and then saves it to source_notebook_path. Will also try to register the notebook with the IPS Portal, if available.
@@ -1913,7 +1913,7 @@ class ServicesProxy:
         Params:
           - dest_notebook_name: name of the JupyterNotebook you want to write (do not include file paths).
           - source_notebook_path: location you want to load the source notebook from
-          - variable_name: name of the variable you want to load files from (default: "ANALYSIS_FILES")
+          - variable_name: name of the variable you want to load files from (default: "DATA_FILES")
           - cell_to_modify: which cell in the JupyterNotebook you want to add the data call to (0-indexed).
                (This will not overwrite any cells, just appends.)
                By default, the data listing will happen in the FIRST cell.
@@ -1942,16 +1942,16 @@ class ServicesProxy:
         self.publish('_IPS_MONITOR', 'PORTAL_REGISTER_NOTEBOOK', event_data)
         self._send_monitor_event('IPS_PORTAL_REGISTER_NOTEBOOK', f'URL = {url}')
 
-    def add_data_file_to_notebook(self, state_file_path: str, timestamp: float, notebook_name: str, replace: bool = False, index: Optional[int] = None):
+    def add_data_file_to_notebook(self, data_file_path: str, timestamp: float, notebook_name: str, replace: bool = False, index: Optional[int] = None):
         """Add data file to JupyterHub directory, and reference it in the notebook.
 
         This function assumes that a notebook has already been created with intialize_jupyter_notebook. Using this function does not call the IPS Portal.
 
         Params:
-        - state_file_path: location of the current state file we want to copy to the Jupyter directory
+        - data_file_path: location of the current data file we want to copy to the Jupyter directory. This will usually be a state file.
         - timestamp: label to assign to the data (currently must be a floating point value)
         - notebook_name: name of notebook which will be modified. Note that this path is relative to the JupyterHub directory.
-        - replace: If True, replace the last data file added with the new data file. If False, simply append the new data file.
+        - replace: If True, replace the last data file added with the new data file. If False, simply append the new data file. (default: False)
         - index: optional index of the IPS notebook cell. If not provided, the IPS Framework will attempt to automatically find the cell it created,
             which should work for every usecase where you don't anticipate modifying the notebook until after the run is complete.
         """
@@ -1960,16 +1960,16 @@ class ServicesProxy:
                 # TODO generic exception
                 raise Exception('Unable to initialize base JupyterHub dir')
 
-        data_file_name = f'{timestamp}_{os.path.basename(state_file_path)}'
-        jupyter_data_dir = os.path.join(self._jupyterhub_dir, 'data', data_file_name)
+        data_file_name = f'{timestamp}_{os.path.basename(data_file_path)}'
+        jupyter_data_file = os.path.join(self._jupyterhub_dir, 'data', data_file_name)
         # this may raise an OSError, it is the responsibility of the caller to handle it.
-        shutil.copyfile(state_file_path, jupyter_data_dir)
+        shutil.copyfile(data_file_path, jupyter_data_file)
 
         if replace:
             # first try to remove the reference from the Jupyter Notebook
             filename_to_remove = remove_last_data_file_from_notebook(f'{self._jupyterhub_dir}{notebook_name}', index)
             if filename_to_remove is not None:
-                # now remove the state file from the filesyste,
+                # now remove the state file from the filesystem
                 file_to_remove = os.path.join(self._jupyterhub_dir, 'data', filename_to_remove)
                 shutil.rmtree(file_to_remove, ignore_errors=True)
 
