@@ -29,7 +29,7 @@ from configobj import ConfigObj
 from . import ipsutil, messages
 from .cca_es_spec import initialize_event_service
 from .ips_es_spec import eventManager
-from .jupyter import add_data_file_to_notebook, initialize_jupyter_notebook, remove_data_file_from_notebook, remove_last_data_file_from_notebook
+from .jupyter import add_data_file_to_notebook, initialize_jupyter_notebook, remove_last_data_file_from_notebook
 from .taskManager import TaskInit
 
 RunningTask = namedtuple('RunningTask', ['process', 'start_time', 'timeout', 'nproc', 'cores_allocated', 'command', 'binary', 'args'])
@@ -1903,7 +1903,7 @@ class ServicesProxy:
         self,
         dest_notebook_name: str,
         source_notebook_path: str,
-        variable_name: str = 'IPS_STATE_FILES',
+        variable_name: str = 'ANALYSIS_FILES',
         cell_to_modify: int = 0,
     ) -> None:
         """Loads a notebook from source_notebook_path, adds a cell to load the data, and then saves it to source_notebook_path. Will also try to register the notebook with the IPS Portal, if available.
@@ -1913,7 +1913,7 @@ class ServicesProxy:
         Params:
           - dest_notebook_name: name of the JupyterNotebook you want to write (do not include file paths).
           - source_notebook_path: location you want to load the source notebook from
-          - variable_name: name of the variable you want to load files from (default: "IPS_STATE_FILES")
+          - variable_name: name of the variable you want to load files from (default: "ANALYSIS_FILES")
           - cell_to_modify: which cell in the JupyterNotebook you want to add the data call to (0-indexed).
                (This will not overwrite any cells, just appends.)
                By default, the data listing will happen in the FIRST cell.
@@ -1942,7 +1942,7 @@ class ServicesProxy:
         self.publish('_IPS_MONITOR', 'PORTAL_REGISTER_NOTEBOOK', event_data)
         self._send_monitor_event('IPS_PORTAL_REGISTER_NOTEBOOK', f'URL = {url}')
 
-    def add_data_file_to_notebook(self, state_file_path: str, timestamp: float, notebook_name: str, index: Optional[int] = None):
+    def add_data_file_to_notebook(self, state_file_path: str, timestamp: float, notebook_name: str, replace: bool = False, index: Optional[int] = None):
         """Add data file to JupyterHub directory, and reference it in the notebook.
 
         This function assumes that a notebook has already been created with intialize_jupyter_notebook. Using this function does not call the IPS Portal.
@@ -1951,83 +1951,30 @@ class ServicesProxy:
         - state_file_path: location of the current state file we want to copy to the Jupyter directory
         - timestamp: label to assign to the data (currently must be a floating point value)
         - notebook_name: name of notebook which will be modified. Note that this path is relative to the JupyterHub directory.
+        - replace: If True, replace the last data file added with the new data file. If False, simply append the new data file.
         - index: optional index of the IPS notebook cell. If not provided, the IPS Framework will attempt to automatically find the cell it created,
             which should work for every usecase where you don't anticipate modifying the notebook until after the run is complete.
         """
-
         if not self._jupyterhub_dir:
             if not self._init_jupyter():
                 # TODO generic exception
                 raise Exception('Unable to initialize base JupyterHub dir')
 
-        file_parts = state_file_path.split('.')
-        if len(file_parts) > 2:  # name of the file could just be a floating point value with no extension
-            extension = f'.{file_parts[-1]}'
-        else:
-            extension = ''
-
-        state_file_name = f'{timestamp}{extension}'
-        jupyter_data_dir = os.path.join(self._jupyterhub_dir, 'data', state_file_name)
+        data_file_name = f'{timestamp}_{os.path.basename(state_file_path)}'
+        jupyter_data_dir = os.path.join(self._jupyterhub_dir, 'data', data_file_name)
         # this may raise an OSError, it is the responsibility of the caller to handle it.
         shutil.copyfile(state_file_path, jupyter_data_dir)
 
-        # TODO - maybe add flag which allows us to replace old state files
-        add_data_file_to_notebook(f'{self._jupyterhub_dir}{notebook_name}', state_file_name, index)
+        if replace:
+            # first try to remove the reference from the Jupyter Notebook
+            filename_to_remove = remove_last_data_file_from_notebook(f'{self._jupyterhub_dir}{notebook_name}', index)
+            if filename_to_remove is not None:
+                # now remove the state file from the filesyste,
+                file_to_remove = os.path.join(self._jupyterhub_dir, 'data', filename_to_remove)
+                shutil.rmtree(file_to_remove, ignore_errors=True)
 
-    def remove_data_file_from_notebook(self, state_file_path: str, timestamp: float, notebook_name: str, index: Optional[int] = None):
-        """Remove data file from JupyterHub data directory and from being referenced in the notebook.
-
-        This function assumes that a notebook has already been created with intialize_jupyter_notebook. Using this function does not call the IPS Portal.
-
-        Params:
-        - state_file_path: location of the current state file we want to copy to the Jupyter directory
-        - timestamp: label to assign to the data (currently must be a floating point value)
-        - notebook_name: name of notebook which will be modified. Note that this path is relative to the JupyterHub directory.
-        - index: optional index of the IPS notebook cell. If not provided, the IPS Framework will attempt to automatically find the cell it created,
-            which should work for every usecase where you don't anticipate modifying the notebook until after the run is complete.
-        """
-
-        if not self._jupyterhub_dir:
-            if not self._init_jupyter():
-                # TODO generic exception
-                raise Exception('Unable to initialize base JupyterHub dir')
-
-        file_parts = state_file_path.split('.')
-        if len(file_parts) > 2:  # name of the file could just be a floating point value with no extension
-            extension = f'.{file_parts[-1]}'
-        else:
-            extension = ''
-
-        state_file_name = f'{timestamp}{extension}'
-        jupyter_data_dir = os.path.join(self._jupyterhub_dir, 'data', state_file_name)
-
-        # if this errors out, we can safely ignore them
-        shutil.rmtree(jupyter_data_dir, ignore_errors=True)
-
-        # TODO - maybe add flag which allows us to replace old state files
-        remove_data_file_from_notebook(f'{self._jupyterhub_dir}{notebook_name}', state_file_name, index)
-
-    def remove_last_data_file_from_notebook(self, notebook_name: str, index: Optional[int] = None):
-        """Remove the last added data file from a notebook and from the filesystem.
-
-        This function assumes that a notebook has already been created with intialize_jupyter_notebook. Using this function does not call the IPS Portal.
-
-        Params:
-        - notebook_name: name of notebook which will be modified. Note that this path is relative to the JupyterHub directory.
-        - index: optional index of the IPS notebook cell. If not provided, the IPS Framework will attempt to automatically find the cell it created,
-            which should work for every usecase where you don't anticipate modifying the notebook until after the run is complete.
-        """
-
-        if not self._jupyterhub_dir:
-            if not self._init_jupyter():
-                # TODO generic exception
-                raise Exception('Unable to initialize base JupyterHub dir')
-
-        last_state_file = remove_last_data_file_from_notebook(notebook_name, index)
-        if last_state_file is None:
-            return
-        data_file = os.path.join(self._jupyterhub_dir, 'data', last_state_file)
-        shutil.rmtree(data_file, ignore_errors=True)
+        # add newest data file to notebook
+        add_data_file_to_notebook(f'{self._jupyterhub_dir}{notebook_name}', data_file_name, index)
 
     def publish(self, topicName: str, eventName: str, eventBody: Any):
         """
