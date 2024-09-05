@@ -1971,7 +1971,10 @@ class ServicesProxy:
             if filename_to_remove is not None:
                 # now remove the state file from the filesystem
                 file_to_remove = os.path.join(self._jupyterhub_dir, 'data', filename_to_remove)
-                shutil.rmtree(file_to_remove, ignore_errors=True)
+                try:
+                    os.remove(file_to_remove)
+                except FileNotFoundError:
+                    pass
 
         # add newest data file to notebook
         add_data_file_to_notebook(f'{self._jupyterhub_dir}{notebook_name}', data_file_name, index)

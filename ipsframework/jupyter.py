@@ -166,7 +166,7 @@ def remove_last_data_file_from_notebook(dest: str, index: Optional[int] = None) 
             if end_char == '\n':
                 # each entry gets its own "line", so we don't need to search anymore
                 break
-            if end_char == "'" and ips_cell[end_index] == ',':
+            if ips_cell[end_index] == "'" and ips_cell[end_index - 1] != '\\':
                 # we have found the name of the file
                 ret = ips_cell[file_name_start_index:end_index]
         except IndexError:
