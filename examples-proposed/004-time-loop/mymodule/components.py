@@ -8,11 +8,15 @@ from sys import stderr
 from ipsframework import Component
 
 DELAY = bool(os.environ.get('EXAMPLE_DELAY'))
+REPLACE = bool(os.environ.get('EXAMPLE_REPLACE'))
 
+# templates are existing files from the input directory
+# names are what the notebook and the associated data file will be labeled with (you can leave off the .ipynb / .py)
 NOTEBOOK_1_TEMPLATE = 'basic.ipynb'
 NOTEBOOK_1_NAME = 'basic.ipynb'
 NOTEBOOK_2_TEMPLATE = 'bokeh-plots.ipynb'
 NOTEBOOK_2_NAME = 'bokeh-plots.ipynb'
+DATA_MODULE_NAME = 'data_files'
 
 
 class Init(Component):
@@ -37,10 +41,12 @@ class Driver(Component):
         self.services.initialize_jupyter_notebook(
             dest_notebook_name=NOTEBOOK_1_NAME,  # path is relative to JupyterHub directory
             source_notebook_path=NOTEBOOK_1_TEMPLATE,  # path is relative to input directory
+            data_module_name=DATA_MODULE_NAME,
         )
         self.services.initialize_jupyter_notebook(
             dest_notebook_name=NOTEBOOK_2_NAME,  # path is relative to JupyterHub directory
             source_notebook_path=NOTEBOOK_2_TEMPLATE,  # path is relative to input directory
+            data_module_name=DATA_MODULE_NAME,
         )
 
         # The time loop is configured in its own section of sim.conf
@@ -105,9 +111,16 @@ class Monitor(Component):
         with open(state_file, 'rb') as f:
             data = f.read()
 
-        # stage the state file in the JupyterHub directory
-        self.services.add_data_file_to_notebook(state_file, timestamp, NOTEBOOK_1_NAME)
-        self.services.add_data_file_to_notebook(state_file, timestamp, NOTEBOOK_2_NAME)
+        # stage the state file in the JupyterHub directory and update the module file to handle it
+        if REPLACE:
+            self.services.add_analysis_data_file(state_file, os.path.basename(state_file), DATA_MODULE_NAME, replace=True)
+        else:
+            self.services.add_analysis_data_file(
+                state_file,
+                f'{timestamp}_{os.path.basename(state_file)}',
+                DATA_MODULE_NAME,
+                timestamp=timestamp,
+            )
 
         print('SEND PORTAL DATA', timestamp, data, file=stderr)
         self.services.send_portal_data(timestamp, data)

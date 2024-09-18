@@ -21,3 +21,11 @@ To run the code, run:
 ```bash
 ./run.sh
 ```
+
+By default, this example will always _append_ a state file. If you prefer to see an example of how to _replace_ a state file, run:
+
+```bash
+EXAMPLE_REPLACE=1 ./run.sh
+```
+
+There is also a script `run-delayed.sh` which you can use instead of `run.sh` if you would like to simulate a delay between monitor steps.
