@@ -16,7 +16,6 @@ NOTEBOOK_1_TEMPLATE = 'basic.ipynb'
 NOTEBOOK_1_NAME = 'basic.ipynb'
 NOTEBOOK_2_TEMPLATE = 'bokeh-plots.ipynb'
 NOTEBOOK_2_NAME = 'bokeh-plots.ipynb'
-DATA_MODULE_NAME = 'data_files'
 
 
 class Init(Component):
@@ -41,12 +40,10 @@ class Driver(Component):
         self.services.initialize_jupyter_notebook(
             dest_notebook_name=NOTEBOOK_1_NAME,  # path is relative to JupyterHub directory
             source_notebook_path=NOTEBOOK_1_TEMPLATE,  # path is relative to input directory
-            data_module_name=DATA_MODULE_NAME,
         )
         self.services.initialize_jupyter_notebook(
             dest_notebook_name=NOTEBOOK_2_NAME,  # path is relative to JupyterHub directory
             source_notebook_path=NOTEBOOK_2_TEMPLATE,  # path is relative to input directory
-            data_module_name=DATA_MODULE_NAME,
         )
 
         # The time loop is configured in its own section of sim.conf
@@ -113,12 +110,11 @@ class Monitor(Component):
 
         # stage the state file in the JupyterHub directory and update the module file to handle it
         if REPLACE:
-            self.services.add_analysis_data_file(state_file, os.path.basename(state_file), DATA_MODULE_NAME, replace=True)
+            self.services.add_analysis_data_file(state_file, os.path.basename(state_file), replace=True)
         else:
             self.services.add_analysis_data_file(
                 state_file,
                 f'{timestamp}_{os.path.basename(state_file)}',
-                DATA_MODULE_NAME,
                 timestamp=timestamp,
             )
 

@@ -27,13 +27,14 @@ from typing import Any, Callable, Iterable, List, Optional, Union
 from configobj import ConfigObj
 
 from . import ipsutil, messages
-from .cca_es_spec import initialize_event_service
-from .ips_es_spec import eventManager
-from .jupyter import (
+from ._jupyter.initializer import (
     initialize_jupyter_import_module_file,
     initialize_jupyter_notebook,
+    initialize_jupyter_python_api,
     update_module_file_with_data_file,
 )
+from .cca_es_spec import initialize_event_service
+from .ips_es_spec import eventManager
 from .taskManager import TaskInit
 
 RunningTask = namedtuple('RunningTask', ['process', 'start_time', 'timeout', 'nproc', 'cores_allocated', 'command', 'binary', 'args'])
@@ -1903,13 +1904,11 @@ class ServicesProxy:
         url += f'ipsframework/runs/{portal_url_host}/{runid}/'
         return url
 
+    # TODO consider how we use variable_name in the API and get rid of it if it's not necessary
     def initialize_jupyter_notebook(
         self,
         dest_notebook_name: str,
         source_notebook_path: str,
-        data_module_name: str,
-        variable_name: str = 'DATA_FILES',
-        cell_to_modify: int = 0,
     ) -> None:
         """Loads a notebook from source_notebook_path, adds a cell to load the data, and then saves it to source_notebook_path. Will also try to register the notebook with the IPS Portal, if available.
 
@@ -1919,23 +1918,19 @@ class ServicesProxy:
           - dest_notebook_name: name of the JupyterNotebook you want to write (do not include file paths).
           - source_notebook_path: location you want to load the source notebook from
           - data_module_name: name of the python file you want to generate a data file for (do not include file paths or file extensions)
-          - variable_name: name of the variable in the module file you want to load files from (default: "DATA_FILES")
-          - cell_to_modify: which cell in the JupyterNotebook you want to add the data call to (0-indexed).
-               (This will not overwrite any cells, just appends.)
-               By default, the data listing will happen in the FIRST cell.
         """
         if not self._jupyterhub_dir:
             if not self._init_jupyter():
                 raise Exception('Unable to initialize base JupyterHub dir')
 
-        if data_module_name.endswith('.py'):
-            data_module_name = data_module_name[:-3]
-
         # adds module file to Jupyterhub
-        initialize_jupyter_import_module_file(f'{self._jupyterhub_dir}{data_module_name}.py', variable_name)
+        initialize_jupyter_import_module_file(self._jupyterhub_dir)
+
+        # add the shared python API if it doesn't exist
+        initialize_jupyter_python_api(str(pathlib.Path(self._jupyterhub_dir).parent))
 
         # adds notebook to JupyterHub
-        initialize_jupyter_notebook(f'{self._jupyterhub_dir}{dest_notebook_name}', source_notebook_path, data_module_name, variable_name, cell_to_modify)
+        initialize_jupyter_notebook(f'{self._jupyterhub_dir}{dest_notebook_name}', source_notebook_path)
 
         # register notebook with IPS Portal
         url = self._get_jupyterhub_url()
@@ -1954,25 +1949,19 @@ class ServicesProxy:
         self.publish('_IPS_MONITOR', 'PORTAL_REGISTER_NOTEBOOK', event_data)
         self._send_monitor_event('IPS_PORTAL_REGISTER_NOTEBOOK', f'URL = {url}')
 
-    def add_analysis_data_file(
-        self, current_data_file_path: str, new_data_file_name: str, data_module_name: str, timestamp: float = 0.0, replace: bool = False
-    ):
+    def add_analysis_data_file(self, current_data_file_path: str, new_data_file_name: str, timestamp: float = 0.0, replace: bool = False):
         """Add data file to the module file referenced by the Jupyter Notebook.
 
         Params:
-        - data_file_path: location of the current data file we want to copy to the Jupyter directory. This will usually be a state file.
+        - current_data_file_path: location of the current data file we want to copy to the Jupyter directory. This will usually be a state file.
         - new_data_file_name: name of the new data file (relative to Jupyterhub data directory, should be unique per run)
         - timestamp: label to assign to the data (currently must be a floating point value)
-        - data_module_name: name of notebook which will be modified. Note that this path is relative to the JupyterHub directory.
         - replace: If True, replace the last data file added with the new data file. If False, simply append the new data file. (default: False)
         """
         if not self._jupyterhub_dir:
             if not self._init_jupyter():
                 # TODO generic exception
                 raise Exception('Unable to initialize base JupyterHub dir')
-
-        if not data_module_name.endswith('.py'):
-            data_module_name += '.py'
 
         # make sure we're working with a file, and not a directory, regarding the data file name
         new_data_file_name = os.path.basename(new_data_file_name)
@@ -1982,9 +1971,8 @@ class ServicesProxy:
         shutil.copyfile(current_data_file_path, jupyter_data_file)
 
         # update the module file
-        replaced_file_name = update_module_file_with_data_file(f'{self._jupyterhub_dir}{data_module_name}', new_data_file_name, replace, timestamp)
+        replaced_file_name = update_module_file_with_data_file(self._jupyterhub_dir, new_data_file_name, replace, timestamp)
         if replaced_file_name:
-            print('REPLACING FILE', replaced_file_name)
             # now remove the state file from the filesystem
             file_to_remove = os.path.join(self._jupyterhub_dir, 'data', replaced_file_name)
             try:
