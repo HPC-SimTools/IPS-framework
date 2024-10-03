@@ -49,14 +49,17 @@ def generate_tar_from_runids(runids: Union[Iterable[int], int]) -> str:
     """
     tarball_name = f'{datetime.datetime.now(datetime.timezone.utc).isoformat().replace(":", "-").replace("+", "_")}__ips_runs'
     tarball = THIS_DIR / f'{tarball_name}.tar.gz'
-    archive = tarfile.open(tarball, 'w:gz')
+    with tarfile.open(tarball, 'w:gz') as archive:
+        # add API files inside the tarball
+        for api_file in THIS_DIR.glob('api_v*.py'):
+            archive.add(api_file, arcname=os.path.join(tarball_name, api_file.name))
 
-    if isinstance(runids, int):
-        runids = [runids]
+        if isinstance(runids, int):
+            runids = [runids]
 
-    for runid in runids:
-        arcname = os.path.join(tarball_name, str(runid), 'data')
-        archive.add(os.path.join(THIS_DIR, str(runid), 'data'), arcname=arcname)
+        # add runids in directory
+        for runid in runids:
+            arcname = os.path.join(tarball_name, str(runid))
+            archive.add(os.path.join(THIS_DIR, str(runid)), arcname=arcname)
 
-    archive.close()
     return str(tarball)
