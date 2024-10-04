@@ -51,8 +51,10 @@ def generate_tar_from_runids(runids: Union[Iterable[int], int]) -> str:
     tarball = THIS_DIR / f'{tarball_name}.tar.gz'
     with tarfile.open(tarball, 'w:gz') as archive:
         # add API files inside the tarball
-        for api_file in THIS_DIR.glob('api_v*.py'):
-            archive.add(api_file, arcname=os.path.join(tarball_name, api_file.name))
+        for api_file in THIS_DIR.glob('api_v*'):
+            if api_file.suffix in ('.py', '.ipynb'):
+                arcname = os.path.join(tarball_name, api_file.name)
+                archive.add(api_file, arcname=arcname)
 
         if isinstance(runids, int):
             runids = [runids]

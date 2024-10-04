@@ -1870,6 +1870,13 @@ class ServicesProxy:
             return False
 
         self._jupyterhub_dir = root_dir
+
+        # adds module file to Jupyterhub
+        initialize_jupyter_import_module_file(self._jupyterhub_dir)
+
+        # add the shared python API if it doesn't exist
+        initialize_jupyter_python_api(str(pathlib.Path(self._jupyterhub_dir).parent))
+
         return True
 
     def get_staged_jupyterhub_files(self) -> List[str]:
@@ -1904,7 +1911,6 @@ class ServicesProxy:
         url += f'ipsframework/runs/{portal_url_host}/{runid}/'
         return url
 
-    # TODO consider how we use variable_name in the API and get rid of it if it's not necessary
     def initialize_jupyter_notebook(
         self,
         dest_notebook_name: str,
@@ -1917,17 +1923,10 @@ class ServicesProxy:
         Params:
           - dest_notebook_name: name of the JupyterNotebook you want to write (do not include file paths).
           - source_notebook_path: location you want to load the source notebook from
-          - data_module_name: name of the python file you want to generate a data file for (do not include file paths or file extensions)
         """
         if not self._jupyterhub_dir:
             if not self._init_jupyter():
                 raise Exception('Unable to initialize base JupyterHub dir')
-
-        # adds module file to Jupyterhub
-        initialize_jupyter_import_module_file(self._jupyterhub_dir)
-
-        # add the shared python API if it doesn't exist
-        initialize_jupyter_python_api(str(pathlib.Path(self._jupyterhub_dir).parent))
 
         # adds notebook to JupyterHub
         initialize_jupyter_notebook(f'{self._jupyterhub_dir}{dest_notebook_name}', source_notebook_path)

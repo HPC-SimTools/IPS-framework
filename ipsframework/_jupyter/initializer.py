@@ -49,9 +49,14 @@ import pathlib
 
 
 def initialize_jupyter_python_api(jupyterhub_dir: str):
-    api_filepath = Path(__file__).parent / f'api_{CURRENT_API_VERSION}.py'
-    file_dest = Path(jupyterhub_dir) / f'api_{CURRENT_API_VERSION}.py'
-    shutil.copyfile(api_filepath, file_dest)
+    """Set up the multirun API files."""
+    source_dir = Path(__file__).parent
+    dest_dir = Path(jupyterhub_dir)
+    for fname in (f'api_{CURRENT_API_VERSION}.py', f'api_{CURRENT_API_VERSION}_notebook.ipynb'):
+        shutil.copyfile(
+            source_dir / fname,
+            dest_dir / fname,
+        )
 
 
 def initialize_jupyter_notebook(notebook_dest: str, notebook_src: str):
