@@ -1956,6 +1956,7 @@ class ServicesProxy:
         - new_data_file_name: name of the new data file (relative to Jupyterhub data directory, should be unique per run)
         - timestamp: label to assign to the data (currently must be a floating point value)
         - replace: If True, replace the last data file added with the new data file. If False, simply append the new data file. (default: False)
+              Note that if replace is not True but you attempt to overwrite it, a ValueError will be thrown.
         """
         if not self._jupyterhub_dir:
             if not self._init_jupyter():
@@ -1966,6 +1967,8 @@ class ServicesProxy:
         new_data_file_name = os.path.basename(new_data_file_name)
 
         jupyter_data_file = os.path.join(self._jupyterhub_dir, 'data', new_data_file_name)
+        if not replace and os.path.exists(jupyter_data_file):
+            raise ValueError(f'Replacing existing filename {jupyter_data_file}, set replace to equal True in add_analysis_data_file if this was intended.')
         # this may raise an OSError, it is the responsibility of the caller to handle it.
         shutil.copyfile(current_data_file_path, jupyter_data_file)
 
