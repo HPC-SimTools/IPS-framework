@@ -95,9 +95,9 @@ def _jupyter_notebook_api_code() -> bytes:
     "\n",
     "widget2.on_click(generate_tarfile)\n",
     "\n",
-    "display(widget1,widget2,HTML(\"\"\"<style>\n",
+    "display(widget1,widget2,HTML('''<style>\n",
     "    .widget-label { width: unset !important; }\n",
-    "</style>\"\"\"))"
+    "</style>'''))"
    ]
   }
  ],
@@ -122,7 +122,6 @@ def initialize_jupyter_python_api(jupyterhub_dir: str):
         source_dir / python_fname,
         dest_dir / python_fname,
     )
-
 
     with open(dest_dir / f'api_{CURRENT_API_VERSION}_notebook.ipynb', 'wb') as f:
         f.write(_jupyter_notebook_api_code())
