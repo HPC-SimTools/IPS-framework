@@ -48,15 +48,84 @@ import pathlib
 """
 
 
+def _jupyter_notebook_api_code() -> bytes:
+    """Return the raw code of the JupyterNotebook file which will be placed in the JupyterHub multirun file directory."""
+    return b"""
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## IPS workstation\n",
+    "\n",
+    "You can use this notebook to quickly generate a tarfile with desired runids for download. "
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "from pathlib import Path\n",
+    "\n",
+    "import api_v1\n",
+    "from IPython.display import display\n",
+    "from ipywidgets import HTML, Button, Layout, Textarea\n",
+    "\n",
+    "widget1 = Textarea(\n",
+    "    value='',\n",
+    "    placeholder='Enter runids you want to download, delimited by either spaces or newlines',\n",
+    "    description='Enter runids you want to download, delimited by either spaces or newlines',\n",
+    "    layout=Layout(width='50%', display='flex', flex_flow='column')\n",
+    ")\n",
+    "\n",
+    "widget2 = Button(\n",
+    "    description='Generate tar from input',\n",
+    "    layout=Layout(width='300px')\n",
+    ")\n",
+    "\n",
+    "def generate_tarfile(_button_widget):\n",
+    "    runids = [int(v) for v in widget1.value.split()]\n",
+    "    display(f'Generating tar file from runids: {runids}')\n",
+    "    \n",
+    "    file = Path(api_v1.generate_tar_from_runids(runids))\n",
+    "    display(f'Generated tar file {file.name} in directory {file.parent}, right click the file in the file browser to download it')\n",
+    "\n",
+    "widget2.on_click(generate_tarfile)\n",
+    "\n",
+    "display(widget1,widget2,HTML(\"\"\"<style>\n",
+    "    .widget-label { width: unset !important; }\n",
+    "</style>\"\"\"))"
+   ]
+  }
+ ],
+ "metadata": {
+  "language_info": {
+   "name": "python"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 2
+}
+"""
+
+
 def initialize_jupyter_python_api(jupyterhub_dir: str):
     """Set up the multirun API files."""
     source_dir = Path(__file__).parent
     dest_dir = Path(jupyterhub_dir)
-    for fname in (f'api_{CURRENT_API_VERSION}.py', f'api_{CURRENT_API_VERSION}_notebook.ipynb'):
-        shutil.copyfile(
-            source_dir / fname,
-            dest_dir / fname,
-        )
+
+    python_fname = f'api_{CURRENT_API_VERSION}.py'
+    shutil.copyfile(
+        source_dir / python_fname,
+        dest_dir / python_fname,
+    )
+
+
+    with open(dest_dir / f'api_{CURRENT_API_VERSION}_notebook.ipynb', 'wb') as f:
+        f.write(_jupyter_notebook_api_code())
 
 
 def initialize_jupyter_notebook(notebook_dest: str, notebook_src: str):
