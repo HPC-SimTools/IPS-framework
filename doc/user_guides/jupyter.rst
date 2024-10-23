@@ -31,11 +31,11 @@ The IPS Framework is agnostic as to *specific* JupyterHub implementations, but a
 
 You can load template notebooks in your input directory which can automatically generate analyses visible on a remote JupyterHub instance. The IPS Framework instance will copy your template notebook and add some initialization code in a new cell at the beginning.
 
-In your template code, you can reference the variable `DATA_FILES` to load the current state mapping. This state mapping is a dictionary of timesteps (floating point) to filepaths of the data file.
+In your template code, you can reference the variable `DATA_FILES` to load the current data mapping. This data mapping is a dictionary of timesteps (floating point) to filepaths of the data file.
 
 **IPS Framework Usage**
 
-In an IPS Component which only executes once, you should call:
+To set up Jupyter integration, you will need to call "self.services.initialize_jupyter_notebook" inside of an IPS Component. These statements should only be executed once, for example in an "init" function. For example:
 
 .. code-block:: python
 
@@ -44,7 +44,7 @@ In an IPS Component which only executes once, you should call:
     SOURCE_NOTEBOOK_NAME='base_notebook.ipynb'
 
     class Driver(Component):
-        def step(self, timestamp=0.0):
+        def init(self, timestamp=0.0):
             # ...
             # assumes your notebooks are configured in the input directory
             # if you have an absolute path on the filesystem to your notebook, staging the input notebook is not required
@@ -60,11 +60,9 @@ This code initializes JupyterHub to work with this run and contacts the web port
 
 ---
 
-For updating data files, we generally accomodate for two workflows: one where you want to add a data file for each timestep called, and one where you maintain a single data file but replace it per timestep call.
+For updating data files, we generally accomodate for two approaches: one where you want to add a data file for each timestep called, and one where you maintain a single data file but replace it per timestep call.
 
-Data files will generally be derived from IPS state files.
-
-For the workflow where multiple data files are maintained, the below code provides an example of loading it from a state file:
+For the approach where multiple data files are maintained, the below code provides an example of loading it from a file which is regularly updated with the IPS state:
 
 .. code-block:: python
 
@@ -73,10 +71,13 @@ For the workflow where multiple data files are maintained, the below code provid
 
     class Monitor(Component):
         def step(self, timestamp=0.0):
-            # ... get state file pathname
+            # assume that we have already written IPS state earlier into this file,
+            # and that this file is updated per timestamp call
+            # In this example, we just want to snapshot our IPS state and save it in our JupyterHub workflow
+            data_file = 'state.json' # get current data file
             self.services.add_analysis_data_file(
-                current_data_file_path=state_file,
-                new_data_file_name=f'{timestamp}_{os.path.basename(state_file)}',
+                current_data_file_path=data_file,
+                new_data_file_name=f'{timestamp}_{os.path.basename(data_file)}',
                 timestamp=timestamp,
             )
 
@@ -89,10 +90,11 @@ Or, if you only want to maintain a single data file:
 
     class Monitor(Component):
         def step(self, timestamp=0.0):
-            # ... get state file pathname
+            # assume that we continually update our state
+            data_file = 'state.json' # get current data file
             self.services.add_analysis_data_file(
-                current_data_file_path=state_file,
-                new_data_file_name=os.path.basename(state_file)',
+                current_data_file_path=data_file,
+                new_data_file_name=os.path.basename(data_file)',
                 replace=True,
             )
 
@@ -156,5 +158,5 @@ Inside of ${JUPYTERHUB_DIR}/ipsframework/runs, a directory structure may look li
 - From the ${JUPYTERHUB_DIR}/ipsframework/runs/${PORTAL_URL} directory, the directory tree will continue based on runids. Note that files titled `api_v*.py` and `api_v*_notebook.ipynb` will be added to this directory as well. These files may potentially be overwritten by the framework, but should always be done so in a backwards compatible manner.
 - From the ${JUPYTERHUB_DIR}/ipsframework/runs/${PORTAL_URL}/${RUNID} directory, a few additional files will be added:
     - Notebooks generated from your input notebooks.
-    - A `data_listing.py` Python module file which is imported from and which exports a dictionary containing a mapping of timesteps to state file names. Note that this file is likely to be modified during a run, do NOT change it yourself unless you're sure the run has been finalized.
-    - A `data` directory which will contain all state files you added during the run. (Note that the state files are determined on the domain science side, and can be of any content-type, not just JSON.)
+    - A `data_listing.py` Python module file which is imported from and which exports a dictionary containing a mapping of timesteps to data file names. Note that this file is likely to be modified during a run, do NOT change it yourself unless you're sure the run has been finalized.
+    - A `data` directory which will contain all data files you added during the run. (Note that the data files are determined on the domain science side, and can be of any content-type, not just JSON.)
