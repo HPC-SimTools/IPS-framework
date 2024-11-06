@@ -31,7 +31,7 @@ The IPS Framework is agnostic as to *specific* JupyterHub implementations, but a
 
 You can load template notebooks in your input directory which can automatically generate analyses visible on a remote JupyterHub instance. The IPS Framework instance will copy your template notebook and add some initialization code in a new cell at the beginning.
 
-In your template code, you can reference the variable `DATA_FILES` to load the current data mapping. This data mapping is a dictionary of timesteps (floating point) to filepaths of the data file.
+In your template code, you can reference the variable `DATA_FILES` to load the current data mapping. This data mapping is a dictionary of timestamps (floating point) to filepaths of the data file.
 
 **IPS Framework Usage**
 
@@ -60,9 +60,9 @@ This code initializes JupyterHub to work with this run and contacts the web port
 
 ---
 
-For updating data files, we generally accomodate for two approaches: one where you want to add a data file for each timestep called, and one where you maintain a single data file but replace it per timestep call.
+For updating data files, we generally accomodate for two approaches: one where you want to multiple data files for each timestamp called, and one where you maintain multiple data files for a single timestamp but replace it per timestamp call.
 
-For the approach where multiple data files are maintained, the below code provides an example of loading it from a file which is regularly updated with the IPS state:
+For the approach where data files for multiple timestamps are maintained, the below code provides an example of loading it from a file which is regularly updated with the IPS state:
 
 .. code-block:: python
 
@@ -74,14 +74,15 @@ For the approach where multiple data files are maintained, the below code provid
             # assume that we have already written IPS state earlier into this file,
             # and that this file is updated per timestamp call
             # In this example, we just want to snapshot our IPS state and save it in our JupyterHub workflow
-            data_file = 'state.json' # get current data file
+            data_file = f'{timestamp}_state.json' # get current data file
             self.services.add_analysis_data_file(
                 current_data_file_path=data_file,
-                new_data_file_name=f'{timestamp}_{os.path.basename(data_file)}',
                 timestamp=timestamp,
             )
 
-Or, if you only want to maintain a single data file:
+If you do not set timestamp yourself, it will default to "0.0" .
+
+Or, if you only want to maintain a single timestamp, set the "replace" flag to True:
 
 .. code-block:: python
 
@@ -94,9 +95,10 @@ Or, if you only want to maintain a single data file:
             data_file = 'state.json' # get current data file
             self.services.add_analysis_data_file(
                 current_data_file_path=data_file,
-                new_data_file_name=os.path.basename(data_file)',
                 replace=True,
             )
+
+"Replace" will allow you to completely overwrite an existing timestamp entry with new data. If you don't set the flag but try to overwrite a specific timestamp, a ValueError is raised.
 
 Note that if you attempt to overwrite an existing data file without setting `replace=True`, a ValueError will be raised.
 
@@ -158,5 +160,6 @@ Inside of ${JUPYTERHUB_DIR}/ipsframework/runs, a directory structure may look li
 - From the ${JUPYTERHUB_DIR}/ipsframework/runs/${PORTAL_URL} directory, the directory tree will continue based on runids. Note that files titled `api_v*.py` and `api_v*_notebook.ipynb` will be added to this directory as well. These files may potentially be overwritten by the framework, but should always be done so in a backwards compatible manner.
 - From the ${JUPYTERHUB_DIR}/ipsframework/runs/${PORTAL_URL}/${RUNID} directory, a few additional files will be added:
     - Notebooks generated from your input notebooks.
-    - A `data_listing.py` Python module file which is imported from and which exports a dictionary containing a mapping of timesteps to data file names. Note that this file is likely to be modified during a run, do NOT change it yourself unless you're sure the run has been finalized.
+    - A `data_listing.py` Python module file which is imported from and which exports a dictionary containing a mapping of timestamps to data file names. Note that this file is likely to be modified during a run, do NOT change it yourself unless you're sure the run has been finalized.
     - A `data` directory which will contain all data files you added during the run. (Note that the data files are determined on the domain science side, and can be of any content-type, not just JSON.)
+
