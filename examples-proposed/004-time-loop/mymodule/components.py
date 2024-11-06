@@ -71,12 +71,6 @@ class Worker(Component):
         self.services.send_portal_event(event_comment=msg)
 
         data = {
-            'y1': float,
-            'y2': float,
-            'y3': float,
-        }
-
-        data = {
             'y1': math.sin(self.start + timestamp / 50 * math.pi),
             'y2': math.sin(self.start + timestamp / 50 * math.pi) ** 2,
             'y3': math.sin(self.start + timestamp / 50 * math.pi) ** 3,
@@ -85,8 +79,12 @@ class Worker(Component):
         state_file = self.services.get_config_param('STATE_FILES')
         with open(state_file, 'w') as f:
             json.dump(data, f)
-
         self.services.update_state()
+
+        # copy the state file to a unique path for the monitor
+        data_loc = os.path.join(self.services.get_config_param('SIM_ROOT'), f'{timestamp if not REPLACE else 0.0}_{state_file}')
+        with open(data_loc, 'w') as f:
+            json.dump(data, f)
 
 
 class Monitor(Component):
@@ -105,16 +103,16 @@ class Monitor(Component):
         self.services.stage_state()
 
         state_file = self.services.get_config_param('STATE_FILES')
-        with open(state_file, 'rb') as f:
+        data_loc = os.path.join(self.services.get_config_param('SIM_ROOT'), f'{timestamp if not REPLACE else 0.0}_{state_file}')
+        with open(data_loc, 'rb') as f:
             data = f.read()
 
         # stage the state file in the JupyterHub directory and update the module file to handle it
         if REPLACE:
-            self.services.add_analysis_data_file(state_file, os.path.basename(state_file), replace=True)
+            self.services.add_analysis_data_files([data_loc], replace=True)
         else:
-            self.services.add_analysis_data_file(
-                state_file,
-                f'{timestamp}_{os.path.basename(state_file)}',
+            self.services.add_analysis_data_files(
+                [data_loc],
                 timestamp=timestamp,
             )
 

@@ -31,7 +31,7 @@ from ._jupyter.initializer import (
     initialize_jupyter_import_module_file,
     initialize_jupyter_notebook,
     initialize_jupyter_python_api,
-    update_module_file_with_data_file,
+    update_module_file_with_data_files,
 )
 from .cca_es_spec import initialize_event_service
 from .ips_es_spec import eventManager
@@ -1948,12 +1948,12 @@ class ServicesProxy:
         self.publish('_IPS_MONITOR', 'PORTAL_REGISTER_NOTEBOOK', event_data)
         self._send_monitor_event('IPS_PORTAL_REGISTER_NOTEBOOK', f'URL = {url}')
 
-    def add_analysis_data_file(self, current_data_file_path: str, new_data_file_name: str, timestamp: float = 0.0, replace: bool = False):
+    # TODO REMOVE new_data_file_name, make current_data_file_path string or list of strings
+    def add_analysis_data_files(self, current_data_file_paths: list[str], timestamp: float = 0.0, replace: bool = False):
         """Add data file to the module file referenced by the Jupyter Notebook.
 
         Params:
-        - current_data_file_path: location of the current data file we want to copy to the Jupyter directory. This will usually be a state file.
-        - new_data_file_name: name of the new data file (relative to Jupyterhub data directory, should be unique per run)
+        - current_data_file_paths: location of the current data file we want to copy to the Jupyter directory. This will usually be a state file.
         - timestamp: label to assign to the data (currently must be a floating point value)
         - replace: If True, replace the last data file added with the new data file. If False, simply append the new data file. (default: False)
               Note that if replace is not True but you attempt to overwrite it, a ValueError will be thrown.
@@ -1963,24 +1963,15 @@ class ServicesProxy:
                 # TODO generic exception
                 raise Exception('Unable to initialize base JupyterHub dir')
 
-        # make sure we're working with a file, and not a directory, regarding the data file name
-        new_data_file_name = os.path.basename(new_data_file_name)
+        destination_paths = [os.path.basename(old_fname) for old_fname in current_data_file_paths]
+        for source, destination in zip(current_data_file_paths, destination_paths):
+            full_destination = os.path.join(self._jupyterhub_dir, 'data', destination)
+            if not replace and os.path.exists(full_destination):
+                raise ValueError(f'Replacing existing filename {destination}, set replace to equal True in add_analysis_data_files if this was intended.')
+            # this may raise an OSError, it is the responsibility of the caller to handle it.
+            shutil.copyfile(source, full_destination)
 
-        jupyter_data_file = os.path.join(self._jupyterhub_dir, 'data', new_data_file_name)
-        if not replace and os.path.exists(jupyter_data_file):
-            raise ValueError(f'Replacing existing filename {jupyter_data_file}, set replace to equal True in add_analysis_data_file if this was intended.')
-        # this may raise an OSError, it is the responsibility of the caller to handle it.
-        shutil.copyfile(current_data_file_path, jupyter_data_file)
-
-        # update the module file
-        replaced_file_name = update_module_file_with_data_file(self._jupyterhub_dir, new_data_file_name, replace, timestamp)
-        if replaced_file_name:
-            # now remove the state file from the filesystem
-            file_to_remove = os.path.join(self._jupyterhub_dir, 'data', replaced_file_name)
-            try:
-                os.remove(file_to_remove)
-            except FileNotFoundError:
-                pass
+        update_module_file_with_data_files(self._jupyterhub_dir, destination_paths, replace, timestamp)
 
     def publish(self, topicName: str, eventName: str, eventBody: Any):
         """

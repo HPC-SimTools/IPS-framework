@@ -17,7 +17,6 @@ To see available libraries on NERSC, run:
 import re
 import shutil
 from pathlib import Path
-from typing import Optional
 
 import nbformat as nbf
 
@@ -172,11 +171,11 @@ def initialize_jupyter_import_module_file(dest: str):
         f.write(_initial_data_file_code())
 
 
-def update_module_file_with_data_file(dest: str, data_file: str, replace: bool, timestamp: float = 0.0) -> Optional[str]:
+def update_module_file_with_data_files(dest: str, data_files: list[str], replace: bool, timestamp: float = 0.0) -> None:
     """
     Params:
       - dest: directory of the module file which will be modified
-      - data_file: file which will be added to the module
+      - data_files: files which will be added to the module
       - replace: if True, we can update
       - timestamp: key we associate the data file with
 
@@ -187,31 +186,22 @@ def update_module_file_with_data_file(dest: str, data_file: str, replace: bool, 
     with open(dest, 'r') as f:
         old_module_code = f.read()
 
-    replaced_file_name = None
+    new_listing = ''.join(f"f'{{{DIRECTORY_VARIABLE_NAME}}}{val}'," for val in data_files)
+    new_str = f'{timestamp}: [{new_listing}],\n'
 
     timestamp_regex = str(timestamp).replace('.', '\\.')
-    directory_str = '\{' + DIRECTORY_VARIABLE_NAME + '\}'
-
-    search_pattern = f"{timestamp_regex}: f'{directory_str}(.*)',"
+    search_pattern = f'^{timestamp_regex}: [(.*)],\n'
 
     found_match = re.search(search_pattern, old_module_code)
-    if found_match:  # timestamp already exists
+    if found_match:
         if replace:
-            replaced_file_name = found_match.group(1)
-            if replaced_file_name == data_file:
-                # in this case, we're not actually removing an obsolete file, so no need to write to the module file
-                # return None because we've already directly replaced the file
-                return None
-            new_module_code = re.sub(search_pattern, f"{timestamp}: f'{{{DIRECTORY_VARIABLE_NAME}}}{data_file}',", old_module_code)
+            new_module_code = re.sub(search_pattern, new_str, old_module_code, count=1)
         else:
             raise ValueError(
-                f"For timestamp entry {timestamp}, you are trying to replace '{found_match.group(1)}' with '{data_file}' . If this was intended, you must explicitly set 'replace=True' on the IPS function call."
+                f"For timestamp entry {timestamp}, you are trying to replace '{found_match.group(1)}' with '{data_files}' . If this was intended, you must explicitly set 'replace=True' on the IPS function call."
             )
-    else:  # timestamp does not exist, so add it
-        # search from right of string for the '}' character, should work assuming user does not modify the cell past the variable definition
-        new_module_code = replace_last(old_module_code, '}', f"{timestamp}: f'{{{DIRECTORY_VARIABLE_NAME}}}{data_file}',\n" + '}')
+    else:
+        new_module_code = replace_last(old_module_code, '}', new_str + '}')
 
     with open(dest, 'w') as f:
         f.write(new_module_code)
-
-    return replaced_file_name

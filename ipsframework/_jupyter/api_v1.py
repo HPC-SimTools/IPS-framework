@@ -5,12 +5,12 @@ import importlib.util
 import os
 import tarfile
 from pathlib import Path
-from typing import Dict, Iterable, Union
+from typing import Dict, Iterable, List, Union
 
 THIS_DIR = Path(__file__).resolve().parent
 
 
-def get_data_from_runid(runid: int) -> Dict[float, str]:
+def get_data_from_runid(runid: int) -> Dict[float, List[str]]:
     """Load all data associated with a single runid into a dictionary.
 
     Params:
@@ -25,7 +25,7 @@ def get_data_from_runid(runid: int) -> Dict[float, str]:
     return module.DATA_FILES
 
 
-def get_data_from_runids(runids: Iterable[int]) -> Dict[int, Dict[float, str]]:
+def get_data_from_runids(runids: Iterable[int]) -> Dict[int, Dict[float, List[str]]]:
     """Load all data associated with multiple runids into a common data structure.
 
     Params:
