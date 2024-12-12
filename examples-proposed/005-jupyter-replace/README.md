@@ -1,4 +1,4 @@
-# Task pool synchronous
+# Jupyter Notebook replacing workflow
 
 This is an example which utilizes the time loop. The config file specifies that the script will execute all timestamps in the range of 1.0 to 100.0 (both inclusive), incrementing by 1.0 for each cycle.
 
