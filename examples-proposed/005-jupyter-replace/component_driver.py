@@ -6,6 +6,7 @@ from ipsframework import Component
 
 DELAY = bool(os.environ.get('EXAMPLE_DELAY'))
 
+
 class Driver(Component):
     """In this example, the driver iterates through the time loop and calls both the worker and the monitor component on each timestep."""
 

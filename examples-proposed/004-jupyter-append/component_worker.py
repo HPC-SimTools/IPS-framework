@@ -19,6 +19,7 @@ class Worker(Component):
         print(msg, file=stderr)
         self.services.send_portal_event(event_comment=msg)
 
+        # TODO - maybe make y2 and y3 slightly more unique with formulas (don't just multiply)
         data = {
             'y1': math.sin(self.start + timestamp / 50 * math.pi),
             'y2': math.sin(self.start + timestamp / 50 * math.pi) ** 2,
@@ -31,5 +32,4 @@ class Worker(Component):
             json.dump(data, f)
         self.services.update_state()
 
-    def finalize(self, timestamp=0.0):
-        ...
+    def finalize(self, timestamp=0.0): ...

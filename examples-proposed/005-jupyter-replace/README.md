@@ -4,6 +4,8 @@ This is an example which utilizes the time loop. The config file specifies that 
 
 For each timestep, the worker component will update the state file with random JSON data. Note that with this implementation, the state file is overridden on each new timestep (the final timestep called will persist after the application).
 
+Additionally, the `Monitor` component in `component_monitor.py` showcases an example of integrating an IPS run with the IPS JupyterHub workflow. It requires a connection to the IPS web portal to be open to work, but the associated notebooks will show up on the portal. The JupyterHub workflow is designed to allow users to run custom visualizations during an IPS run; the framework can update the data in such a way that it will not interrupt the visualization process.
+
 ## Instructions
 
 Note that this example uses the module syntax, as opposed to the script syntax.
@@ -22,10 +24,8 @@ To run the code, run:
 ./run.sh
 ```
 
-By default, this example will always _append_ a state file. If you prefer to see an example of how to _replace_ a state file, run:
-
-```bash
-EXAMPLE_REPLACE=1 ./run.sh
-```
+By default, this example will always _replace_ a state file.
 
 There is also a script `run-delayed.sh` which you can use instead of `run.sh` if you would like to simulate a delay between monitor steps.
+
+If executing `run.sh`, the script will output files into the directory defined by the `PSCRATCH` environment variable (or `/tmp` if this variable is not defined).

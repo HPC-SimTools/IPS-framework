@@ -1,5 +1,4 @@
 import json
-import os
 from sys import stderr
 
 from ipsframework import Component
@@ -20,10 +19,7 @@ class Monitor(Component):
 
         # Example of initializing two separate notebooks
         # Both notebooks should be initialized before the time loop and appended to inside the time loop
-        self.services.initialize_jupyter_notebook(
-            dest_notebook_name='basic.ipynb',  # path is relative to JupyterHub directory
-            source_notebook_path='basic.ipynb',  # path is relative to input directory
-        )
+        self.services.initialize_jupyter_notebook(NOTEBOOK_1_TEMPLATE)
 
     def step(self, timestamp=0.0, **keywords):
         msg = f'Running Monitor step with timestamp={timestamp}'
@@ -38,7 +34,7 @@ class Monitor(Component):
         with open(state_file) as f:
             analysis = json.load(f)
 
-        analysis_file_1 = os.path.join(self.services.get_config_param('SIM_ROOT'), f'{timestamp}_analysis.json')
+        analysis_file_1 = f'{timestamp}_analysis.json'
         with open(analysis_file_1, 'w') as f:
             json.dump(analysis, f)
 
@@ -48,5 +44,4 @@ class Monitor(Component):
         print('SEND PORTAL DATA', timestamp, raw_data, file=stderr)
         self.services.send_portal_data(timestamp, raw_data)
 
-    def finalize(self, timestamp=0.0):
-        ...
+    def finalize(self, timestamp=0.0): ...

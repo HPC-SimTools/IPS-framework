@@ -31,5 +31,4 @@ class Worker(Component):
             json.dump(data, f)
         self.services.update_state()
 
-    def finalize(self, timestamp=0.0):
-        ...
+    def finalize(self, timestamp=0.0): ...
