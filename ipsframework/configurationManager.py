@@ -63,6 +63,10 @@ class ConfigurationManager:
         Initialize the values to be used by the configuration manager.  Also
         specified are the required fields of the simulation configuration
         file, and the configuration files are read in.
+
+        :param fwk: Reference to the encompassing Framework object
+        :param config_file_list: List of configuration files
+        :param platform_file_name: Platform configuration file
         """
         # ref to framework
         self.fwk = fwk

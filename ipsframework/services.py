@@ -18,6 +18,10 @@ import json
 import weakref
 from collections import namedtuple
 from operator import itemgetter
+from pathlib import Path
+
+from copy import deepcopy
+
 from configobj import ConfigObj
 from .taskManager import TaskInit
 from . import messages, ipsutil
@@ -355,11 +359,16 @@ class ServicesProxy:
         return self.finished_calls.pop(msg_id, None)
 
     def _invoke_service(self, component_id, method_name, *args, **keywords):
-        r"""
+        """ Call a method for the given component
+
         Create and place in the ``self.fwk_in_q`` a new
-        :py:meth:`messages.ServiceRequestMessage` for service
-        *method_name* with *\*args* arguments on behalf of component
-        *component_id*.  Return message id.
+        :py:meth:`messages.ServiceRequestMessage` for service `method_name`
+        with `args` arguments on behalf of component `component_id`.  Return
+        message id.
+
+        :param component_id: Component ID of requested component
+        :param method_name: component method to call, e.g. ``init`` or ``step``
+        :return: message id
         """
         self.debug('_invoke_service(): %s  %s', method_name, str(args[0:]))
         new_msg = messages.ServiceRequestMessage(self.component_ref.component_id,
@@ -373,20 +382,28 @@ class ServicesProxy:
 
     def _get_service_response(self, msg_id, block=True):
         """
-        Return response from message *msg_id*.  Calls
-        :py:meth:`ServicesProxy._wait_msg_response` with *msg_id* and *block*.  If response
-        is not present, ``None`` is returned, otherwise the response is passed
-        on to the component.  If the status of the response is failure
-        (``Message.FAILURE``), then the exception body is raised.
+        Return response from message `msg_id`.  Calls
+        :py:meth:`ServicesProxy._wait_msg_response` with `msg_id` and
+        `block`.  If response is not present, `None` is returned, otherwise
+        the response is passed on to the component.  If the status of the
+        response is failure (`Message.FAILURE`), then the exception body is
+        raised.
+
+        :param msg_id: message id
+        :param block: Boolean flag. If ``True``, block waiting for one or more
+            responses to arrive.
+        :return: response arguments
         """
         self.debug('_get_service_response(%s)', str(msg_id))
         response = self._wait_msg_response(msg_id, block)
         self.debug('_get_service_response(%s), response = %s', str(msg_id), str(response))
+
         if response is None:
             return None
         if response.status == messages.Message.FAILURE:
             self.debug('###### Raising %s', str(response.args[0]))
             raise response.args[0]
+
         if len(response.args) > 1:
             return response.args
         else:
@@ -1925,59 +1942,93 @@ class ServicesProxy:
     def create_sub_workflow(self, sub_name, config_file, override=None, input_dir=None):
         """Create sub-workflow
 
+        :param sub_name: name of sub-workflow
+        :param config_file: configuration file for sub-workflow
+        :param override: dictionary of configuration overrides; keys are component names
+            and the items are attribute/key values associated with that
+            component.
+        :param input_dir: input directory for sub-workflow components
+        :returns: tuple of simulation name, init component, driver component
         """
-
+        # TODO Unclear on what override is
         if override is None:
             override = {}
 
+        # So subflows have names and they must be unique.
+        # TODO how is self.sub_flows set?
         if sub_name in self.sub_flows:
             self.error("Duplicate sub flow name")
             raise Exception("Duplicate sub flow name")
 
+        # TODO We keep track of the number of subflows.  Why?  Also, this is
+        # not used anywhere.  Moreover, there is no mechanism for decrementing
+        # this count when a subflow finishes.
         self.subflow_count += 1
+
+        # TODO We create *two* ConfigObjs from the *same* config file.  Presumably
+        # to do a delta between the two? Why do this?  Also, clone the first
+        # instead of reading it again.
         try:
             sub_conf_new = ConfigObj(infile=config_file, interpolation='template', file_error=True)
             sub_conf_old = ConfigObj(infile=config_file, interpolation='template', file_error=True)
         except Exception:
             self.exception("Error accessing sub-workflow config file %s", config_file)
             raise
+
         # Update undefined sub workflow configuration entries using top level configuration
         # only applicable to non-component entries (ones with non-dictionary values)
         for (k, v) in self.sim_conf.items():
             if k not in sub_conf_new and not isinstance(v, dict):
                 sub_conf_new[k] = v
 
+        # TODO Where is self.sim_name set?  What is the significance of
+        # SIM_NAME and SIM_ROOT?
         sub_conf_new['SIM_NAME'] = self.sim_name + "::" + sub_name
         sub_conf_new['SIM_ROOT'] = os.path.join(os.getcwd(), sub_name)
         # sub_conf_new['SIM_ROOT'] = os.path.join(os.getcwd(), 'sub_workflow_%d' % self.subflow_count)
         # Update INPUT_DIR for components to current working dir (super simulation working dir)
         ports = sub_conf_new['PORTS']['NAMES'].split()
-        comps = [sub_conf_new['PORTS'][p]['IMPLEMENTATION'] for p in ports]
-        for c in comps:
+
+        # This is the set of components in the subflow as dictated in the
+        # PORTS section.  Each subsection will have an IMPLEMENTATION value
+        # that refers to a component in the subflow.
+        components = [sub_conf_new['PORTS'][p]['IMPLEMENTATION'] for p in ports]
+
+        # Associate the corresponding INPUT_DIR, which is the working directory
+        # for the given port. If the user specified an `input_dir` in this call,
+        # then prefer to use that, otherwise use any INPUT_DIR specified by
+        # the port in the configuration file.
+        for c in components:
             if not c:
                 continue
             if input_dir is None:
                 sub_conf_new[c]['INPUT_DIR'] = os.path.join(os.getcwd(), c)
             else:
                 sub_conf_new[c]['INPUT_DIR'] = os.path.join(os.getcwd(), input_dir)
-            try:
+
+            # Handle any overrides for the component
+            try: # FIXME this cold be refactored to not use try/except
                 override_vals = override[c]
             except KeyError:
                 pass
             else:
                 for (k, v) in override_vals.items():
                     sub_conf_new[c][k] = v
-        toplevel_override = set(override.keys()) - set(comps)
+
+        # Handle any overrides for the top level configuration
+        toplevel_override = set(override.keys()) - set(components)
         for param in toplevel_override:
             sub_conf_new[param] = override[param]
 
+        # TODO Why do you overwrite the config file?
         sub_conf_new.filename = os.path.basename(config_file)
         sub_conf_new.write()
-        try:
+        try: # FIXME, if you're going to catch an exception, you should handle it
             (sim_name, init_comp, driver_comp) = self._create_simulation(os.path.abspath(sub_conf_new.filename),
                                                                          {}, sub_workflow=True)
         except Exception:
             raise
+
         self.sub_flows[sub_name] = (sub_conf_new, sub_conf_old, init_comp, driver_comp)
         self._send_monitor_event('IPS_CREATE_SUB_WORKFLOW', 'workflow_name = %s' % sub_name)
         return (sim_name, init_comp, driver_comp)
@@ -1987,9 +2038,16 @@ class ServicesProxy:
         return self._create_simulation(config_file, override, sub_workflow=False)[0]
 
     def _create_simulation(self, config_file, override, sub_workflow=False):
+        """
+        :param config_file: configuration file for simulation
+        :param override: dict of configuration file overrides
+        :param sub_workflow: boolean indicating if this is a sub-workflow
+        :returns: tuple of simulation name, init component, driver component
+        """
         try:
             msg_id = self._invoke_service(self.fwk.component_id,
-                                          'create_simulation', config_file, override, sub_workflow)
+                                          'create_simulation',
+                                          config_file, override, sub_workflow)
             self.debug('create_simulation() msg_id = %s', msg_id)
             (sim_name, init_comp, driver_comp) = self._get_service_response(msg_id, block=True)
             self.debug('Created simulation %s', sim_name)
@@ -1997,6 +2055,158 @@ class ServicesProxy:
             self.exception('Error creating new simulation')
             raise
         return (sim_name, init_comp, driver_comp)
+
+
+    def run_ensemble(self, template, variables, run_dir, platform_config,
+                     prefix):
+        """ Run ensemble of simulations given the template and variables.
+
+        `variables` is a nested dict that looks like this:
+
+                variables = {'a_sim_comp': {'A': [3, 2, 4],
+                                            'B': [2.34, 5.82, 0.1],
+                                            'C': ['bar', 'baz', 'quux']},
+                            'another_sim_comp': {'D': [7, 5, 9],
+                                                 'B': [0.775, 0.080, 29.2],
+                                                 'F': ['xyzzy', 'plud', 'thud']}}
+
+        That is, the keys are the simulation names and the values are dicts
+        mapping parameter to a set of values.  Ensembles will be spun
+        up for each simulation for each combination of parameters.  E.g.,
+        `a_sim_comp` will be run three times with the parameters of A, B, and C
+        being set to 3, 2.34, 'bar' for one of the simulation instances,
+        respectively.  another_sim_comp behaves similarly with its
+        respective parameters.
+
+        The ensembles will run under `run_dir` within a subdirectory
+        uniquely named for each.  The subdirectory will contain an IPS
+        config file created from `template` with `?` variables replaced
+        with the values from `variables`.
+
+        :param template: configuration template file
+        :param variables: a dict of variables to pass to the ensemble runs
+        :param run_dir: in which to run the ensembles
+        :param platform_config: is the platform config file for ensembles
+        :param prefix: string to prepend to generated instance directory
+            and file names
+        :returns: a list of dicts mapping created subdirs to simulation names
+            and their parameters
+        """
+        def group_into_instances(variables, prefix):
+            """ convert component variables into something like this:
+
+             [['prefix_0', [['a_sim_comp', {'A': 3, 'B': 2.34, 'C': 'bar'}],
+                              ['another_sim_comp', {'D': 7, 'B': 0.775, 'F': 'xyzzy'}]]],
+              ['prefix_1', [['a_sim_comp', {'A': 2, 'B': 5.82, 'C': 'baz'}],
+                              ['another_sim_comp', {'D': 5, 'B': 0.08, 'F': 'plud'}]]],
+              ['prefix_2', [['a_sim_comp', {'A': 4, 'B': 0.1, 'C': 'quux'}],
+                              ['another_sim_comp', {'D': 9, 'B': 29.2, 'F': 'thud'}]]]]
+
+               prefix_n corresponds to a specific ensemble instance and will
+               be used for a unique subdir name.  That, in turn, references a
+               list of lists where each list element is a component that, in
+               turn, has a dict mapping component variables to values that will
+               then be later used to flesh out a config file from a config
+               template file.
+             """
+            # Transpose the data for each simulation component; essentially
+            # convert the list of variable values into corresponding dicts
+            # mapping the variables to specific values.  Sorta like a
+            # column-wise to row-wise transposition.
+            transposed = {key: [dict(zip(inner.keys(), values)) for values in
+                                zip(*inner.values())] for key, inner in
+                    variables.items()}
+
+            # Build the final structure where each instance is named
+            # INSTANCE_n
+            result = [[f"{prefix}{i}", [[sim_name, sim_data] for
+                                         sim_name, sim_data_list in
+                                         transposed.items() for sim_data in
+                                         [sim_data_list[i]]]] for i in
+                      range(len(next(iter(transposed.values()))))]
+
+            return result
+
+
+        def create_config_file(template, working_dir, variables, prefix):
+            """ Create an IPS config file for an ensemble instance
+
+            :param template: ConfigObj from which to derive the config file
+            :param working_dir: in which to put the config file
+            :param variables: component parameters that need to be plugged
+                into the template
+            :param prefix: instance string prefix for file names
+            :returns: None
+            """
+            # We need to plug in the variables, so we need to find the section
+            # for a each component, and then find the corresponding variables
+            # to then assign the associated value.
+
+            for component in variables:
+                self.debug(f'Substituting for {component[0]}')
+                for variable in component[1].keys():
+                    # Substitute the individual variables for this component
+                    self.debug(f'Assigning {component[1][variable]} to {variable}')
+                    template[component[0]][variable] = component[1][variable]
+
+            template['LOG_FILE'] = working_dir / Path(prefix + "_run.log")
+            template.filename = working_dir / Path(prefix + ".config")
+            template.write()
+
+
+
+        self.info(f'Preparing to run ensembles in {run_dir}')
+
+        # Grab the IPS config template to be used for all ensemble instances;
+        # str to convert from pathlib.Path
+        template_config = ConfigObj(str(template))
+
+        # Let's first "flatten" the hierarchical variables dict into a list
+        # of lists of dicts, where the top-level of which contains the ensemble
+        # instance name and associated parameters.
+        instances = group_into_instances(variables, prefix)
+
+        task_ids = [] # for submitted tasks
+
+        # For each coupled simulation instance
+        for instance in instances:
+            self.info(f'Running ensemble instance {instance[0]}')
+
+            # Create the subdir based on `path_dir` and the ensemble ID, which
+            # is stored as the first list element in `instance`
+            working_dir = run_dir / instance[0]
+            working_dir.mkdir(parents=True, exist_ok=True)
+
+            # Local log file for this ensemble instance
+            log_file = working_dir / f'{instance[0]}.log'
+
+            # Make a bespoke config file for this simulation instance based
+            # on the template. This means substituting all the "?" variables
+            # in the template with the corresponding values found in
+            # `variables`. The second `instance` list element contains the
+            # variables that need to be substituted into the template.  We
+            # copy the template because we will want to start fresh with each
+            # instance, particularly because part of the error checking is to
+            # ensure that all the variables have been assigned.
+            create_config_file(deepcopy(template_config), working_dir,
+                               instance[1], instance[0])
+
+            # Submit a task to run the simulation instance, which is another
+            # IPS run pointed to that config file.
+            args = (f'--simulation={working_dir / Path(instance[0] + ".config")} '
+                    f'--log={log_file} --platform={platform_config}')
+            task_id = self.launch_task(1, working_dir, 'ips.py',
+                                                args,
+                                       block=False)
+            task_ids.append(task_id)
+
+
+        # wait for all tasks to complete
+        self.info(f'Waiting for all ensembles to finish')
+        self.wait_tasklist(task_ids)
+        self.info('All ensembles have finished.')
+
+        return instances
 
 
 class TaskPool:
