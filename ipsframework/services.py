@@ -2083,6 +2083,9 @@ class ServicesProxy:
         config file created from `template` with `?` variables replaced
         with the values from `variables`.
 
+        TODO add support for specifying hardware and system configuration
+        details, such as the number of nodes, etc.
+
         :param template: configuration template file
         :param variables: a dict of variables to pass to the ensemble runs
         :param run_dir: in which to run the ensembles
@@ -2166,6 +2169,9 @@ class ServicesProxy:
         # instance name and associated parameters.
         instances = group_into_instances(variables, prefix)
 
+        task_pool_name = "ensemble_task_pool"
+        self.create_task_pool(task_pool_name)
+
         task_ids = [] # for submitted tasks
 
         # For each coupled simulation instance
@@ -2195,16 +2201,17 @@ class ServicesProxy:
             # IPS run pointed to that config file.
             args = (f'--simulation={working_dir / Path(instance[0] + ".config")} '
                     f'--log={log_file} --platform={platform_config}')
-            task_id = self.launch_task(1, working_dir, 'ips.py',
-                                                args,
-                                       block=False)
-            task_ids.append(task_id)
 
+            self.add_task(task_pool_name, instance[0], 1,
+                          working_dir, 'ips.py', args)
 
-        # wait for all tasks to complete
-        self.info(f'Waiting for all ensembles to finish')
-        self.wait_tasklist(task_ids)
-        self.info('All ensembles have finished.')
+        try:
+            num_submitted = self.submit_tasks(task_pool_name, block=True)
+            self.logger.info(f'Ran {num_submitted} ensemble tasks')
+        except Exception as e:
+            self.critical(f'Got an exception running ensemble: {e!s}')
+        finally:
+            self.remove_task_pool(task_pool_name)
 
         return instances
 
