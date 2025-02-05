@@ -2166,6 +2166,9 @@ class ServicesProxy:
         # instance name and associated parameters.
         instances = group_into_instances(variables, prefix)
 
+        task_pool_name = "ensemble_task_pool"
+        self.create_task_pool(task_pool_name)
+
         task_ids = [] # for submitted tasks
 
         # For each coupled simulation instance
@@ -2195,15 +2198,17 @@ class ServicesProxy:
             # IPS run pointed to that config file.
             args = (f'--simulation={working_dir / Path(instance[0] + ".config")} '
                     f'--log={log_file} --platform={platform_config}')
-            task_id = self.launch_task(1, working_dir, 'ips.py',
-                                                args,
-                                       block=False)
-            task_ids.append(task_id)
+            # task_id = self.launch_task(1, working_dir, 'ips.py',
+            #                                     args,
+            #                            block=False)
+            # task_ids.append(task_id)
+            self.add_task(task_pool_name, task_name=instance[0], nproc=1,
+                          working_dir=working_dir, binary='ips.py', args=args)
 
 
         # wait for all tasks to complete
         self.info(f'Waiting for all ensembles to finish')
-        self.wait_tasklist(task_ids)
+        # self.wait_tasklist(task_ids)
         self.info('All ensembles have finished.')
 
         return instances
