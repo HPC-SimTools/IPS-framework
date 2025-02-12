@@ -2175,6 +2175,9 @@ class ServicesProxy:
                             # explicitly identified a variable with '?' in the
                             # template config file to be substituted for one
                             # of the given variables.
+                            # TODO that the next two statements show up in
+                            # the previous block means we can probably refactor
+                            # this if block to be more concise.
                             self.debug(f'Substituting {component[1][variable]} '
                                        f'for {variable}')
                             template[component[0]][variable] = \
