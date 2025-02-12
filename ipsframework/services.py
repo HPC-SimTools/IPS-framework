@@ -2147,10 +2147,59 @@ class ServicesProxy:
 
             for component in variables:
                 self.debug(f'Substituting for {component[0]}')
+
                 for variable in component[1].keys():
                     # Substitute the individual variables for this component
                     self.debug(f'Assigning {component[1][variable]} to {variable}')
-                    template[component[0]][variable] = component[1][variable]
+                    if variable not in template[component[0]]:
+                        # If we are passed in a variable to be substituted
+                        # that isn't in the template, complain and move one.
+                        self.critical(f'Variable {variable} not found in '
+                                      f'template ... skipping')
+                        raise RuntimeError(f'Variable {variable} not found '
+                                           f'in template')
+                    else:
+                        if template[component[0]][variable] is None \
+                                or template[component[0]][variable] == '':
+                            # User probably forgot to put in a '?', so just
+                            # complain and keep moving.
+                            self.warning(f'Variable {variable} is empty and '
+                                         f'does not have a "?" indicating '
+                                         f'it is a variable')
+                            self.debug(f'Substituting {component[1][variable]} '
+                                       f'for {variable}')
+                            template[component[0]][variable] = \
+                                component[1][variable]
+                        elif template[component[0]][variable] == '?':
+                            # This is the proper scenario where the user has
+                            # explicitly identified a variable with '?' in the
+                            # template config file to be substituted for one
+                            # of the given variables.
+                            # TODO that the next two statements show up in
+                            # the previous block means we can probably refactor
+                            # this if block to be more concise.
+                            self.debug(f'Substituting {component[1][variable]} '
+                                       f'for {variable}')
+                            template[component[0]][variable] = \
+                                component[1][variable]
+                        else:
+                            # It already has a value, so complain and exit.
+                            self.critical(f'Variable {variable} already has '
+                                          f'a value '
+                                          f'of {template[component[0]][variable]}')
+                            raise RuntimeError(f'Variable {variable} already '
+                                               f'has a value')
+
+            # Now scan for any remaining '?' variables that haven't been
+            # assigned.
+            for section in template.keys():
+                if isinstance(template[section], dict):
+                    for variable in template[section].keys():
+                        if template[section][variable] == '?':
+                            self.critical(f'Variable {variable} in section {section} '
+                                          f'has not been assigned')
+                            raise RuntimeError(f'Variable {variable} in section '
+                                               f'{section} has not been assigned')
 
             template['LOG_FILE'] = working_dir / Path(prefix + "_run.log")
             template.filename = working_dir / Path(prefix + ".config")
