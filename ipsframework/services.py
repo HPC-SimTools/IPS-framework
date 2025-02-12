@@ -2102,7 +2102,7 @@ class ServicesProxy:
         :param use_shifter: if True, use Shifter to run the ensemble
         :param shifter_args: arguments to pass to Shifter
         :param dask_worker_plugin: Dask worker plugin to use
-        :param dask_worker_per_gpu: how many workers per GPU
+        :param dask_worker_per_gpu: if true, use one worker per GPU
         :returns: a list of dicts mapping created subdirs to simulation names
             and their parameters
         """
