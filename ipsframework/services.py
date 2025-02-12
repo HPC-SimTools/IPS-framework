@@ -2150,7 +2150,13 @@ class ServicesProxy:
                 for variable in component[1].keys():
                     # Substitute the individual variables for this component
                     self.debug(f'Assigning {component[1][variable]} to {variable}')
-                    template[component[0]][variable] = component[1][variable]
+                    if variable not in template[component[0]]:
+                        # If we are passed in a variable to be substituted
+                        # that isn't in the template, complain and move one.
+                        self.critical(f'Variable {variable} not found in template ... skipping')
+                        raise RuntimeError(f'Variable {variable} not found in template')
+                    else:
+                        template[component[0]][variable] = component[1][variable]
 
             template['LOG_FILE'] = working_dir / Path(prefix + "_run.log")
             template.filename = working_dir / Path(prefix + ".config")
