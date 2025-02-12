@@ -2058,7 +2058,9 @@ class ServicesProxy:
 
 
     def run_ensemble(self, template, variables, run_dir, platform_config,
-                     prefix):
+                     prefix, block=True, use_dask=False, dask_nodes=1,
+                     dask_ppw=None, launch_interval=0.0, use_shifter=False, shifter_args=None,
+                     dask_worker_plugin=None, dask_worker_per_gpu=False):
         """ Run ensemble of simulations given the template and variables.
 
         `variables` is a nested dict that looks like this:
@@ -2092,6 +2094,15 @@ class ServicesProxy:
         :param platform_config: is the platform config file for ensembles
         :param prefix: string to prepend to generated instance directory
             and file names
+        :param block: if True, block until all ensembles have completed
+        :param use_dask: if True, use Dask to schedule and run the ensemble
+        :param dask_nodes: number of Dask nodes to use
+        :param dask_ppw: number of processes per worker
+        :param launch_interval: interval between launching tasks
+        :param use_shifter: if True, use Shifter to run the ensemble
+        :param shifter_args: arguments to pass to Shifter
+        :param dask_worker_plugin: Dask worker plugin to use
+        :param dask_worker_per_gpu: how many workers per GPU
         :returns: a list of dicts mapping created subdirs to simulation names
             and their parameters
         """
@@ -2255,7 +2266,14 @@ class ServicesProxy:
                           working_dir, 'ips.py', args)
 
         try:
-            num_submitted = self.submit_tasks(task_pool_name, block=True)
+            num_submitted = self.submit_tasks(task_pool_name, block=True,
+                                              use_dask=False, dask_nodes=1,
+                                              dask_ppw=None,
+                                              launch_interval=0.0,
+                                              use_shifter=False,
+                                              shifter_args=None,
+                                              dask_worker_plugin=None,
+                                              dask_worker_per_gpu=False)
             self.logger.info(f'Ran {num_submitted} ensemble tasks')
         except Exception as e:
             self.critical(f'Got an exception running ensemble: {e!s}')
