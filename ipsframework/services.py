@@ -2161,7 +2161,14 @@ class ServicesProxy:
                             self.warning(f'Variable {variable} is empty and '
                                          f'does not have a "?" indicating '
                                          f'it is a variable')
-                        template[component[0]][variable] = component[1][variable]
+                        elif template[component[0]][variable] == '?':
+                            self.debug(f'Substituting {component[1][variable]} for {variable}')
+                            template[component[0]][variable] = component[1][variable]
+                        else:
+                            # It already has a value, so complain and exit.
+                            self.critical(f'Variable {variable} already has a value '
+                                          f'of {template[component[0]][variable]}')
+                            raise RuntimeError(f'Variable {variable} already has a value')
 
             template['LOG_FILE'] = working_dir / Path(prefix + "_run.log")
             template.filename = working_dir / Path(prefix + ".config")

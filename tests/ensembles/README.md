@@ -1,6 +1,6 @@
 This contains the tests for enemble methods.
 
 * `basic` - tests for basic, simple ensemble setup that should run normally
-* `bad-assignment` - tests for missing '?' or empty variable assignments
+* `already-exists` - tests for variables already assigned in template
 * `missing-assignment` - tests for missing variable declarations in template 
   configuration files
