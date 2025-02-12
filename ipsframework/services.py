@@ -2147,6 +2147,7 @@ class ServicesProxy:
 
             for component in variables:
                 self.debug(f'Substituting for {component[0]}')
+
                 for variable in component[1].keys():
                     # Substitute the individual variables for this component
                     self.debug(f'Assigning {component[1][variable]} to {variable}')
@@ -2185,6 +2186,17 @@ class ServicesProxy:
                                           f'of {template[component[0]][variable]}')
                             raise RuntimeError(f'Variable {variable} already '
                                                f'has a value')
+
+            # Now scan for any remaining '?' variables that haven't been
+            # assigned.
+            for section in template.keys():
+                if isinstance(template[section], dict):
+                    for variable in template[section].keys():
+                        if template[section][variable] == '?':
+                            self.critical(f'Variable {variable} in section {section} '
+                                          f'has not been assigned')
+                            raise RuntimeError(f'Variable {variable} in section '
+                                               f'{section} has not been assigned')
 
             template['LOG_FILE'] = working_dir / Path(prefix + "_run.log")
             template.filename = working_dir / Path(prefix + ".config")
