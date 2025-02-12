@@ -2156,6 +2156,11 @@ class ServicesProxy:
                         self.critical(f'Variable {variable} not found in template ... skipping')
                         raise RuntimeError(f'Variable {variable} not found in template')
                     else:
+                        if template[component[0]][variable] is None \
+                                or template[component[0]][variable] == '':
+                            self.warning(f'Variable {variable} is empty and '
+                                         f'does not have a "?" indicating '
+                                         f'it is a variable')
                         template[component[0]][variable] = component[1][variable]
 
             template['LOG_FILE'] = working_dir / Path(prefix + "_run.log")
