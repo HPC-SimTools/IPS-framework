@@ -2153,22 +2153,38 @@ class ServicesProxy:
                     if variable not in template[component[0]]:
                         # If we are passed in a variable to be substituted
                         # that isn't in the template, complain and move one.
-                        self.critical(f'Variable {variable} not found in template ... skipping')
-                        raise RuntimeError(f'Variable {variable} not found in template')
+                        self.critical(f'Variable {variable} not found in '
+                                      f'template ... skipping')
+                        raise RuntimeError(f'Variable {variable} not found '
+                                           f'in template')
                     else:
                         if template[component[0]][variable] is None \
                                 or template[component[0]][variable] == '':
+                            # User probably forgot to put in a '?', so just
+                            # complain and keep moving.
                             self.warning(f'Variable {variable} is empty and '
                                          f'does not have a "?" indicating '
                                          f'it is a variable')
+                            self.debug(f'Substituting {component[1][variable]} '
+                                       f'for {variable}')
+                            template[component[0]][variable] = \
+                                component[1][variable]
                         elif template[component[0]][variable] == '?':
-                            self.debug(f'Substituting {component[1][variable]} for {variable}')
-                            template[component[0]][variable] = component[1][variable]
+                            # This is the proper scenario where the user has
+                            # explicitly identified a variable with '?' in the
+                            # template config file to be substituted for one
+                            # of the given variables.
+                            self.debug(f'Substituting {component[1][variable]} '
+                                       f'for {variable}')
+                            template[component[0]][variable] = \
+                                component[1][variable]
                         else:
                             # It already has a value, so complain and exit.
-                            self.critical(f'Variable {variable} already has a value '
+                            self.critical(f'Variable {variable} already has '
+                                          f'a value '
                                           f'of {template[component[0]][variable]}')
-                            raise RuntimeError(f'Variable {variable} already has a value')
+                            raise RuntimeError(f'Variable {variable} already '
+                                               f'has a value')
 
             template['LOG_FILE'] = working_dir / Path(prefix + "_run.log")
             template.filename = working_dir / Path(prefix + ".config")
