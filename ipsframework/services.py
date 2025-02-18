@@ -2141,7 +2141,7 @@ class ServicesProxy:
             return result
 
 
-        def create_config_file(template, working_dir, variables, prefix):
+        def create_driver_config_file(template, working_dir, variables, prefix):
             """ Create an IPS config file for an ensemble instance
 
             :param template: ConfigObj from which to derive the config file
@@ -2253,7 +2253,7 @@ class ServicesProxy:
             # copy the template because we will want to start fresh with each
             # instance, particularly because part of the error checking is to
             # ensure that all the variables have been assigned.
-            create_config_file(deepcopy(template_config), working_dir,
+            create_driver_config_file(deepcopy(template_config), working_dir,
                                instance[1], instance[0])
 
             platform_config = create_platform_config_file()
