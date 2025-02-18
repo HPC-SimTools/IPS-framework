@@ -2057,7 +2057,7 @@ class ServicesProxy:
         return (sim_name, init_comp, driver_comp)
 
 
-    def run_ensemble(self, template, variables, run_dir, platform_config,
+    def run_ensemble(self, template, variables, run_dir,
                      prefix, block=True, use_dask=False, dask_nodes=1,
                      dask_ppw=None, launch_interval=0.0, use_shifter=False, shifter_args=None,
                      dask_worker_plugin=None, dask_worker_per_gpu=False):
@@ -2091,7 +2091,6 @@ class ServicesProxy:
         :param template: configuration template file
         :param variables: a dict of variables to pass to the ensemble runs
         :param run_dir: in which to run the ensembles
-        :param platform_config: is the platform config file for ensembles
         :param prefix: string to prepend to generated instance directory
             and file names
         :param block: if True, block until all ensembles have completed
@@ -2216,7 +2215,9 @@ class ServicesProxy:
             template.filename = working_dir / Path(prefix + ".config")
             template.write()
 
-
+        def create_platform_config_file():
+            # TODO implement
+            return 'platform.config'
 
         self.info(f'Preparing to run ensembles in {run_dir}')
 
@@ -2231,8 +2232,6 @@ class ServicesProxy:
 
         task_pool_name = "ensemble_task_pool"
         self.create_task_pool(task_pool_name)
-
-        task_ids = [] # for submitted tasks
 
         # For each coupled simulation instance
         for instance in instances:
@@ -2256,6 +2255,8 @@ class ServicesProxy:
             # ensure that all the variables have been assigned.
             create_config_file(deepcopy(template_config), working_dir,
                                instance[1], instance[0])
+
+            platform_config = create_platform_config_file()
 
             # Submit a task to run the simulation instance, which is another
             # IPS run pointed to that config file.
