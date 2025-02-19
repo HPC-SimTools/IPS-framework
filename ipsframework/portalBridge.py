@@ -13,7 +13,7 @@ from collections import defaultdict
 from multiprocessing import Event, Pipe, Process
 from multiprocessing.connection import Connection
 from multiprocessing.synchronize import Event as EventType
-from typing import Any
+from typing import Any, Callable
 
 import urllib3
 
@@ -99,7 +99,7 @@ def send_post_data(conn: Connection, stop: EventType, url: str):
             break
 
 
-def send_post_jupyter_url(conn: Connection, stop: EventType, url: str):
+def send_jupyter_notebook(conn: Connection, stop: EventType, url: str, api_key: str, username: str):
     fail_count = 0
 
     http = urllib3.PoolManager(retries=urllib3.util.Retry(3, backoff_factor=0.25))
@@ -112,9 +112,13 @@ def send_post_jupyter_url(conn: Connection, stop: EventType, url: str):
                 resp = http.request(
                     'POST',
                     url,
-                    body=json.dumps({'url': next_val['url'], 'portal_runid': next_val['portal_runid']}).encode(),
+                    body=next_val['data'],
                     headers={
-                        'Content-Type': 'application/json',
+                        'X-Api-Key': api_key,
+                        'Content-Type': 'application/octet-stream',
+                        'X-Ips-Username': username,
+                        'X-Ips-Portal-Runid': next_val['portal_runid'],
+                        'X-Ips-Filename': next_val['filename'],
                     },
                 )
             except urllib3.exceptions.MaxRetryError as e:
@@ -129,6 +133,59 @@ def send_post_jupyter_url(conn: Connection, stop: EventType, url: str):
                 break
         elif stop.is_set():
             break
+
+
+def send_jupyter_notebook_data(conn: Connection, stop: EventType, url: str, api_key: str, username: str):
+    fail_count = 0
+
+    http = urllib3.PoolManager(retries=urllib3.util.Retry(3, backoff_factor=0.25))
+
+    while True:
+        if conn.poll(0.1):
+            next_val: dict[str, Any] = conn.recv()
+            # TODO - consider using multipart/form-data instead
+            try:
+                headers = {
+                    'X-Api-Key': api_key,
+                    'Content-Type': 'application/octet-stream',
+                    'X-Ips-Username': username,
+                    'X-Ips-Portal-Runid': next_val['portal_runid'],
+                    'X-Ips-Filename': next_val['filename'],
+                    'X-Ips-Tag': str(next_val['tag']),
+                }
+                if next_val['replace']:
+                    headers['X-Ips-Replace'] = 'true'
+                resp = http.request(
+                    'POST',
+                    url,
+                    body=next_val['data'],
+                    headers=headers,
+                )
+            except urllib3.exceptions.MaxRetryError as e:
+                fail_count += 1
+                conn.send((999, str(e)))
+            else:
+                conn.send((resp.status, resp.data.decode()))
+                fail_count = 0
+
+            if fail_count >= 3:
+                conn.send((-1, 'Too many consecutive failed connections'))
+                break
+        elif stop.is_set():
+            break
+
+
+class UrlRequestProcessManager:
+    def __init__(self, target: Callable, *args):
+        """
+        Params:
+          - target: the function you want to call
+          - *args: list of the arguments you will call the function with
+        """
+        self.parent_conn, self.child_conn = Pipe()
+        self.childProcessStop = Event()
+        self.childProcess = Process(target=target, args=(self.child_conn, self.childProcessStop, *args))
+        self.childProcess.start()
 
 
 class PortalBridge(Component):
@@ -171,14 +228,9 @@ class PortalBridge(Component):
         self.childProcess = None
         self.childProcessStop = None
         self.parent_conn = None
-        self.data_first_event = True
-        self.data_childProcess = None
-        self.data_childProcessStop = None
-        self.data_parent_conn = None
-        self.dataurl_first_event = True
-        self.dataurl_childProcess = None
-        self.dataurl_childProcessStop = None
-        self.dataurl_parent_conn = None
+        self.url_manager_data = None
+        self.url_manager_jupyter_notebook = None
+        self.url_manager_jupyter_data = None
         self.mpo = None
         self.mpo_name_counter = defaultdict(lambda: 0)
         self.counter = 0
@@ -196,6 +248,10 @@ class PortalBridge(Component):
         """
         try:
             self.portal_url = self.PORTAL_URL
+        except AttributeError:
+            pass
+        try:
+            self.portal_api_key = self._IPS_PORTAL_API_KEY
         except AttributeError:
             pass
         self.services.subscribe('_IPS_MONITOR', 'process_event')
@@ -263,14 +319,22 @@ class PortalBridge(Component):
         else:
             portal_data['phystimestamp'] = sim_data.phys_time_stamp
 
+        if portal_data['eventtype'] == 'PORTAL_REGISTER_NOTEBOOK':
+            with open(portal_data['data_source'], 'rb') as f:
+                portal_data['data'] = f.read()
+            self.send_jupyter_notebook(sim_data, portal_data)
+            return
+
+        if portal_data['eventtype'] == 'PORTAL_ADD_JUPYTER_DATA':
+            with open(portal_data['data_source'], 'rb') as f:
+                portal_data['data'] = f.read()
+            self.send_notebook_data(sim_data, portal_data)
+            return
+
         portal_data['portal_runid'] = sim_data.portal_runid
 
         if portal_data['eventtype'] == 'PORTAL_DATA':
             self.send_data(sim_data, portal_data)
-            return
-
-        if portal_data['eventtype'] == 'PORTAL_REGISTER_NOTEBOOK':
-            self.send_notebook_url(sim_data, portal_data)
             return
 
         if portal_data['eventtype'] == 'IPS_SET_MONITOR_URL':
@@ -378,30 +442,15 @@ class PortalBridge(Component):
             else:
                 self.services.error('Portal Error: %d %s', code, msg)
 
-    def send_data(self, sim_data, event_data):
-        """
-        Send contents of *event_data* and *sim_data* to portal.
-        """
+    def http_req_and_response(self, manager: UrlRequestProcessManager, event_data):
+        try:
+            manager.parent_conn.send(event_data)
+        except OSError:
+            pass
 
-        if self.portal_url:
-            if self.data_first_event:  # First time, launch sendPost.py daemon
-                self.data_parent_conn, child_conn = Pipe()
-                self.data_childProcessStop = Event()
-                self.data_childProcess = Process(target=send_post_data, args=(child_conn, self.data_childProcessStop, self.portal_url + '/api/data'))
-                self.data_childProcess.start()
-                self.data_first_event = False
-
+        while manager.parent_conn.poll():
             try:
-                self.data_parent_conn.send(event_data)
-            except OSError:
-                pass
-
-            self.check_data_send_post_responses()
-
-    def check_data_send_post_responses(self):
-        while self.data_parent_conn.poll():
-            try:
-                code, msg = self.data_parent_conn.recv()
+                code, msg = manager.parent_conn.recv()
             except (EOFError, OSError):
                 break
 
@@ -409,44 +458,35 @@ class PortalBridge(Component):
                 # disable portal, stop trying to send more data
                 self.portal_url = None
                 self.services.error('Disabling portal because: %s', msg)
-            elif code < 400:
                 self.services.debug('Portal Response: %d %s', code, msg)
             else:
                 self.services.error('Portal Error: %d %s', code, msg)
 
-    def send_notebook_url(self, sim_data, event_data):
+    def send_data(self, sim_data, event_data):
         """
-        Send notebook contents
+        Send contents of *event_data* and *sim_data* to portal.
         """
+
         if self.portal_url:
-            if self.dataurl_first_event:  # First time, launch sendPost.py daemon
-                self.dataurl_parent_conn, child_conn = Pipe()
-                self.dataurl_childProcessStop = Event()
-                self.dataurl_childProcess = Process(
-                    target=send_post_jupyter_url, args=(child_conn, self.dataurl_childProcessStop, self.portal_url + '/api/data/add_url')
+            if not self.url_manager_data:
+                self.url_manager_data = UrlRequestProcessManager(send_post_data, self.portal_url + '/api/data')
+            self.http_req_and_response(self.url_manager_data, event_data)
+
+    def send_jupyter_notebook(self, sim_data, event_data):
+        if self.portal_url and self.portal_api_key:
+            if not self.url_manager_jupyter_notebook:
+                self.url_manager_jupyter_notebook = UrlRequestProcessManager(
+                    send_jupyter_notebook, self.portal_url + '/api/data/add_notebook', self.portal_api_key, self.USER
                 )
-                self.dataurl_childProcess.start()
-                self.dataurl_first_event = False
+            self.http_req_and_response(self.url_manager_jupyter_notebook, event_data)
 
-            try:
-                self.dataurl_parent_conn.send(event_data)
-            except OSError:
-                pass
-
-            while self.dataurl_parent_conn.poll():
-                try:
-                    code, msg = self.dataurl_parent_conn.recv()
-                except (EOFError, OSError):
-                    break
-
-                if code == -1:
-                    # disable portal, stop trying to send more data
-                    self.portal_url = None
-                    self.services.error('Disabling portal because: %s', msg)
-                elif code < 400:
-                    self.services.debug('Portal Response: %d %s', code, msg)
-                else:
-                    self.services.error('Portal Error: %d %s', code, msg)
+    def send_notebook_data(self, sim_data, event_data):
+        if self.portal_url and self.portal_api_key:
+            if not self.url_manager_jupyter_data:
+                self.url_manager_jupyter_data = UrlRequestProcessManager(
+                    send_jupyter_notebook_data, self.portal_url + '/api/data/add_data_file', self.portal_api_key, self.USER
+                )
+            self.http_req_and_response(self.url_manager_jupyter_data, event_data)
 
     def send_mpo_data(self, event_data, sim_data):  # pragma: no cover
         def md5(fname):
@@ -601,6 +641,7 @@ class PortalBridge(Component):
         sim_data.sim_name = sim_name
         sim_data.sim_root = sim_root
         self.services.set_config_param('_IPS_PORTAL_URL_HOST', self._IPS_PORTAL_URL_HOST, target_sim_name=sim_name)
+        self.services.set_config_param('_IPS_PORTAL_API_KEY', self._IPS_PORTAL_API_KEY, target_sim_name=sim_name)
 
         d = datetime.datetime.now()
         date_str = '%s.%03d' % (d.strftime('%Y-%m-%dT%H:%M:%S'), int(d.microsecond / 1000))

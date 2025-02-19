@@ -10,7 +10,6 @@ import json
 import logging
 import logging.handlers
 import os
-import pathlib
 import queue
 import shutil
 import signal
@@ -18,21 +17,14 @@ import subprocess
 import sys
 import threading
 import time
-import uuid
 import weakref
 from collections import namedtuple
 from operator import iadd, itemgetter
-from typing import Any, Callable, Iterable, List, Optional, Union
+from typing import Any, Callable, Iterable, Optional, Union
 
 from configobj import ConfigObj
 
 from . import ipsutil, messages
-from ._jupyter.initializer import (
-    initialize_jupyter_import_module_file,
-    initialize_jupyter_notebook,
-    initialize_jupyter_python_api,
-    update_module_file_with_data_files,
-)
 from .cca_es_spec import initialize_event_service
 from .ips_es_spec import eventManager
 from .taskManager import TaskInit
@@ -227,8 +219,13 @@ class ServicesProxy:
         self.ppn = 0
         self.cpp = 0
         self.shared_nodes = False
-        self._jupyterhub_dir = None
-        """This value will potentially be initialized to the JupyterHub path later on"""
+        self._portal_runid = -1
+        """This is the id we use on the portal to track this specific run. This will get set when receiving the IPS_START event from the portal.
+        
+        - Non-negative integer = successfully initialized
+        - -1 = portal not yet contacted
+        - -2 = portal initialization failed
+        """
 
     def __initialize__(self, component_ref):
         """
@@ -1801,177 +1798,130 @@ class ServicesProxy:
         self.monitor_url = url
         self._send_monitor_event(eventType='IPS_SET_MONITOR_URL', comment='SUCCESS')
 
-    def _get_jupyter_host_directory(self) -> str:
+    def _get_jupyter_runid(self) -> int:
         """Get the runid Jupyter will associate with this run.
-        Generally this will be the portal url's hostname, but we will try to allow for fallbacks in certain cases.
-        """
-        try:
-            return self.get_config_param('_IPS_PORTAL_URL_HOST')
-        except Exception:
-            self.warning('_get_jupyter_host_directory: PORTAL_URL_HOST was not defined, falling back to random ID')
-            return str(uuid.uuid4())
+        Generally this will be the runid that the portal emits, but we will try to allow for fallbacks in certain cases.
 
-    def _get_jupyter_runid(self) -> str:
-        """Get the runid Jupyter will associate with this run.
-        Generally this will be the Portal RUNID but we will try to allow for fallbacks in certain cases.
+        If value is < 0, we were unable to get the portal runid.
         """
+
+        # already successful
+        if self._portal_runid >= 0:
+            return self._portal_runid
+
+        # already failed
+        if self._portal_runid == -2:
+            return -2
 
         # first, check to see if the portal URL was even initialized, fall back if not
         try:
             self.get_config_param('_IPS_PORTAL_URL_HOST')
         except Exception:
-            self.warning('_get_jupyter_runid: PORTAL_URL was not defined, falling back to random ID')
-            return str(uuid.uuid4())
+            self.warning('_get_jupyter_runid: PORTAL_URL was not defined, disabling Jupyter workflow')
+            self._portal_runid = -2
+            return -2
 
-        # see if the portal response has updated
+        # next, check to see if the user remembered to define an API key (adding data requires a runid)
+        try:
+            self.get_config_param('_IPS_PORTAL_API_KEY')
+        except Exception:
+            self.warning('_get_jupyter_runid: PORTAL_API_KEY was not defined, disabling Jupyter workflow')
+            self._portal_runid = -2
+            return -2
+
+        # Here, we will periodically check to see if we have our config param set
+        # The IPS Portal Bridge component will set this after it gets a response back from the IPS_START event
+        # Inside this IPS_START event is the runid as maintained by the IPS Portal itself
         attempts = 0
         max_attempts = 30
         while True:
             try:
-                return self.get_config_param('_IPS_PORTAL_RUNID')
+                # TODO we would ideally not log this
+                value = self.get_config_param('_IPS_PORTAL_RUNID')
+                try:
+                    value = int(value)
+                except Exception:
+                    self.warning('got back invalid value for runid from portal')
+                    self._portal_runid = -2
+                    return -2
+                self._portal_runid = value
+                return value
             except Exception:
                 attempts += 1
                 if attempts >= max_attempts:
-                    break
+                    self.warning('_get_jupyter_runid: Unable to get RUNID directly from remote portal, disabling Jupyter workflow')
+                    self._portal_runid = -2
+                    return -2
                 time.sleep(1.0)
-
-        # at this point, we must fall back to using an ID the framework generates
-        self.warning('_get_jupyter_runid: Unable to get RUNID directly from remote portal, using fallback identifier')
-        try:
-            return self.get_config_param('PORTAL_RUNID')
-        except Exception:
-            # this code shouldn't execute unless the user forgot a configuration value somewhere
-            self.warning(
-                '_get_jupyter_runid: PORTAL_RUNID not defined - the simulation configuration probably forgot to specify PORTAL_URL and USE_PORTAL. Using randomly generated ID instead'
-            )
-            return str(uuid.uuid4())
-
-    def _init_jupyter(self) -> bool:
-        """
-        initialization logic for Jupyter directory, should only execute once per Component.
-
-        return true if init successful, false if we shouldn't proceed with further Jupyter
-        """
-        root_dir: str = self.get_config_param('JUPYTERHUB_DIR')
-        if not root_dir:
-            self.warning('JUPYTERHUB_DIR was not defined, skipping Jupyter config')
-            return False
-        if not os.path.isabs(root_dir):
-            self.warning('JUPYTERHUB_DIR should be an absolute path, skipping Jupyter config')
-            return False
-
-        root_dir = os.path.join(root_dir, 'ipsframework', 'runs', self._get_jupyter_host_directory(), self._get_jupyter_runid()) + os.path.sep
-
-        # TODO - it may make sense to also reattempt to create this, especially with long simulations
-        try:
-            os.makedirs(os.path.join(root_dir, 'data'), exist_ok=True)
-        except OSError as e:
-            self.warning(f'Could not make directories with provided JUPYTERHUB_DIR value "{root_dir}", full error: {e}')
-            return False
-
-        self._jupyterhub_dir = root_dir
-
-        # adds module file to Jupyterhub
-        initialize_jupyter_import_module_file(self._jupyterhub_dir)
-
-        # add the shared python API if it doesn't exist
-        initialize_jupyter_python_api(str(pathlib.Path(self._jupyterhub_dir).parent))
-
-        return True
-
-    def get_staged_jupyterhub_files(self) -> List[str]:
-        """Get files which have already been saved to the JupyterHub data directory.
-
-        Raises exception only if we aren't able to create the directory, or if it was somehow deleted while running.
-        """
-        if not self._jupyterhub_dir:
-            if not self._init_jupyter():
-                # TODO generic exception
-                raise Exception('Unable to initialize base JupyterHub dir')
-
-        data_dir = pathlib.Path(pathlib.Path(self._jupyterhub_dir) / 'data')
-        return [str(p.resolve()) for p in data_dir.glob('*')]
-
-    def _get_jupyterhub_url(self) -> Optional[str]:
-        url: str = self.get_config_param('JUPYTERHUB_URL')
-        if not url:
-            self.warning('JUPYTERHUB_URL was not defined in config file, skipping notebook association on portal')
-            return None
-        if not url.endswith('/'):
-            url += '/'
-
-        try:
-            portal_url_host = self.get_config_param('_IPS_PORTAL_URL_HOST')
-        except Exception:
-            self.warning('PORTAL_URL was not defined, skipping JupyterHub configuration')
-            return None
-
-        runid = self._get_jupyter_runid()
-
-        url += f'ipsframework/runs/{portal_url_host}/{runid}/'
-        return url
 
     def initialize_jupyter_notebook(
         self,
-        dest_notebook_name: str,
         source_notebook_path: str,
+        dest_notebook_name: Optional[str] = None,
     ) -> None:
         """Loads a notebook from source_notebook_path, adds a cell to load the data, and then saves it to source_notebook_path. Will also try to register the notebook with the IPS Portal, if available.
 
         Does not modify the source notebook.
 
         Params:
-          - dest_notebook_name: name of the JupyterNotebook you want to write (do not include file paths).
-          - source_notebook_path: location you want to load the source notebook from
+          - source_notebook_path: location you want to load the source notebook from. This can be either an absolute path, or an IPS-appropriate relative path.
+          - dest_notebook_name: (optional, default None) name of the JupyterNotebook you want to write (do not include file paths).
         """
-        if not self._jupyterhub_dir:
-            if not self._init_jupyter():
-                raise Exception('Unable to initialize base JupyterHub dir')
-
-        # adds notebook to JupyterHub
-        initialize_jupyter_notebook(f'{self._jupyterhub_dir}{dest_notebook_name}', source_notebook_path)
-
-        # register notebook with IPS Portal
-        url = self._get_jupyterhub_url()
-        if not url:
+        portal_runid = self._get_jupyter_runid()
+        if portal_runid < 0:
             return
-        url += dest_notebook_name
+
+        if dest_notebook_name is None:
+            dest_notebook_name = os.path.basename(source_notebook_path)
+        else:
+            dest_notebook_name = os.path.basename(dest_notebook_name)
 
         event_data = {}
         event_data['sim_name'] = self.sim_conf['__PORTAL_SIM_NAME']
         event_data['real_sim_name'] = self.sim_name
 
         portal_data: dict[str, Any] = {}
-        portal_data['url'] = url
         portal_data['eventtype'] = 'PORTAL_REGISTER_NOTEBOOK'
+        portal_data['data_source'] = os.path.join(os.getcwd(), source_notebook_path) if not os.path.isabs(source_notebook_path) else source_notebook_path
+        portal_data['username'] = self.get_config_param('USER')
+        portal_data['filename'] = dest_notebook_name
+        portal_data['portal_runid'] = portal_runid
         event_data['portal_data'] = portal_data
         self.publish('_IPS_MONITOR', 'PORTAL_REGISTER_NOTEBOOK', event_data)
-        self._send_monitor_event('IPS_PORTAL_REGISTER_NOTEBOOK', f'URL = {url}')
+        self._send_monitor_event('IPS_PORTAL_REGISTER_NOTEBOOK', f'FILENAME = {dest_notebook_name}')
 
-    # TODO REMOVE new_data_file_name, make current_data_file_path string or list of strings
     def add_analysis_data_files(self, current_data_file_paths: list[str], timestamp: float = 0.0, replace: bool = False):
         """Add data file to the module file referenced by the Jupyter Notebook.
 
         Params:
-        - current_data_file_paths: location of the current data file we want to copy to the Jupyter directory. This will usually be a state file.
+        - current_data_file_paths: list of paths to the current data files we want to copy to the Jupyter directory. These paths may be either absolute paths or IPS-appropriate relative paths.
         - timestamp: label to assign to the data (currently must be a floating point value)
         - replace: If True, replace the last data file added with the new data file. If False, simply append the new data file. (default: False)
               Note that if replace is not True but you attempt to overwrite it, a ValueError will be thrown.
         """
-        if not self._jupyterhub_dir:
-            if not self._init_jupyter():
-                # TODO generic exception
-                raise Exception('Unable to initialize base JupyterHub dir')
+        portal_runid = self._get_jupyter_runid()
+        if portal_runid < 0:
+            return
 
-        destination_paths = [os.path.basename(old_fname) for old_fname in current_data_file_paths]
-        for source, destination in zip(current_data_file_paths, destination_paths):
-            full_destination = os.path.join(self._jupyterhub_dir, 'data', destination)
-            if not replace and os.path.exists(full_destination):
-                raise ValueError(f'Replacing existing filename {destination}, set replace to equal True in add_analysis_data_files if this was intended.')
-            # this may raise an OSError, it is the responsibility of the caller to handle it.
-            shutil.copyfile(source, full_destination)
+        for source in current_data_file_paths:
+            filename = os.path.basename(source)
 
-        update_module_file_with_data_files(self._jupyterhub_dir, destination_paths, replace, timestamp)
+            event_data = {}
+            event_data['sim_name'] = self.sim_conf['__PORTAL_SIM_NAME']
+            event_data['real_sim_name'] = self.sim_name
+
+            portal_data: dict[str, Any] = {}
+            portal_data['eventtype'] = 'PORTAL_ADD_JUPYTER_DATA'
+            portal_data['data_source'] = os.path.join(os.getcwd(), source) if not os.path.isabs(source) else source
+            portal_data['username'] = self.get_config_param('USER')
+            portal_data['filename'] = filename
+            portal_data['tag'] = timestamp
+            portal_data['replace'] = replace
+            portal_data['portal_runid'] = portal_runid
+            event_data['portal_data'] = portal_data
+            # TODO make sure that we do NOT log the raw data in the IPS log file
+            self.publish('_IPS_MONITOR', 'PORTAL_ADD_JUPYTER_DATA', event_data)
+            self._send_monitor_event('IPS_PORTAL_ADD_JUPYTER_DATA', f'SOURCE = {source} TIMESTAMP = {timestamp} REPLACE = {replace}')
 
     def publish(self, topicName: str, eventName: str, eventBody: Any):
         """

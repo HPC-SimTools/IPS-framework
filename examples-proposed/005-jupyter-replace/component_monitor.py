@@ -34,14 +34,10 @@ class Monitor(Component):
         with open(state_file) as f:
             analysis = json.load(f)
 
-        analysis_file_1 = f'{timestamp}_analysis.json'
+        analysis_file_1 = 'analysis.json'
         with open(analysis_file_1, 'w') as f:
             json.dump(analysis, f)
 
         self.services.add_analysis_data_files([analysis_file_1], replace=True)
-
-        raw_data = json.dumps(analysis).encode()
-        print('SEND PORTAL DATA', timestamp, raw_data, file=stderr)
-        self.services.send_portal_data(timestamp, raw_data)
 
     def finalize(self, timestamp=0.0): ...
