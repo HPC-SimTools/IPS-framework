@@ -16,6 +16,8 @@ import signal
 import glob
 import json
 import weakref
+import platform
+from string import Template
 from collections import namedtuple
 from operator import itemgetter
 from pathlib import Path
@@ -27,6 +29,7 @@ from .taskManager import TaskInit
 from . import messages, ipsutil
 from .cca_es_spec import initialize_event_service
 from .ips_es_spec import eventManager
+from .platformspec import platform_config_template
 
 
 RunningTask = namedtuple("RunningTask", ["process", "start_time", "timeout", "nproc", "cores_allocated", "command", "binary", "args"])
@@ -2215,9 +2218,62 @@ class ServicesProxy:
             template.filename = working_dir / Path(prefix + ".config")
             template.write()
 
-        def create_platform_config_file():
-            # TODO implement
-            return 'platform.config'
+        def create_platform_config_file(prefix, working_dir, **kwargs):
+            """
+            Create a platform config file for the ensemble instance.
+
+            TODO consider moving to platformspec.py since this is platform
+            specific.
+
+            :param prefix: instance string prefix for file names
+            :param working_dir: in which to put the platform config file
+            :param kwargs: optional platform specific parameters
+            :returns: platform config file name
+            """
+            platform_config_file_path = working_dir / Path(prefix + "_platform.config")
+            self.debug(f'Creating platform config file {platform_config_file_path}')
+
+            # define hostname
+            hostname = platform.node()
+
+            # define mpirun
+            mpirun = 'eval'
+
+            # define node_detection
+            node_detection = 'manual'
+
+            # define total processors
+            total_processors = 1
+
+            # define number of nodes
+            number_of_nodes = 1
+
+            # define number of processors per node
+            processors_per_node = 1
+
+            # define cores per node
+            cores_per_node = 1
+
+            # define sockets per node
+            sockets_per_node = 1
+
+            # define node allocation mode
+            node_allocation_mode = 'shared'
+
+            this_platform_config_template = Template(platform_config_template)
+            platform_config = this_platform_config_template.substitute(
+                hostname=hostname, mpirun=mpirun, node_detection=node_detection,
+                total_procs=total_processors, nodes=number_of_nodes,
+                procs_per_node=processors_per_node,
+                cores_per_node=cores_per_node,
+                sockets_per_node=sockets_per_node,
+                node_allocation_mode=node_allocation_mode)
+
+            with platform_config_file_path.open('w') as platform_config_file:
+                platform_config_file.write(platform_config)
+
+            return platform_config_file_path
+
 
         self.info(f'Preparing to run ensembles in {run_dir}')
 
@@ -2252,16 +2308,20 @@ class ServicesProxy:
             # variables that need to be substituted into the template.  We
             # copy the template because we will want to start fresh with each
             # instance, particularly because part of the error checking is to
-            # ensure that all the variables have been assigned.
+            # ensure that all the variables have been assigned.  The first
+            # instance element contains the ensemble instance name.
             create_driver_config_file(deepcopy(template_config), working_dir,
                                instance[1], instance[0])
 
-            platform_config = create_platform_config_file()
+            # Create the bespoke platform config file for this instance
+            # TODO will need to add in support for different platforms
+            platform_config = create_platform_config_file(instance[0],
+                                                          working_dir)
 
             # Submit a task to run the simulation instance, which is another
             # IPS run pointed to that config file.
             args = (f'--simulation={working_dir / Path(instance[0] + ".config")} '
-                    f'--log={log_file} --platform={platform_config}')
+                    f'--log={log_file} --platform={str(platform_config)}')
 
             self.add_task(task_pool_name, instance[0], 1,
                           working_dir, 'ips.py', args)
