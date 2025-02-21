@@ -433,14 +433,14 @@ class PortalBridge(Component):
                 msg = json.dumps(data)
             except (TypeError, json.decoder.JSONDecodeError):
                 pass
-            if code == 200:
-                self.services.debug('Portal Response: %d %s', code, msg)
+            if code >= 400:
+                self.services.error('Portal Error: %d %s', code, msg)
             elif code == -1:
                 # disable portal, stop trying to send more data
                 self.portal_url = None
                 self.services.error('Disabling portal because: %s', msg)
             else:
-                self.services.error('Portal Error: %d %s', code, msg)
+                self.services.debug('Portal Response: %d %s', code, msg)
 
     def http_req_and_response(self, manager: UrlRequestProcessManager, event_data):
         try:
@@ -458,9 +458,10 @@ class PortalBridge(Component):
                 # disable portal, stop trying to send more data
                 self.portal_url = None
                 self.services.error('Disabling portal because: %s', msg)
-                self.services.debug('Portal Response: %d %s', code, msg)
-            else:
+            elif code >= 400:
                 self.services.error('Portal Error: %d %s', code, msg)
+            else:
+                self.services.debug('Portal Response: %d %s', code, msg)
 
     def send_data(self, sim_data, event_data):
         """

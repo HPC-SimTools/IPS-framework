@@ -1,7 +1,7 @@
 Jupyter
 =======
 
-The IPS Framework supports automatically creating Juypter-based workflows. If the IPS simulation is executed on a platform with JupyterHub installed, you can automatically add notebooks and data to your JupyterHub directory.
+The IPS Framework supports automatically creating Juypter-based workflows. You can automatically upload Jupyter Notebooks and associated data files to the IPS Portal, which will in turn upload these to the appropriate JupyterHub directory.
 
 **Configuration File**
 
@@ -9,23 +9,7 @@ The following variables are additional variables which are mandatory for an IPS 
 
 *PORTAL_URL* - This should be the hostname of the IPS web portal you are interacting with (do not include any subpath). The IPS Portal will associate your run with a specific ID, which is used on JupyterHub/JupyterLab .
 
-*JUPYTERHUB_DIR* - This is the base directory for your JupyterHub or JupyterLab web server. This MUST be an absolute directory.
-
-*JUPYTERHUB_URL* - This is the base URL for your JupyterHub web server, i.e. "https://yourdomain.com/lab/tree/var/www/jupyterlab"
-
-It is recommended that you configure *INPUT_DIR* as well, and place any notebook templates as IPS input files.
-
-**Configuration File - NERSC specific information**
-
-The IPS Framework is agnostic as to *specific* JupyterHub implementations, but at time of writing we expect most users will be running simulations and viewing Jupyter Notebooks on NERSC. Below is some specific information about NERSC:
-
-*JUPYTERHUB_DIR* - You can generally just set this to ${PSCRATCH}, which is an environment variable pre-set on NERSC systems.
-
-*JUPYTERHUB_URL* - You can usually just set this to https://jupyter.nersc.gov/user/${USER}/perlmutter-login-node-base/lab/tree${PSCRATCH} . Some notes on this:
-
-    - The "/user/${USER}" URL path authenticates through NERSC Shibboleth as ${USER} , so you will need to make sure that anyone who clicks on this URL can authenticate as the user or knows to replace the username with their own.
-    - By default, the notebooks will be executed on the login nodes. If the notebooks should be executed on a different node, replace "perlmutter-login-node-base" with the appropriate node name.
-    - The directory path after "/lab/tree" needs to have read and execute permissions for the NERSC Shibboleth user. For users to access the Jupyter Notebook through either JupyterHub OR directly on the server, you will have to manually `chmod 755` or `chmod 750` your $PSCRATCH/ipsframework/runs directory and set Unix group ownerships as necessary.
+*PORTAL_API_KEY* - To use the JupyterHub capabilities of the IPS Portal, an API key is required. This API key should not be committed directly to a public version control repository.
 
 **Notebook Input File information**
 
@@ -100,18 +84,18 @@ Or, if you only want to maintain a single timestamp, set the "replace" flag to T
 
 "Replace" will allow you to completely overwrite an existing timestamp entry with new data. If you don't set the flag but try to overwrite a specific timestamp, a ValueError is raised.
 
-Note that if you attempt to overwrite an existing data file without setting `replace=True`, a ValueError will be raised.
+Note that if you attempt to overwrite an existing data file without setting `replace=True`, the file will not be overwritten remotely. You can check your IPS log file for "Portal Error" statements.
 
 **JupyterHub Filesystem Notes**
 
-Inside of ${JUPYTERHUB_DIR}/ipsframework/runs, a directory structure may look like this:
+The IPS Portal will always be reading and writing files to a specific directory on a JupyterHub filesystem. From there, the filesystem organization will look somewhat like this:
 
 .. code-block:: bash
     
     .
-    ├── https://example-portal-url.com
-    └── https://lb.ipsportal.development.svc.spin.nersc.org/
-        ├── 1
+    ├── username1
+    └── username2
+        ├── 1   # this is the runid as tracked by the IPS Portal
         │   ├── basic.ipynb
         │   ├── bokeh-plots.ipynb
         │   ├── data
@@ -155,11 +139,9 @@ Inside of ${JUPYTERHUB_DIR}/ipsframework/runs, a directory structure may look li
         ├── api_v1_notebook.ipynb
         └── api_v1.py
 
-- The IPS Framework will only modify files inside of ${JUPYTERHUB_DIR}/ipsframework/runs/
-- From this directory, runs are divided by specific web portal hostnames, as runids are determined by a web portal.
-- From the ${JUPYTERHUB_DIR}/ipsframework/runs/${PORTAL_URL} directory, the directory tree will continue based on runids. Note that files titled `api_v*.py` and `api_v*_notebook.ipynb` will be added to this directory as well. These files may potentially be overwritten by the framework, but should always be done so in a backwards compatible manner.
-- From the ${JUPYTERHUB_DIR}/ipsframework/runs/${PORTAL_URL}/${RUNID} directory, a few additional files will be added:
-    - Notebooks generated from your input notebooks.
+- From base directory, runs are organized into specific usernames.
+- From the username directory, the directory tree will continue based on runids as managed by the IPS Portal. Note that files titled `api_v*.py` and `api_v*_notebook.ipynb` will be added to this directory as well. These files may potentially be overwritten by the framework, but should always be done so in a backwards compatible manner.
+- From the runid directory, a few additional files will be added:
+    - Notebooks generated from your input notebooks. You should not change its name, but may freely edit its content.
     - A `data_listing.py` Python module file which is imported from and which exports a dictionary containing a mapping of timestamps to data file names. Note that this file is likely to be modified during a run, do NOT change it yourself unless you're sure the run has been finalized.
-    - A `data` directory which will contain all data files you added during the run. (Note that the data files are determined on the domain science side, and can be of any content-type, not just JSON.)
-
+    - A `data` directory which will contain all data files you added during the run. (Note that the data files are determined on the domain science side, and can be of any content-type, not just JSON.) You should not change the names of these files.
