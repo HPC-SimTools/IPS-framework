@@ -51,12 +51,6 @@ class ensemble_driver(Component):
         if not template.exists():
             raise RuntimeError(f'{template} config template file does not exist')
 
-        # PLATFORM_CONFIG_FILE is a variable that points to the platform
-        # config file used by the ensembles.  This could be the same
-        # platform config file used for this driver, but it doesn't have to be.
-        platform_config = self.config['PLATFORM_CONFIG_FILE']
-        self.services.info(f'Using platform config file {platform_config}')
-
         # Specifies different sets of variable values for concurrent ensemble
         # runs for two different components, 'a_sim_comp' and
         # 'another_sim_comp', that correspond to two different coupled
@@ -79,7 +73,6 @@ class ensemble_driver(Component):
         mapping = self.services.run_ensemble(template,
                                              variables,
                                              run_dir,
-                                             platform_config,
                                              prefix)
 
         self.services.info(f'Mapping of dirs to parameters: {mapping!s}')
