@@ -2152,7 +2152,7 @@ class ServicesProxy:
             :param variables: component parameters that need to be plugged
                 into the template
             :param prefix: instance string prefix for file names
-            :returns: None
+            :returns: The file name of the created driver config file
             """
             # We need to plug in the variables, so we need to find the section
             # for a each component, and then find the corresponding variables
@@ -2215,8 +2215,12 @@ class ServicesProxy:
                                                f'{section} has not been assigned')
 
             template['LOG_FILE'] = working_dir / Path(prefix + "_run.log")
-            template.filename = working_dir / Path(prefix + ".config")
+            template_filename = working_dir / Path(prefix + ".config")
+            template.filename = template_filename
             template.write()
+
+            return template_filename
+
 
         def create_platform_config_file(prefix, working_dir, **kwargs):
             """
@@ -2310,18 +2314,19 @@ class ServicesProxy:
             # instance, particularly because part of the error checking is to
             # ensure that all the variables have been assigned.  The first
             # instance element contains the ensemble instance name.
-            create_driver_config_file(deepcopy(template_config), working_dir,
-                               instance[1], instance[0])
+            simulation_filename = create_driver_config_file(
+                deepcopy(template_config), working_dir, instance[1],
+                instance[0])
 
             # Create the bespoke platform config file for this instance
             # TODO will need to add in support for different platforms
-            platform_config = create_platform_config_file(instance[0],
-                                                          working_dir)
+            platform_filename = create_platform_config_file(instance[0],
+                                                            working_dir)
 
             # Submit a task to run the simulation instance, which is another
             # IPS run pointed to that config file.
-            args = (f'--simulation={working_dir / Path(instance[0] + ".config")} '
-                    f'--log={log_file} --platform={str(platform_config)}')
+            args = (f'--simulation={simulation_filename} '
+                    f'--log={log_file} --platform={str(platform_filename)}')
 
             self.add_task(task_pool_name, instance[0], 1,
                           working_dir, 'ips.py', args)
