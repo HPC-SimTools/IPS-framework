@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """ Component wrapper for the ensemble example for `another_sim`. """
 from ipsframework import Component
+from doc.examples.ensembles.environment import get_platform_info
 
 
 class another_sim_comp(Component):
@@ -14,3 +15,6 @@ class another_sim_comp(Component):
 
         # Echo the parameters we're expecting, D, B, and F
         print(f'another_sim_comp parameters: D={self.D}, B={self.B}, F={self.F}')
+
+        run_env = get_platform_info()
+        self.services.info(run_env)
