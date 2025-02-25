@@ -20,7 +20,7 @@ class a_sim_comp(Component):
         # print(f'services={self.services} and type {type(self.services)}')
         # This function is a lie in that the interface says it wants services
         # when it really needs a configuration manager reference, and one
-        # cannot get that from a Context object.
+        # cannot get that from a Component object.
         # list_of_nodes, cpn, spn, ppn, accurate_nodes = getResourceList(self.services,
         #                                                                host="")
         # print(f'list_of_nodes={list_of_nodes}')
