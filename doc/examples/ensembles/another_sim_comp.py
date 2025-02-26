@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """ Component wrapper for the ensemble example for `another_sim`. """
 from ipsframework import Component
-from doc.examples.ensembles.environment import get_platform_info
+from ipsframework.resourceHelper import get_platform_info
 
 
 class another_sim_comp(Component):
