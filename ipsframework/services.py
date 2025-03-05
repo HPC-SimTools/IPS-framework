@@ -1815,7 +1815,7 @@ class ServicesProxy:
 
         # first, check to see if the portal URL was even initialized, fall back if not
         try:
-            self.get_config_param('_IPS_PORTAL_URL_HOST')
+            self.get_config_param('_IPS_PORTAL_URL_HOST', silent=True)
         except Exception:
             self.warning('_get_jupyter_runid: PORTAL_URL was not defined, disabling Jupyter workflow')
             self._portal_runid = -2
@@ -1823,7 +1823,7 @@ class ServicesProxy:
 
         # next, check to see if the user remembered to define an API key (adding data requires a runid)
         try:
-            self.get_config_param('_IPS_PORTAL_API_KEY')
+            self.get_config_param('_IPS_PORTAL_API_KEY', silent=True)
         except Exception:
             self.warning('_get_jupyter_runid: PORTAL_API_KEY was not defined, disabling Jupyter workflow')
             self._portal_runid = -2
@@ -1837,7 +1837,7 @@ class ServicesProxy:
         while True:
             try:
                 # TODO we would ideally not log this
-                value = self.get_config_param('_IPS_PORTAL_RUNID')
+                value = self.get_config_param('_IPS_PORTAL_RUNID', silent=True)
                 try:
                     value = int(value)
                 except Exception:
