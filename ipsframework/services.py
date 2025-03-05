@@ -1815,7 +1815,7 @@ class ServicesProxy:
 
         # first, check to see if the portal URL was even initialized, fall back if not
         try:
-            self.get_config_param('_IPS_PORTAL_URL_HOST', silent=True)
+            self.get_config_param('PORTAL_URL', silent=True)
         except Exception:
             self.warning('_get_jupyter_runid: PORTAL_URL was not defined, disabling Jupyter workflow')
             self._portal_runid = -2

@@ -246,8 +246,6 @@ class ConfigurationManager:
                 # Override platform value for PORTAL_URL if in simulation
                 if 'PORTAL_URL' in conf:
                     self.platform_conf['PORTAL_URL'] = conf['PORTAL_URL']
-                    if '_IPS_PORTAL_URL_HOST' in conf:
-                        self.platform_conf['_IPS_PORTAL_URL_HOST'] = conf['_IPS_PORTAL_URL_HOST']
                     if 'PORTAL_API_KEY' in conf:
                         self.platform_conf['_IPS_PORTAL_API_KEY'] = conf['PORTAL_API_KEY']
 
@@ -388,15 +386,6 @@ class ConfigurationManager:
             portal_conf['PORTAL_URL'] = self.get_platform_parameter('PORTAL_URL', silent=True)
 
             if portal_conf['PORTAL_URL']:
-                from urllib.parse import urlparse
-
-                parsed_url = urlparse(portal_conf['PORTAL_URL'])
-                if parsed_url.port:  # get the host but be sure to strip out the username/password, so don't use netloc
-                    # don't use colons in filepaths
-                    portal_url_host = f'{parsed_url.hostname}_{parsed_url.port}'
-                else:
-                    portal_url_host = parsed_url.hostname
-                portal_conf['_IPS_PORTAL_URL_HOST'] = portal_url_host
                 portal_conf['_IPS_PORTAL_API_KEY'] = self.get_platform_parameter('_IPS_PORTAL_API_KEY', silent=True)
 
             component_id = self._create_component(portal_conf, self.sim_map[self.fwk_sim_name])

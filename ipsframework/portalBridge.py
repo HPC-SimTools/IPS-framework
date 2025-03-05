@@ -641,7 +641,6 @@ class PortalBridge(Component):
         sim_data = self.SimulationData()
         sim_data.sim_name = sim_name
         sim_data.sim_root = sim_root
-        self.services.set_config_param('_IPS_PORTAL_URL_HOST', self._IPS_PORTAL_URL_HOST, target_sim_name=sim_name)
         self.services.set_config_param('_IPS_PORTAL_API_KEY', self._IPS_PORTAL_API_KEY, target_sim_name=sim_name)
 
         d = datetime.datetime.now()
