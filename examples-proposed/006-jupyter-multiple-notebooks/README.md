@@ -10,8 +10,6 @@ This example creates two notebooks: a simple one which prints out the data in a 
 
 ## Instructions
 
-Note that this example uses the module syntax, as opposed to the script syntax.
-
 To install, you can run:
 
 ```bash
@@ -33,5 +31,3 @@ EXAMPLE_REPLACE=1 ./run.sh
 ```
 
 There is also a script `run-delayed.sh` which you can use instead of `run.sh` if you would like to simulate a delay between monitor steps.
-
-If executing `run.sh`, the script will output files into the directory defined by the `PSCRATCH` environment variable (or `/tmp` if this variable is not defined).

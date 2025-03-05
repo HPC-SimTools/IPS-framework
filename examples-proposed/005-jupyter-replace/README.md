@@ -8,8 +8,6 @@ Additionally, the `Monitor` component in `component_monitor.py` showcases an exa
 
 ## Instructions
 
-Note that this example uses the module syntax, as opposed to the script syntax.
-
 To install, you can run:
 
 ```bash
@@ -27,5 +25,3 @@ To run the code, run:
 By default, this example will always _replace_ a state file.
 
 There is also a script `run-delayed.sh` which you can use instead of `run.sh` if you would like to simulate a delay between monitor steps.
-
-If executing `run.sh`, the script will output files into the directory defined by the `PSCRATCH` environment variable (or `/tmp` if this variable is not defined).

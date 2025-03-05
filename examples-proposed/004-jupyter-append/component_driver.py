@@ -10,8 +10,6 @@ DELAY = bool(os.environ.get('EXAMPLE_DELAY'))
 class Driver(Component):
     """In this example, the driver iterates through the time loop and calls both the worker and the monitor component on each timestep."""
 
-    # TODO put delay inside driver instead of another component
-
     def init(self, timestamp=0.0):
         self.worker = self.services.get_port('WORKER')
         self.monitor = self.services.get_port('MONITOR')
