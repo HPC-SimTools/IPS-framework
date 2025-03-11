@@ -2154,6 +2154,11 @@ class ServicesProxy:
             :param prefix: instance string prefix for file names
             :returns: The file name of the created driver config file
             """
+            # As a convenience, assign the ensemble instance name to
+            # ENSEMBLE_INSTANCE so that the user can optionally use that string
+            # in their reporting.
+            template['ENSEMBLE_INSTANCE'] = prefix
+
             # We need to plug in the variables, so we need to find the section
             # for a each component, and then find the corresponding variables
             # to then assign the associated value.
