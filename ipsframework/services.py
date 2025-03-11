@@ -2337,7 +2337,7 @@ class ServicesProxy:
                           working_dir, 'ips.py', args)
 
         try:
-            num_submitted = self.submit_tasks(task_pool_name, block=True,
+            num_submitted = self.submit_tasks(task_pool_name, block=False,
                                               use_dask=False, dask_nodes=1,
                                               dask_ppw=None,
                                               launch_interval=0.0,
