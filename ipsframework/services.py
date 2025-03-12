@@ -2338,7 +2338,7 @@ class ServicesProxy:
 
         try:
             num_submitted = self.submit_tasks(task_pool_name, block=True,
-                                              use_dask=True, dask_nodes=1,
+                                              use_dask=False, dask_nodes=1,
                                               dask_ppw=None,
                                               launch_interval=0.0,
                                               use_shifter=False,
