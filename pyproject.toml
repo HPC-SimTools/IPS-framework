@@ -64,8 +64,6 @@ ignore = [
     'COM812',  # formatter, handled by Ruff format
     'ISC001',  # formatter, handled by Ruff format
     'SIM105',  # "with contextlib.suppress():" is slower than try-except-pass
-    'ANN101',  # don't need to annotate "self" typing
-    'ANN102',  # don't need to annotate "cls" typing for class methods
     'ANN401',  # allow explicit "Any" typing, use with care
     'PLR2004', # allow "magic numbers"
     'PLR0911', # allow "too many return statements"
