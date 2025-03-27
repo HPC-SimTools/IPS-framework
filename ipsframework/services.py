@@ -2502,10 +2502,10 @@ class TaskPool:
 
         if use_shifter:
             if shifter_args:
-                self.dask_sched_pid = subprocess.Popen([self.shifter, shifter_args, "dask-scheduler", "--no-dashboard",
+                self.dask_sched_pid = subprocess.Popen([self.shifter, shifter_args, self.dask_scheduler, "--no-dashboard",
                                                         "--scheduler-file", self.dask_file_name, "--port", "0"]).pid
             else:
-                self.dask_sched_pid = subprocess.Popen([self.shifter, "dask-scheduler", "--no-dashboard",
+                self.dask_sched_pid = subprocess.Popen([self.shifter, self.dask_scheduler, "--no-dashboard",
                                                         "--scheduler-file", self.dask_file_name, "--port", "0"]).pid
 
         else:
