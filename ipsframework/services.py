@@ -2538,7 +2538,7 @@ class TaskPool:
                 self.dask_workers_tid = services.launch_task(dask_nodes, os.getcwd(),
                                                              self.shifter,
                                                              shifter_args,
-                                                             "dask-worker",
+                                                             self.dask_worker,
                                                              "--scheduler-file",
                                                              self.dask_file_name,
                                                              nworkers, 1,
@@ -2549,7 +2549,7 @@ class TaskPool:
             else:
                 self.dask_workers_tid = services.launch_task(dask_nodes, os.getcwd(),
                                                              self.shifter,
-                                                             "dask-worker",
+                                                             self.dask_worker,
                                                              "--scheduler-file",
                                                              self.dask_file_name,
                                                              nworkers, 1,
@@ -2571,7 +2571,9 @@ class TaskPool:
         self.dask_client = self.dask.distributed.Client(scheduler_file=self.dask_file_name)
 
         if dask_worker_plugin is not None:
-            self.dask_client.register_worker_plugin(dask_worker_plugin)
+            # TODO But what if there is more than one worker plugin?
+            # And what about scheduler plugins?
+            self.dask_client.register_plugin(dask_worker_plugin)
 
         try:
             self.worker_event_logfile = services.sim_name + '_' + services.get_config_param("PORTAL_RUNID") + '_' + self.name + '_{}.json'
