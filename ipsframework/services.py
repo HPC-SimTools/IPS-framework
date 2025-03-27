@@ -2368,8 +2368,17 @@ class TaskPool:
         dask = None
         distributed = None
     else:
-        dask_scheduler = shutil.which("dask-scheduler")
-        dask_worker = shutil.which("dask-worker")
+        # `dask-scheduler` and `dask-worker` are deprecated in favor of `dask
+        # scheduler` and `dask worker`; however, we will check for older
+        # Dask configuration names if we fail to find Dask command line
+        # utilities.
+        dask_scheduler = shutil.which("dask scheduler")
+        if dask_scheduler is None:
+            dask_scheduler = shutil.which('dask-scheduler')
+        dask_worker = shutil.which("dask worker")
+        if dask_worker is None:
+            dask_worker = shutil.which('dask-worker')
+
         shifter = shutil.which("shifter")
         if not dask_scheduler or not dask_worker:
             dask = None
