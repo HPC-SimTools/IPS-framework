@@ -2246,10 +2246,10 @@ class ServicesProxy:
             hostname = platform.node()
 
             # define mpirun
-            mpirun = 'eval'
+            mpirun = 'srun'
 
             # define node_detection
-            node_detection = 'manual'
+            node_detection = 'slurm_env'
 
             # define total processors
             total_processors = 1
