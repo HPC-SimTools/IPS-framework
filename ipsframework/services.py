@@ -2544,6 +2544,7 @@ class TaskPool:
                                                              nworkers, 1,
                                                              "--nthreads", nthreads,
                                                              "--no-dashboard",
+                                                             "--no-nanny",
                                                              task_ppn=task_ppn,
                                                              task_gpp=task_gpp)
             else:
@@ -2555,6 +2556,7 @@ class TaskPool:
                                                              nworkers, 1,
                                                              "--nthreads", nthreads,
                                                              "--no-dashboard",
+                                                             "--no-nanny",
                                                              task_ppn=task_ppn,
                                                              task_gpp=task_gpp)
         else:
@@ -2565,6 +2567,7 @@ class TaskPool:
                                                          nworkers, 1,
                                                          "--nthreads", nthreads,
                                                          "--no-dashboard",
+                                                         "--no-nanny",
                                                          task_ppn=task_ppn,
                                                          task_gpp=task_gpp)
 
@@ -2572,7 +2575,7 @@ class TaskPool:
 
         if dask_worker_plugin is not None:
             # TODO But what if there is more than one worker plugin?
-            # And what about scheduler plugins?
+            # TODO And what about scheduler plugins?
             self.dask_client.register_plugin(dask_worker_plugin)
 
         try:
