@@ -2252,7 +2252,7 @@ class ServicesProxy:
             node_detection = 'slurm_env'
 
             # define total processors
-            total_processors = 1
+            total_processors = 12
 
             # define number of nodes
             number_of_nodes = 1
