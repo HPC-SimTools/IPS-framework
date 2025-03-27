@@ -2336,17 +2336,16 @@ class ServicesProxy:
                           working_dir, 'ips.py', args)
 
         try:
-            # num_submitted = self.submit_tasks(task_pool_name, block=True,
-            #                                   use_dask=False, dask_nodes=1,
-            #                                   dask_ppw=None,
-            #                                   launch_interval=0.0,
-            #                                   use_shifter=False,
-            #                                   shifter_args=None,
-            #                                   dask_worker_plugin=None,
-            #                                   dask_worker_per_gpu=False)
-            # self.logger.info(f'Ran {num_submitted} ensemble tasks')
-            launched_tasks = self.launch_task_pool(task_pool_name)
-            pass
+            num_submitted = self.submit_tasks(task_pool_name, block=True,
+                                              use_dask=False, dask_nodes=1,
+                                              dask_ppw=None,
+                                              launch_interval=0.0,
+                                              use_shifter=False,
+                                              shifter_args=None,
+                                              dask_worker_plugin=None,
+                                              dask_worker_per_gpu=False)
+            self.logger.info(f'Ran {num_submitted} ensemble tasks')
+            # launched_tasks = self.launch_task_pool(task_pool_name)
         except Exception as e:
             self.critical(f'Got an exception running ensemble: {e!s}')
         finally:
