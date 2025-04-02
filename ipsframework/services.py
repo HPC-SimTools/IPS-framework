@@ -2167,7 +2167,7 @@ class ServicesProxy:
 
             # Ensure that the instance gets a unique directory for its work
             # by setting SIM_ROOT to the prefix path.
-            template['SIM_ROOT'] = Path(working_dir) / prefix
+            template['SIM_ROOT'] = Path(working_dir)
 
             # We need to plug in the variables, so we need to find the section
             # for a each component, and then find the corresponding variables
