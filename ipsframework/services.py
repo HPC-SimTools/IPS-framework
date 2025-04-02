@@ -2159,8 +2159,8 @@ class ServicesProxy:
             # in their reporting.
             template['ENSEMBLE_INSTANCE'] = prefix
 
-            if 'SIM_ROOT' in template and
-                template['SIM_ROOT'] is not None and
+            if 'SIM_ROOT' in template and \
+                template['SIM_ROOT'] is not None and \
                     template['SIM_ROOT'].strip() != '':
                 self.info(f'SIM_ROOT in template config assigned a value, '
                           f'{template["SIM_ROOT"]}, that will be ignored')
