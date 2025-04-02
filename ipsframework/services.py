@@ -2159,10 +2159,19 @@ class ServicesProxy:
             # in their reporting.
             template['ENSEMBLE_INSTANCE'] = prefix
 
+            if 'SIM_ROOT' in template and
+                template['SIM_ROOT'] is not None and
+                    template['SIM_ROOT'].strip() != '':
+                self.info(f'SIM_ROOT in template config assigned a value, '
+                          f'{template["SIM_ROOT"]}, that will be ignored')
+
+            # Ensure that the instance gets a unique directory for its work
+            # by setting SIM_ROOT to the prefix path.
+            template['SIM_ROOT'] = prefix
+
             # We need to plug in the variables, so we need to find the section
             # for a each component, and then find the corresponding variables
             # to then assign the associated value.
-
             for component in variables:
                 self.debug(f'Substituting for {component[0]}')
 
