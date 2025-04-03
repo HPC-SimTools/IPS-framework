@@ -73,7 +73,11 @@ class ensemble_driver(Component):
         mapping = self.services.run_ensemble(template,
                                              variables,
                                              run_dir,
-                                             prefix)
+                                             prefix,
+                                             total_processors=1,
+                                             num_nodes=1,
+                                             processors_per_node=1,
+                                             cores_per_node=12)
 
         self.services.info(f'Mapping of dirs to parameters: {mapping!s}')
 

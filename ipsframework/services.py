@@ -2061,9 +2061,11 @@ class ServicesProxy:
 
 
     def run_ensemble(self, template, variables, run_dir,
-                     prefix, block=True, use_dask=False, dask_nodes=1,
-                     dask_ppw=None, launch_interval=0.0, use_shifter=False, shifter_args=None,
-                     dask_worker_plugin=None, dask_worker_per_gpu=False):
+                     prefix,
+                     total_processors,
+                     num_nodes,
+                     processors_per_node,
+                     cores_per_node):
         """ Run ensemble of simulations given the template and variables.
 
         `variables` is a nested dict that looks like this:
@@ -2096,15 +2098,10 @@ class ServicesProxy:
         :param run_dir: in which to run the ensembles
         :param prefix: string to prepend to generated instance directory
             and file names
-        :param block: if True, block until all ensembles have completed
-        :param use_dask: if True, use Dask to schedule and run the ensemble
-        :param dask_nodes: number of Dask nodes to use
-        :param dask_ppw: number of processes per worker
-        :param launch_interval: interval between launching tasks
-        :param use_shifter: if True, use Shifter to run the ensemble
-        :param shifter_args: arguments to pass to Shifter
-        :param dask_worker_plugin: Dask worker plugin to use
-        :param dask_worker_per_gpu: if true, use one worker per GPU
+        :param total_processors: Total number of processors to allocate for the ensemble runs.
+        :param num_nodes: Total number of nodes to allocate for the ensemble runs.
+        :param processors_per_node: Number of processors per node
+        :param cores_per_node: Number of cores per node (FIXME processor?)
         :returns: a list of dicts mapping created subdirs to simulation names
             and their parameters
         """
@@ -2236,7 +2233,12 @@ class ServicesProxy:
             return template_filename
 
 
-        def create_platform_config_file(prefix, working_dir, **kwargs):
+        def create_platform_config_file(prefix, working_dir,
+                                        total_processors,
+                                        num_nodes,
+                                        processors_per_node,
+                                        cores_per_node,
+                                        **kwargs):
             """
             Create a platform config file for the ensemble instance.
 
@@ -2261,18 +2263,20 @@ class ServicesProxy:
             node_detection = 'slurm_env'
 
             # define total processors
-            total_processors = 12
+            total_processors = total_processors
 
             # define number of nodes
-            number_of_nodes = 1
+            number_of_nodes = num_nodes
 
             # define number of processors per node
-            processors_per_node = 1
+            processors_per_node = processors_per_node
 
             # define cores per node
-            cores_per_node = 1
+            cores_per_node = cores_per_node
 
             # define sockets per node
+            # FIXME I think this is not an important feature that
+            # should be deprecated
             sockets_per_node = 1
 
             # define node allocation mode
@@ -2334,7 +2338,11 @@ class ServicesProxy:
 
             # Create the bespoke platform config file for this instance
             platform_filename = create_platform_config_file(instance[0],
-                                                            working_dir)
+                                                            working_dir,
+                                                            total_processors,
+                                                            num_nodes,
+                                                            processors_per_node,
+                                                            cores_per_node)
 
             # Submit a task to run the simulation instance, which is another
             # IPS run pointed to that config file.
