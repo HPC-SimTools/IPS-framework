@@ -8,6 +8,8 @@
 # -------------------------------------------------------------------------------
 import os
 import sys
+import psutil
+import platform
 from .messages import Message
 
 
@@ -30,6 +32,37 @@ def get_share_and_platform(platform_file_name, ipsPathName):
             sys.exit(Message.FAILURE)
         platform_file_name = os.path.join(ipsShareDir, 'platform.conf')
         return os.path.abspath(platform_file_name), ipsShareDir
+
+
+def get_platform_info():
+    """ Get information about the platform
+
+    Used to gather runtime information about the current platform. This can be
+    be used for debugging purposes to ensure that the framework is running
+    properly for a given system.
+
+    :returns: A dictionary containing hostname, cpu count, cpu core id for
+        current running process, and available GPU devices if set
+    """
+    result = {'hostname': platform.node(),
+              'cpu_count': psutil.cpu_count(),
+              'pid': os.getpid()}
+
+    if 'CUDA_VISIBLE_DEVICES' in os.environ:
+        result['cuda_visible_devices'] = os.environ['CUDA_VISIBLE_DEVICES']
+    elif 'ROCM_VISIBLE_DEVICES' in os.environ:
+        result['rocm_visible_devices'] = os.environ['ROCM_VISIBLE_DEVICES']
+
+    try:
+        p = psutil.Process()
+        with p.oneshot():
+            result['core_id'] = p.cpu_num()
+    except:
+        # cpu_num() only available on linux (and BSD systems), so this will
+        # throw an exception on other platforms
+        pass
+
+    return result
 
 # String template used to generate the platform configuration file
 # for ensemble instances.
