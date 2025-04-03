@@ -406,6 +406,10 @@ def getResourceList(services, host, partial_nodes=False):
 def get_platform_info():
     """ Get information about the platform
 
+    Used to gather runtime information about the current platform. This can be
+    be used for debugging purposes to ensure that the framework is running
+    properly for a given system.
+
     :returns: A dictionary containing hostname, cpu count, cpu core id for
         current running process, and available GPU devices if set
     """
@@ -415,6 +419,8 @@ def get_platform_info():
 
     if 'CUDA_VISIBLE_DEVICES' in os.environ:
         result['cuda_visible_devices'] = os.environ['CUDA_VISIBLE_DEVICES']
+    elif 'ROCM_VISIBLE_DEVICES' in os.environ:
+        result['rocm_visible_devices'] = os.environ['ROCM_VISIBLE_DEVICES']
 
     try:
         p = psutil.Process()
@@ -426,4 +432,5 @@ def get_platform_info():
         pass
 
     return result
+
 
