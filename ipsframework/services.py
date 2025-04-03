@@ -2254,7 +2254,7 @@ class ServicesProxy:
             self.debug(f'Creating platform config file {platform_config_file_path}')
 
             # define hostname
-            hostname = platform.node()
+            hostname = '' # platform.node()
 
             # define mpirun
             mpirun = 'srun'
