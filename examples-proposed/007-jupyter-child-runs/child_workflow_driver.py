@@ -14,6 +14,7 @@ class ChildWorkflowDriver(Component):
         """Unique variable determined at runtime from the parent component which determines work"""
         self.cache = {}
         self.services.stage_input_files([NOTEBOOK_1_TEMPLATE])
+        self.services.initialize_jupyter_notebook(NOTEBOOK_1_TEMPLATE)
         """keep track of the work in-memory until we want to finalize"""
         self.services.info('initialized')
 

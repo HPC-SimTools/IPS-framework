@@ -86,6 +86,9 @@ ignore = [
     'D104',   # documenting packages in examples is unhelpful
     'TRY002', # examples can raise their own exception
 ]
+'examples-proposed/*.ipynb' = [
+    'F821',   # most notebooks will have an "ips_api" variable predefined, this will be fed in from the IPS framework
+]
 'tests/*' = [
     'S101',   # allow assert statements in tests
     'S106',   # don't care about credentials in tests
