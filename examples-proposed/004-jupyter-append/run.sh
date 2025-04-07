@@ -1,2 +1,3 @@
 #!/bin/sh
-PYTHONPATH=$(dirname "$0") ips.py --config=sim.conf --platform=platform.conf --log=ips.log #--debug --verbose
+cd $(dirname "$0")
+ips.py --config=sim.conf --platform=platform.conf --log=ips.log #--debug --verbose
