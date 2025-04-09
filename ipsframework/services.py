@@ -2390,20 +2390,12 @@ class TaskPool:
         distributed = None
     else:
         # `dask-scheduler` and `dask-worker` are deprecated in favor of `dask
-        # scheduler` and `dask worker`; however, we will check for older
-        # Dask configuration names if we fail to find Dask command line
-        # utilities.
-        dask_scheduler = shutil.which("dask scheduler")
-        if dask_scheduler is None:
-            dask_scheduler = shutil.which('dask-scheduler')
-        dask_worker = shutil.which("dask worker")
-        if dask_worker is None:
-            dask_worker = shutil.which('dask-worker')
+        # scheduler` and `dask worker`
+        dask_scheduler = ['dask', 'scheduler']
+        dask_worker = ['dask', 'worker']
 
         shifter = shutil.which("shifter")
-        if not dask_scheduler or not dask_worker:
-            dask = None
-            distributed = None
+
 
     def __init__(self, name, services):
         self.dask_pool = False
@@ -2523,16 +2515,16 @@ class TaskPool:
 
         if use_shifter:
             if shifter_args:
-                self.dask_sched_pid = subprocess.Popen([self.shifter, shifter_args, self.dask_scheduler, "--no-dashboard",
+                self.dask_sched_pid = subprocess.Popen([self.shifter, shifter_args, *self.dask_scheduler, "--no-dashboard",
                                                         "--no-jupyter", "--no-show",
                                                         "--scheduler-file", self.dask_file_name, "--port", "0"]).pid
             else:
-                self.dask_sched_pid = subprocess.Popen([self.shifter, self.dask_scheduler, "--no-dashboard",
+                self.dask_sched_pid = subprocess.Popen([self.shifter, *self.dask_scheduler, "--no-dashboard",
                                                         "--no-jupyter", "--no-show",
                                                         "--scheduler-file", self.dask_file_name, "--port", "0"]).pid
 
         else:
-            self.dask_sched_pid = subprocess.Popen([self.dask_scheduler, "--no-dashboard",
+            self.dask_sched_pid = subprocess.Popen([*self.dask_scheduler, "--no-dashboard",
                                                     "--no-jupyter", "--no-show",
                                                     "--scheduler-file", self.dask_file_name, "--port", "0"]).pid
 
@@ -2559,7 +2551,7 @@ class TaskPool:
                 self.dask_workers_tid = services.launch_task(dask_nodes, os.getcwd(),
                                                              self.shifter,
                                                              shifter_args,
-                                                             self.dask_worker,
+                                                             *self.dask_worker,
                                                              "--scheduler-file",
                                                              self.dask_file_name,
                                                              nworkers, 1,
@@ -2571,7 +2563,7 @@ class TaskPool:
             else:
                 self.dask_workers_tid = services.launch_task(dask_nodes, os.getcwd(),
                                                              self.shifter,
-                                                             self.dask_worker,
+                                                             *self.dask_worker,
                                                              "--scheduler-file",
                                                              self.dask_file_name,
                                                              nworkers, 1,
@@ -2582,7 +2574,7 @@ class TaskPool:
                                                              task_gpp=task_gpp)
         else:
             self.dask_workers_tid = services.launch_task(dask_nodes, os.getcwd(),
-                                                         self.dask_worker,
+                                                         *self.dask_worker,
                                                          "--scheduler-file",
                                                          self.dask_file_name,
                                                          nworkers, 1,
