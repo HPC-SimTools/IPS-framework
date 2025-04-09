@@ -2508,6 +2508,9 @@ class TaskPool:
         :param dask_worker_per_gpu: If true then a separate worker will be started for each GPU and binded to that GPU
         :type dask_worker_per_gpu: bool
 
+        FIXME consider having n processes instead of n threads given that we're
+            likely running in a HPC context.
+            See: https://distributed.dask.org/en/stable/efficiency.html#adjust-between-threads-and-processes
         """
         services: ServicesProxy = self.services
         self.dask_file_name = os.path.join(os.getcwd(),
