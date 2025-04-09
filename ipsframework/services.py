@@ -2065,7 +2065,8 @@ class ServicesProxy:
                      total_processors,
                      num_nodes,
                      processors_per_node,
-                     cores_per_node):
+                     cores_per_node,
+                     num_workers):
         """ Run ensemble of simulations given the template and variables.
 
         `variables` is a nested dict that looks like this:
@@ -2102,6 +2103,7 @@ class ServicesProxy:
         :param num_nodes: Total number of nodes to allocate for the ensemble runs.
         :param processors_per_node: Number of processors per node
         :param cores_per_node: Number of cores per node (FIXME processor?)
+        :param num_workers: Number of Dask workers to use
         :returns: a list of dicts mapping created subdirs to simulation names
             and their parameters
         """
@@ -2353,8 +2355,10 @@ class ServicesProxy:
                           working_dir, 'ips.py', args)
 
         try:
+            # FIXME use passed in parameter for dask_nodes and dask_ppw
             num_submitted = self.submit_tasks(task_pool_name, #block=True,
-                                              use_dask=True, dask_nodes=1,
+                                              use_dask=True,
+                                              dask_nodes=num_workers,
                                               #dask_ppw=None,
                                               #launch_interval=0.0,
                                               #use_shifter=False,
