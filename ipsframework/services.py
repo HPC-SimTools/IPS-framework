@@ -2546,6 +2546,9 @@ class TaskPool:
             task_ppn = 1
             task_gpp = 0
 
+        # Reality check; nthreads should be at least 1
+        nthreads = 1 if nthreads is None or nthreads == 0 else nthreads
+
         # --nprocs was removed in version 2022.10.0 and replaced with --nworkers
         nworkers = "--nworkers" if tuple(map(int, self.distributed.__version__.split('.'))) >= (2022, 10, 0) else "--nprocs"
 
