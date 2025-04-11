@@ -2359,7 +2359,7 @@ class ServicesProxy:
             num_submitted = self.submit_tasks(task_pool_name, #block=True,
                                               use_dask=True,
                                               dask_nodes=num_workers,
-                                              #dask_ppw=None,
+                                              dask_ppw=processors_per_node,
                                               #launch_interval=0.0,
                                               #use_shifter=False,
                                               #shifter_args=None,
