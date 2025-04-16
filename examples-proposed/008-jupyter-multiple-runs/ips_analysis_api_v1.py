@@ -16,14 +16,14 @@ if TYPE_CHECKING:
 
 THIS_DIR = Path(__file__).resolve().parent
 
-IPS_DATA_LIST_FILE = 'ips_api_data_listing.json'
-IPS_CHILD_RUNS_FILE = 'ips_api_child_runs.txt'
+ips_analysis_data_LIST_FILE = 'ips_analysis_api_data_listing.json'
+IPS_CHILD_RUNS_FILE = 'ips_analysis_api_child_runs.txt'
 
 
 class IpsRunApi:
     """This class should get used directly by notebooks directly associated with a run.
 
-    The IPS Portal will insert a new code cell prior to your actual cells; this cell will initialize the `ips_api` object, an instance of this class.
+    The IPS Portal will insert a new code cell prior to your actual cells; this cell will initialize the `ips_analysis_api` object, an instance of this class.
     This object can be used in your own code to look up information about the run by calling various methods.
     None of the methods called should mutate any state.
     """
@@ -43,11 +43,11 @@ class IpsRunApi:
 
         Note that it is your responsibility to handle loading the actual data itself.
         """
-        child_runids = _get_child_ids_from_directory(self._run_directory)
+        child_runids = _get_children_ids_from_directory(self._run_directory)
         return get_data_from_runids(child_runids)
 
 
-### FUNCTIONS - these can be used if making multi-run notebooks or if using the provided ips_api Jupyter notebook ###
+### FUNCTIONS - these can be used if making multi-run notebooks or if using the provided ips_analysis_api Jupyter notebook ###
 
 
 def _normalize_data_filepaths(base_dir: Path, data: dict[str, list[str]]) -> dict[float, list[str]]:
@@ -67,7 +67,7 @@ def _normalize_data_filepaths(base_dir: Path, data: dict[str, list[str]]) -> dic
 
 def _get_data_from_directory(directory: Path) -> dict[float, list[str]]:
     """'directory' should be an absolute path, not a relative path."""
-    with open(directory / IPS_DATA_LIST_FILE, 'rb') as f:
+    with open(directory / ips_analysis_data_LIST_FILE, 'rb') as f:
         data: dict[str, list[str]] = json.load(f)
     return _normalize_data_filepaths(directory, data)
 
@@ -96,15 +96,15 @@ def get_data_from_runids(runids: Iterable[int]) -> dict[int, dict[float, list[st
     return {runid: get_data_from_runid(runid) for runid in runids}
 
 
-def _get_child_ids_from_directory(directory: Path) -> list[int]:
+def _get_children_ids_from_directory(directory: Path) -> list[int]:
     with open(directory / IPS_CHILD_RUNS_FILE) as f:
         raw_data = f.read()
     return sorted(int(runid) for runid in raw_data.split())
 
 
-def get_child_ids_by_parent_id(parent_runid: int) -> list[int]:
+def get_children_ids_by_parent_id(parent_runid: int) -> list[int]:
     """Get the runids of all child runs of the parent"""
-    return _get_child_ids_from_directory(THIS_DIR / str(parent_runid))
+    return _get_children_ids_from_directory(THIS_DIR / str(parent_runid))
 
 
 def generate_tar_from_runids(runids: Iterable[int] | int) -> str:
@@ -121,7 +121,7 @@ def generate_tar_from_runids(runids: Iterable[int] | int) -> str:
     tarball = THIS_DIR / f'{tarball_name}.tar.gz'
     with tarfile.open(tarball, 'w:gz') as archive:
         # add API files inside the tarball
-        for api_file in THIS_DIR.glob('ips_api_v*'):
+        for api_file in THIS_DIR.glob('ips_analysis_api_v*'):
             if api_file.suffix in ('.py', '.ipynb'):
                 arcname = os.path.join(tarball_name, api_file.name)
                 archive.add(api_file, arcname=arcname)
