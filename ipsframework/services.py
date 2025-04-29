@@ -2372,6 +2372,7 @@ class ServicesProxy:
             self.critical(f'Got an exception running ensemble: {e!s}')
         finally:
             exit_status = self.get_finished_tasks(task_pool_name)
+            self.info(f'Finished tasks: {exit_status!s}')
 
             self.remove_task_pool(task_pool_name)
 
