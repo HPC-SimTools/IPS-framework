@@ -16,6 +16,8 @@ import signal
 import glob
 import json
 import weakref
+import platform
+from string import Template
 from collections import namedtuple
 from operator import itemgetter
 from pathlib import Path
@@ -27,6 +29,7 @@ from .taskManager import TaskInit
 from . import messages, ipsutil
 from .cca_es_spec import initialize_event_service
 from .ips_es_spec import eventManager
+from .platformspec import platform_config_template
 
 
 RunningTask = namedtuple("RunningTask", ["process", "start_time", "timeout", "nproc", "cores_allocated", "command", "binary", "args"])
@@ -2057,8 +2060,13 @@ class ServicesProxy:
         return (sim_name, init_comp, driver_comp)
 
 
-    def run_ensemble(self, template, variables, run_dir, platform_config,
-                     prefix):
+    def run_ensemble(self, template, variables, run_dir,
+                     prefix,
+                     total_processors,
+                     num_nodes,
+                     processors_per_node,
+                     cores_per_node,
+                     num_workers):
         """ Run ensemble of simulations given the template and variables.
 
         `variables` is a nested dict that looks like this:
@@ -2089,9 +2097,13 @@ class ServicesProxy:
         :param template: configuration template file
         :param variables: a dict of variables to pass to the ensemble runs
         :param run_dir: in which to run the ensembles
-        :param platform_config: is the platform config file for ensembles
         :param prefix: string to prepend to generated instance directory
             and file names
+        :param total_processors: Total number of processors to allocate for the ensemble runs.
+        :param num_nodes: Total number of nodes to allocate for the ensemble runs.
+        :param processors_per_node: Number of processors per node
+        :param cores_per_node: Number of cores per node (FIXME processor?)
+        :param num_workers: Number of Dask workers to use
         :returns: a list of dicts mapping created subdirs to simulation names
             and their parameters
         """
@@ -2131,7 +2143,7 @@ class ServicesProxy:
             return result
 
 
-        def create_config_file(template, working_dir, variables, prefix):
+        def create_driver_config_file(template, working_dir, variables, prefix):
             """ Create an IPS config file for an ensemble instance
 
             :param template: ConfigObj from which to derive the config file
@@ -2139,12 +2151,26 @@ class ServicesProxy:
             :param variables: component parameters that need to be plugged
                 into the template
             :param prefix: instance string prefix for file names
-            :returns: None
+            :returns: The file name of the created driver config file
             """
+            # As a convenience, assign the ensemble instance name to
+            # ENSEMBLE_INSTANCE so that the user can optionally use that string
+            # in their reporting.
+            template['ENSEMBLE_INSTANCE'] = prefix
+
+            if 'SIM_ROOT' in template and \
+                template['SIM_ROOT'] is not None and \
+                    template['SIM_ROOT'].strip() != '':
+                self.info(f'SIM_ROOT in template config assigned a value, '
+                          f'{template["SIM_ROOT"]}, that will be ignored')
+
+            # Ensure that the instance gets a unique directory for its work
+            # by setting SIM_ROOT to the prefix path.
+            template['SIM_ROOT'] = Path(working_dir)
+
             # We need to plug in the variables, so we need to find the section
             # for a each component, and then find the corresponding variables
             # to then assign the associated value.
-
             for component in variables:
                 self.debug(f'Substituting for {component[0]}')
 
@@ -2202,9 +2228,75 @@ class ServicesProxy:
                                                f'{section} has not been assigned')
 
             template['LOG_FILE'] = working_dir / Path(prefix + "_run.log")
-            template.filename = working_dir / Path(prefix + ".config")
+            template_filename = working_dir / Path(prefix + ".config")
+            template.filename = template_filename
             template.write()
 
+            return template_filename
+
+
+        def create_platform_config_file(prefix, working_dir,
+                                        total_processors,
+                                        num_nodes,
+                                        processors_per_node,
+                                        cores_per_node,
+                                        **kwargs):
+            """
+            Create a platform config file for the ensemble instance.
+
+            TODO consider moving to platformspec.py since this is platform
+            specific.
+
+            :param prefix: instance string prefix for file names
+            :param working_dir: in which to put the platform config file
+            :param kwargs: optional platform specific parameters
+            :returns: platform config file name
+            """
+            platform_config_file_path = working_dir / Path(prefix + "_platform.config")
+            self.debug(f'Creating platform config file {platform_config_file_path}')
+
+            # define hostname
+            hostname = '' # platform.node()
+
+            # define mpirun
+            mpirun = 'srun'
+
+            # define node_detection
+            node_detection = 'slurm_env'
+
+            # define total processors
+            total_processors = total_processors
+
+            # define number of nodes
+            number_of_nodes = num_nodes
+
+            # define number of processors per node
+            processors_per_node = processors_per_node
+
+            # define cores per node
+            cores_per_node = cores_per_node
+
+            # define sockets per node
+            # FIXME I think this is not an important feature that
+            # should be deprecated
+            sockets_per_node = 1
+
+            # define node allocation mode
+            node_allocation_mode = 'shared'
+
+            this_platform_config_template = Template(platform_config_template)
+            platform_config = this_platform_config_template.substitute(
+                hostname=hostname, mpirun=mpirun, node_detection=node_detection,
+                total_procs=total_processors, nodes=number_of_nodes,
+                procs_per_node=processors_per_node,
+                cores_per_node=cores_per_node,
+                sockets_per_node=sockets_per_node,
+                node_allocation_mode=node_allocation_mode)
+
+            with platform_config_file_path.open('w') as platform_config_file:
+                platform_config_file.write(platform_config)
+
+            return platform_config_file_path
 
 
         self.info(f'Preparing to run ensembles in {run_dir}')
@@ -2220,8 +2312,6 @@ class ServicesProxy:
 
         task_pool_name = "ensemble_task_pool"
         self.create_task_pool(task_pool_name)
-
-        task_ids = [] # for submitted tasks
 
         # For each coupled simulation instance
         for instance in instances:
@@ -2242,24 +2332,48 @@ class ServicesProxy:
             # variables that need to be substituted into the template.  We
             # copy the template because we will want to start fresh with each
             # instance, particularly because part of the error checking is to
-            # ensure that all the variables have been assigned.
-            create_config_file(deepcopy(template_config), working_dir,
-                               instance[1], instance[0])
+            # ensure that all the variables have been assigned.  The first
+            # instance element contains the ensemble instance name.
+            simulation_filename = create_driver_config_file(
+                deepcopy(template_config), working_dir, instance[1],
+                instance[0])
+
+            # Create the bespoke platform config file for this instance
+            platform_filename = create_platform_config_file(instance[0],
+                                                            working_dir,
+                                                            total_processors,
+                                                            num_nodes,
+                                                            processors_per_node,
+                                                            cores_per_node)
 
             # Submit a task to run the simulation instance, which is another
             # IPS run pointed to that config file.
-            args = (f'--simulation={working_dir / Path(instance[0] + ".config")} '
-                    f'--log={log_file} --platform={platform_config}')
+            args = (f'--simulation={simulation_filename} '
+                    f'--log={log_file} --platform={str(platform_filename)}')
 
             self.add_task(task_pool_name, instance[0], 1,
                           working_dir, 'ips.py', args)
 
         try:
-            num_submitted = self.submit_tasks(task_pool_name, block=True)
+            # FIXME use passed in parameter for dask_nodes and dask_ppw
+            num_submitted = self.submit_tasks(task_pool_name, #block=True,
+                                              use_dask=True,
+                                              dask_nodes=num_workers,
+                                              dask_ppw=processors_per_node,
+                                              #launch_interval=0.0,
+                                              #use_shifter=False,
+                                              #shifter_args=None,
+                                              #dask_worker_plugin=None,
+                                              #dask_worker_per_gpu=False
+                                              )
             self.logger.info(f'Ran {num_submitted} ensemble tasks')
+            # launched_tasks = self.launch_task_pool(task_pool_name)
         except Exception as e:
             self.critical(f'Got an exception running ensemble: {e!s}')
         finally:
+            exit_status = self.get_finished_tasks(task_pool_name)
+            self.info(f'Finished tasks: {exit_status!s}')
+
             self.remove_task_pool(task_pool_name)
 
         return instances
@@ -2276,12 +2390,13 @@ class TaskPool:
         dask = None
         distributed = None
     else:
-        dask_scheduler = shutil.which("dask-scheduler")
-        dask_worker = shutil.which("dask-worker")
+        # `dask-scheduler` and `dask-worker` are deprecated in favor of `dask
+        # scheduler` and `dask worker`
+        dask_scheduler = ['dask', 'scheduler']
+        dask_worker = ['dask', 'worker']
+
         shifter = shutil.which("shifter")
-        if not dask_scheduler or not dask_worker:
-            dask = None
-            distributed = None
+
 
     def __init__(self, name, services):
         self.dask_pool = False
@@ -2394,6 +2509,9 @@ class TaskPool:
         :param dask_worker_per_gpu: If true then a separate worker will be started for each GPU and binded to that GPU
         :type dask_worker_per_gpu: bool
 
+        FIXME consider having n processes instead of n threads given that we're
+            likely running in a HPC context.
+            See: https://distributed.dask.org/en/stable/efficiency.html#adjust-between-threads-and-processes
         """
         services: ServicesProxy = self.services
         self.dask_file_name = os.path.join(os.getcwd(),
@@ -2401,14 +2519,17 @@ class TaskPool:
 
         if use_shifter:
             if shifter_args:
-                self.dask_sched_pid = subprocess.Popen([self.shifter, shifter_args, "dask-scheduler", "--no-dashboard",
+                self.dask_sched_pid = subprocess.Popen([self.shifter, shifter_args, *self.dask_scheduler, "--no-dashboard",
+                                                        "--no-jupyter", "--no-show",
                                                         "--scheduler-file", self.dask_file_name, "--port", "0"]).pid
             else:
-                self.dask_sched_pid = subprocess.Popen([self.shifter, "dask-scheduler", "--no-dashboard",
+                self.dask_sched_pid = subprocess.Popen([self.shifter, *self.dask_scheduler, "--no-dashboard",
+                                                        "--no-jupyter", "--no-show",
                                                         "--scheduler-file", self.dask_file_name, "--port", "0"]).pid
 
         else:
-            self.dask_sched_pid = subprocess.Popen([self.dask_scheduler, "--no-dashboard",
+            self.dask_sched_pid = subprocess.Popen([*self.dask_scheduler, "--no-dashboard",
+                                                    "--no-jupyter", "--no-show",
                                                     "--scheduler-file", self.dask_file_name, "--port", "0"]).pid
 
         dask_nodes = 1 if dask_nodes is None else dask_nodes
@@ -2426,6 +2547,9 @@ class TaskPool:
             task_ppn = 1
             task_gpp = 0
 
+        # Reality check; nthreads should be at least 1
+        nthreads = 1 if nthreads is None or nthreads == 0 else nthreads
+
         # --nprocs was removed in version 2022.10.0 and replaced with --nworkers
         nworkers = "--nworkers" if tuple(map(int, self.distributed.__version__.split('.'))) >= (2022, 10, 0) else "--nprocs"
 
@@ -2434,40 +2558,45 @@ class TaskPool:
                 self.dask_workers_tid = services.launch_task(dask_nodes, os.getcwd(),
                                                              self.shifter,
                                                              shifter_args,
-                                                             "dask-worker",
+                                                             *self.dask_worker,
                                                              "--scheduler-file",
                                                              self.dask_file_name,
                                                              nworkers, 1,
                                                              "--nthreads", nthreads,
                                                              "--no-dashboard",
+                                                             "--no-nanny",
                                                              task_ppn=task_ppn,
                                                              task_gpp=task_gpp)
             else:
                 self.dask_workers_tid = services.launch_task(dask_nodes, os.getcwd(),
                                                              self.shifter,
-                                                             "dask-worker",
+                                                             *self.dask_worker,
                                                              "--scheduler-file",
                                                              self.dask_file_name,
                                                              nworkers, 1,
                                                              "--nthreads", nthreads,
                                                              "--no-dashboard",
+                                                             "--no-nanny",
                                                              task_ppn=task_ppn,
                                                              task_gpp=task_gpp)
         else:
             self.dask_workers_tid = services.launch_task(dask_nodes, os.getcwd(),
-                                                         self.dask_worker,
+                                                         *self.dask_worker,
                                                          "--scheduler-file",
                                                          self.dask_file_name,
                                                          nworkers, 1,
                                                          "--nthreads", nthreads,
                                                          "--no-dashboard",
+                                                         "--no-nanny",
                                                          task_ppn=task_ppn,
                                                          task_gpp=task_gpp)
 
         self.dask_client = self.dask.distributed.Client(scheduler_file=self.dask_file_name)
 
         if dask_worker_plugin is not None:
-            self.dask_client.register_worker_plugin(dask_worker_plugin)
+            # TODO But what if there is more than one worker plugin?
+            # TODO And what about scheduler plugins?
+            self.dask_client.register_plugin(dask_worker_plugin)
 
         try:
             self.worker_event_logfile = services.sim_name + '_' + services.get_config_param("PORTAL_RUNID") + '_' + self.name + '_{}.json'

@@ -4,7 +4,8 @@ host we are on and what resources we have.  Taking this out
 of the resource manager will allow us to test it independent
 of the IPS.
 """
-
+import psutil
+import platform
 import os
 import subprocess
 from math import ceil
@@ -401,3 +402,35 @@ def getResourceList(services, host, partial_nodes=False):
     elif cpn % spn != 0:
         raise InvalidResourceSettingsException("spn not divisible by cpn", spn, cpn)
     return listOfNodes, cpn, spn, ppn, accurateNodes
+
+def get_platform_info():
+    """ Get information about the platform
+
+    Used to gather runtime information about the current platform. This can be
+    be used for debugging purposes to ensure that the framework is running
+    properly for a given system.
+
+    :returns: A dictionary containing hostname, cpu count, cpu core id for
+        current running process, and available GPU devices if set
+    """
+    result = {'hostname': platform.node(),
+              'cpu_count': psutil.cpu_count(),
+              'pid': os.getpid()}
+
+    if 'CUDA_VISIBLE_DEVICES' in os.environ:
+        result['cuda_visible_devices'] = os.environ['CUDA_VISIBLE_DEVICES']
+    elif 'ROCM_VISIBLE_DEVICES' in os.environ:
+        result['rocm_visible_devices'] = os.environ['ROCM_VISIBLE_DEVICES']
+
+    try:
+        p = psutil.Process()
+        with p.oneshot():
+            result['core_id'] = p.cpu_num()
+    except:
+        # cpu_num() only available on linux (and BSD systems), so this will
+        # throw an exception on other platforms
+        pass
+
+    return result
+
+
