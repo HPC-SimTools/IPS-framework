@@ -13,7 +13,7 @@ from collections import defaultdict
 from multiprocessing import Event, Pipe, Process
 from multiprocessing.connection import Connection
 from multiprocessing.synchronize import Event as EventType
-from typing import Any, Callable
+from typing import Any, Callable, Literal
 
 import urllib3
 
@@ -688,3 +688,18 @@ class PortalBridge(Component):
                 sim_data.mpo_steps = [sim_data.mpo_wid['uid']]
 
         self.sim_map[sim_data.sim_name] = sim_data
+
+    def terminate(self, status: Literal[0, 1]):
+        """
+        Clean up services and call :py:obj:`sys_exit`.
+        """
+        if self.childProcess:
+            self.childProcess.terminate()
+        if self.url_manager_data:
+            self.url_manager_data.childProcess.terminate()
+        if self.url_manager_jupyter_data:
+            self.url_manager_jupyter_data.childProcess.terminate()
+        if self.url_manager_jupyter_notebook:
+            self.url_manager_jupyter_notebook.childProcess.terminate()
+
+        Component.terminate(self, status)

@@ -310,8 +310,7 @@ class ResourceManager:
         else:
             ppn = self.ppn
 
-        if nproc < ppn:
-            ppn = nproc
+        ppn = min(nproc, ppn)
 
         # check if partial node allocation is possible
         if self.node_alloc_mode == 'EXCLUSIVE':

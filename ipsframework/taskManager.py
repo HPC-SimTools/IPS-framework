@@ -469,8 +469,7 @@ class TaskManager:
                     else:
                         if num_nodes > 1:
                             ppn = per_numa * num_numanodes
-                        if nproc < ppn:
-                            ppn = nproc
+                        ppn = min(nproc, ppn)
                         cmd = ' '.join([self.task_launch_cmd, nproc_flag, str(nproc), ppn_flag, str(ppn), by_numanode_flag, str(per_numa), nlist_flag, nodes])
                 else:
                     num_nodes = int(ceil(float(nproc) / ppn))
@@ -481,8 +480,7 @@ class TaskManager:
                     else:
                         if num_nodes > 1:
                             ppn = per_numa * num_numanodes
-                        if nproc < ppn:
-                            ppn = nproc
+                        ppn = min(nproc, ppn)
                         cmd = ' '.join([self.task_launch_cmd, nproc_flag, str(nproc), ppn_flag, str(ppn), by_numanode_flag, str(per_numa)])
             elif accurateNodes:
                 nlist_flag = '-L'

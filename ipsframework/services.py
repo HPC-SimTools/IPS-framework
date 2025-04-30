@@ -18,18 +18,27 @@ import sys
 import threading
 import time
 import weakref
-from collections import namedtuple
+from multiprocessing import Queue
 from operator import iadd, itemgetter
-from typing import Any, Callable, Iterable, Optional, Union
+from typing import Any, Callable, Iterable, NamedTuple, Optional, Union
 
 from configobj import ConfigObj
 
-from . import ipsutil, messages
-from .cca_es_spec import initialize_event_service
-from .ips_es_spec import eventManager
-from .taskManager import TaskInit
+from ipsframework import ipsutil, messages
+from ipsframework.cca_es_spec import initialize_event_service
+from ipsframework.ips_es_spec import eventManager
+from ipsframework.taskManager import TaskInit
 
-RunningTask = namedtuple('RunningTask', ['process', 'start_time', 'timeout', 'nproc', 'cores_allocated', 'command', 'binary', 'args'])
+
+class RunningTask(NamedTuple):
+    process: subprocess.Popen[bytes]
+    start_time: float
+    timeout: float
+    nproc: int
+    cores_allocated: int
+    command: str
+    binary: str
+    args: list[str]
 
 
 def launch(binary, task_name, working_dir, *args, **keywords):
@@ -84,7 +93,7 @@ def launch(binary, task_name, working_dir, *args, **keywords):
 
         timeout = float(keywords.get('timeout', 1.0e9))
 
-        cmd = f"{binary} {' '.join(map(str, args))}"
+        cmd = f'{binary} {" ".join(map(str, args))}'
         with worker.lock:
             print(
                 json.dumps({'eventType': 'IPS_LAUNCH_DASK_TASK', 'event_time': time.time(), 'comment': f'task_name = {task_name}, Target = {cmd}'}),
@@ -126,7 +135,7 @@ def launch(binary, task_name, working_dir, *args, **keywords):
                     {
                         'eventType': 'IPS_LAUNCH_DASK_TASK',
                         'event_time': time.time(),
-                        'comment': f"task_name = {task_name}, Target = {binary.__name__}({','.join(map(str, args))})",
+                        'comment': f'task_name = {task_name}, Target = {binary.__name__}({",".join(map(str, args))})',
                     }
                 ),
                 file=worker_event_log,
@@ -143,7 +152,7 @@ def launch(binary, task_name, working_dir, *args, **keywords):
                         'start_time': start_time,
                         'elapsed_time': finish_time - start_time,
                         'target': binary.__name__,
-                        'operation': f"({','.join(map(str, args))})",
+                        'operation': f'({",".join(map(str, args))})',
                     }
                 ),
                 file=worker_event_log,
@@ -184,7 +193,7 @@ class ServicesProxy:
 
     """
 
-    def __init__(self, fwk, fwk_in_q, svc_response_q, sim_conf, log_pipe_name):
+    def __init__(self, fwk, fwk_in_q: Queue, svc_response_q: Queue, sim_conf: dict[str, Any], log_pipe_name: str):
         self.pid = 0
         self.fwk = fwk
         self.fwk_in_q = fwk_in_q
@@ -194,7 +203,7 @@ class ServicesProxy:
         self.component_ref = None
         self.incomplete_calls = {}
         self.finished_calls = {}
-        self.task_map = {}
+        self.task_map: dict[int, RunningTask] = {}
         self.workdir = ''
         self.full_comp_id = ''
         self.logger = None
@@ -454,7 +463,7 @@ class ServicesProxy:
             formatted_args = ['%.3f' % (x) if isinstance(x, float) else str(x) for x in self.component_ref.args]
             trace['id'] = hashlib.md5(f'{target}:{operation}:{call_id}'.encode()).hexdigest()[:16]
             trace['parentId'] = hashlib.md5(
-                f"{self.component_ref.component_id}:{self.component_ref.method_name}({' ,'.join(formatted_args)}):{self.component_ref.call_id}".encode()
+                f'{self.component_ref.component_id}:{self.component_ref.method_name}({" ,".join(formatted_args)}):{self.component_ref.call_id}'.encode()
             ).hexdigest()[:16]
             trace['tags'] = {}
             if procs_requested is not None:
@@ -620,7 +629,7 @@ class ServicesProxy:
             raise caught_exceptions[0]
         return ret_map
 
-    def launch_task(self, nproc, working_dir, binary, *args, **keywords):
+    def launch_task(self, nproc: int, working_dir: str, binary: str, *args, **keywords) -> int:
         r"""
         Launch *binary* in *working_dir* on *nproc* processes.  *\*args* are
         any arguments to be passed to the binary on the command line.
@@ -793,7 +802,7 @@ class ServicesProxy:
         self.task_map[task_id] = RunningTask(process, time.time(), timeout, nproc, cores_allocated, command, binary, args)
         return task_id  # process.pid
 
-    def launch_task_pool(self, task_pool_name, launch_interval=0.0):
+    def launch_task_pool(self, task_pool_name: str, launch_interval: float = 0.0) -> dict[str, Any]:
         """Construct messages to task manager to launch each task in task
         pool.  Used by :py:class:`TaskPool` to launch tasks in a
         task_pool.
@@ -853,7 +862,7 @@ class ServicesProxy:
             if env_update:
                 self._send_monitor_event(
                     'IPS_LAUNCH_TASK_POOL',
-                    f'task_id = {task_id} , Tag = {tag} , nproc = {task.nproc} , Target = {command} , task_name = {task_name}' f', env = {env_update}',
+                    f'task_id = {task_id} , Tag = {tag} , nproc = {task.nproc} , Target = {command} , task_name = {task_name}, env = {env_update}',
                     procs_requested=task.nproc,
                     cores_allocated=cores_allocated,
                 )
@@ -867,7 +876,7 @@ class ServicesProxy:
 
         return active_tasks
 
-    def kill_task(self, task_id):
+    def kill_task(self, task_id: int):
         """Kill launched task *task_id*.  Return if successful.  Raises
         exceptions if the task or process cannot be found or killed
         successfully.
@@ -912,7 +921,7 @@ class ServicesProxy:
             except Exception:
                 raise
 
-    def wait_task_nonblocking(self, task_id):
+    def wait_task_nonblocking(self, task_id: int) -> Union[int, None]:
         """Check the status of task *task_id*.  If it has finished, the
         return value is populated with the actual value, otherwise
         ``None`` is returned.  A *KeyError* exception may be raised if
@@ -2155,13 +2164,13 @@ class TaskPool:
             dask = None
             distributed = None
 
-    def __init__(self, name, services):
+    def __init__(self, name: str, services: ServicesProxy):
         self.dask_pool = False
         self.name = name
         self.services = services
         self.active_tasks = {}
         self.finished_tasks = {}
-        self.queued_tasks = {}
+        self.queued_tasks: dict[str, Task] = {}
         self.blocked_tasks = {}
         self.serial_pool = True
         self.dask_sched_pid = None
@@ -2502,7 +2511,7 @@ class TaskPool:
         self.services.wait_task(self.dask_workers_tid)
         self.dask_file_name = None
         self.dask_workers_tid = None
-        self.dask_sched_pid = None
+        self.dask_sched_pid: Optional[int] = None
         self.dask_pool = False
         self.serial_pool = True
         return dict(result)

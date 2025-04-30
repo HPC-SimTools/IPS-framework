@@ -753,8 +753,9 @@ def main():
     try:
         fwk = Framework(cfgFile_list, options.log_file, options.platform_filename, options.debug, options.verbose_debug, options.cmd_nodes, options.cmd_ppn)
         fwk.run()
-    except Exception:
-        raise
+    except Exception as e:
+        print(e, file=sys.stderr)
+        return 1
 
     return 0
 

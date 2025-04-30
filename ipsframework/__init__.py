@@ -8,7 +8,7 @@ from .resourceManager import ResourceManager
 from .services import ServicesProxy, Task, TaskPool
 from .taskManager import TaskManager
 
-__all__ = ['Component', 'ConfigurationManager', 'DataManager', 'Framework', 'ResourceManager', 'ServicesProxy', 'TaskPool', 'Task', 'TaskManager']
+__all__ = ['Component', 'ConfigurationManager', 'DataManager', 'Framework', 'ResourceManager', 'ServicesProxy', 'Task', 'TaskManager', 'TaskPool']
 
 from ._version import get_versions
 
