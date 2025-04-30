@@ -40,6 +40,10 @@ def launch(binary, task_name, working_dir, *args, **keywords):
     :meth:`TaskPool.submit_dask_tasks` as the
     input to :meth:`dask.distributed.Client.submit`.
 
+    :param binary: The binary to launch.
+    :param task_name: The name of the task.
+    :param working_dir: The working directory in which to run this task
+    :returns: The task name and the return value from running the binary.
     """
     from dask.distributed import get_worker  # pylint: disable=import-outside-toplevel
 
@@ -2316,7 +2320,7 @@ class ServicesProxy:
 
         # For each coupled simulation instance
         for instance in instances:
-            self.info(f'Running ensemble instance {instance[0]}')
+            self.info(f'Adding ensemble instance {instance[0]} to queue')
 
             # Create the subdir based on `path_dir` and the ensemble ID, which
             # is stored as the first list element in `instance`
