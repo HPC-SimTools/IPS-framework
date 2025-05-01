@@ -2363,7 +2363,7 @@ class ServicesProxy:
                                               #dask_worker_per_gpu=False
                                               )
             self.logger.info(f'Ran {num_submitted} ensemble tasks')
-x        except Exception as e:
+        except Exception as e:
             self.critical(f'Got an exception running ensemble: {e!s}')
         finally:
             exit_status = self.get_finished_tasks(task_pool_name)
