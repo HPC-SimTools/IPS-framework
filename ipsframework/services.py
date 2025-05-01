@@ -2340,10 +2340,8 @@ class ServicesProxy:
             # Create the bespoke platform config file for this instance
             platform_filename = create_platform_config_file(instance[0],
                                                             working_dir,
-                                                            total_processors,
-                                                            num_nodes,
-                                                            processors_per_node,
-                                                            cores_per_node)
+                                                            instances_per_node,
+                                                            num_nodes)
 
             # Submit a task to run the simulation instance, which is another
             # IPS run pointed to that config file.
@@ -2354,7 +2352,6 @@ class ServicesProxy:
                           working_dir, 'ips.py', args)
 
         try:
-            # FIXME use passed in parameter for dask_nodes and dask_ppw
             num_submitted = self.submit_tasks(task_pool_name, #block=True,
                                               use_dask=True,
                                               dask_nodes=num_workers,
@@ -2366,8 +2363,7 @@ class ServicesProxy:
                                               #dask_worker_per_gpu=False
                                               )
             self.logger.info(f'Ran {num_submitted} ensemble tasks')
-            # launched_tasks = self.launch_task_pool(task_pool_name)
-        except Exception as e:
+x        except Exception as e:
             self.critical(f'Got an exception running ensemble: {e!s}')
         finally:
             exit_status = self.get_finished_tasks(task_pool_name)
