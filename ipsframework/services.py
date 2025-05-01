@@ -2066,11 +2066,8 @@ class ServicesProxy:
 
     def run_ensemble(self, template, variables, run_dir,
                      name,
-                     total_processors,
-                     num_nodes,
-                     processors_per_node,
-                     cores_per_node,
-                     num_workers):
+                     instances_per_node,
+                     num_nodes):
         """ Run ensemble of simulations given the template and variables.
 
         `variables` is a nested dict that looks like this:
@@ -2100,13 +2097,12 @@ class ServicesProxy:
         :param run_dir: in which to run the ensembles
         :param name: ensemble name, or string to prepend to generated instance
             directory and file names
-        :param total_processors: Total number of processors to allocate for the
-            ensemble runs.
+        :param instances_per_node: How many ensemble instances to run on each
+            assigned node?  Each Dask worker will have a thread dedicated to
+            each instance.
         :param num_nodes: Total number of nodes to allocate for the ensemble
-            runs.
-        :param processors_per_node: Number of processors per node
-        :param cores_per_node: Number of cores per node (FIXME processor?)
-        :param num_workers: Number of Dask workers to use
+            runs. There will be one Dask worker assigned to each of these
+            nodes.
         :returns: a list of dicts mapping created subdirs to simulation names
             and their parameters
         """
@@ -2239,10 +2235,8 @@ class ServicesProxy:
 
 
         def create_platform_config_file(prefix, working_dir,
-                                        total_processors,
+                                        instances_per_node,
                                         num_nodes,
-                                        processors_per_node,
-                                        cores_per_node,
                                         **kwargs):
             """
             Create a platform config file for the ensemble instance.
@@ -2267,17 +2261,17 @@ class ServicesProxy:
             # define node_detection
             node_detection = 'slurm_env'
 
-            # define total processors
-            total_processors = total_processors
+            # inherit total processors from top-level platform config
+            total_procs = self.get_config_param('TOTAL_PROCS')
 
-            # define number of nodes
+            # define number of nodes (i.e., number of Dask workers)
             number_of_nodes = num_nodes
 
             # define number of processors per node
-            processors_per_node = processors_per_node
+            processors_per_node = instances_per_node
 
-            # define cores per node
-            cores_per_node = cores_per_node
+            # inherit cores per node from top-level platform config
+            cores_per_node = self.get_config_param('CORES_PER_NODE')
 
             # define sockets per node
             # FIXME I think this is not an important feature that
@@ -2290,7 +2284,7 @@ class ServicesProxy:
             this_platform_config_template = Template(platform_config_template)
             platform_config = this_platform_config_template.substitute(
                 hostname=hostname, mpirun=mpirun, node_detection=node_detection,
-                total_procs=total_processors, nodes=number_of_nodes,
+                total_procs=instances_per_nodes, nodes=number_of_nodes,
                 procs_per_node=processors_per_node,
                 cores_per_node=cores_per_node,
                 sockets_per_node=sockets_per_node,

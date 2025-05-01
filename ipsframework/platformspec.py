@@ -35,7 +35,7 @@ def get_share_and_platform(platform_file_name, ipsPathName):
 
 
 # String template used to generate the platform configuration file
-# for ensemble instances.
+# for ensemble instances.  See also: services.run_ensemble().
 platform_config_template = """
 HOST = $hostname
 MPIRUN = $mpirun # eval
