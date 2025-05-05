@@ -2244,7 +2244,10 @@ class ServicesProxy:
             Create a platform config file for the ensemble instance.
 
             TODO consider moving to platformspec.py since this is platform
-            specific.
+                specific.
+
+            TODO consider refactoring this to use the ConfigObj class instead
+                of a python string template.
 
             :param prefix: instance string prefix for file names
             :param working_dir: in which to put the platform config file
@@ -2286,7 +2289,7 @@ class ServicesProxy:
             this_platform_config_template = Template(platform_config_template)
             platform_config = this_platform_config_template.substitute(
                 hostname=hostname, mpirun=mpirun, node_detection=node_detection,
-                total_procs=instances_per_nodes, nodes=number_of_nodes,
+                total_procs=instances_per_node, nodes=number_of_nodes,
                 procs_per_node=processors_per_node,
                 cores_per_node=cores_per_node,
                 sockets_per_node=sockets_per_node,
