@@ -2066,8 +2066,8 @@ class ServicesProxy:
 
     def run_ensemble(self, template, variables, run_dir,
                      name,
-                     instances_per_node,
-                     num_nodes):
+                     num_nodes,
+                     instances_per_node=None):
         """ Run ensemble of simulations given the template and variables.
 
         `variables` is a nested dict that looks like this:
@@ -2092,6 +2092,8 @@ class ServicesProxy:
         config file created from `template` with `?` variables replaced
         with the values from `variables`.
 
+        TODO be able to specify the number of cores per instance
+
         :param template: configuration template file
         :param variables: a dict of variables to pass to the ensemble runs
         :param run_dir: in which to run the ensembles
@@ -2099,7 +2101,7 @@ class ServicesProxy:
             directory and file names
         :param instances_per_node: How many ensemble instances to run on each
             assigned node?  Each Dask worker will have a thread dedicated to
-            each instance.
+            each instance.  If None, then the default is to use
         :param num_nodes: Total number of nodes to allocate for the ensemble
             runs. There will be one Dask worker assigned to each of these
             nodes.
