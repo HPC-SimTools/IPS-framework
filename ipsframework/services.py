@@ -2532,7 +2532,7 @@ class TaskPool:
                                                     "--no-jupyter", "--no-show",
                                                     "--scheduler-file", self.dask_file_name, "--port", "0"]).pid
 
-        self.debug(f'Dask scheduler pid: {self.dask_sched_pid}')
+        self.services.debug(f'Dask scheduler pid: {self.dask_sched_pid}')
 
         dask_nodes = 1 if dask_nodes is None else dask_nodes
         if services.get_config_param("MPIRUN") == "eval":
@@ -2553,13 +2553,13 @@ class TaskPool:
         nthreads = 1 if nthreads is None or nthreads == 0 else nthreads
 
         if dask_ppw:
-            self.debug(f'Using {dask_ppw} processes per Dask worker via '
+            self.services.debug(f'Using {dask_ppw} processes per Dask worker via '
                        f'dask_ppw argument')
         else:
-            self.debug(f'using {services.get_config_param("PROCS_PER_NODE")} '
+            self.services.debug(f'using {services.get_config_param("PROCS_PER_NODE")} '
                        f'processes per Dask worker from platform config '
                        f'PROCS_PER_NODE')
-        self.info(f'Threads per Dask worker is {nthreads}')
+        self.services.info(f'Threads per Dask worker is {nthreads}')
 
         # --nprocs was removed in version 2022.10.0 and replaced with --nworkers
         nworkers = "--nworkers" if tuple(map(int, self.distributed.__version__.split('.'))) >= (2022, 10, 0) else "--nprocs"
