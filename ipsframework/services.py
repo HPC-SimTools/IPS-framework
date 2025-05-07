@@ -2266,17 +2266,23 @@ class ServicesProxy:
             # define node_detection
             node_detection = 'slurm_env'
 
-            # inherit total processors from top-level platform config
-            total_procs = self.get_config_param('TOTAL_PROCS')
+            # inherit cores per node from top-level platform config
+            cores_per_node = self.get_config_param('CORES_PER_NODE')
 
             # define number of nodes (i.e., number of Dask workers)
             number_of_nodes = num_nodes
 
+            # inherit total processors from top-level platform config
+            total_procs = self.get_config_param('TOTAL_PROCS', silent=True)
+            if not total_procs:
+                # If the total number of processors (cores?) is not defined
+                # in the platform configuration, then calculate it by
+                # multiplying the number of cores per node by the number of
+                # nodes.
+                total_procs = cores_per_node * number_of_nodes
+
             # define number of processors per node
             processors_per_node = instances_per_node
-
-            # inherit cores per node from top-level platform config
-            cores_per_node = self.get_config_param('CORES_PER_NODE')
 
             # define sockets per node
             # FIXME I think this is not an important feature that
@@ -2288,12 +2294,12 @@ class ServicesProxy:
 
             this_platform_config_template = Template(platform_config_template)
             platform_config = this_platform_config_template.substitute(
-                hostname=hostname, mpirun=mpirun, node_detection=node_detection,
-                total_procs=instances_per_node, nodes=number_of_nodes,
-                procs_per_node=processors_per_node,
-                cores_per_node=cores_per_node,
-                sockets_per_node=sockets_per_node,
-                node_allocation_mode=node_allocation_mode)
+                    hostname=hostname, mpirun=mpirun, node_detection=node_detection,
+                    total_procs=instances_per_node, nodes=number_of_nodes,
+                    procs_per_node=processors_per_node,
+                    cores_per_node=cores_per_node,
+                    sockets_per_node=sockets_per_node,
+                    node_allocation_mode=node_allocation_mode)
 
             with platform_config_file_path.open('w') as platform_config_file:
                 platform_config_file.write(platform_config)
