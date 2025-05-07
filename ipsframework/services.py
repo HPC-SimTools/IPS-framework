@@ -2274,7 +2274,7 @@ class ServicesProxy:
 
             # inherit total processors from top-level platform config
             total_procs = self.get_config_param('TOTAL_PROCS', silent=True)
-            if not total_procs:
+            if total_procs is None:
                 # If the total number of processors (cores?) is not defined
                 # in the platform configuration, then calculate it by
                 # multiplying the number of cores per node by the number of
