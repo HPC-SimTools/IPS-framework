@@ -2259,6 +2259,8 @@ class ServicesProxy:
             platform_config = ConfigObj()
             platform_config.filename = str(platform_config_file_path)
 
+            platform_config['HOST'] = ''
+
             platform_config['MPIRUN'] = 'srun'
             platform_config['NODE_DETECTION'] = 'slurm_env'
 
