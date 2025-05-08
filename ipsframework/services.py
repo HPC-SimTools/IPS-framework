@@ -2281,7 +2281,8 @@ class ServicesProxy:
 
             # define number of processors per node to be the instances per node
             # that will become the number of Dask threads per node
-            platform_config['PROCS_PER_NODE'] = instances_per_node
+            if instances_per_node is not None and instances_per_node > 0:
+                platform_config['PROCS_PER_NODE'] = instances_per_node
 
             # Kept for backward compatibility; FIXME this should be deprecated
             platform_config['SOCKETS_PER_NODE'] = 1
