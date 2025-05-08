@@ -32,39 +32,3 @@ def get_share_and_platform(platform_file_name, ipsPathName):
         platform_file_name = os.path.join(ipsShareDir, 'platform.conf')
         return os.path.abspath(platform_file_name), ipsShareDir
 
-
-
-# String template used to generate the platform configuration file
-# for ensemble instances.  See also: services.run_ensemble().
-platform_config_template = """
-HOST = $hostname
-MPIRUN = $mpirun # eval
-
-#######################################
-# resource detection method
-#######################################
-NODE_DETECTION = $node_detection # checkjob | qstat | pbs_env | slurm_env | manual
-
-#######################################
-# manual allocation description
-#######################################
-TOTAL_PROCS = $total_procs
-NODES = $nodes
-PROCS_PER_NODE = $procs_per_node
-
-#######################################
-# node topology description
-#######################################
-CORES_PER_NODE = $cores_per_node
-SOCKETS_PER_NODE = $sockets_per_node
-
-#######################################
-# framework setting for node allocation
-#######################################
-# MUST ADHERE TO THE PLATFORM'S CAPABILITIES
-#   * EXCLUSIVE : only one task per node
-#   * SHARED : multiple tasks may share a node
-# For single node jobs, this can be overridden allowing multiple
-# tasks per node.
-NODE_ALLOCATION_MODE = $node_allocation_mode # SHARED | EXCLUSIVE
-"""

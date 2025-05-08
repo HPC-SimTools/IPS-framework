@@ -16,8 +16,7 @@ import signal
 import glob
 import json
 import weakref
-import platform
-from string import Template
+
 from collections import namedtuple
 from operator import itemgetter
 from pathlib import Path
@@ -29,7 +28,7 @@ from .taskManager import TaskInit
 from . import messages, ipsutil
 from .cca_es_spec import initialize_event_service
 from .ips_es_spec import eventManager
-from .platformspec import platform_config_template
+
 
 
 RunningTask = namedtuple("RunningTask", ["process", "start_time", "timeout", "nproc", "cores_allocated", "command", "binary", "args"])
@@ -2257,52 +2256,38 @@ class ServicesProxy:
             platform_config_file_path = working_dir / Path(prefix + "_platform.config")
             self.debug(f'Creating platform config file {platform_config_file_path}')
 
-            # define hostname
-            hostname = '' # platform.node()
+            platform_config = ConfigObj()
+            platform_config.filename = str(platform_config_file_path)
 
-            # define mpirun
-            mpirun = 'srun'
-
-            # define node_detection
-            node_detection = 'slurm_env'
+            platform_config['MPIRUN'] = 'srun'
+            platform_config['NODE_DETECTION'] = 'slurm_env'
 
             # inherit cores per node from top-level platform config
-            cores_per_node = self.get_config_param('CORES_PER_NODE')
+            platform_config['CORES_PER_NODE'] = self.get_config_param('CORES_PER_NODE')
 
-            # define number of nodes (i.e., number of Dask workers)
-            number_of_nodes = num_nodes
+            platform_config['NODES'] = num_nodes
 
             # inherit total processors from top-level platform config
             total_procs = self.get_config_param('TOTAL_PROCS', silent=True)
-            if total_procs is None:
-                # If the total number of processors (cores?) is not defined
-                # in the platform configuration, then calculate it by
-                # multiplying the number of cores per node by the number of
-                # nodes.
-                total_procs = cores_per_node * number_of_nodes
+            if total_procs is not None and total_procs > 0:
+                # Propagate the total processors to the platform config if
+                # it is defined and greater than zero.  Note that at the top-
+                # level it will default to zero if not defined, so we also
+                # check for that; i.e., if non-zero, we propagate that to
+                # each instance platform config file.
+                platform_config['TOTAL_PROCS'] = total_procs
 
-            # define number of processors per node
-            processors_per_node = instances_per_node
+            # define number of processors per node to be the instances per node
+            # that will become the number of Dask threads per node
+            platform_config['PROCS_PER_NODE'] = instances_per_node
 
-            # define sockets per node
-            # FIXME I think this is not an important feature that
-            # should be deprecated
-            sockets_per_node = 1
+            # Kept for backward compatibility; FIXME this should be deprecated
+            platform_config['SOCKETS_PER_NODE'] = 1
 
             # define node allocation mode
-            node_allocation_mode = 'shared'
+            platform_config['NODE_ALLOCATION_MODE'] = 'SHARED'
 
-            this_platform_config_template = Template(platform_config_template)
-            platform_config = this_platform_config_template.substitute(
-                    hostname=hostname, mpirun=mpirun, node_detection=node_detection,
-                    total_procs=instances_per_node, nodes=number_of_nodes,
-                    procs_per_node=processors_per_node,
-                    cores_per_node=cores_per_node,
-                    sockets_per_node=sockets_per_node,
-                    node_allocation_mode=node_allocation_mode)
-
-            with platform_config_file_path.open('w') as platform_config_file:
-                platform_config_file.write(platform_config)
+            platform_config.write()
 
             return platform_config_file_path
 
