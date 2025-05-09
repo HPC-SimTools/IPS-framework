@@ -123,7 +123,7 @@ def params_from_csv(infile):
     So, for example, if the CSV file looks like this:
 
     ```
-    a_comp_comp:A, a_comp_comp:B, a_comp_comp:C, another_comp_comp:D, another_comp_comp:B, another_comp_comp:F
+    a_comp:A, a_comp:B, a_comp:C, another_comp:D, another_comp:B, another_comp:F
     3, 2.34, bar, 7, 0.775, xyzzy
     2, 5.82, baz, 5, 0.080, plud
     4, 0.1, quux, 9, 29.2, thud
@@ -132,16 +132,16 @@ def params_from_csv(infile):
     The returned structure will look like this:
 
     ```
-    variables = {'a_comp_comp': {'A': [3, 2, 4],
+    variables = {'a_comp': {'A': [3, 2, 4],
                                 'B': [2.34, 5.82, 0.1],
                                 'C': ['bar', 'baz', 'quux']},
-                 'another_comp_comp': {'D': [7, 5, 9],
+                 'another_comp': {'D': [7, 5, 9],
                                       'B': [0.775, 0.080, 29.2],
                                       'F': ['xyzzy', 'plud', 'thud']}}
     ```
 
     Note that the corresponding config template file will need to specify
-    sections for `a_comp_comp` and `another_comp_comp` that have placeholders
+    sections for `a_comp` and `another_comp` that have placeholders
     for A, B, C, D, and F.  The template file will be used to create the
     config files for each instance, of which there will be three from this
     example.
