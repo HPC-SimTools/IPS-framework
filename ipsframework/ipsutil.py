@@ -123,7 +123,7 @@ def params_from_csv(infile):
     So, for example, if the CSV file looks like this:
 
     ```
-    a_sim_comp:A, a_sim_comp:B, a_sim_comp:C, another_sim_comp:D, another_sim_comp:B, another_sim_comp:F
+    a_comp_comp:A, a_comp_comp:B, a_comp_comp:C, another_comp_comp:D, another_comp_comp:B, another_comp_comp:F
     3, 2.34, bar, 7, 0.775, xyzzy
     2, 5.82, baz, 5, 0.080, plud
     4, 0.1, quux, 9, 29.2, thud
@@ -132,16 +132,16 @@ def params_from_csv(infile):
     The returned structure will look like this:
 
     ```
-    variables = {'a_sim_comp': {'A': [3, 2, 4],
+    variables = {'a_comp_comp': {'A': [3, 2, 4],
                                 'B': [2.34, 5.82, 0.1],
                                 'C': ['bar', 'baz', 'quux']},
-                 'another_sim_comp': {'D': [7, 5, 9],
+                 'another_comp_comp': {'D': [7, 5, 9],
                                       'B': [0.775, 0.080, 29.2],
                                       'F': ['xyzzy', 'plud', 'thud']}}
     ```
 
     Note that the corresponding config template file will need to specify
-    sections for `a_sim_comp` and `another_sim_comp` that have placeholders
+    sections for `a_comp_comp` and `another_comp_comp` that have placeholders
     for A, B, C, D, and F.  The template file will be used to create the
     config files for each instance, of which there will be three from this
     example.
@@ -155,26 +155,26 @@ def params_from_csv(infile):
         reader = csv.reader(f)
         header = next(reader)
 
-        # Get the names of the simulations and their parameters
+        # Get the names of the components and their parameters
         for col in header:
-            sim_name, param_name = col.split(':')
-            sim_name = sim_name.strip() # because there may be extraneous spaces
+            comp_name, param_name = col.split(':')
+            comp_name = comp_name.strip() # because there may be extraneous spaces
             param_name = param_name.strip()
 
-            if sim_name not in variables:
-                variables[sim_name] = {}
-            if param_name not in variables[sim_name]:
-                variables[sim_name][param_name] = []
+            if comp_name not in variables:
+                variables[comp_name] = {}
+            if param_name not in variables[comp_name]:
+                variables[comp_name][param_name] = []
 
         # Read the values for each simulation and parameter
         for row in reader:
             if row == []: # there was an extra space or return at the EOF
                 break
             for i, col in enumerate(header):
-                sim_name, param_name = col.split(':')
-                sim_name = sim_name.strip()  # because there may be extraneous spaces
+                comp_name, param_name = col.split(':')
+                comp_name = comp_name.strip()  # because there may be extraneous spaces
                 param_name = param_name.strip()
-                variables[sim_name][param_name].append(row[i].strip())
+                variables[comp_name][param_name].append(row[i].strip())
 
     return variables
 
