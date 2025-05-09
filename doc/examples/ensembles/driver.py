@@ -52,17 +52,17 @@ class ensemble_driver(Component):
             raise RuntimeError(f'{template} config template file does not exist')
 
         # Specifies different sets of variable values for concurrent ensemble
-        # runs for two different components, 'a_sim_comp' and
-        # 'another_sim_comp', that correspond to two different coupled
+        # runs for two different components, 'a_comp' and
+        # 'another_comp', that correspond to two different coupled
         # simulations.  We chose two components to demonstrate that the same
         # variable, in this case 'B', can have different values for different
-        # components. 'a_sim_comp' and 'another_sim_comp' are the names of
+        # components. 'a_comp' and 'another_comp' are the names of
         # the config sections in the template file so we know where to look
         # for variable substitutions.
-        variables = {'a_sim_comp': {'A': [3, 2, 4],
+        variables = {'a_comp': {'A': [3, 2, 4],
                                     'B': [2.34, 5.82, 0.1],
                                     'C': ['bar', 'baz', 'quux']},
-                     'another_sim_comp': {'D': [7, 5, 9],
+                     'another_comp': {'D': [7, 5, 9],
                                           'B': [0.775, 0.080, 29.2],
                                           'F': ['xyzzy', 'plud', 'thud']}}
 
