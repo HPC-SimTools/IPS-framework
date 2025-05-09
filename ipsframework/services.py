@@ -16,8 +16,7 @@ import signal
 import glob
 import json
 import weakref
-import platform
-from string import Template
+
 from collections import namedtuple
 from operator import itemgetter
 from pathlib import Path
@@ -29,7 +28,7 @@ from .taskManager import TaskInit
 from . import messages, ipsutil
 from .cca_es_spec import initialize_event_service
 from .ips_es_spec import eventManager
-from .platformspec import platform_config_template
+
 
 
 RunningTask = namedtuple("RunningTask", ["process", "start_time", "timeout", "nproc", "cores_allocated", "command", "binary", "args"])
@@ -40,6 +39,10 @@ def launch(binary, task_name, working_dir, *args, **keywords):
     :meth:`TaskPool.submit_dask_tasks` as the
     input to :meth:`dask.distributed.Client.submit`.
 
+    :param binary: The binary to launch.
+    :param task_name: The name of the task.
+    :param working_dir: The working directory in which to run this task
+    :returns: The task name and the return value from running the binary.
     """
     from dask.distributed import get_worker  # pylint: disable=import-outside-toplevel
 
@@ -47,7 +50,7 @@ def launch(binary, task_name, working_dir, *args, **keywords):
     if not hasattr(worker, 'lock'):
         worker.lock = threading.Lock()
 
-    worker_name = ''.join(c for c in get_worker().name if c.isalnum())
+    worker_name = ''.join(c for c in worker.name if c.isalnum())
 
     start_time = time.time()
     os.chdir(working_dir)
@@ -2061,12 +2064,9 @@ class ServicesProxy:
 
 
     def run_ensemble(self, template, variables, run_dir,
-                     prefix,
-                     total_processors,
+                     name,
                      num_nodes,
-                     processors_per_node,
-                     cores_per_node,
-                     num_workers):
+                     instances_per_node=None):
         """ Run ensemble of simulations given the template and variables.
 
         `variables` is a nested dict that looks like this:
@@ -2091,23 +2091,23 @@ class ServicesProxy:
         config file created from `template` with `?` variables replaced
         with the values from `variables`.
 
-        TODO add support for specifying hardware and system configuration
-        details, such as the number of nodes, etc.
+        TODO be able to specify the number of cores per instance
 
         :param template: configuration template file
         :param variables: a dict of variables to pass to the ensemble runs
         :param run_dir: in which to run the ensembles
-        :param prefix: string to prepend to generated instance directory
-            and file names
-        :param total_processors: Total number of processors to allocate for the ensemble runs.
-        :param num_nodes: Total number of nodes to allocate for the ensemble runs.
-        :param processors_per_node: Number of processors per node
-        :param cores_per_node: Number of cores per node (FIXME processor?)
-        :param num_workers: Number of Dask workers to use
+        :param name: ensemble name, or string to prepend to generated instance
+            directory and file names
+        :param instances_per_node: How many ensemble instances to run on each
+            assigned node?  Each Dask worker will have a thread dedicated to
+            each instance.  If None, then the default is to use
+        :param num_nodes: Total number of nodes to allocate for the ensemble
+            runs. There will be one Dask worker assigned to each of these
+            nodes.
         :returns: a list of dicts mapping created subdirs to simulation names
             and their parameters
         """
-        def group_into_instances(variables, prefix):
+        def group_into_instances(variables, name):
             """ convert component variables into something like this:
 
              [['prefix_0', [['a_sim_comp', {'A': 3, 'B': 2.34, 'C': 'bar'}],
@@ -2133,8 +2133,8 @@ class ServicesProxy:
                     variables.items()}
 
             # Build the final structure where each instance is named
-            # INSTANCE_n
-            result = [[f"{prefix}{i}", [[sim_name, sim_data] for
+            # {prefix}_n
+            result = [[f"{name}{i}", [[sim_name, sim_data] for
                                          sim_name, sim_data_list in
                                          transposed.items() for sim_data in
                                          [sim_data_list[i]]]] for i in
@@ -2143,20 +2143,20 @@ class ServicesProxy:
             return result
 
 
-        def create_driver_config_file(template, working_dir, variables, prefix):
+        def create_driver_config_file(template, working_dir, variables, name):
             """ Create an IPS config file for an ensemble instance
 
             :param template: ConfigObj from which to derive the config file
             :param working_dir: in which to put the config file
             :param variables: component parameters that need to be plugged
                 into the template
-            :param prefix: instance string prefix for file names
+            :param name: instance string prefix for file names
             :returns: The file name of the created driver config file
             """
             # As a convenience, assign the ensemble instance name to
             # ENSEMBLE_INSTANCE so that the user can optionally use that string
             # in their reporting.
-            template['ENSEMBLE_INSTANCE'] = prefix
+            template['ENSEMBLE_INSTANCE'] = name
 
             if 'SIM_ROOT' in template and \
                 template['SIM_ROOT'] is not None and \
@@ -2227,8 +2227,8 @@ class ServicesProxy:
                             raise RuntimeError(f'Variable {variable} in section '
                                                f'{section} has not been assigned')
 
-            template['LOG_FILE'] = working_dir / Path(prefix + "_run.log")
-            template_filename = working_dir / Path(prefix + ".config")
+            template['LOG_FILE'] = working_dir / Path(name + "_run.log")
+            template_filename = working_dir / Path(name + ".config")
             template.filename = template_filename
             template.write()
 
@@ -2236,16 +2236,17 @@ class ServicesProxy:
 
 
         def create_platform_config_file(prefix, working_dir,
-                                        total_processors,
+                                        instances_per_node,
                                         num_nodes,
-                                        processors_per_node,
-                                        cores_per_node,
                                         **kwargs):
             """
             Create a platform config file for the ensemble instance.
 
             TODO consider moving to platformspec.py since this is platform
-            specific.
+                specific.
+
+            TODO consider refactoring this to use the ConfigObj class instead
+                of a python string template.
 
             :param prefix: instance string prefix for file names
             :param working_dir: in which to put the platform config file
@@ -2255,46 +2256,41 @@ class ServicesProxy:
             platform_config_file_path = working_dir / Path(prefix + "_platform.config")
             self.debug(f'Creating platform config file {platform_config_file_path}')
 
-            # define hostname
-            hostname = '' # platform.node()
+            platform_config = ConfigObj()
+            platform_config.filename = str(platform_config_file_path)
 
-            # define mpirun
-            mpirun = 'srun'
+            platform_config['HOST'] = ''
 
-            # define node_detection
-            node_detection = 'slurm_env'
+            platform_config['MPIRUN'] = 'srun'
+            platform_config['NODE_DETECTION'] = 'slurm_env'
 
-            # define total processors
-            total_processors = total_processors
+            # inherit cores per node from top-level platform config
+            platform_config['CORES_PER_NODE'] = self.get_config_param('CORES_PER_NODE')
 
-            # define number of nodes
-            number_of_nodes = num_nodes
+            platform_config['NODES'] = num_nodes
 
-            # define number of processors per node
-            processors_per_node = processors_per_node
+            # inherit total processors from top-level platform config
+            total_procs = self.get_config_param('TOTAL_PROCS', silent=True)
+            if total_procs is not None and total_procs > 0:
+                # Propagate the total processors to the platform config if
+                # it is defined and greater than zero.  Note that at the top-
+                # level it will default to zero if not defined, so we also
+                # check for that; i.e., if non-zero, we propagate that to
+                # each instance platform config file.
+                platform_config['TOTAL_PROCS'] = total_procs
 
-            # define cores per node
-            cores_per_node = cores_per_node
+            # define number of processors per node to be the instances per node
+            # that will become the number of Dask threads per node
+            if instances_per_node is not None and instances_per_node > 0:
+                platform_config['PROCS_PER_NODE'] = instances_per_node
 
-            # define sockets per node
-            # FIXME I think this is not an important feature that
-            # should be deprecated
-            sockets_per_node = 1
+            # Kept for backward compatibility; FIXME this should be deprecated
+            platform_config['SOCKETS_PER_NODE'] = 1
 
             # define node allocation mode
-            node_allocation_mode = 'shared'
+            platform_config['NODE_ALLOCATION_MODE'] = 'SHARED'
 
-            this_platform_config_template = Template(platform_config_template)
-            platform_config = this_platform_config_template.substitute(
-                hostname=hostname, mpirun=mpirun, node_detection=node_detection,
-                total_procs=total_processors, nodes=number_of_nodes,
-                procs_per_node=processors_per_node,
-                cores_per_node=cores_per_node,
-                sockets_per_node=sockets_per_node,
-                node_allocation_mode=node_allocation_mode)
-
-            with platform_config_file_path.open('w') as platform_config_file:
-                platform_config_file.write(platform_config)
+            platform_config.write()
 
             return platform_config_file_path
 
@@ -2308,14 +2304,16 @@ class ServicesProxy:
         # Let's first "flatten" the hierarchical variables dict into a list
         # of lists of dicts, where the top-level of which contains the ensemble
         # instance name and associated parameters.
-        instances = group_into_instances(variables, prefix)
+        instances = group_into_instances(variables, name)
 
-        task_pool_name = "ensemble_task_pool"
+        # Ensure that we create a unique task pool name for this using the
+        # instance prefix `name`
+        task_pool_name = f"{name}_ensemble_task_pool"
         self.create_task_pool(task_pool_name)
 
         # For each coupled simulation instance
         for instance in instances:
-            self.info(f'Running ensemble instance {instance[0]}')
+            self.info(f'Adding ensemble instance {instance[0]} to queue')
 
             # Create the subdir based on `path_dir` and the ensemble ID, which
             # is stored as the first list element in `instance`
@@ -2341,10 +2339,8 @@ class ServicesProxy:
             # Create the bespoke platform config file for this instance
             platform_filename = create_platform_config_file(instance[0],
                                                             working_dir,
-                                                            total_processors,
-                                                            num_nodes,
-                                                            processors_per_node,
-                                                            cores_per_node)
+                                                            instances_per_node,
+                                                            num_nodes)
 
             # Submit a task to run the simulation instance, which is another
             # IPS run pointed to that config file.
@@ -2355,11 +2351,10 @@ class ServicesProxy:
                           working_dir, 'ips.py', args)
 
         try:
-            # FIXME use passed in parameter for dask_nodes and dask_ppw
             num_submitted = self.submit_tasks(task_pool_name, #block=True,
                                               use_dask=True,
-                                              dask_nodes=num_workers,
-                                              dask_ppw=processors_per_node,
+                                              dask_nodes=num_nodes,
+                                              dask_ppw=instances_per_node,
                                               #launch_interval=0.0,
                                               #use_shifter=False,
                                               #shifter_args=None,
@@ -2367,7 +2362,6 @@ class ServicesProxy:
                                               #dask_worker_per_gpu=False
                                               )
             self.logger.info(f'Ran {num_submitted} ensemble tasks')
-            # launched_tasks = self.launch_task_pool(task_pool_name)
         except Exception as e:
             self.critical(f'Got an exception running ensemble: {e!s}')
         finally:
@@ -2532,6 +2526,8 @@ class TaskPool:
                                                     "--no-jupyter", "--no-show",
                                                     "--scheduler-file", self.dask_file_name, "--port", "0"]).pid
 
+        self.services.debug(f'Dask scheduler pid: {self.dask_sched_pid}')
+
         dask_nodes = 1 if dask_nodes is None else dask_nodes
         if services.get_config_param("MPIRUN") == "eval":
             dask_nodes = 1
@@ -2549,6 +2545,15 @@ class TaskPool:
 
         # Reality check; nthreads should be at least 1
         nthreads = 1 if nthreads is None or nthreads == 0 else nthreads
+
+        if dask_ppw:
+            self.services.debug(f'Using {dask_ppw} processes per Dask worker via '
+                       f'dask_ppw argument')
+        else:
+            self.services.debug(f'using {services.get_config_param("PROCS_PER_NODE")} '
+                       f'processes per Dask worker from platform config '
+                       f'PROCS_PER_NODE')
+        self.services.info(f'Threads per Dask worker is {nthreads}')
 
         # --nprocs was removed in version 2022.10.0 and replaced with --nworkers
         nworkers = "--nworkers" if tuple(map(int, self.distributed.__version__.split('.'))) >= (2022, 10, 0) else "--nprocs"
