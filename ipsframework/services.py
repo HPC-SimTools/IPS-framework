@@ -29,7 +29,7 @@ from . import messages, ipsutil
 from .cca_es_spec import initialize_event_service
 from .ips_es_spec import eventManager
 
-
+from distributed import WorkerPlugin
 
 RunningTask = namedtuple("RunningTask", ["process", "start_time", "timeout", "nproc", "cores_allocated", "command", "binary", "args"])
 
@@ -2380,6 +2380,42 @@ class ServicesProxy:
         return instances
 
 
+class DVMPlugin(WorkerPlugin):
+    def __init__(self):
+        super().__init__()
+
+        # Access the worker's logger
+        self.logger = worker.loop.logger
+
+    def setup(self, worker :Worker):
+        self.logger.info(f"Launching DVM")
+        self.worker.dvm_uri_file = f"/tmp/dvm.uri.{os.getpid()}"
+        command = ['prte',
+                   '--report-uri',
+                   self.worker.dvm_uri_file]
+        self.worker.dvm_proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        ready = self.worker.dvm_proc.stdout.readline()
+        self.logger.info(f"Ready Message : {ready}")
+        self.worker.dvm_uri = open(self.worker.dvm_uri_file).readline()
+        os.environ['PMIX_MCA_pmix_server_uri'] = 'file:' + self.worker.dvm_uri
+        # This was an artifact from Wael's notebook; kept because presumably
+        # this env variable might be used.  Can't hurt to be redundant.
+        os.environ['PMIX_SERVER_URI41'] = 'file:' + self.worker.dvm_uri
+        os.environ['PMIX_MCA_pmix_base_session_dir'] = '/tmp/prte_sessions'
+        self.logger.debug(f"dvm URI = {self.worker.dvm_uri}")
+        return
+
+    def teardown(self, worker: Worker):
+        self.logger.info(f"Shutting down DVM at {self.worker.dvm_uri}")
+        command = ['pterm',
+                   '--dvm-uri',
+                   self.worker.dvm_uri]
+        subprocess.call(command)
+        self.worker.dvm_proc.terminate()
+        self.worker.dvm_proc.kill()
+        return
+
+
 class TaskPool:
     """
     Class to contain and manage a pool of tasks.
@@ -2609,6 +2645,10 @@ class TaskPool:
             # TODO But what if there is more than one worker plugin?
             # TODO And what about scheduler plugins?
             self.dask_client.register_plugin(dask_worker_plugin)
+
+        # Regardless of any other worker plugins, we need this plugin to setup
+        # the DVM for the workers so that OpenMPI can work properly.
+        self.dask_client.register_plugin(DVMPlugin())
 
         try:
             self.worker_event_logfile = services.sim_name + '_' + services.get_config_param("PORTAL_RUNID") + '_' + self.name + '_{}.json'
