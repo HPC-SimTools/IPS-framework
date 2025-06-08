@@ -2153,6 +2153,10 @@ class ServicesProxy:
             :param name: instance string prefix for file names
             :returns: The file name of the created driver config file
             """
+            # ensure working_dir is Path obj since we use / operators later; no
+            # harm if it's already a Path obj.
+            working_dir = Path(working_dir)
+
             # As a convenience, assign the ensemble instance name to
             # ENSEMBLE_INSTANCE so that the user can optionally use that string
             # in their reporting.
@@ -2253,7 +2257,7 @@ class ServicesProxy:
             :param kwargs: optional platform specific parameters
             :returns: platform config file name
             """
-            platform_config_file_path = working_dir / Path(prefix + "_platform.config")
+            platform_config_file_path = Path(working_dir) / Path(prefix + "_platform.config")
             self.debug(f'Creating platform config file {platform_config_file_path}')
 
             platform_config = ConfigObj()
@@ -2298,7 +2302,10 @@ class ServicesProxy:
         self.info(f'Preparing to run ensembles in {run_dir}')
 
         # Grab the IPS config template to be used for all ensemble instances;
-        # str to convert from pathlib.Path
+        # str to convert from pathlib.Path; harmless conversion if already a Path.
+        template_config_file = Path(template)
+        if not template_config_file.exists():
+            raise RuntimeError(f'Template file {template_config_file.absolute()} not found')
         template_config = ConfigObj(str(template))
 
         # Let's first "flatten" the hierarchical variables dict into a list
@@ -2317,7 +2324,7 @@ class ServicesProxy:
 
             # Create the subdir based on `path_dir` and the ensemble ID, which
             # is stored as the first list element in `instance`
-            working_dir = run_dir / instance[0]
+            working_dir = Path(run_dir) / instance[0]
             working_dir.mkdir(parents=True, exist_ok=True)
 
             # Local log file for this ensemble instance
