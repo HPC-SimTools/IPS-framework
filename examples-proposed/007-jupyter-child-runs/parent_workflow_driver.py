@@ -9,13 +9,13 @@ CHILD_CONFIG_TEMPLATE = 'child.conf'
 
 
 class ParentWorkflowDriver(Component):
-    def init(self, timeid=0):
+    def init(self, timestamp=0.0, **keywords):
         self.services.info('initializing')
         self.services.stage_input_files([NOTEBOOK_1_TEMPLATE, CHILD_CONFIG_TEMPLATE])
         self.services.initialize_jupyter_notebook(NOTEBOOK_1_TEMPLATE)
         self.services.info('initialized')
 
-    def step(self, timeid=0):
+    def step(self, timestamp=0.0, **keywords):
         self.services.info('beginning step')
 
         # load initial config
@@ -79,5 +79,5 @@ APPLICATION_MODIFIER = {2 << k}
         print('return code of task 1', retcode_1)
         print('return code of task 2', retcode_2)
 
-    def finalize(self, timeid=0):
+    def finalize(self, timestamp=0.0, **keywords):
         self.services.info('finalized')
