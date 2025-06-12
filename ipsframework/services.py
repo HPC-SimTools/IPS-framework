@@ -2642,6 +2642,10 @@ class TaskPool:
 
         self.dask_client = self.dask.distributed.Client(scheduler_file=self.dask_file_name)
 
+        # And logging done via the dask workers will be forwarded to the root
+        # logger so that it can be captured by the services.
+        self.dask_client.forward_logging(level=self.logger.getEffectiveLevel())
+
         if dask_worker_plugin is not None:
             # TODO But what if there is more than one worker plugin?
             # TODO And what about scheduler plugins?
