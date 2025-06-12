@@ -29,7 +29,7 @@ from . import messages, ipsutil
 from .cca_es_spec import initialize_event_service
 from .ips_es_spec import eventManager
 
-from distributed import WorkerPlugin
+from distributed import WorkerPlugin, Worker
 
 RunningTask = namedtuple("RunningTask", ["process", "start_time", "timeout", "nproc", "cores_allocated", "command", "binary", "args"])
 
