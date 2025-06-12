@@ -2249,9 +2249,6 @@ class ServicesProxy:
             TODO consider moving to platformspec.py since this is platform
                 specific.
 
-            TODO consider refactoring this to use the ConfigObj class instead
-                of a python string template.
-
             :param prefix: instance string prefix for file names
             :param working_dir: in which to put the platform config file
             :param kwargs: optional platform specific parameters
@@ -2265,7 +2262,11 @@ class ServicesProxy:
 
             platform_config['HOST'] = ''
 
-            platform_config['MPIRUN'] = 'srun'
+            platform_config['MPIRUN'] = 'mpirun'
+
+            # This ensures that we use PRUN for launching tasks
+            platform_config['MPIRUN_VERSION'] = 'OPENMPI-DVM'
+
             platform_config['NODE_DETECTION'] = 'slurm_env'
 
             # inherit cores per node from top-level platform config
@@ -2648,6 +2649,8 @@ class TaskPool:
 
         # Regardless of any other worker plugins, we need this plugin to setup
         # the DVM for the workers so that OpenMPI can work properly.
+        # TODO is there some sort of context state to check to determine if
+        # we even need to do this?  E.g., this won't work on a laptop.
         self.dask_client.register_plugin(DVMPlugin())
 
         try:
