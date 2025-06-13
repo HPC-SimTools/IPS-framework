@@ -2663,6 +2663,7 @@ class TaskPool:
                                                          task_gpp=task_gpp)
 
         self.dask_client = self.dask.distributed.Client(scheduler_file=self.dask_scheduler_file)
+        self.services.debug(f'Dask client: {self.dask_client!s}')
 
         # And logging done via the dask workers will be forwarded to the root
         # logger so that it can be captured by the services.
@@ -2797,6 +2798,9 @@ class TaskPool:
         :return: dict mapping task name to exit status
         :rtype: dict
         """
+        assert self.dask_client is not None
+        assert self.futures is not None
+
         result = self.dask_client.gather(self.futures)
         worker_names = [''.join(c for c in worker['name'] if c.isalnum()) for worker in self.dask_client.scheduler_info()['workers'].values()]
         self.dask_client.shutdown()
