@@ -16,6 +16,7 @@ import signal
 import glob
 import json
 import weakref
+import traceback
 
 from collections import namedtuple
 from idlelib.pyshell import restart_line
@@ -2384,6 +2385,7 @@ class ServicesProxy:
             self.logger.info(f'Ran {num_submitted} ensemble tasks')
         except Exception as e:
             self.critical(f'Got an exception running ensemble: {e!s}')
+            traceback.print_exc()
         finally:
             exit_status = self.get_finished_tasks(task_pool_name)
             self.info(f'Finished tasks: {exit_status!s}')
@@ -2798,8 +2800,14 @@ class TaskPool:
         :return: dict mapping task name to exit status
         :rtype: dict
         """
-        assert self.dask_client is not None
-        assert self.futures is not None
+        if self.dask_client is None:
+            # FIXME How does this happen and is it ok when it does?
+            self.services.warning("No dask client in call to finished tasks status")
+            return None
+        if self.futures is None:
+            # FIXME How does this happen and is it ok when it does?
+            self.services.warning("No futures available in call to finished tasks status")
+            return None
 
         result = self.dask_client.gather(self.futures)
         worker_names = [''.join(c for c in worker['name'] if c.isalnum()) for worker in self.dask_client.scheduler_info()['workers'].values()]
