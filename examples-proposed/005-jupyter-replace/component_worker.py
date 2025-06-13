@@ -25,7 +25,6 @@ class Worker(Component):
             'y3': math.sin(self.start + timestamp / 50 * math.pi) ** 3,
         }
 
-        # TODO maybe assume that it's just one?
         state_file = self.services.get_config_param('STATE_FILES')
         with open(state_file, 'w') as f:
             json.dump(data, f)

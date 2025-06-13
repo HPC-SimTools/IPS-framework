@@ -14,8 +14,7 @@ class Monitor(Component):
     def init(self, timestamp=0.0):
         self.services.stage_input_files([NOTEBOOK_1_TEMPLATE])
 
-        # Example of initializing two separate notebooks
-        # Both notebooks should be initialized before the time loop and appended to inside the time loop
+        # Initialize the notebook once in the run.
         self.services.initialize_jupyter_notebook(NOTEBOOK_1_TEMPLATE)
 
     def step(self, timestamp=0.0, **keywords):

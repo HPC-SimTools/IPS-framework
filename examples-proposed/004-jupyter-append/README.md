@@ -16,11 +16,13 @@ source .venv/bin/activate
 pip install -e .
 ```
 
-To run the code, run:
+To run the code against the development instance, you will need to set the PORTAL_API_KEY environment variable and run:
 
 ```bash
-./run.sh
+PORTAL_API_KEY=**** ./run.sh
 ```
+
+To run the code against a local IPS Portal instance, change `PORTAL_URL` in `sim.conf` to your local address.
 
 By default, this example will always _append_ a state file.
 

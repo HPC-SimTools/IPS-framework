@@ -19,14 +19,12 @@ class Worker(Component):
         print(msg, file=stderr)
         self.services.send_portal_event(event_comment=msg)
 
-        # TODO - maybe make y2 and y3 slightly more unique with formulas (don't just multiply)
         data = {
             'y1': math.sin(self.start + timestamp / 50 * math.pi),
             'y2': math.sin(self.start + timestamp / 50 * math.pi) ** 2,
             'y3': math.sin(self.start + timestamp / 50 * math.pi) ** 3,
         }
 
-        # TODO maybe assume that it's just one?
         state_file = self.services.get_config_param('STATE_FILES')
         with open(state_file, 'w') as f:
             json.dump(data, f)

@@ -17,8 +17,7 @@ class Monitor(Component):
     def init(self, timestamp=0.0):
         self.services.stage_input_files([NOTEBOOK_1_TEMPLATE])
 
-        # Example of initializing two separate notebooks
-        # Both notebooks should be initialized before the time loop and appended to inside the time loop
+        # Initialize the notebook
         self.services.initialize_jupyter_notebook(NOTEBOOK_1_TEMPLATE)
 
     def step(self, timestamp=0.0, **keywords):
@@ -31,6 +30,7 @@ class Monitor(Component):
         state_file = self.services.get_config_param('STATE_FILES')
 
         # generate any analysis files from the state file you want
+        # since replace is true, do not worry about sending the same name of a file
         with open(state_file) as f:
             analysis = json.load(f)
 

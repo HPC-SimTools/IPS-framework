@@ -28,7 +28,6 @@ class ParentWorkflowDriver(Component):
         # get configuration values from parent and pass them through to the child configs
         parent_portal_runid = self.services.get_config_param('PORTAL_RUNID')
         portal_url = self.services.get_config_param('PORTAL_URL')
-        portal_api_key = self.services.get_config_param('PORTAL_API_KEY')
 
         # generate simulation config file for each child
         for k in range(1, 3):
@@ -38,7 +37,6 @@ SIM_NAME = sim child {k}
 RUN_ID = sim child {k}
 PARENT_PORTAL_RUNID = {parent_portal_runid}
 PORTAL_URL = {portal_url}
-PORTAL_API_KEY = {portal_api_key}
 
 # application-specific config variables
 APPLICATION_MODIFIER = {2 << k}

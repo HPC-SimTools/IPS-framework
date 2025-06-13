@@ -18,16 +18,14 @@ source .venv/bin/activate
 pip install -e .
 ```
 
-To run the code, run:
+To run the code against the development instance, you will need to set the PORTAL_API_KEY environment variable and run:
 
 ```bash
-./run.sh
+PORTAL_API_KEY=**** ./run.sh
 ```
 
-By default, this example will always _append_ a state file. If you prefer to see an example of how to _replace_ a state file, run:
+To run the code against a local IPS Portal instance, change `PORTAL_URL` in `sim.conf` to your local address.
 
-```bash
-EXAMPLE_REPLACE=1 ./run.sh
-```
+By default, this example will always _append_ a state file.
 
 There is also a script `run-delayed.sh` which you can use instead of `run.sh` if you would like to simulate a delay between monitor steps.
