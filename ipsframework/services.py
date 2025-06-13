@@ -121,16 +121,27 @@ def launch(binary, task_name, working_dir, *args, **keywords):
                       file=worker_event_log)
             os.killpg(process.pid, signal.SIGKILL)
             ret_val = -1
+        except Exception as e:
+            with worker.lock:
+                print(json.dumps({"eventType": "IPS_TASK_END",
+                                  "event_time": time.time(),
+                                  "comment": f"task_name = {task_name} "
+                                             f"Exception when calling "
+                                             f"{binary!s}: {e}"}),)
     else:
         with worker.lock:
-            print(json.dumps({"eventType": "IPS_LAUNCH_DASK_TASK", "event_time": time.time(),
-                              "comment": f"task_name = {task_name}, Target = {binary.__name__}({','.join(map(str, args))})"}),
+            print(json.dumps({"eventType": "IPS_LAUNCH_DASK_TASK",
+                              "event_time": time.time(),
+                              "comment": f"task_name = {task_name}, "
+                                         f"Target = {binary.__name__}({','.join(map(str, args))})"}),
                   file=worker_event_log)
         ret_val = binary(*args)
         finish_time = time.time()
         with worker.lock:
-            print(json.dumps({"eventType": "IPS_TASK_END", "event_time": finish_time,
-                              "comment": f"task_name = {task_name}, elapsed time = {finish_time - start_time:.2f}s",
+            print(json.dumps({"eventType": "IPS_TASK_END",
+                              "event_time": finish_time,
+                              "comment": f"task_name = {task_name}, "
+                                         f"elapsed time = {finish_time - start_time:.2f}s",
                               "start_time": start_time,
                               "elapsed_time": finish_time - start_time,
                               "target": binary.__name__,
@@ -2449,7 +2460,7 @@ class TaskPool:
         self.dask_sched_pid = None
         self.dask_workers_tid = None
         self.futures = None
-        self.dask_file_name = None
+        self.dask_scheduler_file = None
         self.dask_client = None
         self.worker_event_logfile = None
 
@@ -2526,7 +2537,8 @@ class TaskPool:
         self.queued_tasks[task_name] = Task(task_name, nproc, working_dir, binary_fullpath, *args,
                                             **keywords["keywords"])
 
-    def submit_dask_tasks(self, block=True, dask_nodes=1, dask_ppw=None, use_shifter=False, shifter_args=None,
+    def submit_dask_tasks(self, block=True, dask_nodes=1, dask_ppw=None,
+                          use_shifter=False, shifter_args=None,
                           dask_worker_plugin=None, dask_worker_per_gpu=False):
         """Launch tasks in *queued_tasks* using dask.
 
@@ -2553,23 +2565,23 @@ class TaskPool:
             See: https://distributed.dask.org/en/stable/efficiency.html#adjust-between-threads-and-processes
         """
         services: ServicesProxy = self.services
-        self.dask_file_name = os.path.join(os.getcwd(),
+        self.dask_scheduler_file = os.path.join(os.getcwd(),
                                            f".{self.name}_dask_shed_{time.time()}.json")
 
         if use_shifter:
             if shifter_args:
                 self.dask_sched_pid = subprocess.Popen([self.shifter, shifter_args, *self.dask_scheduler, "--no-dashboard",
                                                         "--no-jupyter", "--no-show",
-                                                        "--scheduler-file", self.dask_file_name, "--port", "0"]).pid
+                                                        "--scheduler-file", self.dask_scheduler_file, "--port", "0"]).pid
             else:
                 self.dask_sched_pid = subprocess.Popen([self.shifter, *self.dask_scheduler, "--no-dashboard",
                                                         "--no-jupyter", "--no-show",
-                                                        "--scheduler-file", self.dask_file_name, "--port", "0"]).pid
+                                                        "--scheduler-file", self.dask_scheduler_file, "--port", "0"]).pid
 
         else:
             self.dask_sched_pid = subprocess.Popen([*self.dask_scheduler, "--no-dashboard",
                                                     "--no-jupyter", "--no-show",
-                                                    "--scheduler-file", self.dask_file_name, "--port", "0"]).pid
+                                                    "--scheduler-file", self.dask_scheduler_file, "--port", "0"]).pid
 
         self.services.debug(f'Dask scheduler pid: {self.dask_sched_pid}')
 
@@ -2610,7 +2622,7 @@ class TaskPool:
                                                              shifter_args,
                                                              *self.dask_worker,
                                                              "--scheduler-file",
-                                                             self.dask_file_name,
+                                                             self.dask_scheduler_file,
                                                              nworkers, 1,
                                                              "--nthreads", nthreads,
                                                              "--no-dashboard",
@@ -2622,7 +2634,7 @@ class TaskPool:
                                                              self.shifter,
                                                              *self.dask_worker,
                                                              "--scheduler-file",
-                                                             self.dask_file_name,
+                                                             self.dask_scheduler_file,
                                                              nworkers, 1,
                                                              "--nthreads", nthreads,
                                                              "--no-dashboard",
@@ -2633,7 +2645,7 @@ class TaskPool:
             self.dask_workers_tid = services.launch_task(dask_nodes, os.getcwd(),
                                                          *self.dask_worker,
                                                          "--scheduler-file",
-                                                         self.dask_file_name,
+                                                         self.dask_scheduler_file,
                                                          nworkers, 1,
                                                          "--nthreads", nthreads,
                                                          "--no-dashboard",
@@ -2641,7 +2653,7 @@ class TaskPool:
                                                          task_ppn=task_ppn,
                                                          task_gpp=task_gpp)
 
-        self.dask_client = self.dask.distributed.Client(scheduler_file=self.dask_file_name)
+        self.dask_client = self.dask.distributed.Client(scheduler_file=self.dask_scheduler_file)
 
         # And logging done via the dask workers will be forwarded to the root
         # logger so that it can be captured by the services.
@@ -2673,6 +2685,7 @@ class TaskPool:
                                                         task.working_dir,
                                                         *task.args,
                                                         **task.keywords,
+                                                        key=task_name,
                                                         worker_event_logfile=self.worker_event_logfile))
         self.active_tasks = self.queued_tasks
         self.queued_tasks = {}
@@ -2811,7 +2824,7 @@ class TaskPool:
         self.finished_tasks = {}
         self.active_tasks = {}
         self.services.wait_task(self.dask_workers_tid)
-        self.dask_file_name = None
+        self.dask_scheduler_file = None
         self.dask_workers_tid = None
         self.dask_sched_pid = None
         self.dask_pool = False
