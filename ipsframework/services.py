@@ -2645,7 +2645,7 @@ class TaskPool:
 
         # And logging done via the dask workers will be forwarded to the root
         # logger so that it can be captured by the services.
-        self.dask_client.forward_logging(level=self.services.logger.getEffectiveLevel())
+        self.dask_client.forward_logging()
 
         if dask_worker_plugin is not None:
             # TODO But what if there is more than one worker plugin?
