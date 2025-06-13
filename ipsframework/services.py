@@ -18,6 +18,7 @@ import json
 import weakref
 
 from collections import namedtuple
+from idlelib.pyshell import restart_line
 from operator import itemgetter
 from pathlib import Path
 
@@ -2749,6 +2750,28 @@ class TaskPool:
         """Return a dictionary of exit status values for all dask tasks that
         have finished since the last time finished tasks were polled.
 
+        This function *also* shuts down the dask client.  (FIXME The fate of
+        the Dask scheduler and workers is unknown.)
+
+        It also, as yet another side-effect if it sees there's an associated
+        self.worker_event_logfile.  If there is one it will send monitor events
+        for each record found in that file.  It will then remove these log
+        files.
+
+        I recommend possibly splitting this into three different, focused
+        functions.  One for gathering the exit statuses from all workers.
+        Another for shutting down Dask, which means shutting down the client,
+        scheduler, *and* workers, not just the client.  (Though the scheduler
+        and workers will eventually expire due to timeouts.) And another for
+        creating events from Dask log messages.  (With a boolean argument to
+        denote whether these log files should be deleted after the fact.  I.e.,
+        the practitioner may want to look at those even if they're emitted
+        as IPS events.
+
+        This also presumes that the dask workers will return an exit status,
+        presumably of related subprocess calls.  FIXME What if we have other Dask
+        tasks that do not return an exit status?
+
         :return: dict mapping task name to exit status
         :rtype: dict
         """
@@ -2793,7 +2816,12 @@ class TaskPool:
         self.dask_sched_pid = None
         self.dask_pool = False
         self.serial_pool = True
-        return dict(result)
+
+        if result is not None:
+            # FIXME assumes that we can convert `result` into a dict, which
+            # is doubtful.
+            return dict(result)
+        return result # which will be none
 
     def get_finished_tasks_status(self):
         """
