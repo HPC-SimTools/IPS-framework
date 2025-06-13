@@ -2394,13 +2394,14 @@ class ServicesProxy:
 
 
 class DVMPlugin(WorkerPlugin):
-    def __init__(self):
+    def __init__(self, logger):
         super().__init__()
 
-        # Access the worker's logger
-        self.logger = worker.loop.logger
+        # Access the service's logger that's passed in
+        self.logger = logger
 
     def setup(self, worker :Worker):
+        self.worker = worker
         self.logger.info(f"Launching DVM")
         self.worker.dvm_uri_file = f"/tmp/dvm.uri.{os.getpid()}"
         command = ['prte',
@@ -2446,6 +2447,8 @@ class TaskPool:
         dask_worker = ['dask', 'worker']
 
         shifter = shutil.which("shifter")
+
+        IDLE_TIMEOUT = 60 * 10 # 10 minute default
 
 
     def __init__(self, name, services):
@@ -2572,15 +2575,21 @@ class TaskPool:
             if shifter_args:
                 self.dask_sched_pid = subprocess.Popen([self.shifter, shifter_args, *self.dask_scheduler, "--no-dashboard",
                                                         "--no-jupyter", "--no-show",
+                                                        "--idle-timeout",
+                                                        TaskPool.IDLE_TIMEOUT,
                                                         "--scheduler-file", self.dask_scheduler_file, "--port", "0"]).pid
             else:
                 self.dask_sched_pid = subprocess.Popen([self.shifter, *self.dask_scheduler, "--no-dashboard",
                                                         "--no-jupyter", "--no-show",
+                                                        "--idle-timeout",
+                                                        TaskPool.IDLE_TIMEOUT,
                                                         "--scheduler-file", self.dask_scheduler_file, "--port", "0"]).pid
 
         else:
             self.dask_sched_pid = subprocess.Popen([*self.dask_scheduler, "--no-dashboard",
                                                     "--no-jupyter", "--no-show",
+                                                    "--idle-timeout",
+                                                    TaskPool.IDLE_TIMEOUT,
                                                     "--scheduler-file", self.dask_scheduler_file, "--port", "0"]).pid
 
         self.services.debug(f'Dask scheduler pid: {self.dask_sched_pid}')
@@ -2668,7 +2677,7 @@ class TaskPool:
         # the DVM for the workers so that OpenMPI can work properly.
         # TODO is there some sort of context state to check to determine if
         # we even need to do this?  E.g., this won't work on a laptop.
-        self.dask_client.register_plugin(DVMPlugin())
+        self.dask_client.register_plugin(DVMPlugin(logger=services.logger))
 
         try:
             self.worker_event_logfile = services.sim_name + '_' + services.get_config_param("PORTAL_RUNID") + '_' + self.name + '_{}.json'
