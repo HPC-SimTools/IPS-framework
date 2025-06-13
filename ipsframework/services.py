@@ -2578,20 +2578,20 @@ class TaskPool:
                 self.dask_sched_pid = subprocess.Popen([self.shifter, shifter_args, *self.dask_scheduler, "--no-dashboard",
                                                         "--no-jupyter", "--no-show",
                                                         "--idle-timeout",
-                                                        TaskPool.IDLE_TIMEOUT,
+                                                        str(TaskPool.IDLE_TIMEOUT),
                                                         "--scheduler-file", self.dask_scheduler_file, "--port", "0"]).pid
             else:
                 self.dask_sched_pid = subprocess.Popen([self.shifter, *self.dask_scheduler, "--no-dashboard",
                                                         "--no-jupyter", "--no-show",
                                                         "--idle-timeout",
-                                                        TaskPool.IDLE_TIMEOUT,
+                                                        str(TaskPool.IDLE_TIMEOUT),
                                                         "--scheduler-file", self.dask_scheduler_file, "--port", "0"]).pid
 
         else:
             self.dask_sched_pid = subprocess.Popen([*self.dask_scheduler, "--no-dashboard",
                                                     "--no-jupyter", "--no-show",
                                                     "--idle-timeout",
-                                                    TaskPool.IDLE_TIMEOUT,
+                                                    str(TaskPool.IDLE_TIMEOUT),
                                                     "--scheduler-file", self.dask_scheduler_file, "--port", "0"]).pid
 
         self.services.debug(f'Dask scheduler pid: {self.dask_sched_pid}')
