@@ -2340,9 +2340,11 @@ class ServicesProxy:
             # is stored as the first list element in `instance`
             working_dir = Path(run_dir) / instance[0]
             working_dir.mkdir(parents=True, exist_ok=True)
+            self.debug(f'Working directory for instance {instance[0]} is {working_dir}')
 
             # Local log file for this ensemble instance
             log_file = working_dir / f'{instance[0]}.log'
+            self.debug(f'Log file for instance {instance[0]} is {log_file}')
 
             # Make a bespoke config file for this simulation instance based
             # on the template. This means substituting all the "?" variables
@@ -2356,12 +2358,14 @@ class ServicesProxy:
             simulation_filename = create_driver_config_file(
                 deepcopy(template_config), working_dir, instance[1],
                 instance[0])
+            self.debug(f'Simulation config file for instance {instance[0]} is {simulation_filename}')
 
             # Create the bespoke platform config file for this instance
             platform_filename = create_platform_config_file(instance[0],
                                                             working_dir,
                                                             instances_per_node,
                                                             num_nodes)
+            self.debug(f'Platform config file for instance {instance[0]} is {platform_filename}')
 
             # Submit a task to run the simulation instance, which is another
             # IPS run pointed to that config file.
