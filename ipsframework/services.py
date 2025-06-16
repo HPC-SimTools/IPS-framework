@@ -2372,6 +2372,10 @@ class ServicesProxy:
             args = (f'--simulation={simulation_filename} '
                     f'--log={log_file} --platform={str(platform_filename)}')
 
+            if self.fwk.logger.getEffectiveLevel() == logging.DEBUG:
+                # If we're in debug mode, then also pass the debug flag
+                args += ' --debug'
+
             self.add_task(task_pool_name, instance[0], 1,
                           working_dir, 'ips.py', args)
 
