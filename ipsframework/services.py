@@ -1913,6 +1913,9 @@ class ServicesProxy:
             return
 
         for source in current_data_file_paths:
+            if not os.path.exists(source):
+                self.warning(f'file {source} does not exist, skipping it')
+                continue
             filename = os.path.basename(source)
 
             event_data = {}

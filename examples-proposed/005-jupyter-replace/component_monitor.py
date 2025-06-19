@@ -8,7 +8,6 @@ from ipsframework import Component
 NOTEBOOK_1_TEMPLATE = 'basic.ipynb'
 
 
-# TODO - use two different examples instead of REPLACE loop
 class Monitor(Component):
     """
     The monitor is able to read state files and will separately post data.

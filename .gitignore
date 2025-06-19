@@ -1,6 +1,7 @@
 # temporary files
 *.tmp
 *.tmp.*
+tmp/
 
 
 # example code

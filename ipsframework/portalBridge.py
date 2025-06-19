@@ -8,6 +8,7 @@ import itertools
 import json
 import os
 import re
+import tarfile
 import time
 from collections import defaultdict
 from multiprocessing import Event, Pipe, Process
@@ -153,15 +154,21 @@ def send_jupyter_notebook_data(conn: Connection, stop: EventType, url: str, api_
                     'X-Ips-Filename': next_val['filename'],
                     'X-Ips-Tag': str(next_val['tag']),
                 }
-                if next_val['replace']:
+                if next_val.get('replace'):
                     headers['X-Ips-Replace'] = 'true'
+                data_archive_format = next_val.get('data_archive_format')
+                if data_archive_format:
+                    headers['X-Ips-Archive-Format'] = data_archive_format
+                # TODO - we should send the body in CHUNKS here.
+                with open(next_val['data_source'], 'rb') as f:
+                    body = f.read()
                 resp = http.request(
                     'POST',
                     url,
-                    body=next_val['data'],
+                    body=body,
                     headers=headers,
                 )
-            except urllib3.exceptions.MaxRetryError as e:
+            except (urllib3.exceptions.MaxRetryError, OSError) as e:
                 fail_count += 1
                 conn.send((999, str(e)))
             else:
@@ -326,8 +333,16 @@ class PortalBridge(Component):
             return
 
         if portal_data['eventtype'] == 'PORTAL_ADD_JUPYTER_DATA':
-            with open(portal_data['data_source'], 'rb') as f:
-                portal_data['data'] = f.read()
+            data_source = portal_data['data_source']
+            if os.path.isdir(data_source):
+                # assume that we are handling a specialized data format, and do not use compression
+                # write it into a file to handle chunked uploads
+                tarpath = f'{data_source}.tar'
+                portal_data['data_archive_format'] = 'tar'
+                with tarfile.open(tarpath, 'w') as tar:
+                    tar.add(data_source, arcname=os.path.basename(data_source))
+                portal_data['data_source'] = tarpath
+
             self.send_notebook_data(sim_data, portal_data)
             return
 
