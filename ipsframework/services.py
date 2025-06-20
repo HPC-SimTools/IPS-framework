@@ -2324,6 +2324,14 @@ class ServicesProxy:
             # define node allocation mode
             platform_config['NODE_ALLOCATION_MODE'] = 'SHARED'
 
+            # inherit the portal information from the top-level
+            use_portal = self.get_config_param('USE_PORTAL', silent=True)
+            if use_portal is not None or use_portal != '':
+                platform_config['USE_PORTAL'] = self.get_config_param('USE_PORTAL', silent=True)
+            else: # None specified, so we're going to have it default to False
+                # This turns off logging for the portal
+                platform_config['USE_PORTAL'] = 'False'
+
             platform_config.write()
 
             return platform_config_file_path
@@ -2725,6 +2733,7 @@ class TaskPool:
 
         try:
             self.worker_event_logfile = services.sim_name + '_' + services.get_config_param("PORTAL_RUNID") + '_' + self.name + '_{}.json'
+            self.services.debug(f'Worker event log file: {self.worker_event_logfile}')
         except KeyError:
             # USE_PORTAL == False
             self.worker_event_logfile = None
