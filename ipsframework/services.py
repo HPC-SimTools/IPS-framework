@@ -99,11 +99,23 @@ def launch(binary, task_name, working_dir, *args, **keywords):
                   file=worker_event_log)
 
         cmd_lst = cmd.split()
-        process = subprocess.Popen(cmd_lst, stdout=task_stdout,
-                                   stderr=task_stderr,
-                                   cwd=working_dir,
-                                   preexec_fn=os.setsid,
-                                   env=new_env)
+        try:
+            process = subprocess.Popen(cmd_lst, stdout=task_stdout,
+                                       stderr=task_stderr,
+                                       cwd=working_dir,
+                                       preexec_fn=os.setsid,
+                                       env=new_env)
+        except Exception as e:
+            with worker.lock:
+                print(json.dumps({"eventType": "IPS_TASK_END",
+                                  "event_time": time.time(),
+                                  "comment": f"task_name = {task_name} "
+                                             f"Exception when calling "
+                                             f"{binary!s}: {e}",
+                                  "operation": ' '.join(map(str, args))}),
+                      file=worker_event_log)
+            raise
+
         try:
             ret_val = process.wait(timeout)
             finish_time = time.time()
@@ -146,6 +158,7 @@ def launch(binary, task_name, working_dir, *args, **keywords):
                               "start_time": start_time,
                               "elapsed_time": finish_time - start_time,
                               "target": binary.__name__,
+                              "return_value": ret_val,
                               "operation": f"({','.join(map(str, args))})"}),
                   file=worker_event_log)
 
@@ -2617,6 +2630,8 @@ class TaskPool:
         FIXME consider having n processes instead of n threads given that we're
             likely running in a HPC context.
             See: https://distributed.dask.org/en/stable/efficiency.html#adjust-between-threads-and-processes
+
+        :returns: number of tasks submitted
         """
         services: ServicesProxy = self.services
         self.dask_scheduler_file = os.path.join(os.getcwd(),
@@ -2789,7 +2804,7 @@ class TaskPool:
         :type dask_worker_plugin: distributed.diagnostics.plugin.WorkerPlugin
         :param dask_worker_per_gpu: If true then a separate worker will be started for each GPU and binded to that GPU
         :type dask_worker_per_gpu: bool
-
+        :returns: number of tasks submitted
         """
 
         if use_dask:
@@ -2825,6 +2840,24 @@ class TaskPool:
             self._wait_active_tasks()
         return submit_count
 
+    def _shutdown_dask(self):
+        """
+        Shut down the dask client, scheduler, and workers.
+        """
+        if self.dask_client is not None:
+            self.dask_client.shutdown()
+            self.dask_client.close()
+            self.dask_client = None
+        if self.dask_sched_pid is not None:
+            try:
+                os.kill(self.dask_sched_pid, signal.SIGTERM)
+            except OSError as e:
+                self.services.exception(f"Error shutting down dask scheduler: {e}")
+            self.dask_sched_pid = None
+
+        sleep(1)  # Give time for the scheduler to shut down
+
+
     def get_dask_finished_tasks_status(self):
         """Return a dictionary of exit status values for all dask tasks that
         have finished since the last time finished tasks were polled.
@@ -2856,17 +2889,27 @@ class TaskPool:
         """
         if self.dask_client is None:
             # FIXME How does this happen and is it ok when it does?
-            self.services.warning("No dask client in call to finished tasks status")
+            self.services.warning("No dask client in call to finished tasks "
+                                  "status")
             return None
         if self.futures is None:
             # FIXME How does this happen and is it ok when it does?
-            self.services.warning("No futures available in call to finished tasks status")
+            self.services.warning("No futures available in call to finished "
+                                  "tasks status")
             return None
 
         result = self.dask_client.gather(self.futures)
+
+        self._shutdown_dask()
+
+        # If we don't have a result, then there were no tasks to gather.
+        if result is None:
+            self.services.warning("No futures available in call to finished ")
+            return {}
+
         worker_names = [''.join(c for c in worker['name'] if c.isalnum()) for worker in self.dask_client.scheduler_info()['workers'].values()]
-        self.dask_client.shutdown()
-        self.dask_client.close()
+
+
         time.sleep(1)
         if self.worker_event_logfile is not None:
             try:
