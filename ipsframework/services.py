@@ -2732,7 +2732,11 @@ class TaskPool:
         self.dask_client.register_plugin(DVMPlugin(logger=services.logger))
 
         try:
-            self.worker_event_logfile = services.sim_name + '_' + services.get_config_param("PORTAL_RUNID") + '_' + self.name + '_{}.json'
+            # FIXME why does this need PORTAL_RUNID, especially if
+            # USE_PORTAL is False?  Temporarily hacked it out; portal guy needs
+            # to look at this, though.
+            # self.worker_event_logfile = services.sim_name + '_' + services.get_config_param("PORTAL_RUNID") + '_' + self.name + '_{}.json'
+            self.worker_event_logfile = services.sim_name + '_' + self.name + '_{}.json'
             self.services.debug(f'Worker event log file: {self.worker_event_logfile}')
         except KeyError:
             # USE_PORTAL == False
