@@ -1917,6 +1917,10 @@ class ServicesProxy:
         in :py:meth:`ServicesProxy.launch_task`.
         """
         task_pool = self.task_pools[task_pool_name]
+        # Yep.  Explicitly setting `keywords` to the `keywords` argument.
+        # Because if you don't then this will fail because it expects that.
+        # FIXME This is an abomination.  Why not just pass `keywords`?
+        # And an undocumented side-effect.
         return task_pool.add_task(task_name, nproc, working_dir, binary,
                                   *args, keywords=keywords)
 
@@ -2174,6 +2178,7 @@ class ServicesProxy:
             # ENSEMBLE_INSTANCE so that the user can optionally use that string
             # in their reporting.
             template['ENSEMBLE_INSTANCE'] = name
+            template['SIM_NAME'] = name
 
             if 'SIM_ROOT' in template and \
                 template['SIM_ROOT'] is not None and \
@@ -2275,15 +2280,26 @@ class ServicesProxy:
 
             platform_config['HOST'] = ''
 
-            platform_config['MPIRUN'] = 'mpirun'
+            run_environment = self.get_config_param('MPIRUN')
+            node_detection = self.get_config_param('NODE_DETECTION')
 
-            # This ensures that we use PRUN for launching tasks
-            platform_config['MPIRUN_VERSION'] = 'OPENMPI-DVM'
+            if run_environment == 'MPIRUN' and node_detection == 'slurm_env':
+                # This ensures that we use PRUN for launching tasks in slurm
+                # environments.
+                platform_config['MPIRUN_VERSION'] = 'OPENMPI-DVM'
 
-            platform_config['NODE_DETECTION'] = 'slurm_env'
+            # Regardless, faithfully duplicate the MPIRUN setting from the
+            # top-level platform config, which is what the user has set. Same
+            # with node detection.
+            platform_config['MPIRUN'] = run_environment
+            platform_config['NODE_DETECTION'] = node_detection
 
-            # inherit cores per node from top-level platform config
+
+            # inherit h/w configuration from top-level platform config
+            # TODO only pass along values if they are actually set in the parent
             platform_config['CORES_PER_NODE'] = self.get_config_param('CORES_PER_NODE')
+            platform_config['PROCS_PER_NODE'] = self.get_config_param('PROCS_PER_NODE')
+            platform_config['TOTAL_PROCS'] = self.get_config_param('TOTAL_PROCS')
 
             platform_config['NODES'] = num_nodes
 
@@ -2316,10 +2332,12 @@ class ServicesProxy:
         self.info(f'Preparing to run ensembles in {run_dir}')
 
         # Grab the IPS config template to be used for all ensemble instances;
-        # str to convert from pathlib.Path; harmless conversion if already a Path.
+        # str to convert from pathlib.Path; harmless conversion if already a
+        # Path.
         template_config_file = Path(template)
         if not template_config_file.exists():
-            raise RuntimeError(f'Template file {template_config_file.absolute()} not found')
+            raise RuntimeError(f'Template file '
+                               f'{template_config_file.absolute()} not found')
         template_config = ConfigObj(str(template))
 
         # Let's first "flatten" the hierarchical variables dict into a list
@@ -2340,7 +2358,8 @@ class ServicesProxy:
             # is stored as the first list element in `instance`
             working_dir = Path(run_dir) / instance[0]
             working_dir.mkdir(parents=True, exist_ok=True)
-            self.debug(f'Working directory for instance {instance[0]} is {working_dir}')
+            self.debug(f'Working directory for instance {instance[0]} is '
+                       f'{working_dir}')
 
             # Local log file for this ensemble instance
             log_file = working_dir / f'{instance[0]}.log'
@@ -2358,30 +2377,42 @@ class ServicesProxy:
             simulation_filename = create_driver_config_file(
                 deepcopy(template_config), working_dir, instance[1],
                 instance[0])
-            self.debug(f'Simulation config file for instance {instance[0]} is {simulation_filename}')
+            self.debug(f'Simulation config file for instance {instance[0]} is '
+                       f'{simulation_filename}')
 
             # Create the bespoke platform config file for this instance
             platform_filename = create_platform_config_file(instance[0],
                                                             working_dir,
                                                             instances_per_node,
                                                             num_nodes)
-            self.debug(f'Platform config file for instance {instance[0]} is {platform_filename}')
+            self.debug(f'Platform config file for instance {instance[0]} is '
+                       f'{platform_filename}')
 
             # Submit a task to run the simulation instance, which is another
             # IPS run pointed to that config file.
-            args = (f'--simulation={simulation_filename} '
-                    f'--log={log_file} --platform={str(platform_filename)}')
+            args = [f'--simulation={simulation_filename}',
+                    f'--log={log_file}',
+                    f'--platform={str(platform_filename)}']
 
             if self.fwk.logger.getEffectiveLevel() == logging.DEBUG:
-                # If we're in debug mode, then also pass the debug flag
-                args += ' --debug'
+                # If we're in debug mode, then also pass the debug flag.
+                # May as well pass in the --verbose, too.
+                args.insert(1, '--debug')
+                args.insert(1, '--verbose')
 
             self.add_task(task_pool_name, instance[0], 1,
-                          working_dir, 'ips.py', args)
+                          working_dir, 'ips.py', *args)
 
         try:
+            # Only use Dask if we are in a Slurm environment using MPI, else
+            # fall back on default means of executing of tasks.
+            use_dask = self.get_config_param('MPIRUN').lower() == 'mpirun' and \
+                    self.get_config_param('NODE_DETECTION').lower() == 'slurm_env'
+
+            self.debug(f'Using Dask: {use_dask}')
+
             num_submitted = self.submit_tasks(task_pool_name, #block=True,
-                                              use_dask=True,
+                                              use_dask=use_dask,
                                               dask_nodes=num_nodes,
                                               dask_ppw=instances_per_node,
                                               #launch_interval=0.0,
@@ -2417,7 +2448,9 @@ class DVMPlugin(WorkerPlugin):
         command = ['prte',
                    '--report-uri',
                    self.worker.dvm_uri_file]
-        self.worker.dvm_proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        self.worker.dvm_proc = subprocess.Popen(command,
+                                                stdout=subprocess.PIPE,
+                                                stderr=subprocess.STDOUT)
         ready = self.worker.dvm_proc.stdout.readline()
         self.logger.info(f"Ready Message : {ready}")
         self.worker.dvm_uri = open(self.worker.dvm_uri_file).readline()
