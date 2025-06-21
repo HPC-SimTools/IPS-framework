@@ -2891,26 +2891,29 @@ class TaskPool:
             # FIXME How does this happen and is it ok when it does?
             self.services.warning("No dask client in call to finished tasks "
                                   "status")
-            return None
+            return {}
+
         if self.futures is None:
             # FIXME How does this happen and is it ok when it does?
             self.services.warning("No futures available in call to finished "
                                   "tasks status")
-            return None
+            self._shutdown_dask()
+
+            return {}
 
         result = self.dask_client.gather(self.futures)
-
-        self._shutdown_dask()
 
         # If we don't have a result, then there were no tasks to gather.
         if result is None:
             self.services.warning("No futures available in call to finished ")
+            self._shutdown_dask()
             return {}
 
         worker_names = [''.join(c for c in worker['name'] if c.isalnum()) for worker in self.dask_client.scheduler_info()['workers'].values()]
 
+        # We no longer need Dask running, so shut it down.
+        self._shutdown_dask()
 
-        time.sleep(1)
         if self.worker_event_logfile is not None:
             try:
                 events = []
