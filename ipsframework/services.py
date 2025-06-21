@@ -46,7 +46,6 @@ def launch(binary, task_name, working_dir, *args, **keywords):
     :param working_dir: The working directory in which to run this task
     :returns: The task name and the return value from running the binary.
     """
-    import logging
     from dask.distributed import get_worker  # pylint: disable=import-outside-toplevel
 
     worker = get_worker()
@@ -55,7 +54,7 @@ def launch(binary, task_name, working_dir, *args, **keywords):
 
     worker_name = ''.join(c for c in worker.name if c.isalnum())
 
-    logging.info(f'Launching task {task_name} with worker {worker_name} in '
+    worker.logger.info(f'Launching task {task_name} with worker {worker_name} in '
                  f'{working_dir}')
 
     start_time = time.time()
@@ -65,10 +64,10 @@ def launch(binary, task_name, working_dir, *args, **keywords):
     try:
         event_logfile = keywords["worker_event_logfile"].format(worker_name)
     except (KeyError, AttributeError):
-        logging.warning("No worker_event_logfile specified, using stdout for logging")
+        worker.logger.warning("No worker_event_logfile specified, using stdout for logging")
     else:
         worker_event_log = open(event_logfile, 'a')
-        logging.info(f'Worker event log file: {event_logfile}')
+        worker.logger.info(f'Worker event log file: {event_logfile}')
 
     ret_val = None
     if isinstance(binary, str):
@@ -76,24 +75,24 @@ def launch(binary, task_name, working_dir, *args, **keywords):
         try:
             log_filename = keywords["logfile"]
         except KeyError:
-            logging.info("No logfile specified, using stdout for task output")
+            worker.logger.info("No logfile specified, using stdout for task output")
         else:
             task_stdout = open(log_filename, "w")
-            logging.info(f'Task output log file: {log_filename}')
+            worker.logger.info(f'Task output log file: {log_filename}')
 
         task_stderr = subprocess.STDOUT
         try:
             err_filename = keywords["errfile"]
         except KeyError:
-            logging.info("No errfile specified, using STDOUT for task errors")
+            worker.logger.info("No errfile specified, using STDOUT for task errors")
         else:
             try:
                 task_stderr = open(err_filename, "w")
             except OSError:
-                logging.info(f'Could not open errfile {err_filename}, '
+                worker.logger.info(f'Could not open errfile {err_filename}, '
                              f'using STDOUT for task errors')
             else:
-                logging.info(f'Task error log file: {err_filename}')
+                worker.logger.info(f'Task error log file: {err_filename}')
 
         task_env = keywords.get("task_env", {})
         new_env = os.environ.copy()
@@ -103,7 +102,7 @@ def launch(binary, task_name, working_dir, *args, **keywords):
 
         cmd = f"{binary} {' '.join(map(str, args))}"
 
-        logging.debug(f'Launching task {task_name} with command: {cmd}')
+        worker.logger.debug(f'Launching task {task_name} with command: {cmd}')
 
         with worker.lock:
             print(json.dumps({"eventType": "IPS_LAUNCH_DASK_TASK", "event_time": time.time(),
@@ -126,7 +125,7 @@ def launch(binary, task_name, working_dir, *args, **keywords):
                                              f"{binary!s}: {e}",
                                   "operation": ' '.join(map(str, args))}),
                       file=worker_event_log)
-            logging.error(f"Failed to launch task {task_name} with command "
+            worker.logger.error(f"Failed to launch task {task_name} with command "
                           f"{cmd}: {e}")
             raise
 
@@ -147,7 +146,7 @@ def launch(binary, task_name, working_dir, *args, **keywords):
                                   "comment": f"task_name = {task_name}, timed-out after {timeout}s"}),
                       file=worker_event_log)
             os.killpg(process.pid, signal.SIGKILL)
-            logging.error(f"Task {task_name} with command {cmd} timed out "
+            worker.logger.error(f"Task {task_name} with command {cmd} timed out "
                           f"after {timeout}s")
             ret_val = -1
         except Exception as e:
@@ -157,7 +156,7 @@ def launch(binary, task_name, working_dir, *args, **keywords):
                                   "comment": f"task_name = {task_name} "
                                              f"Exception when calling "
                                              f"{binary!s}: {e}"}),)
-            logging.error(f"Task {task_name} with command {cmd} failed "
+            worker.logger.error(f"Task {task_name} with command {cmd} failed "
                           f"with {e}")
     else:
         with worker.lock:
@@ -180,7 +179,7 @@ def launch(binary, task_name, working_dir, *args, **keywords):
                               "operation": f"({','.join(map(str, args))})"}),
                   file=worker_event_log)
 
-    logging.info(f'Task {task_name} finished with return value: {ret_val}')
+    worker.logger.info(f'Task {task_name} finished with return value: {ret_val}')
 
     return task_name, ret_val
 
