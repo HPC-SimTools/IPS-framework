@@ -2855,7 +2855,7 @@ class TaskPool:
                 self.services.exception(f"Error shutting down dask scheduler: {e}")
             self.dask_sched_pid = None
 
-        sleep(1)  # Give time for the scheduler to shut down
+        time.sleep(1)  # Give time for the scheduler to shut down
 
 
     def get_dask_finished_tasks_status(self):
