@@ -2483,6 +2483,7 @@ class DVMPlugin(WorkerPlugin):
 
     def setup(self, worker :Worker):
         self.worker = worker
+        worker.logger = self.logger
         self.logger.info(f"Launching DVM")
         self.worker.dvm_uri_file = f"/tmp/dvm.uri.{os.getpid()}"
         command = ['prte',
