@@ -2371,6 +2371,10 @@ class ServicesProxy:
 
         self.info(f'Preparing to run ensembles in {run_dir}')
 
+        # Forcing this since the debugging level isn't get set to
+        # this even though I specified that via --debug
+        self.logger.setLevel(logging.DEBUG)
+
         # Grab the IPS config template to be used for all ensemble instances;
         # str to convert from pathlib.Path; harmless conversion if already a
         # Path.
@@ -2987,6 +2991,7 @@ class TaskPool:
         """
         if self.dask_pool:
             return self.get_dask_finished_tasks_status()
+
         if len(self.active_tasks) + len(self.finished_tasks) == 0:
             raise Exception('No more active tasks in task pool %s' % self.name)
 
