@@ -758,6 +758,15 @@ class ServicesProxy:
         whole_nodes = keywords.get('whole_nodes', not self.shared_nodes)
         whole_socks = keywords.get('whole_sockets', not self.shared_nodes)
 
+        self.debug(f'task_ppn = {task_ppn}')
+        self.debug(f'task_cpp = {task_cpp}')
+        self.debug(f'task_gpp = {task_gpp}')
+        self.debug(f'omp = {omp}')
+        self.debug(f'tag = {tag}')
+        self.debug(f'launch_cmd_extra_args = {launch_cmd_extra_args}')
+        self.debug(f'whole_nodes = {whole_nodes}')
+        self.debug(f'whole_socks = {whole_socks}')
+
         try:
             # SIMYAN: added working_dir to component method invocation
             msg_id = self._invoke_service(self.fwk.component_id,
@@ -766,10 +775,17 @@ class ServicesProxy:
                                                    working_dir, int(task_ppn), task_cpp, task_gpp, block,
                                                    omp, whole_nodes, whole_socks, args, launch_cmd_extra_args))
             (task_id, command, env_update, cores_allocated) = self._get_service_response(msg_id, block=True)
-        except Exception:
+            self.debug(f'init_task(): task_id = {task_id}')
+            self.debug(f'command = {command}')
+            self.debug(f'env_update = {env_update}')
+            self.debug(f'cores_allocated = {cores_allocated}')
+        except Exception as e:
+            self.error(f'Error setting up task for command "{command}": {e}')
             raise
 
         task_id = self._launch_task(nproc, working_dir, task_id, command, cores_allocated, env_update, tag, keywords, binary, args)
+
+        self.debug(f'Returned task_id = {task_id} for launching "{command}"')
 
         if env_update:
             self._send_monitor_event('IPS_LAUNCH_TASK', f'task_id = {task_id} , Tag = {tag} , nproc = {nproc} , Target = {command}, env = {env_update}',
@@ -2657,7 +2673,37 @@ class TaskPool:
 
         :returns: number of tasks submitted
         """
+        def _make_worker_args(num_workers, num_threads, use_shifter, use_dvm):
+            """ Make Dask worker command line arguments.
+
+            :param num_workers: Number of workers to start
+            :param num_threads: Number of threads per worker
+            :param use_shifter: If True, then use shifter to launch the worker
+            :param use_dvm: If True, then use the DVM to launch the worker
+            :returns: list of command line arguments to pass to subprocess call
+                to start a Dask worker
+            """
+            base_args = [*self.dask_worker, "--no-dashboard", "--no-nanny",
+                            "--scheduler-file", self.dask_scheduler_file,
+                         "--nworkers", str(num_workers),
+                         "--nthreads", str(num_threads)]
+
+            if use_dvm:
+                # If we're using DVM, then we need to add the DVM URI file
+                # to the command line arguments.
+                base_args.insert(0, self.dvm_uri_file)
+                base_args.insert(0, "--dvm-uri-file")
+
+            if use_shifter: # insert shifter command and args if needed
+                if shifter_args and shifter_args.strip() != '':
+                    base_args.insert(0, shifter_args)
+                base_args.insert(0, self.shifter)
+
+            return base_args
+
+
         services: ServicesProxy = self.services
+
         self.dask_scheduler_file = os.path.join(os.getcwd(),
                                            f".{self.name}_dask_shed_{time.time()}.json")
 
