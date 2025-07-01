@@ -41,6 +41,25 @@ def launch(binary, task_name, working_dir, *args, **keywords):
     :meth:`TaskPool.submit_dask_tasks` as the
     input to :meth:`dask.distributed.Client.submit`.
 
+    Valid keywords:
+    * `worker_event_logfile` - where JSON log messages are written
+    * `logfile` - where the task output is written; if not specified,
+        STDOUT used
+    * `errfile` - where the task error output is written; if not specified,
+        STDOUT used
+    * `task_env` - A dictionary of environment variables to set
+    * `timeout` - The timeout in seconds for the task to complete.
+    * `cpus_per_proc` - The number of cpus per process to use for the task.
+        This implies that the DVMPlugin has set up a DVM daemon for this node.
+
+    If the worker has the attribute `dvm_uri_file`, then we are running
+    with a DVM (Distributed Virtual Machine) so the `binary` needs a
+    `prun` prepended pointing to that.
+
+    If the worker doesn't have a `lock` attribute, then we create one by
+    assigning a threading lock to it. This is used to ensure that
+    the worker's event log is written to in a thread-safe manner.
+
     :param binary: The binary to launch.
     :param task_name: The name of the task.
     :param working_dir: The working directory in which to run this task
@@ -91,6 +110,7 @@ def launch(binary, task_name, working_dir, *args, **keywords):
             except OSError:
                 worker.logger.info(f'Could not open errfile {err_filename}, '
                              f'using STDOUT for task errors')
+                task_stderr = subprocess.STDOUT
             else:
                 worker.logger.info(f'Task error log file: {err_filename}')
 
@@ -102,6 +122,13 @@ def launch(binary, task_name, working_dir, *args, **keywords):
 
         cmd = f"{binary} {' '.join(map(str, args))}"
 
+        if hasattr(worker, 'dvm_uri_file'):
+            # Then we are running with a DVM (Distributed Virtual Machine)
+            prun_cmd = f'prun --dvm-uri {worker.dvm_uri_file} '
+            if 'cores_per_proc' in keywords:
+                prun_cmd += f' --cpus-per-proc {keywords["cpus_per_proc"]}'
+            cmd = f"{prun_cmd}{cmd}"
+
         worker.logger.debug(f'Launching task {task_name} with command: {cmd}')
 
         with worker.lock:
@@ -111,7 +138,8 @@ def launch(binary, task_name, working_dir, *args, **keywords):
 
         cmd_lst = cmd.split()
         try:
-            process = subprocess.Popen(cmd_lst, stdout=task_stdout,
+            process = subprocess.Popen(cmd_lst,
+                                       stdout=task_stdout,
                                        stderr=task_stderr,
                                        cwd=working_dir,
                                        preexec_fn=os.setsid,
@@ -2673,13 +2701,12 @@ class TaskPool:
 
         :returns: number of tasks submitted
         """
-        def _make_worker_args(num_workers, num_threads, use_shifter, use_dvm):
+        def _make_worker_args(num_workers, num_threads, use_shifter, shifter_args=None):
             """ Make Dask worker command line arguments.
 
             :param num_workers: Number of workers to start
             :param num_threads: Number of threads per worker
             :param use_shifter: If True, then use shifter to launch the worker
-            :param use_dvm: If True, then use the DVM to launch the worker
             :returns: list of command line arguments to pass to subprocess call
                 to start a Dask worker
             """
@@ -2688,15 +2715,13 @@ class TaskPool:
                          "--nworkers", str(num_workers),
                          "--nthreads", str(num_threads)]
 
-            if use_dvm:
-                # If we're using DVM, then we need to add the DVM URI file
-                # to the command line arguments.
-                base_args.insert(0, self.dvm_uri_file)
-                base_args.insert(0, "--dvm-uri-file")
-
             if use_shifter: # insert shifter command and args if needed
-                if shifter_args and shifter_args.strip() != '':
-                    base_args.insert(0, shifter_args)
+                # This could be a string or a list of arguments.
+                if shifter_args:
+                    if isinstance(shifter_args, tuple) and shifter_args != ():
+                        base_args[0:0] = shifter_args
+                    elif isinstance(shifter_args, str) and shifter_args != '':
+                        base_args.insert(0, shifter_args)
                 base_args.insert(0, self.shifter)
 
             return base_args
@@ -2760,43 +2785,21 @@ class TaskPool:
         # --nprocs was removed in version 2022.10.0 and replaced with --nworkers
         nworkers = "--nworkers" if tuple(map(int, self.distributed.__version__.split('.'))) >= (2022, 10, 0) else "--nprocs"
 
-        if use_shifter:
-            if shifter_args:
-                self.dask_workers_tid = services.launch_task(dask_nodes, os.getcwd(),
-                                                             self.shifter,
-                                                             shifter_args,
-                                                             *self.dask_worker,
-                                                             "--scheduler-file",
-                                                             self.dask_scheduler_file,
-                                                             nworkers, 1,
-                                                             "--nthreads", nthreads,
-                                                             "--no-dashboard",
-                                                             "--no-nanny",
-                                                             task_ppn=task_ppn,
-                                                             task_gpp=task_gpp)
-            else:
-                self.dask_workers_tid = services.launch_task(dask_nodes, os.getcwd(),
-                                                             self.shifter,
-                                                             *self.dask_worker,
-                                                             "--scheduler-file",
-                                                             self.dask_scheduler_file,
-                                                             nworkers, 1,
-                                                             "--nthreads", nthreads,
-                                                             "--no-dashboard",
-                                                             "--no-nanny",
-                                                             task_ppn=task_ppn,
-                                                             task_gpp=task_gpp)
-        else:
-            self.dask_workers_tid = services.launch_task(dask_nodes, os.getcwd(),
-                                                         *self.dask_worker,
-                                                         "--scheduler-file",
-                                                         self.dask_scheduler_file,
-                                                         nworkers, 1,
-                                                         "--nthreads", nthreads,
-                                                         "--no-dashboard",
-                                                         "--no-nanny",
-                                                         task_ppn=task_ppn,
-                                                         task_gpp=task_gpp)
+        workers_cmd_line = _make_worker_args(num_workers=1,
+                                             num_threads=nthreads,
+                                             use_shifter=use_shifter,
+                                             shifter_args=shifter_args)
+
+        if use_dvm:
+            # If we're using DVM, then we need to add the DVM URI file
+            # to the command line arguments.
+            base_args.insert(0, self.dvm_uri_file)
+            base_args.insert(0, "--dvm-uri-file")
+
+        self.dask_workers_tid = services.launch_task(dask_nodes, os.getcwd(),
+                                                    *workers_cmd_line,
+                                                     task_ppn=task_ppn,
+                                                     task_gpp=task_gpp)
 
         self.dask_client = self.dask.distributed.Client(scheduler_file=self.dask_scheduler_file)
         self.services.debug(f'Dask client: {self.dask_client!s}')
