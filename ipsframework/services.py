@@ -2773,10 +2773,11 @@ class TaskPool:
         # Reality check; nthreads should be at least 1
         nthreads = 1 if nthreads is None or nthreads == 0 else nthreads
 
-        if dask_ppw:
+        if dask_ppw is not None:
             self.services.debug(f'Using {dask_ppw} processes per Dask worker via '
                        f'dask_ppw argument')
         else:
+            dask_ppw = int(services.get_config_param("PROCS_PER_NODE"))
             self.services.debug(f'using {services.get_config_param("PROCS_PER_NODE")} '
                        f'processes per Dask worker from platform config '
                        f'PROCS_PER_NODE')
@@ -2789,12 +2790,6 @@ class TaskPool:
                                              num_threads=nthreads,
                                              use_shifter=use_shifter,
                                              shifter_args=shifter_args)
-
-        if use_dvm:
-            # If we're using DVM, then we need to add the DVM URI file
-            # to the command line arguments.
-            base_args.insert(0, self.dvm_uri_file)
-            base_args.insert(0, "--dvm-uri-file")
 
         self.dask_workers_tid = services.launch_task(dask_nodes, os.getcwd(),
                                                     *workers_cmd_line,
@@ -2840,6 +2835,7 @@ class TaskPool:
                                                         *task.args,
                                                         **task.keywords,
                                                         key=task_name,
+                                                        cpus_per_proc=dask_ppw,
                                                         worker_event_logfile=self.worker_event_logfile))
         self.active_tasks = self.queued_tasks
         self.queued_tasks = {}
