@@ -70,10 +70,8 @@ class ensemble_driver(Component):
         # variable values. `mapping` is a data struct that associates the
         # specific simulation to a given run directory so that the user can
         # easily find output for a specific run.
-        mapping = self.services.run_ensemble(template,
-                                             variables,
-                                             run_dir,
-                                             prefix, use_dask=True)
+        mapping = self.services.run_ensemble(template, variables, run_dir,
+                                             prefix, )
 
         self.services.info(f'Mapping of dirs to parameters: {mapping!s}')
 

@@ -4,6 +4,7 @@
 """IPS Services"""
 import sys
 import queue
+import socket
 import os
 import subprocess
 import threading
@@ -121,13 +122,6 @@ def launch(binary, task_name, working_dir, *args, **keywords):
         timeout = float(keywords.get("timeout", 1.e9))
 
         cmd = f"{binary} {' '.join(map(str, args))}"
-
-        if hasattr(worker, 'dvm_uri_file'):
-            # Then we are running with a DVM (Distributed Virtual Machine)
-            prun_cmd = f'prun --dvm-uri {worker.dvm_uri_file} '
-            if 'cores_per_proc' in keywords:
-                prun_cmd += f' --cpus-per-proc {keywords["cpus_per_proc"]}'
-            cmd = f"{prun_cmd}{cmd}"
 
         worker.logger.debug(f'Launching task {task_name} with command: {cmd}')
 
@@ -2156,10 +2150,13 @@ class ServicesProxy:
         return (sim_name, init_comp, driver_comp)
 
 
-    def run_ensemble(self, template, variables, run_dir,
+    def run_ensemble(self,
+                     template,
+                     variables,
+                     run_dir,
                      name,
                      num_nodes,
-                     instances_per_node=None):
+                     cores_per_instance=None):
         """ Run ensemble of simulations given the template and variables.
 
         `variables` is a nested dict that looks like this:
@@ -2191,9 +2188,7 @@ class ServicesProxy:
         :param run_dir: in which to run the ensembles
         :param name: ensemble name, or string to prepend to generated instance
             directory and file names
-        :param instances_per_node: How many ensemble instances to run on each
-            assigned node?  Each Dask worker will have a thread dedicated to
-            each instance.  If None, then the default is to use
+        :param cores_per_instance: How many cores per ensemble instances?
         :param num_nodes: Total number of nodes to allocate for the ensemble
             runs. There will be one Dask worker assigned to each of these
             nodes.
@@ -2333,9 +2328,9 @@ class ServicesProxy:
             return template_filename
 
 
-        def create_platform_config_file(prefix, working_dir,
-                                        instances_per_node,
-                                        num_nodes,
+        def create_platform_config_file(prefix,
+                                        working_dir,
+                                        cores_per_instance,
                                         **kwargs):
             """
             Create a platform config file for the ensemble instance.
@@ -2354,50 +2349,41 @@ class ServicesProxy:
             platform_config = ConfigObj()
             platform_config.filename = str(platform_config_file_path)
 
-            platform_config['HOST'] = ''
-
-            run_environment = self.get_config_param('MPIRUN')
-            node_detection = self.get_config_param('NODE_DETECTION')
-
-            if run_environment == 'MPIRUN' and node_detection == 'slurm_env':
-                # This ensures that we use PRUN for launching tasks in slurm
-                # environments.
-                platform_config['MPIRUN_VERSION'] = 'OPENMPI-DVM'
+            # Though in a batch submission context this may not have much
+            # meaning.
+            platform_config['HOST'] =  socket.gethostname()
 
             # Regardless, faithfully duplicate the MPIRUN setting from the
             # top-level platform config, which is what the user has set. Same
             # with node detection.
-            platform_config['MPIRUN'] = run_environment
-            platform_config['NODE_DETECTION'] = node_detection
+            platform_config['MPIRUN'] = 'MPIRUN'
+            platform_config['NODE_DETECTION'] = 'slrum_env'
 
 
-            # inherit h/w configuration from top-level platform config
-            # TODO only pass along values if they are actually set in the parent
-            platform_config['CORES_PER_NODE'] = self.get_config_param('CORES_PER_NODE')
-            platform_config['PROCS_PER_NODE'] = self.get_config_param('PROCS_PER_NODE')
-            platform_config['TOTAL_PROCS'] = self.get_config_param('TOTAL_PROCS')
+            # SEt many cores per instance
+            platform_config['CORES_PER_NODE'] = cores_per_instance
+            platform_config['PROCS_PER_NODE'] = cores_per_instance
 
-            platform_config['NODES'] = num_nodes
+            # for now each instance will always run on just one node
+            platform_config['NODES'] = 1
 
-            # inherit total processors from top-level platform config
-            total_procs = self.get_config_param('TOTAL_PROCS', silent=True)
-            if total_procs is not None and total_procs > 0:
-                # Propagate the total processors to the platform config if
-                # it is defined and greater than zero.  Note that at the top-
-                # level it will default to zero if not defined, so we also
-                # check for that; i.e., if non-zero, we propagate that to
-                # each instance platform config file.
-                platform_config['TOTAL_PROCS'] = total_procs
+            # TODO going to ignore this for now
+            # # inherit total processors from top-level platform config
+            # total_procs = self.get_config_param('TOTAL_PROCS', silent=True)
+            # if total_procs is not None and total_procs > 0:
+            #     # Propagate the total processors to the platform config if
+            #     # it is defined and greater than zero.  Note that at the top-
+            #     # level it will default to zero if not defined, so we also
+            #     # check for that; i.e., if non-zero, we propagate that to
+            #     # each instance platform config file.
+            #     platform_config['TOTAL_PROCS'] = total_procs
 
-            # define number of processors per node to be the instances per node
-            # that will become the number of Dask threads per node
-            if instances_per_node is not None and instances_per_node > 0:
-                platform_config['PROCS_PER_NODE'] = instances_per_node
-
+            # Set the number of sockets per node; this is a platform specific
             # Kept for backward compatibility; FIXME this should be deprecated
             platform_config['SOCKETS_PER_NODE'] = 1
 
-            # define node allocation mode
+            # define node allocation mode to be shared since we'll have more
+            # than one ensemble instance per node.
             platform_config['NODE_ALLOCATION_MODE'] = 'SHARED'
 
             # inherit the portal information from the top-level
@@ -2417,6 +2403,8 @@ class ServicesProxy:
 
         # Forcing this since the debugging level isn't get set to
         # this even though I specified that via --debug
+        # TODO this is a hack; need to figure out why the debugger log level
+        # is being ignored.
         self.logger.setLevel(logging.DEBUG)
 
         # Grab the IPS config template to be used for all ensemble instances;
@@ -2471,8 +2459,7 @@ class ServicesProxy:
             # Create the bespoke platform config file for this instance
             platform_filename = create_platform_config_file(instance[0],
                                                             working_dir,
-                                                            instances_per_node,
-                                                            num_nodes)
+                                                            cores_per_instance)
             self.debug(f'Platform config file for instance {instance[0]} is '
                        f'{platform_filename}')
 
@@ -2499,10 +2486,10 @@ class ServicesProxy:
 
             self.debug(f'Using Dask: {use_dask}')
 
-            num_submitted = self.submit_tasks(task_pool_name, #block=True,
+            num_submitted = self.submit_tasks(task_pool_name,  #block=True,
                                               use_dask=use_dask,
                                               dask_nodes=num_nodes,
-                                              dask_ppw=instances_per_node,
+                                              dask_ppw=cores_per_instance,
                                               #launch_interval=0.0,
                                               #use_shifter=False,
                                               #shifter_args=None,

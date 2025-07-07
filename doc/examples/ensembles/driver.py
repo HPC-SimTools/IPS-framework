@@ -53,10 +53,8 @@ class ensemble_driver(Component):
         # easily find output for a specific run.  Note that "template.config"
         # is in INPUT_FILE for the driver component so that it is copied to the run.
         # But, of course, you could also use a full path to the file, instead.
-        mapping = self.services.run_ensemble('template.config',
-                                             variables,
-                                             '/tmp/IPS',
-                                             name="EXAMPLE_",
+        mapping = self.services.run_ensemble('template.config', variables,
+                                             '/tmp/IPS', name="EXAMPLE_",
                                              num_nodes=1)
 
         self.services.info(f'Mapping of dirs to parameters: {mapping!s}')
