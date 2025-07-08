@@ -2367,9 +2367,14 @@ class ServicesProxy:
             # to find the DVM.
             platform_config['MPIRUN_VERSION'] = 'OPENMPI-DVM'
 
-            # Set the budget of cores per instance
-            platform_config['CORES_PER_NODE'] = cores_per_instance
-            platform_config['PROCS_PER_NODE'] = cores_per_instance
+            # Set the budget of cores per instance. By default, we will give
+            # a single core per instance.
+            if cores_per_instance is not None:
+                platform_config['CORES_PER_NODE'] = cores_per_instance
+                platform_config['PROCS_PER_NODE'] = cores_per_instance
+            else:
+                platform_config['CORES_PER_NODE'] = 1
+                platform_config['PROCS_PER_NODE'] = 1
 
             # for now each instance will always run on just one node
             platform_config['NODES'] = 1
@@ -2684,6 +2689,12 @@ class TaskPool:
         :param dask_nodes: Number of task nodes, default 1
         :type dask_nodes: int
         :param dask_ppw:  Number of processes per dask worker, default is PROCS_PER_NODE
+            However, dask_ppw will be "cores per instance" if using ensembles,
+            so will be `PROCS_PER_NODE // dask_ppw` to enforce that each dask
+            worker will have multiple cores, hopefully articulated via DVM
+            (i.e., prun will be invoked and will coordinate with the DVM to
+            allocate multiple cores to each worker thread). Note that the DVM
+            daemon will be started by the registered Dask worker plugin DVMPlugin.
         :type dask_ppw: int
         :param use_shifter:  Option to launch dask scheduler and workers in shifter container
         :type use_shifter: bool
@@ -2754,6 +2765,7 @@ class TaskPool:
 
         dask_nodes = 1 if dask_nodes is None else dask_nodes
         if services.get_config_param("MPIRUN") == "eval":
+            # TODO Why?
             dask_nodes = 1
 
         if dask_worker_per_gpu:
@@ -2763,8 +2775,19 @@ class TaskPool:
             task_ppn = gpn
             task_gpp = 1
         else:
-            nthreads = dask_ppw if dask_ppw else services.get_config_param("PROCS_PER_NODE")
-            task_ppn = 1
+            # The number of threads per Dask worker is the number of processors
+            # on that node divided by the cores per instance, which we're
+            # using dask_ppp for.  (Which suggests that we need to change the
+            # signature for this function to make that clearer, or to allow a
+            # user to override this and specify *exactly* how many cores per
+            # Dask worker they want.)
+            # nthreads = dask_ppw if dask_ppw else services.get_config_param("PROCS_PER_NODE")
+            cores_per_node = services.get_config_param("PROCS_PER_NODE")
+            if dask_ppw is not None:
+                nthreads = cores_per_node // dask_ppw
+            else:
+                nthreads = cores_per_node
+            task_ppn = 1 # TODO Chase down the exact meaning of this.
             task_gpp = 0
 
         # Reality check; nthreads should be at least 1
