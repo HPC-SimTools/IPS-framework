@@ -2357,7 +2357,7 @@ class ServicesProxy:
             # top-level platform config, which is what the user has set. Same
             # with node detection.
             platform_config['MPIRUN'] = 'MPIRUN'
-            platform_config['NODE_DETECTION'] = 'slrum_env'
+            platform_config['NODE_DETECTION'] = 'slurm_env'
 
             # This is critical for ensuring that `prun` is used to run the
             # ensemble instances.  This is because the ensemble instances rely
@@ -2374,7 +2374,10 @@ class ServicesProxy:
             # for now each instance will always run on just one node
             platform_config['NODES'] = 1
 
-            # TODO going to ignore this for now
+            # TODO going to ignore this for now; consider that the user
+            # specifying TOTAL_PROCS at the top-level platform config doesn't
+            # apply to the _instances_ that should only "see" the number of
+            # actual cores allocated via prun.
             # # inherit total processors from top-level platform config
             # total_procs = self.get_config_param('TOTAL_PROCS', silent=True)
             # if total_procs is not None and total_procs > 0:
