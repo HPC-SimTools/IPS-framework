@@ -2359,8 +2359,15 @@ class ServicesProxy:
             platform_config['MPIRUN'] = 'MPIRUN'
             platform_config['NODE_DETECTION'] = 'slrum_env'
 
+            # This is critical for ensuring that `prun` is used to run the
+            # ensemble instances.  This is because the ensemble instances rely
+            # on the DVM (Dynamic Virtual Machine) to run the simulations,
+            # which was spun up in the docker worker plugin, `DVMPlugin`. The
+            # `prun` *should* use the environment variables set by the plugin
+            # to find the DVM.
+            platform_config['MPIRUN_VERSION'] = 'OPENMPI-DVM'
 
-            # SEt many cores per instance
+            # Set the budget of cores per instance
             platform_config['CORES_PER_NODE'] = cores_per_instance
             platform_config['PROCS_PER_NODE'] = cores_per_instance
 
