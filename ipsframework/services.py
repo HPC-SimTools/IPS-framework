@@ -2768,6 +2768,14 @@ class TaskPool:
             # TODO Why?
             dask_nodes = 1
 
+        # By default we should have as many threads as there are
+        # processors on the node, which is what PROCS_PER_NODE should be set
+        # to.  However, if the user has specified dask_ppw, then we will
+        # divide the number of processors by that number to get the number
+        # of threads per Dask worker.  If dask_ppw is None, then we will
+        # use the number of processors per node.
+        nthreads = services.get_config_param("PROCS_PER_NODE")
+
         if dask_worker_per_gpu:
             gpn = services.get_config_param("GPUS_PER_NODE")
             dask_nodes *= gpn
