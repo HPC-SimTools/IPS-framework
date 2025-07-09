@@ -2784,18 +2784,29 @@ class TaskPool:
             # nthreads = dask_ppw if dask_ppw else services.get_config_param("PROCS_PER_NODE")
             cores_per_node = services.get_config_param("PROCS_PER_NODE")
             if dask_ppw is not None:
+                self.services.debug(f'Using {dask_ppw} processes per Dask worker via '
+                                    'dask_ppw argument')
+                print(f'Using {dask_ppw} processes per Dask worker via '
+                                    'dask_ppw argument', flush=True)
                 nthreads = cores_per_node // dask_ppw
             else:
                 nthreads = cores_per_node
+
             task_ppn = 1 # TODO Chase down the exact meaning of this.
             task_gpp = 0
 
         # Reality check; nthreads should be at least 1
         nthreads = 1 if nthreads is None or nthreads == 0 else nthreads
 
+        self.services.debug(f'Number of threads: {nthreads}')
+        print(f'(submit_dask_tasks: Number of threads: {nthreads}', flush=True)
+
         if dask_ppw is not None:
             self.services.debug(f'Using {dask_ppw} processes per Dask worker via '
                        f'dask_ppw argument')
+            # FIXME Redundant print since debug() appears to be ignored.
+            print(f'Using {dask_ppw} processes per Dask worker via dask_ppw argument',
+                  flush=True)
         else:
             dask_ppw = int(services.get_config_param("PROCS_PER_NODE"))
             self.services.debug(f'using {services.get_config_param("PROCS_PER_NODE")} '
