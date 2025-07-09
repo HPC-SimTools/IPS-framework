@@ -2494,15 +2494,9 @@ class ServicesProxy:
                           working_dir, 'ips.py', *args)
 
         try:
-            # Only use Dask if we are in a Slurm environment using MPI, else
-            # fall back on default means of executing of tasks.
-            use_dask = self.get_config_param('MPIRUN').lower() == 'mpirun' and \
-                    self.get_config_param('NODE_DETECTION').lower() == 'slurm_env'
-
-            self.debug(f'Using Dask: {use_dask}')
-
+            # Note that we *always* use Dask to run the ensemble tasks
             num_submitted = self.submit_tasks(task_pool_name,  #block=True,
-                                              use_dask=use_dask,
+                                              use_dask=True,
                                               dask_nodes=num_nodes,
                                               dask_ppw=cores_per_instance,
                                               #launch_interval=0.0,
@@ -2534,6 +2528,12 @@ class DVMPlugin(WorkerPlugin):
     def setup(self, worker :Worker):
         self.worker = worker
         worker.logger = self.logger
+        # FIXME this is a temporary hack to ensure that the logger honors
+        # debug messages.  I don't know why this is otherwise being
+        # ignored when specifying --debug on the command line.  I am
+        # invoking client.forward_logging() elsewhere, so I shouldn't have to
+        # do this.
+        self.logger.setLevel(logging.DEBUG)
         self.logger.info(f"Launching DVM")
         self.worker.dvm_uri_file = f"/tmp/dvm.uri.{os.getpid()}"
         command = ['prte',
@@ -2807,7 +2807,7 @@ class TaskPool:
         nthreads = 1 if nthreads is None or nthreads == 0 else nthreads
 
         self.services.debug(f'Number of threads: {nthreads}')
-        print(f'(submit_dask_tasks: Number of threads: {nthreads}', flush=True)
+        print(f'(submit_dask_tasks: Number of threads: {nthreads})', flush=True)
 
         if dask_ppw is not None:
             self.services.debug(f'Using {dask_ppw} processes per Dask worker via '
