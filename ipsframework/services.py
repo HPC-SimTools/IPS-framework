@@ -2811,6 +2811,8 @@ class TaskPool:
                                              use_shifter=use_shifter,
                                              shifter_args=shifter_args)
 
+        self.services.debug(f'Dask workers command line: {workers_cmd_line}')
+
         self.dask_workers_tid = services.launch_task(dask_nodes, os.getcwd(),
                                                     *workers_cmd_line,
                                                      task_ppn=task_ppn,
@@ -2848,6 +2850,10 @@ class TaskPool:
         launch.__module__ = "__main__"
         self.futures = []
         for task_name, task in self.queued_tasks.items():
+            self.services.debug(f'Submitting task {task_name} to dask client '
+                                f'with {dask_ppw} cores per worker')
+            self.services.debug(f'Task {task_name} working dir: {task.working_dir}')
+            self.services.debug(f'Task args: {task.args} keywords: {task.keywords}')
             self.futures.append(self.dask_client.submit(launch,
                                                         task.binary,
                                                         task_name,
