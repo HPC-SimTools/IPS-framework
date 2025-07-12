@@ -2356,7 +2356,7 @@ class ServicesProxy:
             # Regardless, faithfully duplicate the MPIRUN setting from the
             # top-level platform config, which is what the user has set. Same
             # with node detection.
-            platform_config['MPIRUN'] = 'MPIRUN'
+            platform_config['MPIRUN'] = 'mpirun'
             platform_config['NODE_DETECTION'] = 'slurm_env'
 
             # This is critical for ensuring that `prun` is used to run the
