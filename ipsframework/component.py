@@ -40,11 +40,11 @@ class Component:
         self.__method_name = None
         self.__call_id = 0
         self.__args = None
-        for i in config.keys():
+        for key, value in config.items():
             try:
-                setattr(self, i, config[i])
+                setattr(self, key, value)
             except Exception as e:
-                print('Error setting Component parameter : ', i, ' - ', e, file=sys.stderr)
+                print('Error setting Component parameter : ', key, ' - ', e, file=sys.stderr)
                 raise
 
     def __copy__(self):

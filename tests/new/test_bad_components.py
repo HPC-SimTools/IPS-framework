@@ -261,7 +261,7 @@ def test_assign_protected_attribute(tmpdir):
     assert worker_call_end_event['comment'] in (
         'Error: "can\'t set attribute" Target = test@assign_protected_attribute@2:step(0)',
         "Error: \"can't set attribute 'args'\" Target = test@assign_protected_attribute@2:step(0)",
-        "Error: \"property 'args' of 'assign_protected_attribute' object has no setter\" " 'Target = test@assign_protected_attribute@2:step(0)',
+        "Error: \"property 'args' of 'assign_protected_attribute' object has no setter\" Target = test@assign_protected_attribute@2:step(0)",
     )
 
     sim_end_event = events[10]

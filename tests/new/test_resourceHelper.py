@@ -270,8 +270,7 @@ def test_resourceHelper_manual_InvalidException():
     with pytest.raises(InvalidResourceSettingsException) as excinfo:
         getResourceList(services, 'host')
     assert (
-        str(excinfo.value) == 'Invalid resource specification in platform configuration file:  socket per node count (16) '
-        'greater than core per node count (8).'
+        str(excinfo.value) == 'Invalid resource specification in platform configuration file:  socket per node count (16) greater than core per node count (8).'
     )
 
     # CORES_PER_NODE % SOCKETS_PER_NODE != 0

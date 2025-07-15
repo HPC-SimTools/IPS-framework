@@ -116,9 +116,9 @@ def test_trace_info(tmpdir):
 
         if names[n]:
             assert trace['name'] == names[n]
-            assert trace['id'] == hashlib.md5(f"{trace['localEndpoint']['serviceName']}:{trace['name']}:{call_ids[n]}".encode()).hexdigest()[:16]
+            assert trace['id'] == hashlib.md5(f'{trace["localEndpoint"]["serviceName"]}:{trace["name"]}:{call_ids[n]}'.encode()).hexdigest()[:16]
         else:
-            assert trace['id'] == hashlib.md5(f"{trace['localEndpoint']['serviceName']}".encode()).hexdigest()[:16]
+            assert trace['id'] == hashlib.md5(f'{trace["localEndpoint"]["serviceName"]}'.encode()).hexdigest()[:16]
 
         if parents[n]:
             if names[parents[n]]:

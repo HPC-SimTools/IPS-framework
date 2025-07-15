@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """
-    The platform configuration file is used to specify the resources available
-    to the framework for a given platform.
+The platform configuration file is used to specify the resources available
+to the framework for a given platform.
 """
+
 # -------------------------------------------------------------------------------
 # Copyright 2006-2022 UT-Battelle, LLC. See LICENSE for more information.
 # -------------------------------------------------------------------------------
@@ -32,4 +33,3 @@ def get_share_and_platform(platform_file_name: Optional[str], ipsPathName: str) 
             sys.exit(Message.FAILURE)
         platform_file_name = os.path.join(ipsShareDir, 'platform.conf')
         return os.path.abspath(platform_file_name), ipsShareDir
-

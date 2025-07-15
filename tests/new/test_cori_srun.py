@@ -105,7 +105,7 @@ def test_srun_openmp_on_cori(tmpdir):
         lines = sorted(work_dir.join(f'log.{log}').readlines(), key=lambda a: int(a.split()[3].replace(',', '')))
         for n, line in enumerate(lines):
             cores = n // 2 + n % 2 * 16
-            assert line.startswith(f'Hello from rank {n}') and line.endswith(f'(core affinity = {cores},{cores+32})\n')
+            assert line.startswith(f'Hello from rank {n}') and line.endswith(f'(core affinity = {cores},{cores + 32})\n')
 
     # 31
     assert comments[23][0] == 'Target = srun -N 1 -n 4 -c 8 --threads-per-core=1 --cpu-bind=cores /usr/common/software/bin/check-mpi.gnu.cori '
@@ -145,8 +145,8 @@ def test_srun_openmp_on_cori(tmpdir):
 
     lines = sorted(work_dir.join('log.41').readlines())
     for n, line in enumerate(lines):
-        assert line.startswith(f'Hello from rank {n//8}, thread {n%8}')
-        assert line.endswith(f'(core affinity = {n%8 + n//16*8 + n//8%2*16})\n')
+        assert line.startswith(f'Hello from rank {n // 8}, thread {n % 8}')
+        assert line.endswith(f'(core affinity = {n % 8 + n // 16 * 8 + n // 8 % 2 * 16})\n')
 
     # 42
     assert comments[31][0] == 'Target = srun -N 1 -n 4 -c 4 --threads-per-core=1 --cpu-bind=cores /usr/common/software/bin/check-hybrid.gnu.cori '
@@ -154,8 +154,8 @@ def test_srun_openmp_on_cori(tmpdir):
 
     lines = sorted(work_dir.join('log.42').readlines())
     for n, line in enumerate(lines):
-        assert line.startswith(f'Hello from rank {n//4}, thread {n%4}')
-        assert line.endswith(f'(core affinity = {n%4 + n//8*4 + n//4%2*16})\n')
+        assert line.startswith(f'Hello from rank {n // 4}, thread {n % 4}')
+        assert line.endswith(f'(core affinity = {n % 4 + n // 8 * 4 + n // 4 % 2 * 16})\n')
 
     # 43
     assert comments[33][0] == 'Target = srun -N 1 -n 4 -c 2 --threads-per-core=1 --cpu-bind=cores /usr/common/software/bin/check-hybrid.gnu.cori '
@@ -163,8 +163,8 @@ def test_srun_openmp_on_cori(tmpdir):
 
     lines = sorted(work_dir.join('log.43').readlines())
     for n, line in enumerate(lines):
-        assert line.startswith(f'Hello from rank {n//2}, thread {n%2}')
-        assert line.endswith(f'(core affinity = {n%2 + n//4*2 + n//2%2*16})\n')
+        assert line.startswith(f'Hello from rank {n // 2}, thread {n % 2}')
+        assert line.endswith(f'(core affinity = {n % 2 + n // 4 * 2 + n // 2 % 2 * 16})\n')
 
 
 @pytest.mark.cori

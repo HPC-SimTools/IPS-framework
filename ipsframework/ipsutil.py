@@ -1,12 +1,12 @@
 # -------------------------------------------------------------------------------
 # Copyright 2006-2022 UT-Battelle, LLC. See LICENSE for more information.
 # -------------------------------------------------------------------------------
+import csv
 import glob
 import os
 import shutil
 import time
-import csv
-import glob
+
 try:
     import Pyro4
 except ImportError:
@@ -159,7 +159,7 @@ def params_from_csv(infile):
         # Get the names of the components and their parameters
         for col in header:
             comp_name, param_name = col.split(':')
-            comp_name = comp_name.strip() # because there may be extraneous spaces
+            comp_name = comp_name.strip()  # because there may be extraneous spaces
             param_name = param_name.strip()
 
             if comp_name not in variables:
@@ -169,7 +169,7 @@ def params_from_csv(infile):
 
         # Read the values for each simulation and parameter
         for row in reader:
-            if row == []: # there was an extra space or return at the EOF
+            if row == []:  # there was an extra space or return at the EOF
                 break
             for i, col in enumerate(header):
                 comp_name, param_name = col.split(':')
@@ -180,12 +180,11 @@ def params_from_csv(infile):
     return variables
 
 
-
 if __name__ == '__main__':
     # test harness where a CSV file is passed in on the command line and
     # returns the dictionary of parameters
-    import sys
     import json
+    import sys
 
     variables = params_from_csv(sys.argv[1])
 
