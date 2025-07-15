@@ -14,10 +14,13 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
-    - uses: conda-incubator/setup-miniconda@v2
+    - uses: conda-incubator/setup-miniconda@v3
       with:
-        auto-update-conda: true
         miniforge-variant: Miniforge3
+        miniforge-version: latest
+        channels: conda-forge
+        channel-priority: true
+        auto-update-conda: true
         environment-file: .github/workflows/conda_env/environment_static_analysis.yml
     #- name: flake8
       #run: flake8
