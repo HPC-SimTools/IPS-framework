@@ -70,83 +70,94 @@ cover/
 *.pot
 
 # Django stuff:
+/tmp.*
+/local
 *.log
-local_settings.py
-db.sqlite3
-db.sqlite3-journal
-
-# Flask stuff:
-instance/
-.webassets-cache
-
-# Scrapy stuff:
-.scrapy
-
-# Sphinx documentation
-doc/_build/
-
-# PyBuilder
-.pybuilder/
-target/
-
-# Jupyter Notebook
-.ipynb_checkpoints
-
-# IPython
-profile_default/
-ipython_config.py
-
-# pyenv
-#   For a library or package, you might want to ignore these files since the code is
-#   intended to run in multiple environments; otherwise, check them in:
-# .python-version
-
-# pipenv
-#   According to pypa/pipenv#598, it is recommended to include Pipfile.lock in version control.
-#   However, in case of collaboration, if having platform-specific dependencies or dependencies
-#   having no cross-platform support, pipenv may install dependencies that don't work, or not
-#   install all needed dependencies.
-#Pipfile.lock
-
-# PEP 582; used by e.g. github.com/David-OConnor/pyflow
-__pypackages__/
-
-# Celery stuff
-celerybeat-schedule
-celerybeat.pid
-
-# SageMath parsed files
-*.sage.py
-
-# Environments
-.env
-.venv
-env/
+*.pyc
+__pycache__
+docker-nom/build/
+\#*\#
+.\#*
 venv/
-ENV/
-env.bak/
-venv.bak/
+*.egg-info/
+docs/build/
+doc/_build
+.coverage*
+htmlcov/
+.ipynb_checkpoints/
+.pytest_cache
+build/
+dist/
 
-# Spyder project settings
-.spyderproject
-.spyproject
+# Subversion
+.svn
 
-# Rope project settings
-.ropeproject
 
-# mkdocs documentation
-/site
+# Vim (and some others)
+*~
+*.swp
 
-# mypy
-.mypy_cache/
-.dmypy.json
-dmypy.json
+# Eclipse
+.cache
+.classpath
+.project
+.settings
+build-eclipse
 
-# Pyre type checker
-.pyre/
+# Gradle
+.gradle
+gradle-app.setting
 
-# pytype static type analyzer
-.pytype/
+# Sublime Text
+*.sublime-workspace
 
-# Cython debug symbols
-cython_debug/
+# NetBeans
+.netbeans
+catalog.xml
+generated
+nb-configuration.xml
+
+# Mac OS
+.DS_Store
+__MACOSX
+
+# Intellij
+.idea/
+.idea/workspace.xml
+.idea/libraries
+.idea/kotlinc.xml
+.idea/tasks.xml
+.idea/dictionaries
+.idea/scopes
+.idea/artifacts
+.idea/uiDesigner.xml
+.idea/dataSources.local.xml
+.idea/dataSources.local.xml
+.idea/dataSources.ids
+.idea/dataSources.xml
+.idea/dataSources
+.idea/kotlinc.xml
+.idea/sonar*
+*.iws
+*.iml
+.idea/compiler.xml
+.idea/kotlinc.xml
+.idea/inspectionProfiles/profiles_settings.xml
+.idea/misc.xml
+.idea/modules.xml
+
+# vscode
+.vscode
+
+# dask
+dask-worker-space/
+
+# Generated data
+*.csv
+*.png
+
+# Project specific
+simulation_log/
+simulation_setup/
+run.log
+resource_usage

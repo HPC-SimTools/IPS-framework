@@ -5,6 +5,12 @@
 
 import functools
 import glob
+import sys
+import queue
+import socket
+import os
+import subprocess
+import threading
 import hashlib
 import json
 import logging
@@ -21,6 +27,14 @@ import weakref
 from multiprocessing import Queue
 from operator import iadd, itemgetter
 from typing import Any, Callable, Iterable, NamedTuple, Optional, Union
+import traceback
+
+from collections import namedtuple
+from idlelib.pyshell import restart_line
+from operator import itemgetter
+from pathlib import Path
+
+from copy import deepcopy
 
 from configobj import ConfigObj
 
@@ -29,6 +43,7 @@ from ipsframework.cca_es_spec import initialize_event_service
 from ipsframework.ips_es_spec import eventManager
 from ipsframework.taskManager import TaskInit
 
+from distributed import WorkerPlugin, Worker
 
 class RunningTask(NamedTuple):
     process: subprocess.Popen[bytes]
@@ -46,6 +61,29 @@ def launch(binary, task_name, working_dir, *args, **keywords):
     :meth:`TaskPool.submit_dask_tasks` as the
     input to :meth:`dask.distributed.Client.submit`.
 
+    Valid keywords:
+    * `worker_event_logfile` - where JSON log messages are written
+    * `logfile` - where the task output is written; if not specified,
+        STDOUT used
+    * `errfile` - where the task error output is written; if not specified,
+        STDOUT used
+    * `task_env` - A dictionary of environment variables to set
+    * `timeout` - The timeout in seconds for the task to complete.
+    * `cpus_per_proc` - The number of cpus per process to use for the task.
+        This implies that the DVMPlugin has set up a DVM daemon for this node.
+
+    If the worker has the attribute `dvm_uri_file`, then we are running
+    with a DVM (Distributed Virtual Machine) so the `binary` needs a
+    `prun` prepended pointing to that.
+
+    If the worker doesn't have a `lock` attribute, then we create one by
+    assigning a threading lock to it. This is used to ensure that
+    the worker's event log is written to in a thread-safe manner.
+
+    :param binary: The binary to launch.
+    :param task_name: The name of the task.
+    :param working_dir: The working directory in which to run this task
+    :returns: The task name and the return value from running the binary.
     """
     from dask.distributed import get_worker  # pylint: disable=import-outside-toplevel
 
@@ -53,7 +91,10 @@ def launch(binary, task_name, working_dir, *args, **keywords):
     if not hasattr(worker, 'lock'):
         worker.lock = threading.Lock()
 
-    worker_name = ''.join(c for c in get_worker().name if c.isalnum())
+    worker_name = ''.join(c for c in worker.name if c.isalnum())
+
+    worker.logger.info(f'Launching task {task_name} with worker {worker_name} in '
+                 f'{working_dir}')
 
     start_time = time.time()
     os.chdir(working_dir)
@@ -62,9 +103,10 @@ def launch(binary, task_name, working_dir, *args, **keywords):
     try:
         event_logfile = keywords['worker_event_logfile'].format(worker_name)
     except (KeyError, AttributeError):
-        pass
+        worker.logger.warning("No worker_event_logfile specified, using stdout for logging")
     else:
         worker_event_log = open(event_logfile, 'a')
+        worker.logger.info(f'Worker event log file: {event_logfile}')
 
     ret_val = None
     if isinstance(binary, str):
@@ -72,20 +114,25 @@ def launch(binary, task_name, working_dir, *args, **keywords):
         try:
             log_filename = keywords['logfile']
         except KeyError:
-            pass
+            worker.logger.info("No logfile specified, using stdout for task output")
         else:
-            task_stdout = open(log_filename, 'w')
+            task_stdout = open(log_filename, "w")
+            worker.logger.info(f'Task output log file: {log_filename}')
 
         task_stderr = subprocess.STDOUT
         try:
             err_filename = keywords['errfile']
         except KeyError:
-            pass
+            worker.logger.info("No errfile specified, using STDOUT for task errors")
         else:
             try:
                 task_stderr = open(err_filename, 'w')
             except OSError:
-                pass
+                worker.logger.info(f'Could not open errfile {err_filename}, '
+                             f'using STDOUT for task errors')
+                task_stderr = subprocess.STDOUT
+            else:
+                worker.logger.info(f'Task error log file: {err_filename}')
 
         task_env = keywords.get('task_env', {})
         new_env = os.environ.copy()
@@ -93,7 +140,10 @@ def launch(binary, task_name, working_dir, *args, **keywords):
 
         timeout = float(keywords.get('timeout', 1.0e9))
 
-        cmd = f'{binary} {" ".join(map(str, args))}'
+        cmd = f"{binary} {' '.join(map(str, args))}"
+
+        worker.logger.debug(f'Launching task {task_name} with command: {cmd}')
+
         with worker.lock:
             print(
                 json.dumps({'eventType': 'IPS_LAUNCH_DASK_TASK', 'event_time': time.time(), 'comment': f'task_name = {task_name}, Target = {cmd}'}),
@@ -101,7 +151,26 @@ def launch(binary, task_name, working_dir, *args, **keywords):
             )
 
         cmd_lst = cmd.split()
-        process = subprocess.Popen(cmd_lst, stdout=task_stdout, stderr=task_stderr, cwd=working_dir, preexec_fn=os.setsid, env=new_env)  # noqa: PLW1509 (TODO: look into this to potentially avoid deadlocks)
+        try:
+            process = subprocess.Popen(cmd_lst,
+                                       stdout=task_stdout,
+                                       stderr=task_stderr,
+                                       cwd=working_dir,
+                                       preexec_fn=os.setsid,
+                                       env=new_env)  # noqa: PLW1509 (TODO: look into this to potentially avoid deadlocks)
+        except Exception as e:
+            with worker.lock:
+                print(json.dumps({"eventType": "IPS_TASK_END",
+                                  "event_time": time.time(),
+                                  "comment": f"task_name = {task_name} "
+                                             f"Exception when calling "
+                                             f"{binary!s}: {e}",
+                                  "operation": ' '.join(map(str, args))}),
+                      file=worker_event_log)
+            worker.logger.error(f"Failed to launch task {task_name} with command "
+                          f"{cmd}: {e}")
+            raise
+
         try:
             ret_val = process.wait(timeout)
             finish_time = time.time()
@@ -127,36 +196,40 @@ def launch(binary, task_name, working_dir, *args, **keywords):
                     file=worker_event_log,
                 )
             os.killpg(process.pid, signal.SIGKILL)
+            worker.logger.error(f"Task {task_name} with command {cmd} timed out "
+                          f"after {timeout}s")
             ret_val = -1
+        except Exception as e:
+            with worker.lock:
+                print(json.dumps({"eventType": "IPS_TASK_END",
+                                  "event_time": time.time(),
+                                  "comment": f"task_name = {task_name} "
+                                             f"Exception when calling "
+                                             f"{binary!s}: {e}"}),)
+            worker.logger.error(f"Task {task_name} with command {cmd} failed "
+                          f"with {e}")
     else:
         with worker.lock:
-            print(
-                json.dumps(
-                    {
-                        'eventType': 'IPS_LAUNCH_DASK_TASK',
-                        'event_time': time.time(),
-                        'comment': f'task_name = {task_name}, Target = {binary.__name__}({",".join(map(str, args))})',
-                    }
-                ),
-                file=worker_event_log,
-            )
+            print(json.dumps({"eventType": "IPS_LAUNCH_DASK_TASK",
+                              "event_time": time.time(),
+                              "comment": f"task_name = {task_name}, "
+                                         f"Target = {binary.__name__}({','.join(map(str, args))})"}),
+                  file=worker_event_log)
         ret_val = binary(*args)
         finish_time = time.time()
         with worker.lock:
-            print(
-                json.dumps(
-                    {
-                        'eventType': 'IPS_TASK_END',
-                        'event_time': finish_time,
-                        'comment': f'task_name = {task_name}, elapsed time = {finish_time - start_time:.2f}s',
-                        'start_time': start_time,
-                        'elapsed_time': finish_time - start_time,
-                        'target': binary.__name__,
-                        'operation': f'({",".join(map(str, args))})',
-                    }
-                ),
-                file=worker_event_log,
-            )
+            print(json.dumps({"eventType": "IPS_TASK_END",
+                              "event_time": finish_time,
+                              "comment": f"task_name = {task_name}, "
+                                         f"elapsed time = {finish_time - start_time:.2f}s",
+                              "start_time": start_time,
+                              "elapsed_time": finish_time - start_time,
+                              "target": binary.__name__,
+                              "return_value": ret_val,
+                              "operation": f"({','.join(map(str, args))})"}),
+                  file=worker_event_log)
+
+    worker.logger.info(f'Task {task_name} finished with return value: {ret_val}')
 
     return task_name, ret_val
 
@@ -387,11 +460,16 @@ class ServicesProxy:
         return self.finished_calls.pop(msg_id, None)
 
     def _invoke_service(self, component_id, method_name, *args, **keywords):
-        r"""
+        """ Call a method for the given component
+
         Create and place in the ``self.fwk_in_q`` a new
-        :py:meth:`messages.ServiceRequestMessage` for service
-        *method_name* with *\*args* arguments on behalf of component
-        *component_id*.  Return message id.
+        :py:meth:`messages.ServiceRequestMessage` for service `method_name`
+        with `args` arguments on behalf of component `component_id`.  Return
+        message id.
+
+        :param component_id: Component ID of requested component
+        :param method_name: component method to call, e.g. ``init`` or ``step``
+        :return: message id
         """
         self.debug('_invoke_service(): %s  %s', method_name, str(args[0:]))
         new_msg = messages.ServiceRequestMessage(self.component_ref.component_id, self.fwk.component_id, component_id, method_name, *args, **keywords)
@@ -402,20 +480,28 @@ class ServicesProxy:
 
     def _get_service_response(self, msg_id, block=True):
         """
-        Return response from message *msg_id*.  Calls
-        :py:meth:`ServicesProxy._wait_msg_response` with *msg_id* and *block*.  If response
-        is not present, ``None`` is returned, otherwise the response is passed
-        on to the component.  If the status of the response is failure
-        (``Message.FAILURE``), then the exception body is raised.
+        Return response from message `msg_id`.  Calls
+        :py:meth:`ServicesProxy._wait_msg_response` with `msg_id` and
+        `block`.  If response is not present, `None` is returned, otherwise
+        the response is passed on to the component.  If the status of the
+        response is failure (`Message.FAILURE`), then the exception body is
+        raised.
+
+        :param msg_id: message id
+        :param block: Boolean flag. If ``True``, block waiting for one or more
+            responses to arrive.
+        :return: response arguments
         """
         self.debug('_get_service_response(%s)', str(msg_id))
         response = self._wait_msg_response(msg_id, block)
         self.debug('_get_service_response(%s), response = %s', str(msg_id), str(response))
+
         if response is None:
             return None
         if response.status == messages.Message.FAILURE:
             self.debug('###### Raising %s', str(response.args[0]))
             raise response.args[0]
+
         if len(response.args) > 1:
             return response.args
         else:
@@ -715,6 +801,15 @@ class ServicesProxy:
         whole_nodes = keywords.get('whole_nodes', not self.shared_nodes)
         whole_socks = keywords.get('whole_sockets', not self.shared_nodes)
 
+        self.debug(f'task_ppn = {task_ppn}')
+        self.debug(f'task_cpp = {task_cpp}')
+        self.debug(f'task_gpp = {task_gpp}')
+        self.debug(f'omp = {omp}')
+        self.debug(f'tag = {tag}')
+        self.debug(f'launch_cmd_extra_args = {launch_cmd_extra_args}')
+        self.debug(f'whole_nodes = {whole_nodes}')
+        self.debug(f'whole_socks = {whole_socks}')
+
         try:
             # SIMYAN: added working_dir to component method invocation
             msg_id = self._invoke_service(
@@ -736,10 +831,17 @@ class ServicesProxy:
                 ),
             )
             (task_id, command, env_update, cores_allocated) = self._get_service_response(msg_id, block=True)
-        except Exception:
+            self.debug(f'init_task(): task_id = {task_id}')
+            self.debug(f'command = {command}')
+            self.debug(f'env_update = {env_update}')
+            self.debug(f'cores_allocated = {cores_allocated}')
+        except Exception as e:
+            self.error(f'Error setting up task for command "{command}": {e}')
             raise
 
         task_id = self._launch_task(nproc, working_dir, task_id, command, cores_allocated, env_update, tag, keywords, binary, args)
+
+        self.debug(f'Returned task_id = {task_id} for launching "{command}"')
 
         if env_update:
             self._send_monitor_event(
@@ -2027,7 +2129,12 @@ class ServicesProxy:
         in :py:meth:`ServicesProxy.launch_task`.
         """
         task_pool = self.task_pools[task_pool_name]
-        return task_pool.add_task(task_name, nproc, working_dir, binary, *args, keywords=keywords)
+        # Yep.  Explicitly setting `keywords` to the `keywords` argument.
+        # Because if you don't then this will fail because it expects that.
+        # FIXME This is an abomination.  Why not just pass `keywords`?
+        # And an undocumented side-effect.
+        return task_pool.add_task(task_name, nproc, working_dir, binary,
+                                  *args, keywords=keywords)
 
     def submit_tasks(
         self,
@@ -2076,58 +2183,95 @@ class ServicesProxy:
         del self.task_pools[task_pool_name]
 
     def create_sub_workflow(self, sub_name, config_file, override=None, input_dir=None):
-        """Create sub-workflow"""
+        """Create sub-workflow
 
+        :param sub_name: name of sub-workflow
+        :param config_file: configuration file for sub-workflow
+        :param override: dictionary of configuration overrides; keys are component names
+            and the items are attribute/key values associated with that
+            component.
+        :param input_dir: input directory for sub-workflow components
+        :returns: tuple of simulation name, init component, driver component
+        """
+        # TODO Unclear on what override is
         if override is None:
             override = {}
 
+        # So subflows have names and they must be unique.
+        # TODO how is self.sub_flows set?
         if sub_name in self.sub_flows:
             self.error('Duplicate sub flow name')
             raise Exception('Duplicate sub flow name')
 
+        # TODO We keep track of the number of subflows.  Why?  Also, this is
+        # not used anywhere.  Moreover, there is no mechanism for decrementing
+        # this count when a subflow finishes.
         self.subflow_count += 1
+
+        # TODO We create *two* ConfigObjs from the *same* config file.  Presumably
+        # to do a delta between the two? Why do this?  Also, clone the first
+        # instead of reading it again.
         try:
             sub_conf_new = ConfigObj(infile=config_file, interpolation='template', file_error=True)
             sub_conf_old = ConfigObj(infile=config_file, interpolation='template', file_error=True)
         except Exception:
             self.exception('Error accessing sub-workflow config file %s', config_file)
             raise
+
         # Update undefined sub workflow configuration entries using top level configuration
         # only applicable to non-component entries (ones with non-dictionary values)
         for k, v in self.sim_conf.items():
             if k not in sub_conf_new and not isinstance(v, dict):
                 sub_conf_new[k] = v
 
-        sub_conf_new['SIM_NAME'] = self.sim_name + '::' + sub_name
+        # TODO Where is self.sim_name set?  What is the significance of
+        # SIM_NAME and SIM_ROOT?
+        sub_conf_new['SIM_NAME'] = self.sim_name + "::" + sub_name
         sub_conf_new['SIM_ROOT'] = os.path.join(os.getcwd(), sub_name)
         # sub_conf_new['SIM_ROOT'] = os.path.join(os.getcwd(), 'sub_workflow_%d' % self.subflow_count)
         # Update INPUT_DIR for components to current working dir (super simulation working dir)
         ports = sub_conf_new['PORTS']['NAMES'].split()
-        comps = [sub_conf_new['PORTS'][p]['IMPLEMENTATION'] for p in ports]
-        for c in comps:
+
+        # This is the set of components in the subflow as dictated in the
+        # PORTS section.  Each subsection will have an IMPLEMENTATION value
+        # that refers to a component in the subflow.
+        components = [sub_conf_new['PORTS'][p]['IMPLEMENTATION'] for p in ports]
+
+        # Associate the corresponding INPUT_DIR, which is the working directory
+        # for the given port. If the user specified an `input_dir` in this call,
+        # then prefer to use that, otherwise use any INPUT_DIR specified by
+        # the port in the configuration file.
+        for c in components:
             if not c:
                 continue
             if input_dir is None:
                 sub_conf_new[c]['INPUT_DIR'] = os.path.join(os.getcwd(), c)
             else:
                 sub_conf_new[c]['INPUT_DIR'] = os.path.join(os.getcwd(), input_dir)
-            try:
+
+            # Handle any overrides for the component
+            try: # FIXME this cold be refactored to not use try/except
                 override_vals = override[c]
             except KeyError:
                 pass
             else:
                 for k, v in override_vals.items():
                     sub_conf_new[c][k] = v
-        toplevel_override = set(override.keys()) - set(comps)
+
+        # Handle any overrides for the top level configuration
+        toplevel_override = set(override.keys()) - set(components)
         for param in toplevel_override:
             sub_conf_new[param] = override[param]
 
+        # TODO Why do you overwrite the config file?
         sub_conf_new.filename = os.path.basename(config_file)
         sub_conf_new.write()
-        try:
-            (sim_name, init_comp, driver_comp) = self._create_simulation(os.path.abspath(sub_conf_new.filename), {}, sub_workflow=True)
+        try: # FIXME, if you're going to catch an exception, you should handle it
+            (sim_name, init_comp, driver_comp) = self._create_simulation(os.path.abspath(sub_conf_new.filename),
+                                                                         {}, sub_workflow=True)
         except Exception:
             raise
+
         self.sub_flows[sub_name] = (sub_conf_new, sub_conf_old, init_comp, driver_comp)
         self._send_monitor_event('IPS_CREATE_SUB_WORKFLOW', 'workflow_name = %s' % sub_name)
         return (sim_name, init_comp, driver_comp)
@@ -2137,8 +2281,16 @@ class ServicesProxy:
         return self._create_simulation(config_file, override, sub_workflow=False)[0]
 
     def _create_simulation(self, config_file, override, sub_workflow=False):
+        """
+        :param config_file: configuration file for simulation
+        :param override: dict of configuration file overrides
+        :param sub_workflow: boolean indicating if this is a sub-workflow
+        :returns: tuple of simulation name, init component, driver component
+        """
         try:
-            msg_id = self._invoke_service(self.fwk.component_id, 'create_simulation', config_file, override, sub_workflow)
+            msg_id = self._invoke_service(self.fwk.component_id,
+                                          'create_simulation',
+                                          config_file, override, sub_workflow)
             self.debug('create_simulation() msg_id = %s', msg_id)
             (sim_name, init_comp, driver_comp) = self._get_service_response(msg_id, block=True)
             self.debug('Created simulation %s', sim_name)
@@ -2146,6 +2298,420 @@ class ServicesProxy:
             self.exception('Error creating new simulation')
             raise
         return (sim_name, init_comp, driver_comp)
+
+
+    def run_ensemble(self,
+                     template,
+                     variables,
+                     run_dir,
+                     name,
+                     num_nodes,
+                     cores_per_instance=None):
+        """ Run ensemble of simulations given the template and variables.
+
+        `variables` is a nested dict that looks like this:
+
+                variables = {'a_sim_comp': {'A': [3, 2, 4],
+                                            'B': [2.34, 5.82, 0.1],
+                                            'C': ['bar', 'baz', 'quux']},
+                            'another_sim_comp': {'D': [7, 5, 9],
+                                                 'B': [0.775, 0.080, 29.2],
+                                                 'F': ['xyzzy', 'plud', 'thud']}}
+
+        That is, the keys are the simulation names and the values are dicts
+        mapping parameter to a set of values.  Ensembles will be spun
+        up for each simulation for each combination of parameters.  E.g.,
+        `a_sim_comp` will be run three times with the parameters of A, B, and C
+        being set to 3, 2.34, 'bar' for one of the simulation instances,
+        respectively.  another_sim_comp behaves similarly with its
+        respective parameters.
+
+        The ensembles will run under `run_dir` within a subdirectory
+        uniquely named for each.  The subdirectory will contain an IPS
+        config file created from `template` with `?` variables replaced
+        with the values from `variables`.
+
+        TODO be able to specify the number of cores per instance
+
+        :param template: configuration template file
+        :param variables: a dict of variables to pass to the ensemble runs
+        :param run_dir: in which to run the ensembles
+        :param name: ensemble name, or string to prepend to generated instance
+            directory and file names
+        :param cores_per_instance: How many cores per ensemble instances?
+        :param num_nodes: Total number of nodes to allocate for the ensemble
+            runs. There will be one Dask worker assigned to each of these
+            nodes.
+        :returns: a list of dicts mapping created subdirs to simulation names
+            and their parameters
+        """
+        def group_into_instances(variables, name):
+            """ convert component variables into something like this:
+
+             [['prefix_0', [['a_sim_comp', {'A': 3, 'B': 2.34, 'C': 'bar'}],
+                              ['another_sim_comp', {'D': 7, 'B': 0.775, 'F': 'xyzzy'}]]],
+              ['prefix_1', [['a_sim_comp', {'A': 2, 'B': 5.82, 'C': 'baz'}],
+                              ['another_sim_comp', {'D': 5, 'B': 0.08, 'F': 'plud'}]]],
+              ['prefix_2', [['a_sim_comp', {'A': 4, 'B': 0.1, 'C': 'quux'}],
+                              ['another_sim_comp', {'D': 9, 'B': 29.2, 'F': 'thud'}]]]]
+
+               prefix_n corresponds to a specific ensemble instance and will
+               be used for a unique subdir name.  That, in turn, references a
+               list of lists where each list element is a component that, in
+               turn, has a dict mapping component variables to values that will
+               then be later used to flesh out a config file from a config
+               template file.
+             """
+            # Transpose the data for each simulation component; essentially
+            # convert the list of variable values into corresponding dicts
+            # mapping the variables to specific values.  Sorta like a
+            # column-wise to row-wise transposition.
+            transposed = {key: [dict(zip(inner.keys(), values)) for values in
+                                zip(*inner.values())] for key, inner in
+                    variables.items()}
+
+            # Build the final structure where each instance is named
+            # {prefix}_n
+            result = [[f"{name}{i}", [[sim_name, sim_data] for
+                                         sim_name, sim_data_list in
+                                         transposed.items() for sim_data in
+                                         [sim_data_list[i]]]] for i in
+                      range(len(next(iter(transposed.values()))))]
+
+            return result
+
+
+        def create_driver_config_file(template, working_dir, variables, name):
+            """ Create an IPS config file for an ensemble instance
+
+            :param template: ConfigObj from which to derive the config file
+            :param working_dir: in which to put the config file
+            :param variables: component parameters that need to be plugged
+                into the template
+            :param name: instance string prefix for file names
+            :returns: The file name of the created driver config file
+            """
+            # ensure working_dir is Path obj since we use / operators later; no
+            # harm if it's already a Path obj.
+            working_dir = Path(working_dir)
+
+            # As a convenience, assign the ensemble instance name to
+            # ENSEMBLE_INSTANCE so that the user can optionally use that string
+            # in their reporting.
+            template['ENSEMBLE_INSTANCE'] = name
+            template['SIM_NAME'] = name
+
+            if 'SIM_ROOT' in template and \
+                template['SIM_ROOT'] is not None and \
+                    template['SIM_ROOT'].strip() != '':
+                self.info(f'SIM_ROOT in template config assigned a value, '
+                          f'{template["SIM_ROOT"]}, that will be ignored')
+
+            # Ensure that the instance gets a unique directory for its work
+            # by setting SIM_ROOT to the prefix path.
+            template['SIM_ROOT'] = Path(working_dir)
+
+            # We need to plug in the variables, so we need to find the section
+            # for a each component, and then find the corresponding variables
+            # to then assign the associated value.
+            for component in variables:
+                self.debug(f'Substituting for {component[0]}')
+
+                for variable in component[1].keys():
+                    # Substitute the individual variables for this component
+                    self.debug(f'Assigning {component[1][variable]} to {variable}')
+                    if variable not in template[component[0]]:
+                        # If we are passed in a variable to be substituted
+                        # that isn't in the template, complain and move one.
+                        self.critical(f'Variable {variable} not found in '
+                                      f'template ... skipping')
+                        raise RuntimeError(f'Variable {variable} not found '
+                                           f'in template')
+                    else:
+                        if template[component[0]][variable] is None \
+                                or template[component[0]][variable] == '':
+                            # User probably forgot to put in a '?', so just
+                            # complain and keep moving.
+                            self.warning(f'Variable {variable} is empty and '
+                                         f'does not have a "?" indicating '
+                                         f'it is a variable')
+                            self.debug(f'Substituting {component[1][variable]} '
+                                       f'for {variable}')
+                            template[component[0]][variable] = \
+                                component[1][variable]
+                        elif template[component[0]][variable] == '?':
+                            # This is the proper scenario where the user has
+                            # explicitly identified a variable with '?' in the
+                            # template config file to be substituted for one
+                            # of the given variables.
+                            # TODO that the next two statements show up in
+                            # the previous block means we can probably refactor
+                            # this if block to be more concise.
+                            self.debug(f'Substituting {component[1][variable]} '
+                                       f'for {variable}')
+                            template[component[0]][variable] = \
+                                component[1][variable]
+                        else:
+                            # It already has a value, so complain and exit.
+                            self.critical(f'Variable {variable} already has '
+                                          f'a value '
+                                          f'of {template[component[0]][variable]}')
+                            raise RuntimeError(f'Variable {variable} already '
+                                               f'has a value')
+
+            # Now scan for any remaining '?' variables that haven't been
+            # assigned.
+            for section in template.keys():
+                if isinstance(template[section], dict):
+                    for variable in template[section].keys():
+                        if template[section][variable] == '?':
+                            self.critical(f'Variable {variable} in section {section} '
+                                          f'has not been assigned')
+                            raise RuntimeError(f'Variable {variable} in section '
+                                               f'{section} has not been assigned')
+
+            template['LOG_FILE'] = working_dir / Path(name + "_run.log")
+            template_filename = working_dir / Path(name + ".config")
+            template.filename = template_filename
+            template.write()
+
+            return template_filename
+
+
+        def create_platform_config_file(prefix,
+                                        working_dir,
+                                        cores_per_instance,
+                                        **kwargs):
+            """
+            Create a platform config file for the ensemble instance.
+
+            TODO consider moving to platformspec.py since this is platform
+                specific.
+
+            :param prefix: instance string prefix for file names
+            :param working_dir: in which to put the platform config file
+            :param kwargs: optional platform specific parameters
+            :returns: platform config file name
+            """
+            platform_config_file_path = Path(working_dir) / Path(prefix + "_platform.config")
+            self.debug(f'Creating platform config file {platform_config_file_path}')
+
+            platform_config = ConfigObj()
+            platform_config.filename = str(platform_config_file_path)
+
+            # Though in a batch submission context this may not have much
+            # meaning.
+            platform_config['HOST'] =  socket.gethostname()
+
+            # Regardless, faithfully duplicate the MPIRUN setting from the
+            # top-level platform config, which is what the user has set. Same
+            # with node detection.
+            platform_config['MPIRUN'] = 'mpirun'
+            platform_config['NODE_DETECTION'] = 'slurm_env'
+
+            # This is critical for ensuring that `prun` is used to run the
+            # ensemble instances.  This is because the ensemble instances rely
+            # on the DVM (Dynamic Virtual Machine) to run the simulations,
+            # which was spun up in the docker worker plugin, `DVMPlugin`. The
+            # `prun` *should* use the environment variables set by the plugin
+            # to find the DVM.
+            platform_config['MPIRUN_VERSION'] = 'OPENMPI-DVM'
+
+            # Set the budget of cores per instance. By default, we will give
+            # a single core per instance.
+            if cores_per_instance is not None:
+                platform_config['CORES_PER_NODE'] = cores_per_instance
+                platform_config['PROCS_PER_NODE'] = cores_per_instance
+            else:
+                platform_config['CORES_PER_NODE'] = 1
+                platform_config['PROCS_PER_NODE'] = 1
+
+            # for now each instance will always run on just one node
+            platform_config['NODES'] = 1
+
+            # TODO going to ignore this for now; consider that the user
+            # specifying TOTAL_PROCS at the top-level platform config doesn't
+            # apply to the _instances_ that should only "see" the number of
+            # actual cores allocated via prun.
+            # # inherit total processors from top-level platform config
+            # total_procs = self.get_config_param('TOTAL_PROCS', silent=True)
+            # if total_procs is not None and total_procs > 0:
+            #     # Propagate the total processors to the platform config if
+            #     # it is defined and greater than zero.  Note that at the top-
+            #     # level it will default to zero if not defined, so we also
+            #     # check for that; i.e., if non-zero, we propagate that to
+            #     # each instance platform config file.
+            #     platform_config['TOTAL_PROCS'] = total_procs
+
+            # Set the number of sockets per node; this is a platform specific
+            # Kept for backward compatibility; FIXME this should be deprecated
+            platform_config['SOCKETS_PER_NODE'] = 1
+
+            # define node allocation mode to be shared since we'll have more
+            # than one ensemble instance per node.
+            platform_config['NODE_ALLOCATION_MODE'] = 'SHARED'
+
+            # inherit the portal information from the top-level
+            use_portal = self.get_config_param('USE_PORTAL', silent=True)
+            if use_portal is not None or use_portal != '':
+                platform_config['USE_PORTAL'] = self.get_config_param('USE_PORTAL', silent=True)
+            else: # None specified, so we're going to have it default to False
+                # This turns off logging for the portal
+                platform_config['USE_PORTAL'] = 'False'
+
+            platform_config.write()
+
+            return platform_config_file_path
+
+
+        self.info(f'Preparing to run ensembles in {run_dir}')
+
+        # Forcing this since the debugging level isn't get set to
+        # this even though I specified that via --debug
+        # TODO this is a hack; need to figure out why the debugger log level
+        # is being ignored.
+        self.logger.setLevel(logging.DEBUG)
+
+        # Grab the IPS config template to be used for all ensemble instances;
+        # str to convert from pathlib.Path; harmless conversion if already a
+        # Path.
+        template_config_file = Path(template)
+        if not template_config_file.exists():
+            raise RuntimeError(f'Template file '
+                               f'{template_config_file.absolute()} not found')
+        template_config = ConfigObj(str(template))
+
+        # Let's first "flatten" the hierarchical variables dict into a list
+        # of lists of dicts, where the top-level of which contains the ensemble
+        # instance name and associated parameters.
+        instances = group_into_instances(variables, name)
+
+        # Ensure that we create a unique task pool name for this using the
+        # instance prefix `name`
+        task_pool_name = f"{name}_ensemble_task_pool"
+        self.create_task_pool(task_pool_name)
+
+        # For each coupled simulation instance
+        for instance in instances:
+            self.info(f'Adding ensemble instance {instance[0]} to queue')
+
+            # Create the subdir based on `path_dir` and the ensemble ID, which
+            # is stored as the first list element in `instance`
+            working_dir = Path(run_dir) / instance[0]
+            working_dir.mkdir(parents=True, exist_ok=True)
+            self.debug(f'Working directory for instance {instance[0]} is '
+                       f'{working_dir}')
+
+            # Local log file for this ensemble instance
+            log_file = working_dir / f'{instance[0]}.log'
+            self.debug(f'Log file for instance {instance[0]} is {log_file}')
+
+            # Make a bespoke config file for this simulation instance based
+            # on the template. This means substituting all the "?" variables
+            # in the template with the corresponding values found in
+            # `variables`. The second `instance` list element contains the
+            # variables that need to be substituted into the template.  We
+            # copy the template because we will want to start fresh with each
+            # instance, particularly because part of the error checking is to
+            # ensure that all the variables have been assigned.  The first
+            # instance element contains the ensemble instance name.
+            simulation_filename = create_driver_config_file(
+                deepcopy(template_config), working_dir, instance[1],
+                instance[0])
+            self.debug(f'Simulation config file for instance {instance[0]} is '
+                       f'{simulation_filename}')
+
+            # Create the bespoke platform config file for this instance
+            platform_filename = create_platform_config_file(instance[0],
+                                                            working_dir,
+                                                            cores_per_instance)
+            self.debug(f'Platform config file for instance {instance[0]} is '
+                       f'{platform_filename}')
+
+            # Submit a task to run the simulation instance, which is another
+            # IPS run pointed to that config file.
+            args = [f'--simulation={simulation_filename}',
+                    f'--log={log_file}',
+                    f'--platform={str(platform_filename)}']
+
+            if self.fwk.logger.getEffectiveLevel() == logging.DEBUG:
+                # If we're in debug mode, then also pass the debug flag.
+                # May as well pass in the --verbose, too.
+                args.insert(1, '--debug')
+                args.insert(1, '--verbose')
+
+            self.add_task(task_pool_name, instance[0], 1,
+                          working_dir, 'ips.py', *args)
+
+        try:
+            # Note that we *always* use Dask to run the ensemble tasks
+            num_submitted = self.submit_tasks(task_pool_name,  #block=True,
+                                              use_dask=True,
+                                              dask_nodes=num_nodes,
+                                              dask_ppw=cores_per_instance,
+                                              #launch_interval=0.0,
+                                              #use_shifter=False,
+                                              #shifter_args=None,
+                                              #dask_worker_plugin=None,
+                                              #dask_worker_per_gpu=False
+                                              )
+            self.logger.info(f'Ran {num_submitted} ensemble tasks')
+        except Exception as e:
+            self.critical(f'Got an exception running ensemble: {e!s}')
+            traceback.print_exc()
+        finally:
+            exit_status = self.get_finished_tasks(task_pool_name)
+            self.info(f'Finished tasks: {exit_status!s}')
+
+            self.remove_task_pool(task_pool_name)
+
+        return instances
+
+
+class DVMPlugin(WorkerPlugin):
+    def __init__(self, logger):
+        super().__init__()
+
+        # Access the service's logger that's passed in
+        self.logger = logger
+
+    def setup(self, worker :Worker):
+        self.worker = worker
+        worker.logger = self.logger
+        # FIXME this is a temporary hack to ensure that the logger honors
+        # debug messages.  I don't know why this is otherwise being
+        # ignored when specifying --debug on the command line.  I am
+        # invoking client.forward_logging() elsewhere, so I shouldn't have to
+        # do this.
+        self.logger.setLevel(logging.DEBUG)
+        self.logger.info(f"Launching DVM")
+        self.worker.dvm_uri_file = f"/tmp/dvm.uri.{os.getpid()}"
+        command = ['prte',
+                   '--report-uri',
+                   self.worker.dvm_uri_file]
+        self.worker.dvm_proc = subprocess.Popen(command,
+                                                stdout=subprocess.PIPE,
+                                                stderr=subprocess.STDOUT)
+        ready = self.worker.dvm_proc.stdout.readline()
+        self.logger.info(f"Ready Message : {ready}")
+        self.worker.dvm_uri = open(self.worker.dvm_uri_file).readline()
+        os.environ['PMIX_MCA_pmix_server_uri'] = 'file:' + self.worker.dvm_uri
+        # This was an artifact from Wael's notebook; kept because presumably
+        # this env variable might be used.  Can't hurt to be redundant.
+        os.environ['PMIX_SERVER_URI41'] = 'file:' + self.worker.dvm_uri
+        os.environ['PMIX_MCA_pmix_base_session_dir'] = '/tmp/prte_sessions'
+        self.logger.debug(f"dvm URI = {self.worker.dvm_uri}")
+        return
+
+    def teardown(self, worker: Worker):
+        self.logger.info(f"Shutting down DVM at {self.worker.dvm_uri}")
+        command = ['pterm',
+                   '--dvm-uri',
+                   self.worker.dvm_uri]
+        subprocess.call(command)
+        self.worker.dvm_proc.terminate()
+        self.worker.dvm_proc.kill()
+        return
 
 
 class TaskPool:
@@ -2160,12 +2726,16 @@ class TaskPool:
         dask = None
         distributed = None
     else:
-        dask_scheduler = shutil.which('dask-scheduler')
-        dask_worker = shutil.which('dask-worker')
-        shifter = shutil.which('shifter')
-        if not dask_scheduler or not dask_worker:
-            dask = None
-            distributed = None
+        # `dask-scheduler` and `dask-worker` are deprecated in favor of `dask
+        # scheduler` and `dask worker`
+        dask = shutil.which('dask')
+        dask_scheduler = [dask, 'scheduler']
+        dask_worker = [dask, 'worker']
+
+        shifter = shutil.which("shifter")
+
+        IDLE_TIMEOUT = 60 * 10 # 10 minute default
+
 
     def __init__(self, name: str, services: ServicesProxy):
         self.dask_pool = False
@@ -2179,7 +2749,7 @@ class TaskPool:
         self.dask_sched_pid = None
         self.dask_workers_tid = None
         self.futures = None
-        self.dask_file_name = None
+        self.dask_scheduler_file = None
         self.dask_client = None
         self.worker_event_logfile = None
 
@@ -2255,9 +2825,9 @@ class TaskPool:
         self.serial_pool = self.serial_pool and (nproc == 1)
         self.queued_tasks[task_name] = Task(task_name, nproc, working_dir, binary_fullpath, *args, **keywords['keywords'])
 
-    def submit_dask_tasks(
-        self, block=True, dask_nodes=1, dask_ppw=None, use_shifter=False, shifter_args=None, dask_worker_plugin=None, dask_worker_per_gpu=False
-    ):
+    def submit_dask_tasks(self, block=True, dask_nodes=1, dask_ppw=None,
+                          use_shifter=False, shifter_args=None,
+                          dask_worker_plugin=None, dask_worker_per_gpu=False):
         """Launch tasks in *queued_tasks* using dask.
 
         One dask worker will be started for each node unless
@@ -2270,6 +2840,12 @@ class TaskPool:
         :param dask_nodes: Number of task nodes, default 1
         :type dask_nodes: int
         :param dask_ppw:  Number of processes per dask worker, default is PROCS_PER_NODE
+            However, dask_ppw will be "cores per instance" if using ensembles,
+            so will be `PROCS_PER_NODE // dask_ppw` to enforce that each dask
+            worker will have multiple cores, hopefully articulated via DVM
+            (i.e., prun will be invoked and will coordinate with the DVM to
+            allocate multiple cores to each worker thread). Note that the DVM
+            daemon will be started by the registered Dask worker plugin DVMPlugin.
         :type dask_ppw: int
         :param use_shifter:  Option to launch dask scheduler and workers in shifter container
         :type use_shifter: bool
@@ -2278,26 +2854,78 @@ class TaskPool:
         :param dask_worker_per_gpu: If true then a separate worker will be started for each GPU and binded to that GPU
         :type dask_worker_per_gpu: bool
 
+        FIXME consider having n processes instead of n threads given that we're
+            likely running in a HPC context.
+            See: https://distributed.dask.org/en/stable/efficiency.html#adjust-between-threads-and-processes
+
+        :returns: number of tasks submitted
         """
+        def _make_worker_args(num_workers, num_threads, use_shifter, shifter_args=None):
+            """ Make Dask worker command line arguments.
+
+            :param num_workers: Number of workers to start
+            :param num_threads: Number of threads per worker
+            :param use_shifter: If True, then use shifter to launch the worker
+            :returns: list of command line arguments to pass to subprocess call
+                to start a Dask worker
+            """
+            base_args = [*self.dask_worker, "--no-dashboard", "--no-nanny",
+                            "--scheduler-file", self.dask_scheduler_file,
+                         "--nworkers", str(num_workers),
+                         "--nthreads", str(num_threads)]
+
+            if use_shifter: # insert shifter command and args if needed
+                # This could be a string or a list of arguments.
+                if shifter_args:
+                    if isinstance(shifter_args, tuple) and shifter_args != ():
+                        base_args[0:0] = shifter_args
+                    elif isinstance(shifter_args, str) and shifter_args != '':
+                        base_args.insert(0, shifter_args)
+                base_args.insert(0, self.shifter)
+
+            return base_args
+
+
         services: ServicesProxy = self.services
-        self.dask_file_name = os.path.join(os.getcwd(), f'.{self.name}_dask_shed_{time.time()}.json')
+
+        self.dask_scheduler_file = os.path.join(os.getcwd(),
+                                           f".{self.name}_dask_shed_{time.time()}.json")
 
         if use_shifter:
             if shifter_args:
-                self.dask_sched_pid = subprocess.Popen(
-                    [self.shifter, shifter_args, 'dask', 'scheduler', '--no-dashboard', '--scheduler-file', self.dask_file_name, '--port', '0']
-                ).pid
+                self.dask_sched_pid = subprocess.Popen([self.shifter, shifter_args, *self.dask_scheduler, "--no-dashboard",
+                                                        "--no-jupyter", "--no-show",
+                                                        "--idle-timeout",
+                                                        str(TaskPool.IDLE_TIMEOUT),
+                                                        "--scheduler-file", self.dask_scheduler_file, "--port", "0"]).pid
             else:
-                self.dask_sched_pid = subprocess.Popen(
-                    [self.shifter, 'dask', 'scheduler', '--no-dashboard', '--scheduler-file', self.dask_file_name, '--port', '0']
-                ).pid
+                self.dask_sched_pid = subprocess.Popen([self.shifter, *self.dask_scheduler, "--no-dashboard",
+                                                        "--no-jupyter", "--no-show",
+                                                        "--idle-timeout",
+                                                        str(TaskPool.IDLE_TIMEOUT),
+                                                        "--scheduler-file", self.dask_scheduler_file, "--port", "0"]).pid
 
         else:
-            self.dask_sched_pid = subprocess.Popen([self.dask_scheduler, '--no-dashboard', '--scheduler-file', self.dask_file_name, '--port', '0']).pid
+            self.dask_sched_pid = subprocess.Popen([*self.dask_scheduler, "--no-dashboard",
+                                                    "--no-jupyter", "--no-show",
+                                                    "--idle-timeout",
+                                                    str(TaskPool.IDLE_TIMEOUT),
+                                                    "--scheduler-file", self.dask_scheduler_file, "--port", "0"]).pid
+
+        self.services.debug(f'Dask scheduler pid: {self.dask_sched_pid}')
 
         dask_nodes = 1 if dask_nodes is None else dask_nodes
-        if services.get_config_param('MPIRUN') == 'eval':
+        if services.get_config_param("MPIRUN") == "eval":
+            # TODO Why?
             dask_nodes = 1
+
+        # By default we should have as many threads as there are
+        # processors on the node, which is what PROCS_PER_NODE should be set
+        # to.  However, if the user has specified dask_ppw, then we will
+        # divide the number of processors by that number to get the number
+        # of threads per Dask worker.  If dask_ppw is None, then we will
+        # use the number of processors per node.
+        nthreads = services.get_config_param("PROCS_PER_NODE")
 
         if dask_worker_per_gpu:
             gpn = services.get_config_param('GPUS_PER_NODE')
@@ -2306,72 +2934,85 @@ class TaskPool:
             task_ppn = gpn
             task_gpp = 1
         else:
-            nthreads = dask_ppw if dask_ppw else services.get_config_param('PROCS_PER_NODE')
-            task_ppn = 1
+            # The number of threads per Dask worker is the number of processors
+            # on that node divided by the cores per instance, which we're
+            # using dask_ppp for.  (Which suggests that we need to change the
+            # signature for this function to make that clearer, or to allow a
+            # user to override this and specify *exactly* how many cores per
+            # Dask worker they want.)
+            # nthreads = dask_ppw if dask_ppw else services.get_config_param("PROCS_PER_NODE")
+            cores_per_node = services.get_config_param("PROCS_PER_NODE")
+            if dask_ppw is not None:
+                self.services.debug(f'Using {dask_ppw} processes per Dask worker via '
+                                    'dask_ppw argument')
+                print(f'Using {dask_ppw} processes per Dask worker via '
+                                    'dask_ppw argument', flush=True)
+                nthreads = cores_per_node // dask_ppw
+            else:
+                nthreads = cores_per_node
+
+            task_ppn = 1 # TODO Chase down the exact meaning of this.
             task_gpp = 0
+
+        # Reality check; nthreads should be at least 1
+        nthreads = 1 if nthreads is None or nthreads == 0 else nthreads
+
+        self.services.debug(f'Number of threads: {nthreads}')
+        print(f'(submit_dask_tasks: Number of threads: {nthreads})', flush=True)
+
+        if dask_ppw is not None:
+            self.services.debug(f'Using {dask_ppw} processes per Dask worker via '
+                       f'dask_ppw argument')
+            # FIXME Redundant print since debug() appears to be ignored.
+            print(f'Using {dask_ppw} processes per Dask worker via dask_ppw argument',
+                  flush=True)
+        else:
+            dask_ppw = int(services.get_config_param("PROCS_PER_NODE"))
+            self.services.debug(f'using {services.get_config_param("PROCS_PER_NODE")} '
+                       f'processes per Dask worker from platform config '
+                       f'PROCS_PER_NODE')
+        self.services.info(f'Threads per Dask worker is {nthreads}')
 
         # --nprocs was removed in version 2022.10.0 and replaced with --nworkers
         nworkers = '--nworkers' if tuple(map(int, self.distributed.__version__.split('.'))) >= (2022, 10, 0) else '--nprocs'
 
-        if use_shifter:
-            if shifter_args:
-                self.dask_workers_tid = services.launch_task(
-                    dask_nodes,
-                    os.getcwd(),
-                    self.shifter,
-                    shifter_args,
-                    'dask',
-                    'worker',
-                    '--scheduler-file',
-                    self.dask_file_name,
-                    nworkers,
-                    1,
-                    '--nthreads',
-                    nthreads,
-                    '--no-dashboard',
-                    task_ppn=task_ppn,
-                    task_gpp=task_gpp,
-                )
-            else:
-                self.dask_workers_tid = services.launch_task(
-                    dask_nodes,
-                    os.getcwd(),
-                    self.shifter,
-                    'dask',
-                    'worker',
-                    '--scheduler-file',
-                    self.dask_file_name,
-                    nworkers,
-                    1,
-                    '--nthreads',
-                    nthreads,
-                    '--no-dashboard',
-                    task_ppn=task_ppn,
-                    task_gpp=task_gpp,
-                )
-        else:
-            self.dask_workers_tid = services.launch_task(
-                dask_nodes,
-                os.getcwd(),
-                self.dask_worker,
-                '--scheduler-file',
-                self.dask_file_name,
-                nworkers,
-                1,
-                '--nthreads',
-                nthreads,
-                '--no-dashboard',
-                task_ppn=task_ppn,
-                task_gpp=task_gpp,
-            )
+        workers_cmd_line = _make_worker_args(num_workers=1,
+                                             num_threads=nthreads,
+                                             use_shifter=use_shifter,
+                                             shifter_args=shifter_args)
 
-        self.dask_client = self.dask.distributed.Client(scheduler_file=self.dask_file_name)
+        self.services.debug(f'Dask workers command line: {workers_cmd_line}')
+
+        self.dask_workers_tid = services.launch_task(dask_nodes, os.getcwd(),
+                                                    *workers_cmd_line,
+                                                     task_ppn=task_ppn,
+                                                     task_gpp=task_gpp)
+
+        self.dask_client = self.dask.distributed.Client(scheduler_file=self.dask_scheduler_file)
+        self.services.debug(f'Dask client: {self.dask_client!s}')
+
+        # And logging done via the dask workers will be forwarded to the root
+        # logger so that it can be captured by the services.
+        self.dask_client.forward_logging()
 
         if dask_worker_plugin is not None:
-            self.dask_client.register_worker_plugin(dask_worker_plugin)
+            # TODO But what if there is more than one worker plugin?
+            # TODO And what about scheduler plugins?
+            self.dask_client.register_plugin(dask_worker_plugin)
+
+        # Regardless of any other worker plugins, we need this plugin to setup
+        # the DVM for the workers so that OpenMPI can work properly.
+        # TODO is there some sort of context state to check to determine if
+        # we even need to do this?  E.g., this won't work on a laptop.
+        self.dask_client.register_plugin(DVMPlugin(logger=services.logger))
 
         try:
-            self.worker_event_logfile = services.sim_name + '_' + services.get_config_param('PORTAL_RUNID') + '_' + self.name + '_{}.json'
+            # FIXME why does this need PORTAL_RUNID, especially if
+            # USE_PORTAL is False?  Temporarily hacked it out; portal guy needs
+            # to look at this, though.
+            # self.worker_event_logfile = services.sim_name + '_' + services.get_config_param("PORTAL_RUNID") + '_' + self.name + '_{}.json'
+            self.worker_event_logfile = services.sim_name + '_' + self.name + '_{}.json'
+            self.services.debug(f'Worker event log file: {self.worker_event_logfile}')
         except KeyError:
             # USE_PORTAL == False
             self.worker_event_logfile = None
@@ -2379,11 +3020,19 @@ class TaskPool:
         launch.__module__ = '__main__'
         self.futures = []
         for task_name, task in self.queued_tasks.items():
-            self.futures.append(
-                self.dask_client.submit(
-                    launch, task.binary, task_name, task.working_dir, *task.args, **task.keywords, worker_event_logfile=self.worker_event_logfile
-                )
-            )
+            self.services.debug(f'Submitting task {task_name} to dask client '
+                                f'with {dask_ppw} cores per worker')
+            self.services.debug(f'Task {task_name} working dir: {task.working_dir}')
+            self.services.debug(f'Task args: {task.args} keywords: {task.keywords}')
+            self.futures.append(self.dask_client.submit(launch,
+                                                        task.binary,
+                                                        task_name,
+                                                        task.working_dir,
+                                                        *task.args,
+                                                        **task.keywords,
+                                                        key=task_name,
+                                                        cpus_per_proc=dask_ppw,
+                                                        worker_event_logfile=self.worker_event_logfile))
         self.active_tasks = self.queued_tasks
         self.queued_tasks = {}
         return len(self.futures)
@@ -2430,7 +3079,7 @@ class TaskPool:
         :type dask_worker_plugin: distributed.diagnostics.plugin.WorkerPlugin
         :param dask_worker_per_gpu: If true then a separate worker will be started for each GPU and binded to that GPU
         :type dask_worker_per_gpu: bool
-
+        :returns: number of tasks submitted
         """
 
         if use_dask:
@@ -2466,21 +3115,81 @@ class TaskPool:
             self._wait_active_tasks()
         return submit_count
 
+    def _shutdown_dask(self):
+        """
+        Shut down the dask client, scheduler, and workers.
+        """
+        if self.dask_client is not None:
+            self.dask_client.shutdown()
+            self.dask_client.close()
+            self.dask_client = None
+        if self.dask_sched_pid is not None:
+            try:
+                os.kill(self.dask_sched_pid, signal.SIGTERM)
+            except OSError as e:
+                self.services.exception(f"Error shutting down dask scheduler: {e}")
+            self.dask_sched_pid = None
+
+        time.sleep(1)  # Give time for the scheduler to shut down
+
+
     def get_dask_finished_tasks_status(self):
         """Return a dictionary of exit status values for all dask tasks that
         have finished since the last time finished tasks were polled.
 
+        This function *also* shuts down the dask client.  (FIXME The fate of
+        the Dask scheduler and workers is unknown.)
+
+        It also, as yet another side-effect if it sees there's an associated
+        self.worker_event_logfile.  If there is one it will send monitor events
+        for each record found in that file.  It will then remove these log
+        files.
+
+        I recommend possibly splitting this into three different, focused
+        functions.  One for gathering the exit statuses from all workers.
+        Another for shutting down Dask, which means shutting down the client,
+        scheduler, *and* workers, not just the client.  (Though the scheduler
+        and workers will eventually expire due to timeouts.) And another for
+        creating events from Dask log messages.  (With a boolean argument to
+        denote whether these log files should be deleted after the fact.  I.e.,
+        the practitioner may want to look at those even if they're emitted
+        as IPS events.
+
+        This also presumes that the dask workers will return an exit status,
+        presumably of related subprocess calls.  FIXME What if we have other Dask
+        tasks that do not return an exit status?
+
         :return: dict mapping task name to exit status
         :rtype: dict
         """
+        if self.dask_client is None:
+            # FIXME How does this happen and is it ok when it does?
+            self.services.warning("No dask client in call to finished tasks "
+                                  "status")
+            return {}
+
+        if self.futures is None:
+            # FIXME How does this happen and is it ok when it does?
+            self.services.warning("No futures available in call to finished "
+                                  "tasks status")
+            self._shutdown_dask()
+
+            return {}
+
         result = self.dask_client.gather(self.futures)
+
+        # If we don't have a result, then there were no tasks to gather.
+        if result is None:
+            self.services.warning("No futures available in call to finished ")
+            self._shutdown_dask()
+            return {}
+
         worker_names = [''.join(c for c in worker['name'] if c.isalnum()) for worker in self.dask_client.scheduler_info()['workers'].values()]
 
         # NOTE: You may get an exception stack trace from Dask, this is currently not believed to cause an issue.
+        # We no longer need Dask running, so shut it down.
+        self._shutdown_dask()
 
-        self.dask_client.shutdown()
-        self.dask_client.close()
-        time.sleep(1)
         if self.worker_event_logfile is not None:
             try:
                 events = []
@@ -2512,12 +3221,17 @@ class TaskPool:
         self.finished_tasks = {}
         self.active_tasks = {}
         self.services.wait_task(self.dask_workers_tid)
-        self.dask_file_name = None
+        self.dask_scheduler_file = None
         self.dask_workers_tid = None
         self.dask_sched_pid: Optional[int] = None
         self.dask_pool = False
         self.serial_pool = True
-        return dict(result)
+
+        if result is not None:
+            # FIXME assumes that we can convert `result` into a dict, which
+            # is doubtful.
+            return dict(result)
+        return result # which will be none
 
     def get_finished_tasks_status(self):
         """
@@ -2529,6 +3243,7 @@ class TaskPool:
         """
         if self.dask_pool:
             return self.get_dask_finished_tasks_status()
+
         if len(self.active_tasks) + len(self.finished_tasks) == 0:
             raise Exception('No more active tasks in task pool %s' % self.name)
 

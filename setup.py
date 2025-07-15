@@ -46,6 +46,7 @@ setup(
     entry_points={
         'console_scripts': [
             'ips.py = ipsframework.ips:main',
+                "ips=ips:main",
             'ips_dakota_dynamic.py = ipsframework.ips_dakota_dynamic:main',
             'ips_dakota_client.py = ipsframework.ips_dakota_client:main',
         ]
