@@ -122,6 +122,115 @@ Multi-Component Ensemble
         num_nodes=8
     )
 
+
+Creating Variables from CSV Files
+---------------------------------
+
+For convenience, the IPS framework provides the :func:`ipsframework.ipsutil.params_from_csv` utility function to generate the variables dictionary from a CSV file. This is particularly useful when working with parameter combinations exported from spreadsheets or generated programmatically.
+
+Function Signature
+~~~~~~~~~~~~~~~~~~
+
+.. autofunction:: ipsframework.ipsutil.params_from_csv
+
+CSV File Format
+~~~~~~~~~~~~~~~
+
+The CSV file should follow this structure:
+
+- **Header row**: Column names in the format ``component_name:parameter_name``
+- **Data rows**: Parameter values for each ensemble member
+
+Example CSV file:
+
+.. code-block:: text
+
+    physics_comp:DENSITY, physics_comp:TEMPERATURE, transport_comp:CHI_E
+    1.0e19, 1000, 0.5
+    2.0e19, 2000, 1.0
+    3.0e19, 3000, 1.5
+
+This CSV format allows you to:
+
+- Export parameter combinations directly from spreadsheet applications
+- Generate files programmatically using pandas or other data processing tools
+- Maintain parameter combinations in version control as plain text
+
+Usage Example
+~~~~~~~~~~~~~
+
+.. code-block:: python
+
+    from ipsframework.ipsutil import params_from_csv
+
+    # Load parameters from CSV file
+    variables = params_from_csv('ensemble_parameters.csv')
+
+    # Run ensemble with CSV-generated parameters
+    results = services.run_ensemble(
+        template='config_template.conf',
+        variables=variables,
+        run_dir='/scratch/csv_ensemble',
+        name='csv_parameter_sweep',
+        num_nodes=4
+    )
+
+The CSV file above would generate the equivalent variables dictionary:
+
+.. code-block:: python
+
+    variables = {
+        'physics_comp': {
+            'DENSITY': ['1.0e19', '2.0e19', '3.0e19'],
+            'TEMPERATURE': ['1000', '2000', '3000']
+        },
+        'transport_comp': {
+            'CHI_E': ['0.5', '1.0', '1.5']
+        }
+    }
+
+Integration with Data Analysis Tools
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The CSV format integrates well with common data analysis workflows:
+
+**Pandas DataFrame export:**
+
+.. code-block:: python
+
+    import pandas as pd
+
+    # Create parameter combinations
+    df = pd.DataFrame({
+        'physics_comp:DENSITY': [1.0e19, 2.0e19, 3.0e19],
+        'physics_comp:TEMPERATURE': [1000, 2000, 3000],
+        'transport_comp:CHI_E': [0.5, 1.0, 1.5]
+    })
+
+    # Export to CSV for ensemble use
+    df.to_csv('parameters.csv', index=False)
+
+    # Load in IPS
+    variables = params_from_csv('parameters.csv')
+
+**Parameter space generation:**
+
+.. code-block:: python
+
+    import itertools
+    import csv
+
+    # Generate all combinations of parameters
+    densities = [1.0e19, 2.0e19, 3.0e19]
+    temperatures = [1000, 2000, 3000]
+    chi_values = [0.5, 1.0, 1.5]
+
+    with open('full_factorial.csv', 'w', newline='') as f:
+        writer = csv.writer(f)
+        writer.writerow(['physics_comp:DENSITY', 'physics_comp:TEMPERATURE', 'transport_comp:CHI_E'])
+        for combo in itertools.product(densities, temperatures, chi_values):
+            writer.writerow(combo)
+
 Template Configuration Template File
 ------------------------------------
 
