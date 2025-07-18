@@ -2357,7 +2357,7 @@ class ServicesProxy:
             # top-level platform config, which is what the user has set. Same
             # with node detection.
             platform_config['MPIRUN'] = 'mpirun'
-            platform_config['NODE_DETECTION'] = 'slurm_env'
+            platform_config['NODE_DETECTION'] = 'manual'
 
             # This is critical for ensuring that `prun` is used to run the
             # ensemble instances.  This is because the ensemble instances rely
@@ -2537,6 +2537,7 @@ class DVMPlugin(WorkerPlugin):
         self.logger.info(f"Launching DVM")
         self.worker.dvm_uri_file = f"/tmp/dvm.uri.{os.getpid()}"
         command = ['prte',
+                   '--map-by', ':OVERSUBSCRIBE',
                    '--report-uri',
                    self.worker.dvm_uri_file]
         self.worker.dvm_proc = subprocess.Popen(command,
