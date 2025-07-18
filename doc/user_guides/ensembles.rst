@@ -123,7 +123,7 @@ Multi-Component Ensemble
     )
 
 Template Configuration Template File
-----------------------
+------------------------------------
 
 The configuration template file should contain placeholder variables that will be substituted with actual values.
 Use ``?`` syntax for placeholders.  It is otherwise a standard IPS configuration file.:
@@ -259,4 +259,3 @@ See Also
 
 - :meth:`ServicesProxy.create_task_pool`: For managing large numbers of tasks
 - :meth:`ServicesProxy.submit_tasks`: For distributed task execution
-- :doc:`configuration`: For details on configuration file structure
