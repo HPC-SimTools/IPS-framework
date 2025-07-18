@@ -2545,6 +2545,7 @@ class DVMPlugin(WorkerPlugin):
                                                 stderr=subprocess.STDOUT)
         ready = self.worker.dvm_proc.stdout.readline()
         self.logger.info(f"Ready Message : {ready}")
+        print(f"Ready Message : {ready}", flush=True)
         self.worker.dvm_uri = open(self.worker.dvm_uri_file).readline()
         os.environ['PMIX_MCA_pmix_server_uri'] = 'file:' + self.worker.dvm_uri
         # This was an artifact from Wael's notebook; kept because presumably
@@ -2552,6 +2553,7 @@ class DVMPlugin(WorkerPlugin):
         os.environ['PMIX_SERVER_URI41'] = 'file:' + self.worker.dvm_uri
         os.environ['PMIX_MCA_pmix_base_session_dir'] = '/tmp/prte_sessions'
         self.logger.debug(f"dvm URI = {self.worker.dvm_uri}")
+        print(f"dvm URI = {self.worker.dvm_uri}", flush=True)
         return
 
     def teardown(self, worker: Worker):
