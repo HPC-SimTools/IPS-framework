@@ -60,12 +60,12 @@ The ``variables`` parameter uses a specific nested dictionary structure:
 .. code-block:: python
 
     variables = {
-        'simulation_component_1': {
+        'component_1': {
             'PARAMETER_A': [value1, value2, value3],
             'PARAMETER_B': [value1, value2, value3],
             'PARAMETER_C': [value1, value2, value3]
         },
-        'simulation_component_2': {
+        'component_2': {
             'PARAMETER_D': [value1, value2, value3],
             'PARAMETER_E': [value1, value2, value3]
         }
@@ -122,46 +122,98 @@ Multi-Component Ensemble
         num_nodes=8
     )
 
-Configuration Template
+Template Configuration Template File
 ----------------------
 
-The configuration template file should contain placeholder variables that will be substituted with actual values. Use ``?PARAMETER_NAME?`` syntax for placeholders:
+The configuration template file should contain placeholder variables that will be substituted with actual values.
+Use ``?`` syntax for placeholders.  It is otherwise a standard IPS configuration file.:
 
 .. code-block:: ini
 
-    [GLOBAL]
-    SIM_NAME = ensemble_?INSTANCE_ID?
+    SIM_ROOT = $PWD
+    SIM_NAME = ensemble_instance
+    SIMULATION_MODE = NORMAL
+    LOG_LEVEL = INFO
+    LOG_FILE  = instance_run.log
 
-    [physics_component]
-    CLASS = PhysicsComponent
-    DENSITY = ?DENSITY?
-    TEMPERATURE = ?TEMPERATURE?
-    MAGNETIC_FIELD = ?MAGNETIC_FIELD?
+    [PORTS]
+    NAMES = DRIVER, PHYSICS, TRANSPORT
 
-    [transport_component]
-    CLASS = TransportComponent
-    CHI_E = ?CHI_E?
-    CHI_I = ?CHI_I?
+    [DRIVER]
+        IMPLEMENTATION = driver
+
+    [PHYSICS]
+        IMPLEMENTATION = physics_component
+
+    [TRANSPORT]
+        IMPLEMENTATION = transport_component
+
+[driver]
+    CLASS = driver
+    SUB_CLASS =
+    NAME = instance_driver
+    SCRIPT = /my/bin/path/instance_driver.py
+    NPROC = 1
+    INPUT_FILES =
+    OUTPUT_FILES =
+    RESTART_FILES =
+
+[physics_component]
+    BIN_PATH = /my/bin/path
+    CLASS = workers
+    SUB_CLASS =
+    NAME = physics_comp
+    SCRIPT = ${BIN_PATH}/physics_comp.py
+    NPROC = 1
+    INPUT_FILES =
+    OUTPUT_FILES =
+    RESTART_FILES =
+    POWER = ?
+    BEAM_ENERGY = ?
+    CHI_I = ?
+
+[transport_component]
+    BIN_PATH = /my/bin/path
+    CLASS = workers
+    SUB_CLASS =
+    NAME = transport_comp
+    SCRIPT = ${BIN_PATH}/transport_comp.py
+    NPROC = 1
+    INPUT_FILES =
+    OUTPUT_FILES =
+    RESTART_FILES =
+    DENSITY = ?
+    TEMPERATURE = ?
+
 
 Directory Structure
 -------------------
 
-The ensemble execution creates the following directory structure:
+The ensemble execution creates something like the following directory structure:
 
 .. code-block::
 
     run_dir/
-    ├── ensemble_member_001/
-    │   ├── config.conf
-    │   ├── work/
-    │   └── simulation_results/
-    ├── ensemble_member_002/
-    │   ├── config.conf
-    │   ├── work/
-    │   └── simulation_results/
+    ├── MY_INSTANCE_0
+    │ ├── MY_INSTANCE_0.config
+    │ ├── MY_INSTANCE_0.log
+    │ ├── MY_INSTANCE_0_platform.config
+    │ ├── resource_usage
+    │ ├── simulation_setup
+    │ │   ├── physics_comp.py
+    │ │   ├── transport_comp.py
+    │ │   └── instance_driver.py
+    │ └── work
+    │     ├── driver__instance_driver_1
+    │     ├── FWK_COMP_runspaceInitComponent_4
+    │     ├── workers__physics_comp_2
+    │     │   └── output.csv
+    │     └── workers__transport_comp_3
+    │         └── output.csv
     └── ...
 
-Each ensemble member runs in its own isolated directory with a unique configuration file generated from the template.
+Each ensemble member runs in its own isolated directory, as shown above, with a
+unique configuration file generated from the template.
 
 Resource Management
 -------------------
@@ -170,7 +222,7 @@ The ensemble system uses Dask for distributed computing:
 
 - **Nodes**: Each specified node runs one Dask worker
 - **Cores**: Distributed among ensemble members based on ``cores_per_instance``
-- **Memory**: Automatically managed by Dask scheduler
+- **Memory**: Automatically managed by Dask scheduler and the underlying cluster job scheduler (e.g., SLURM, PBS)
 - **Load Balancing**: Dask handles work distribution and load balancing
 
 Best Practices
@@ -200,8 +252,6 @@ Limitations
 -----------
 
 - The method signature indicates ``cores_per_instance`` is not yet fully implemented
-- Ensemble size is limited by available compute resources
-- All ensemble members must use the same basic simulation structure
 - Parameter substitution is limited to simple string replacement
 
 See Also
