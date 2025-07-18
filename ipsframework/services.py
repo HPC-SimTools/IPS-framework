@@ -2547,11 +2547,12 @@ class DVMPlugin(WorkerPlugin):
         self.logger.info(f"Ready Message : {ready}")
         print(f"Ready Message : {ready}", flush=True)
         self.worker.dvm_uri = open(self.worker.dvm_uri_file).readline()
-        os.environ['PMIX_MCA_pmix_server_uri'] = 'file:' + self.worker.dvm_uri
+        os.environ['PMIX_MCA_pmix_server_uri'] = 'file:' + self.worker.dvm_uri_file
         # This was an artifact from Wael's notebook; kept because presumably
         # this env variable might be used.  Can't hurt to be redundant.
-        os.environ['PMIX_SERVER_URI41'] = 'file:' + self.worker.dvm_uri
-        os.environ['PMIX_MCA_pmix_base_session_dir'] = '/tmp/prte_sessions'
+        os.environ['PMIX_SERVER_URI41'] = 'file:' + self.worker.dvm_uri_file
+        # os.environ['PMIX_MCA_pmix_base_session_dir'] = '/tmp/prte_sessions'
+        os.environ['PRTE_MCA_rmaps_default_mapping_policy'] = ':oversubscribe'
         self.logger.debug(f"dvm URI = {self.worker.dvm_uri}")
         print(f"dvm URI = {self.worker.dvm_uri}", flush=True)
         return
