@@ -2537,7 +2537,7 @@ class DVMPlugin(WorkerPlugin):
         self.logger.info(f"Launching DVM")
         self.worker.dvm_uri_file = f"/tmp/dvm.uri.{os.getpid()}"
         command = ['prte',
-                   '--map-by', ':OVERSUBSCRIBE',
+                   # '--map-by', ':OVERSUBSCRIBE',
                    '--report-uri',
                    self.worker.dvm_uri_file]
         self.worker.dvm_proc = subprocess.Popen(command,
