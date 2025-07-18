@@ -123,23 +123,19 @@ def params_from_csv(infile):
 
     So, for example, if the CSV file looks like this:
 
-    ```
-    a_comp:A, a_comp:B, a_comp:C, another_comp:D, another_comp:B, another_comp:F
-    3, 2.34, bar, 7, 0.775, xyzzy
-    2, 5.82, baz, 5, 0.080, plud
-    4, 0.1, quux, 9, 29.2, thud
-    ```
+        a_comp:A, a_comp:B, a_comp:C, another_comp:D, another_comp:B, another_comp:F
+        3, 2.34, bar, 7, 0.775, xyzzy
+        2, 5.82, baz, 5, 0.080, plud
+        4, 0.1, quux, 9, 29.2, thud
 
     The returned structure will look like this:
 
-    ```
-    variables = {'a_comp': {'A': [3, 2, 4],
+        variables = {'a_comp': {'A': [3, 2, 4],
                                 'B': [2.34, 5.82, 0.1],
                                 'C': ['bar', 'baz', 'quux']},
-                 'another_comp': {'D': [7, 5, 9],
+                     'another_comp': {'D': [7, 5, 9],
                                       'B': [0.775, 0.080, 29.2],
                                       'F': ['xyzzy', 'plud', 'thud']}}
-    ```
 
     Note that the corresponding config template file will need to specify
     sections for `a_comp` and `another_comp` that have placeholders
@@ -148,7 +144,7 @@ def params_from_csv(infile):
     example.
 
     :param infile: Path to the CSV file
-    :return: Dictionary of parameters suitable for use in run_ensemble()
+    :returns: Dictionary of parameters suitable for use in run_ensemble()
     """
     variables = {}
 
