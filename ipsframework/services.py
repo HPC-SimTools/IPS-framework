@@ -2950,7 +2950,7 @@ class TaskPool:
 
         self.dask_workers_tid = services.launch_task(dask_nodes, os.getcwd(), *workers_cmd_line, task_ppn=task_ppn, task_gpp=task_gpp)
 
-        self.dask_client = self.dask.distributed.Client(scheduler_file=self.dask_scheduler_file)
+        self.dask_client = TaskPool.distributed.Client(scheduler_file=self.dask_scheduler_file)
         self.services.debug(f'Dask client: {self.dask_client!s}')
 
         # And logging done via the dask workers will be forwarded to the root
