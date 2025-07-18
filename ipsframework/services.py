@@ -2465,7 +2465,7 @@ class ServicesProxy:
             # top-level platform config, which is what the user has set. Same
             # with node detection.
             platform_config['MPIRUN'] = 'mpirun'
-            platform_config['NODE_DETECTION'] = 'slurm_env'
+            platform_config['NODE_DETECTION'] = 'manual'
 
             # This is critical for ensuring that `prun` is used to run the
             # ensemble instances.  This is because the ensemble instances rely
