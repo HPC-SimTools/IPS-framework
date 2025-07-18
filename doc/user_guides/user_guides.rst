@@ -33,6 +33,9 @@ This directory has all of the user guides for using the IPS (see the component a
 :doc:`Setting up environment on NERSC<nersc_conda>`
      How to setup conda environments on NERSC for using IPS.
 
+:doc:`Running Ensembles<ensembles>`
+     How to run ensemble simulations with IPS using Dask.
+
 .. **User Guides Table of Contents**
 
 :doc:`Using the IPS Portal<portal_guides>`
