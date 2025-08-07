@@ -125,6 +125,8 @@ def launch(binary, task_name, working_dir, *args, **keywords):
             if not dvm_uri_file.exists():
                 worker.logger.error(f"DVM URI file {dvm_uri_file} does not exist")
                 print(f"DVM URI file {dvm_uri_file} does not exist", flush=True)
+            else:
+                worker.logger.info(f"Using DVM URI file: {dvm_uri_file}")
 
         if task_env is not None and task_env is not {}:
             if not 'PMIX_MCA_pmix_server_uri' in task_env:
@@ -132,11 +134,19 @@ def launch(binary, task_name, working_dir, *args, **keywords):
                                     "PMIX_MCA_pmix_server_uri not set in task_env")
                 print("DVM environment variable PMIX_MCA_pmix_server_uri not "
                       "set in task_env", flush=True)
+            else:
+                worker.logger.info(f"DVM environment variable "
+                                   "PMIX_MCA_pmix_server_uri set in task_env to"
+                                   " {task_env['PMIX_MCA_pmix_server_uri']}")
         if not 'PMIX_MCA_pmix_server_uri' in os.environ:
             worker.logger.error("DVM environment variable "
                                 "PMIX_MCA_pmix_server_uri not set in os.environ")
             print("DVM environment variable PMIX_MCA_pmix_server_uri not set "
                   "in os.environ", flush=True)
+        else:
+            worker.logger.info(f"DVM environment variable "
+                               "PMIX_MCA_pmix_server_uri set in os.environ to"
+                               " {os.environ['PMIX_MCA_pmix_server_uri']}")
 
         timeout = float(keywords.get("timeout", 1.e9))
 
@@ -231,7 +241,7 @@ def setup_dvm_per_worker(worker):
         setting up the environment variables needed for MPI.
 
         :param worker: Dask worker
-        :returns: None
+        :returns: DVM URI
     """
     worker.dvm_uri_file = f"/tmp/dvm.uri.{worker.id}"
     command = ['prte',
