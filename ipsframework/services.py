@@ -119,6 +119,25 @@ def launch(binary, task_name, working_dir, *args, **keywords):
         new_env = os.environ.copy()
         new_env.update(task_env)
 
+        # Check that the DVM environment variables are set.
+        if hasattr(worker, 'dvm_uri_file'):
+            dvm_uri_file = Path(worker.dvm_uri_file)
+            if not dvm_uri_file.exists():
+                worker.logger.error(f"DVM URI file {dvm_uri_file} does not exist")
+                print(f"DVM URI file {dvm_uri_file} does not exist", flush=True)
+
+        if task_env is not None and task_env is not {}:
+            if not 'PMIX_MCA_pmix_server_uri' in task_env:
+                worker.logger.error("DVM environment variable "
+                                    "PMIX_MCA_pmix_server_uri not set in task_env")
+                print("DVM environment variable PMIX_MCA_pmix_server_uri not "
+                      "set in task_env", flush=True)
+        if not 'PMIX_MCA_pmix_server_uri' in os.environ:
+            worker.logger.error("DVM environment variable "
+                                "PMIX_MCA_pmix_server_uri not set in os.environ")
+            print("DVM environment variable PMIX_MCA_pmix_server_uri not set "
+                  "in os.environ", flush=True)
+
         timeout = float(keywords.get("timeout", 1.e9))
 
         cmd = f"{binary} {' '.join(map(str, args))}"
