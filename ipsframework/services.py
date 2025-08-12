@@ -127,26 +127,31 @@ def launch(binary, task_name, working_dir, *args, **keywords):
                 print(f"DVM URI file {dvm_uri_file} does not exist", flush=True)
             else:
                 worker.logger.info(f"Using DVM URI file: {dvm_uri_file}")
+                print(f'Using DVM URI file: {dvm_uri_file}', flush=True)
 
         if task_env is not None and task_env is not {}:
-            if not 'PMIX_MCA_pmix_server_uri' in task_env:
+            if not 'PMIX_SERVER_URI41' in task_env:
                 worker.logger.error("DVM environment variable "
-                                    "PMIX_MCA_pmix_server_uri not set in task_env")
-                print("DVM environment variable PMIX_MCA_pmix_server_uri not "
+                                    "PMIX_SERVER_URI41 not set in task_env")
+                print("DVM environment variable PMIX_SERVER_URI41 not "
                       "set in task_env", flush=True)
             else:
                 worker.logger.info(f"DVM environment variable "
-                                   "PMIX_MCA_pmix_server_uri set in task_env to"
-                                   " {task_env['PMIX_MCA_pmix_server_uri']}")
-        if not 'PMIX_MCA_pmix_server_uri' in os.environ:
+                                   "PMIX_SERVER_URI41 set in task_env to"
+                                   " {task_env['PMIX_SERVER_URI41']}")
+                print(f'DVM environment variable PMIX_SERVER_URI41 set in '
+                      f'task_env to {task_env["PMIX_SERVER_URI41"]}', flush=True)
+        if not 'PMIX_SERVER_URI41' in os.environ:
             worker.logger.error("DVM environment variable "
-                                "PMIX_MCA_pmix_server_uri not set in os.environ")
-            print("DVM environment variable PMIX_MCA_pmix_server_uri not set "
+                                "PMIX_SERVER_URI41 not set in os.environ")
+            print("DVM environment variable PMIX_SERVER_URI41 not set "
                   "in os.environ", flush=True)
         else:
             worker.logger.info(f"DVM environment variable "
-                               "PMIX_MCA_pmix_server_uri set in os.environ to"
-                               " {os.environ['PMIX_MCA_pmix_server_uri']}")
+                               "PMIX_SERVER_URI41 set in os.environ to"
+                               " {os.environ['PMIX_SERVER_URI41']}")
+            print(f'DVM environment variable PMIX_SERVER_URI41 set in os.environ'
+                  f' to {os.environ["PMIX_SERVER_URI41"]}', flush=True)
 
         timeout = float(keywords.get("timeout", 1.e9))
 
