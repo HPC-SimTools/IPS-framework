@@ -235,41 +235,7 @@ def launch(binary, task_name, working_dir, *args, **keywords):
     return task_name, ret_val
 
 
-def setup_dvm_per_worker(worker):
-    """ To be invoked on each Dask worker via Client.run() to
-        setup a local DVM daemon on each worker node.  This includes
-        setting up the environment variables needed for MPI.
 
-        :param worker: Dask worker
-        :returns: DVM URI
-    """
-    worker.dvm_uri_file = f"/tmp/dvm.uri.{worker.id}"
-    command = ['prte',
-               # '--map-by', ':OVERSUBSCRIBE',
-               '--report-uri',
-               worker.dvm_uri_file]
-    worker.dvm_proc = subprocess.Popen(command,
-                                       stdout=subprocess.PIPE,
-                                       stderr=subprocess.STDOUT)
-    ready = worker.dvm_proc.stdout.readline()
-    print(f"Ready Message : {ready}", flush=True)
-
-    with open(self.worker.dvm_uri_file) as f:
-        worker.dvm_uri = f.readline()
-
-    # This can later be retrieved via client.get_events('dvm')
-    worker.log_event('dvm', {'ready message': ready,
-                             'dvm_uri_file': worker.dvm_uri_file,
-                             'dvm_uri': worker.dvm_uri})
-
-    os.environ['PMIX_MCA_pmix_server_uri'] = 'file:' + worker.dvm_uri_file
-    # This was an artifact from Wael's notebook; kept because presumably
-    # this env variable might be used.  Can't hurt to be redundant.
-    os.environ['PMIX_SERVER_URI41'] = 'file:' + worker.dvm_uri_file
-    # os.environ['PMIX_MCA_pmix_base_session_dir'] = '/tmp/prte_sessions'
-    os.environ['PRTE_MCA_rmaps_default_mapping_policy'] = ':oversubscribe'
-
-    return worker.dvm_uri
 
 
 class ServicesProxy:
@@ -2588,7 +2554,6 @@ class DVMPlugin(WorkerPlugin):
     def __init__(self, logger):
         super().__init__()
 
-        # Access the service's logger that's passed in
         self.logger = logger
 
     def setup(self, worker :Worker):
@@ -2601,39 +2566,39 @@ class DVMPlugin(WorkerPlugin):
         # do this.
         self.logger.setLevel(logging.DEBUG)
 
-        # The following now handled by setup_dvm_per_worker()
-        # self.logger.info(f"Launching DVM")
-        # self.worker.dvm_uri_file = f"/tmp/dvm.uri.{os.getpid()}"
-        # command = ['prte',
-        #            # '--map-by', ':OVERSUBSCRIBE',
-        #            '--report-uri',
-        #            self.worker.dvm_uri_file]
-        # self.worker.dvm_proc = subprocess.Popen(command,
-        #                                         stdout=subprocess.PIPE,
-        #                                         stderr=subprocess.STDOUT)
-        # ready = self.worker.dvm_proc.stdout.readline()
-        # self.logger.info(f"Ready Message : {ready}")
-        # print(f"Ready Message : {ready}", flush=True)
-        # self.worker.dvm_uri = open(self.worker.dvm_uri_file).readline()
-        # os.environ['PMIX_MCA_pmix_server_uri'] = 'file:' + self.worker.dvm_uri_file
-        # # This was an artifact from Wael's notebook; kept because presumably
-        # # this env variable might be used.  Can't hurt to be redundant.
-        # os.environ['PMIX_SERVER_URI41'] = 'file:' + self.worker.dvm_uri_file
-        # # os.environ['PMIX_MCA_pmix_base_session_dir'] = '/tmp/prte_sessions'
-        # os.environ['PRTE_MCA_rmaps_default_mapping_policy'] = ':oversubscribe'
-        # self.logger.debug(f"dvm URI = {self.worker.dvm_uri}")
-        # print(f"dvm URI = {self.worker.dvm_uri}", flush=True)
-        # return
+        self.logger.info(f"Launching DVM")
+        self.worker.dvm_uri_file = f"/tmp/dvm.uri.{os.getpid()}"
+        command = ['prte',
+                   # '--map-by', ':OVERSUBSCRIBE',
+                   '--report-uri',
+                   self.worker.dvm_uri_file]
+        self.worker.dvm_proc = subprocess.Popen(command,
+                                                stdout=subprocess.PIPE,
+                                                stderr=subprocess.STDOUT)
+        ready = self.worker.dvm_proc.stdout.readline()
+        self.logger.info(f"Ready Message : {ready}")
+        print(f"Ready Message : {ready}", flush=True)
 
-    # def teardown(self, worker: Worker): NOTHING TO TEARDOWN ANYMORE
-    #     self.logger.info(f"Shutting down DVM at {self.worker.dvm_uri}")
-    #     command = ['pterm',
-    #                '--dvm-uri',
-    #                self.worker.dvm_uri]
-    #     subprocess.call(command)
-    #     self.worker.dvm_proc.terminate()
-    #     self.worker.dvm_proc.kill()
-    #     return
+        with open(self.worker.dvm_uri_file, 'w') as f:
+            self.worker.dvm_uri = f.readline()
+            print(f"Read DVM URI: {self.worker.dvm_uri}", flush=True)
+            self.logger.debug(f"Read DVM URI: {self.worker.dvm_uri}",
+                              flush=True)
+
+        os.environ['PMIX_SERVER_URI41'] = self.worker.dvm_uri
+        os.environ['PRTE_MCA_rmaps_default_mapping_policy'] = ':oversubscribe'
+
+        return
+
+    def teardown(self, worker: Worker):
+        self.logger.info(f"Shutting down DVM at {self.worker.dvm_uri}")
+        command = ['pterm',
+                   '--dvm-uri',
+                   self.worker.dvm_uri]
+        subprocess.call(command)
+        self.worker.dvm_proc.terminate()
+        self.worker.dvm_proc.kill()
+        return
 
 
 class TaskPool:
@@ -2923,15 +2888,7 @@ class TaskPool:
 
         # Regardless of any other worker plugins, we need this plugin to setup
         # the DVM for the workers so that OpenMPI can work properly.
-        # TODO is there some sort of context state to check to determine if
-        # we even need to do this?  E.g., this won't work on a laptop.
         self.dask_client.register_plugin(DVMPlugin(logger=services.logger))
-
-        # Run setup_dvm_per_worker on each worker to setup the DVM
-        dvm_uris = self.dask_client.run(setup_dvm_per_worker)
-        self.services.debug(f'DVM URIs: {dvm_uris!s}')
-        # Each invocation should have written Dask events regarding DVM startup
-        print(self.dask_client.get_events('dvm'))
 
         try:
             # FIXME why does this need PORTAL_RUNID, especially if
