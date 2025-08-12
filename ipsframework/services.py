@@ -2584,7 +2584,7 @@ class DVMPlugin(WorkerPlugin):
         self.logger.info(f"Ready Message : {ready}")
         print(f"Ready Message : {ready}", flush=True)
 
-        with open(self.worker.dvm_uri_file, 'w') as f:
+        with open(self.worker.dvm_uri_file, 'r') as f:
             self.worker.dvm_uri = f.readline()
             print(f"Read DVM URI: {self.worker.dvm_uri}", flush=True)
             self.logger.debug(f"Read DVM URI: {self.worker.dvm_uri}",
