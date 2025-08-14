@@ -51,5 +51,6 @@ This directory has all of the user guides for using the IPS (see the component a
    component_package
    migration
    nersc_conda
+   ensembles
    portal_guides
    dask
