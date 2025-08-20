@@ -65,20 +65,20 @@ class Node:
         """
         if fname:
             for sock in self.sockets:
-                print("    socket:", sock.name, file=fname)
-                print("    availablilty:", sock.avail_cores, file=fname)
-                print("    task ids:", sock.task_ids, file=fname)
-                print("    owners:", sock.owners, file=fname)
-                print("    cores:", sock.total_cores, file=fname)
+                print('    socket:', sock.name, file=fname)
+                print('    availablilty:', sock.avail_cores, file=fname)
+                print('    task ids:', sock.task_ids, file=fname)
+                print('    owners:', sock.owners, file=fname)
+                print('    cores:', sock.total_cores, file=fname)
                 sock.print_cores(fname)
 
         else:
             for sock in self.sockets:
-                print("    socket:", sock.name)
-                print("    availablilty:", sock.avail_cores)
-                print("    task ids:", sock.task_ids)
-                print("    owners:", sock.owners)
-                print("    cores:", sock.total_cores)
+                print('    socket:', sock.name)
+                print('    availablilty:', sock.avail_cores)
+                print('    task ids:', sock.task_ids)
+                print('    owners:', sock.owners)
+                print('    cores:', sock.total_cores)
                 sock.print_cores()
 
     def allocate(self, whole_nodes, whole_sockets, tid, o, procs):
@@ -93,20 +93,18 @@ class Node:
         slots = []
         self.task_ids.append(tid)
         self.owners.append(o)
-        k = 0   # number of cores allocated
+        k = 0  # number of cores allocated
 
         if whole_nodes:
             for sock in self.sockets:
-                slots.extend(sock.allocate(whole_sockets, tid, o,
-                                           sock.avail_cores))
+                slots.extend(sock.allocate(whole_sockets, tid, o, sock.avail_cores))
                 self.available.remove(sock.name)
                 self.allocated.append(sock.name)
                 k += sock.total_cores
         elif whole_sockets:
             for sock in self.sockets:
                 if sock.avail_cores == sock.total_cores:
-                    slots.extend(sock.allocate(whole_sockets, tid, o,
-                                               sock.avail_cores))
+                    slots.extend(sock.allocate(whole_sockets, tid, o, sock.avail_cores))
                     self.available.remove(sock.name)
                     self.allocated.append(sock.name)
                     k += sock.total_cores
@@ -115,8 +113,7 @@ class Node:
         else:
             for sock in self.sockets:
                 if sock.avail_cores > procs - k:
-                    slots.extend(sock.allocate(whole_sockets, tid, o,
-                                               procs - k))
+                    slots.extend(sock.allocate(whole_sockets, tid, o, procs - k))
                     k = procs
                     if sock.name not in self.allocated:
                         self.allocated.append(sock.name)
@@ -125,8 +122,7 @@ class Node:
 
                 elif sock.avail_cores > 0:  # sock.avail_cores < procs - k
                     k += sock.avail_cores
-                    slots.extend(sock.allocate(whole_sockets, tid, o,
-                                               sock.avail_cores))
+                    slots.extend(sock.allocate(whole_sockets, tid, o, sock.avail_cores))
                     if sock.name not in self.allocated:
                         self.allocated.append(sock.name)
                     if sock.avail_cores == 0:
@@ -205,20 +201,20 @@ class Socket:
         """
         if fname:
             for c in self.cores:
-                print("      core:", c.name, end=' ', file=fname)
+                print('      core:', c.name, end=' ', file=fname)
                 if c.is_available:
-                    print(" - available", file=fname)
+                    print(' - available', file=fname)
                 else:
-                    print(" - task_id:", c.task_id, end=' ', file=fname)
-                    print(" - owner:", c.owner, file=fname)
+                    print(' - task_id:', c.task_id, end=' ', file=fname)
+                    print(' - owner:', c.owner, file=fname)
         else:
             for c in self.cores:
-                print("      core:", c.name, end=' ')
+                print('      core:', c.name, end=' ')
                 if c.is_available:
-                    print(" - available")
+                    print(' - available')
                 else:
-                    print(" - task_id:", c.task_id, end=' ')
-                    print(" - owner:", c.owner)
+                    print(' - task_id:', c.task_id, end=' ')
+                    print(' - owner:', c.owner)
 
     def allocate(self, whole, tid, o, num_procs):
         """
@@ -236,16 +232,14 @@ class Socket:
             # fill the whole socket!
             for c1 in self.cores:
                 self.available.remove(c1.name)
-                slots.append(str(self.name) + ":" +
-                             str(c1.allocate(tid, o)))
+                slots.append(str(self.name) + ':' + str(c1.allocate(tid, o)))
                 self.allocated.append(c1.name)
                 k += 1
         else:
             for c1 in self.cores:
                 if c1.is_available:
                     self.available.remove(c1.name)
-                    slots.append(str(self.name) + ":" +
-                                 str(c1.allocate(tid, o)))
+                    slots.append(str(self.name) + ':' + str(c1.allocate(tid, o)))
                     self.allocated.append(c1.name)
                     k += 1
                 if k == num_procs:
@@ -272,7 +266,7 @@ class Socket:
                 self.available.append(c.name)
                 count += 1
         if count != k:
-            print("<<<error>>>")
+            print('<<<error>>>')
         # set avail_cores
         self.avail_cores += k
         return count
@@ -303,15 +297,15 @@ class Core:
             self.owner = o
             return self.name
         else:
-            print("trying to allocate core that is not available")
-            raise RuntimeError("trying to allocate core that is not available")
+            print('trying to allocate core that is not available')
+            raise RuntimeError('trying to allocate core that is not available')
 
     def release(self):
         """
         Mark core as available.
         """
         if self.is_available:
-            print("warning: trying to release core when not in use")
+            print('warning: trying to release core when not in use')
         else:
             self.is_available = True
             self.task_id = -1

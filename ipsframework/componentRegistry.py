@@ -1,11 +1,14 @@
 # -------------------------------------------------------------------------------
 # Copyright 2006-2022 UT-Battelle, LLC. See LICENSE for more information.
 # -------------------------------------------------------------------------------
+from __future__ import annotations
+
 import sys
+from typing import ClassVar
 
 
 class SingletonMeta(type):
-    __instances = {}
+    __instances: ClassVar[dict] = {}
 
     def __call__(cls, *args, **kwargs):
         if cls not in cls.__instances:
@@ -18,9 +21,10 @@ class ComponentID:
     Object to facilitate the creation, serialization and deserialization of
     component ids.
     """
+
     delimiter = '@'
     seq_num = 0
-    all_ids = {}
+    all_ids: ClassVar[dict[str, ComponentID]] = {}
 
     @staticmethod
     def deserialize(comp_id_string):
@@ -29,7 +33,7 @@ class ComponentID:
         """
         tokens = comp_id_string.split(ComponentID.delimiter)
         if len(tokens) != 3:
-            print('Invalid serialized component ID : ', comp_id_string)
+            print('Invalid serialized component ID : ', comp_id_string, file=sys.stderr)
             sys.exit(1)
         return ComponentID.all_ids[comp_id_string]
 
@@ -98,14 +102,12 @@ class ComponentID:
 
 
 class ComponentRegistry(metaclass=SingletonMeta):
-
     class RegistryEntry:
         """
         Container for queues and references associated with a component.
         """
 
-        def __init__(self, svc_response_q, invocation_q, component_ref,
-                     services, config):
+        def __init__(self, svc_response_q, invocation_q, component_ref, services, config):
             self.svc_response_q = svc_response_q
             self.invocation_q = invocation_q
             self.component_ref = component_ref
@@ -119,26 +121,21 @@ class ComponentRegistry(metaclass=SingletonMeta):
         """
         Return all of the component ids associated with sim *sim_name*
         """
-        ids = [ComponentID.deserialize(i) for i in self.registry
-               if ComponentID.deserialize(i).get_sim_name() == sim_name]
+        ids = [ComponentID.deserialize(i) for i in self.registry if ComponentID.deserialize(i).get_sim_name() == sim_name]
         return ids
 
-    def addEntry(self, component_id, svc_response_q, invocation_q,
-                 component_ref, services, config):
+    def addEntry(self, component_id, svc_response_q, invocation_q, component_ref, services, config):
         """
         Create a component registry entry for *component_id* and its
         associated queues, component ref, services and configuration
         information.
         """
         key = component_id.get_serialization()
-        value = self.RegistryEntry(svc_response_q, invocation_q,
-                                   component_ref,
-                                   services, config)
+        value = self.RegistryEntry(svc_response_q, invocation_q, component_ref, services, config)
         try:
             self.registry[key] = value
         except KeyError as e:
-            print('Error creating component registry entry for ', key,
-                  ' : ', str(e))
+            print('Error creating component registry entry for ', key, ' : ', str(e), file=sys.stderr)
             raise e
 
     def removeEntry(self, component_id):
@@ -146,8 +143,7 @@ class ComponentRegistry(metaclass=SingletonMeta):
         try:
             del self.registry[key]
         except KeyError as e:
-            print('Error removing component registry entry for ', key,
-                  ' : ', str(e))
+            print('Error removing component registry entry for ', key, ' : ', str(e), file=sys.stderr)
             raise
 
     # SIMYAN: this was added to provide an easy way to use the component
@@ -160,7 +156,7 @@ class ComponentRegistry(metaclass=SingletonMeta):
         try:
             entry = self.registry[key]
         except KeyError:
-            print('No registry entry found for ', key)
+            print('No registry entry found for ', key, file=sys.stderr)
             raise
         return entry
 
@@ -172,13 +168,13 @@ class ComponentRegistry(metaclass=SingletonMeta):
         try:
             entry = self.registry[key]
         except KeyError:
-            print('No registry entry found for ', key)
+            print('No registry entry found for ', key, file=sys.stderr)
             raise
         try:
             value = getattr(entry, artifact)
         except KeyError:
-            print('Invalid registry attribute : ', artifact)
-            print('Possible values are : ', list(entry.__dict__.keys()))
+            print('Invalid registry attribute : ', artifact, file=sys.stderr)
+            print('Possible values are : ', list(entry.__dict__.keys()), file=sys.stderr)
             raise
         return value
 
@@ -191,6 +187,6 @@ class ComponentRegistry(metaclass=SingletonMeta):
         try:
             entry = self.registry[key]
         except KeyError:
-            print('No registry entry found for ', key)
+            print('No registry entry found for ', key, file=sys.stderr)
             raise
         setattr(entry, artifact, value)

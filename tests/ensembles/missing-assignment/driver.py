@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
 """
-    Example driver for the ensembles example.
+Example driver for the ensembles example.
 
-    Please note that run_ensemble can be run from any IPS component, not
-    just a driver. The driver is used here for simplicity.
+Please note that run_ensemble can be run from any IPS component, not
+just a driver. The driver is used here for simplicity.
 """
+
 from pathlib import Path
 
 from ipsframework import Component
 
 
 class ensemble_driver(Component):
-
     def __init__(self, services, config):
         super().__init__(services, config)
         print('Creating driver')
@@ -20,8 +20,7 @@ class ensemble_driver(Component):
         return
 
     def step(self, timestamp=0.0, **keywords):
-        """ set up and run the ensemble
-        """
+        """set up and run the ensemble"""
         # ENSEMBLE_DIR is an arbitrary variable denoting where we want to run
         # all the ensembles.  You don't have to use ENSEMBLE_DIR. You can
         # even hardcode the path here.  Whatever.
@@ -32,12 +31,10 @@ class ensemble_driver(Component):
         # a string to prepend to the ensemble run directories and generated
         # files.  If not specified, the default is 'INSTANCE_n' where n is
         # is the arbitrary instance ID.
-        prefix = self.services.get_config_param('ENSEMBLE_PREFIX',
-                                                silent=True)
-        if not prefix or prefix == '' or prefix == {}:
-            self.services.info('No ensemble instance prefix specified. Using '
-                               'default of INSTANCE_.')
-            prefix = "INSTANCE_"
+        prefix = self.services.get_config_param('ENSEMBLE_PREFIX', silent=True)
+        if not prefix:
+            self.services.info('No ensemble instance prefix specified. Using default of INSTANCE_.')
+            prefix = 'INSTANCE_'
         else:
             self.services.info(f'Using ensemble instance prefix {prefix}')
 
@@ -65,23 +62,18 @@ class ensemble_driver(Component):
         # components. 'a_sim_comp' and 'another_sim_comp' are the names of
         # the config sections in the template file so we know where to look
         # for variable substitutions.
-        variables = {'a_sim_comp': {'A': [3, 2, 4],
-                                    'B': [2.34, 5.82, 0.1],
-                                    'C': ['bar', 'baz', 'quux']},
-                     'another_sim_comp': {'D': [7, 5, 9],
-                                          'B': [0.775, 0.080, 29.2],
-                                          'F': ['xyzzy', 'plud', 'thud']}}
+        variables = {
+            'a_sim_comp': {'A': [3, 2, 4], 'B': [2.34, 5.82, 0.1], 'C': ['bar', 'baz', 'quux']},
+            'another_sim_comp': {'D': [7, 5, 9], 'B': [0.775, 0.080, 29.2], 'F': ['xyzzy', 'plud', 'thud']},
+        }
 
         # Spins up N tasks, in this case three, each with a different set of
         # variable values. `mapping` is a data struct that associates the
         # specific simulation to a given run directory so that the user can
         # easily find output for a specific run.
-        mapping = self.services.run_ensemble(template, variables, run_dir,
-                                             platform_config, prefix)
+        mapping = self.services.run_ensemble(template, variables, run_dir, platform_config, prefix)
 
         self.services.info(f'Mapping of dirs to parameters: {mapping!s}')
 
-
     def finalize(self, timeStamp=0.0):
         return
-

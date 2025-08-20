@@ -1,9 +1,10 @@
 # -------------------------------------------------------------------------------
 # Copyright 2006-2022 UT-Battelle, LLC. See LICENSE for more information.
 # -------------------------------------------------------------------------------
-import sys
 import os
 import subprocess
+import sys
+
 from . import ipsutil
 
 
@@ -12,6 +13,7 @@ class DataManager:
     The data manager facilitates the movement and exchange of data files for
     the simulation.
     """
+
     # DM init
 
     def __init__(self, fwk):
@@ -23,15 +25,12 @@ class DataManager:
         self.CM = None
         self.host = self.fwk.host
         self.myTopic = None
-        self.outPrefix = ""
-        self.simroot = ""
-        self.statedir = ""
+        self.outPrefix = ''
+        self.simroot = ''
+        self.statedir = ''
         self.state_files = []
-        self.service_methods = ['stage_state',
-                                'update_state',
-                                'merge_current_plasma_state']
-        self.fwk.register_service_handler(self.service_methods,
-                                          getattr(self, 'process_service_request'))
+        self.service_methods = ['stage_state', 'update_state', 'merge_current_plasma_state']
+        self.fwk.register_service_handler(self.service_methods, self.process_service_request)
 
     def process_service_request(self, msg):
         """
@@ -60,8 +59,7 @@ class DataManager:
         try:
             ipsutil.copyFiles(source_dir, state_files, target_dir)
         except Exception:
-            self.fwk.exception('Error staging plasma state files to directory %s',
-                               target_dir)
+            self.fwk.exception('Error staging plasma state files to directory %s', target_dir)
             raise
         return 0
 
@@ -82,8 +80,7 @@ class DataManager:
         try:
             ipsutil.copyFiles(source_dir, state_files, target_dir)
         except Exception:
-            self.fwk.exception('Error updating state files from directory %s',
-                               source_dir)
+            self.fwk.exception('Error updating state files from directory %s', source_dir)
             raise
         return 0
 
@@ -114,14 +111,10 @@ class DataManager:
             try:
                 merge_stdout = open(log_fullpath, 'w')
             except Exception:
-                self.fwk.exception('Error opening log file %s : using stdout',
-                                   log_fullpath)
+                self.fwk.exception('Error opening log file %s : using stdout', log_fullpath)
 
         try:
-            retval = subprocess.call([update_state, '-input', target_state_file,
-                                      '-updates', partial_state_file],
-                                     stdout=merge_stdout,
-                                     stderr=subprocess.STDOUT)
+            retval = subprocess.call([update_state, '-input', target_state_file, '-updates', partial_state_file], stdout=merge_stdout, stderr=subprocess.STDOUT)
         except Exception:
             self.fwk.exception('Error calling update_state - probably not found in $PATH')
             raise
@@ -131,7 +124,6 @@ class DataManager:
         try:
             ipsutil.copyFiles(plasma_work_dir, current_plasma_state, component_work_dir)
         except Exception:
-            self.fwk.exception('Error refreshing local copy of current plasma state file in directory %s',
-                               component_work_dir)
+            self.fwk.exception('Error refreshing local copy of current plasma state file in directory %s', component_work_dir)
             raise
         return 0

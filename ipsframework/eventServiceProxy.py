@@ -103,35 +103,29 @@ class EventServiceCmpProxy(EventServiceProxy):
         self.listenerDirectory = {}
 
     def getTopic(self, topicName):
-        msg_id = self.service_proxy._invoke_service(self.service_proxy.fwk.component_id,
-                                                    'getTopic', topicName)
+        msg_id = self.service_proxy._invoke_service(self.service_proxy.fwk.component_id, 'getTopic', topicName)
         return self.service_proxy._get_service_response(msg_id, True)
 
     def existsTopic(self, topicName):
-        msg_id = self.service_proxy._invoke_service(self.service_proxy.fwk.component_id,
-                                                    'existsTopic', topicName)
+        msg_id = self.service_proxy._invoke_service(self.service_proxy.fwk.component_id, 'existsTopic', topicName)
         return self.service_proxy._get_service_response(msg_id, True)
 
     def registerSubscriber(self):
-        msg_id = self.service_proxy._invoke_service(self.service_proxy.fwk.component_id,
-                                                    'registerSubscriber')
+        msg_id = self.service_proxy._invoke_service(self.service_proxy.fwk.component_id, 'registerSubscriber')
         return self.service_proxy._get_service_response(msg_id, True)
 
     def unregisterSubscriber(self, subscriberid):
-        msg_id = self.service_proxy._invoke_service(self.service_proxy.fwk.component_id,
-                                                    'unregisterSubscriber', subscriberid)
+        msg_id = self.service_proxy._invoke_service(self.service_proxy.fwk.component_id, 'unregisterSubscriber', subscriberid)
         listenerList = self.service_proxy._get_service_response(msg_id, True)
         for listenerid in listenerList:
             self._removeEventListener(listenerid)
 
     def getSubscription(self, subscriberid, subscriptionName):
-        msg_id = self.service_proxy._invoke_service(self.service_proxy.fwk.component_id,
-                                                    'getSubscription', subscriberid, subscriptionName)
+        msg_id = self.service_proxy._invoke_service(self.service_proxy.fwk.component_id, 'getSubscription', subscriberid, subscriptionName)
         self.service_proxy._get_service_response(msg_id, True)
 
     def processEvents(self, subscriberid):
-        msg_id = self.service_proxy._invoke_service(self.service_proxy.fwk.component_id,
-                                                    'processEvents', subscriberid)
+        msg_id = self.service_proxy._invoke_service(self.service_proxy.fwk.component_id, 'processEvents', subscriberid)
         eventList = self.service_proxy._get_service_response(msg_id, True)
         for listenerid in eventList:
             for topicName in eventList[listenerid]:
@@ -139,30 +133,27 @@ class EventServiceCmpProxy(EventServiceProxy):
                     self.listenerDirectory[listenerid].processEvent(topicName, theEvent)
 
     def sendEvent(self, topicName, eventName, eventBody):
-        msg_id = self.service_proxy._invoke_service(self.service_proxy.fwk.component_id,
-                                                    'sendEvent', topicName, eventName, eventBody)
+        msg_id = self.service_proxy._invoke_service(self.service_proxy.fwk.component_id, 'sendEvent', topicName, eventName, eventBody)
         self.service_proxy._get_service_response(msg_id, True)
 
     def createListener(self):
-        msg_id = self.service_proxy._invoke_service(self.service_proxy.fwk.component_id,
-                                                    'createListener')
+        msg_id = self.service_proxy._invoke_service(self.service_proxy.fwk.component_id, 'createListener')
         return self.service_proxy._get_service_response(msg_id, True)
 
     def registerEventListener(self, subscriberid, subscriptionName, listenerKey, listenerid, refListener):
-        msg_id = self.service_proxy._invoke_service(self.service_proxy.fwk.component_id,
-                                                    'registerEventListener', subscriberid, subscriptionName, listenerKey, listenerid)
+        msg_id = self.service_proxy._invoke_service(
+            self.service_proxy.fwk.component_id, 'registerEventListener', subscriberid, subscriptionName, listenerKey, listenerid
+        )
         self.service_proxy._get_service_response(msg_id, True)
         self._addEventListener(listenerid, refListener)
 
     def unregisterEventListener(self, subscriberid, subscriptionName, listenerKey):
-        msg_id = self.service_proxy._invoke_service(self.service_proxy.fwk.component_id,
-                                                    'unregisterEventListener', subscriberid, subscriptionName, listenerKey)
+        msg_id = self.service_proxy._invoke_service(self.service_proxy.fwk.component_id, 'unregisterEventListener', subscriberid, subscriptionName, listenerKey)
         listenerid = self.service_proxy._get_service_response(msg_id, True)
         self._removeEventListener(listenerid)
 
     def removeSubscription(self, subscriberid, subscriptionName):
-        msg_id = self.service_proxy._invoke_service(self.service_proxy.fwk.component_id,
-                                                    'removeSubscription', subscriberid, subscriptionName)
+        msg_id = self.service_proxy._invoke_service(self.service_proxy.fwk.component_id, 'removeSubscription', subscriberid, subscriptionName)
         listenerList = self.service_proxy._get_service_response(msg_id, True)
         for listenerid in listenerList:
             self._removeEventListener(listenerid)

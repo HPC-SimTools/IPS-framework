@@ -2,15 +2,13 @@ from ipsframework import Component
 
 
 def func(x):
-    return x+1
+    return x + 1
 
 
 class bad_task_worker(Component):
     def step(self, timestamp=0.0, **keywords):
         cwd = self.services.get_working_dir()
-        pid = self.services.launch_task(1,
-                                        cwd,
-                                        42)
+        pid = self.services.launch_task(1, cwd, 42)
         self.services.wait_task(pid)
 
 

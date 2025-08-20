@@ -19,5 +19,5 @@ class HelloDriver(Component):
         self.services.update_time_stamp(1)
         self.services.call(worker_comp, 'step', 0.0)
         with open(self.OUTPUT_FILES.split()[0], 'w') as f:
-            f.write("SUB OUTPUT FILE\n")
+            f.write('SUB OUTPUT FILE\n')
         self.services.stage_output_files(timestamp, self.OUTPUT_FILES)

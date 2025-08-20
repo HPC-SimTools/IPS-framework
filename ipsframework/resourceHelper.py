@@ -4,11 +4,14 @@ host we are on and what resources we have.  Taking this out
 of the resource manager will allow us to test it independent
 of the IPS.
 """
-import psutil
-import platform
+
 import os
+import platform
 import subprocess
 from math import ceil
+
+import psutil
+
 from .ipsExceptions import InvalidResourceSettingsException
 
 
@@ -54,7 +57,7 @@ def get_qstat_jobinfo():
                 host_out += out[i]
 
             host_string = host_out.strip().replace(' \n', '').split('=')[1]
-            node_list = [t .strip() for t in host_string.split('+')]
+            node_list = [t.strip() for t in host_string.split('+')]
             num_nodes = len(node_list)
             return num_nodes, ppn, True, node_list
         else:
@@ -118,7 +121,7 @@ def get_qstat_jobinfo2():
 def get_checkjob_info():
     ndata = []
     nodes = []
-    cmd = "checkjob $PBS_JOBID"
+    cmd = 'checkjob $PBS_JOBID'
     p = 0
     tot_procs = 0
     data_lines = []
@@ -134,16 +137,16 @@ def get_checkjob_info():
         start = end = 0
         for k, line in enumerate(lines):
             x = line.rstrip()
-            if x == "Allocated Nodes:" and start == 0:
+            if x == 'Allocated Nodes:' and start == 0:
                 start = k + 1
             elif x == '' and start > 0 and end == 0:
                 end = k
-            if x.find("Total Requested Tasks:") > -1:
-                _, b = x.split(":")
+            if x.find('Total Requested Tasks:') > -1:
+                _, b = x.split(':')
                 b = b.strip()
                 tot_procs = int(b)
-        for line in lines[start:end + 1]:
-            if line.strip() != "":
+        for line in lines[start : end + 1]:
+            if line.strip() != '':
                 data_lines.append(line.strip())
     except Exception as e:
         print(e)
@@ -158,34 +161,34 @@ def get_checkjob_info():
     For large numbers of nodes:
             [list of comma separated node_ids and node_id ranges]*tasks_per_node
     """
-    if data_lines[0].find(":") > -1:
+    if data_lines[0].find(':') > -1:
         # small node number format
         try:
             for j in data_lines:
-                j = j[1:len(j) - 1]  # strip off first [ and last ]
-                pairs = j.split('][')
+                clean = j[1 : len(j) - 1]  # strip off first [ and last ]
+                pairs = clean.split('][')
                 for i in pairs:
                     ndata.append(i.split(':'))
             # parse allocated nodes data [nid:nprocs]...
-            for (m, p) in ndata:
+            for m, _ in ndata:
                 nodes.append(m)
         except Exception as e:
             print('problem parsing - small format')
             raise e
-    elif data_lines[0].find("*") > -1:
+    elif data_lines[0].find('*') > -1:
         # large node number format
         try:
-            nodes_str = ""
-            data = ""
+            nodes_str = ''
+            data = ''
             # put the whole thing on one line
-            data = "".join(data_lines)
-            nodes_str, p = data.split("*")
-            nodes_str = nodes_str.strip("[]")
-            ranges = nodes_str.split(",")
+            data = ''.join(data_lines)
+            nodes_str, p = data.split('*')
+            nodes_str = nodes_str.strip('[]')
+            ranges = nodes_str.split(',')
             for r in ranges:
-                if r.find("-") > -1:
+                if r.find('-') > -1:
                     # this is a range
-                    ss, es = r.split("-")
+                    ss, es = r.split('-')
                     for i in range(int(ss), int(es) + 1):
                         nodes.append(str(i))
                 else:
@@ -197,11 +200,11 @@ def get_checkjob_info():
             raise e
     else:
         # TODO: make this into a real exception type
-        raise Exception("could not parse resource data")
+        raise Exception('could not parse resource data')
     if abs(len(nodes) * int(p) - tot_procs) > 1:
         print('len(nodes) = %d  p = %d  tot_procs = %d' % (len(nodes), int(p), tot_procs))
-        print("something wrong with parsing - node count*cores does not match task count")
-        raise Exception("something wrong with parsing - node count*cores does not match task count")
+        print('something wrong with parsing - node count*cores does not match task count')
+        raise Exception('something wrong with parsing - node count*cores does not match task count')
     return nodes, int(p), mixed_nodes, ndata
 
 
@@ -222,11 +225,11 @@ def get_slurm_info():
         raise
     try:
         ppn = os.environ['SLURM_TASKS_PER_NODE']
-        ppn = int(ppn.split("(")[0])
+        ppn = int(ppn.split('(')[0])
     except Exception:
         try:
             ppn = os.environ['SLURM_JOB_TASKS_PER_NODE']
-            ppn = int(ppn.split("(")[0])
+            ppn = int(ppn.split('(')[0])
         except Exception:
             raise
     max_p = ppn
@@ -273,7 +276,7 @@ def get_pbs_info():
                 node_dict[core] = 1
         listOfNodes = list(node_dict.items())
         max_p = max(node_dict.values())
-        mixed_nodes = (max_p != min(node_dict.values()))
+        mixed_nodes = max_p != min(node_dict.values())
         return len(listOfNodes), max_p, mixed_nodes, listOfNodes
     except Exception:
         try:
@@ -302,7 +305,7 @@ def manual_detection(services):
         tot_procs = num_nodes * ppn
 
     for n in range(num_nodes):
-        listOfNodes.append(("dummynode%d" % n, ppn))
+        listOfNodes.append(('dummynode%d' % n, ppn))
     if tot_procs < num_nodes * (ppn - 1):
         n = listOfNodes[-1][0]
         listOfNodes[-1] = (n, tot_procs % ppn)
@@ -325,37 +328,38 @@ def getResourceList(services, host, partial_nodes=False):
     accurateNodes = False
     mixed_nodes = False
 
-    node_detect_str = services.get_platform_parameter('NODE_DETECTION',
-                                                      silent=True)
-    if node_detect_str == "checkjob":
+    node_detect_str = services.get_platform_parameter('NODE_DETECTION', silent=True)
+    if node_detect_str == 'checkjob':
         num_nodes, ppn, mixed_nodes, listOfNodes = get_checkjob_info()
-        print("=======================================================")
+        print('=======================================================')
         print(num_nodes, ppn, mixed_nodes, listOfNodes)
         accurateNodes = False
-    elif node_detect_str == "qstat":
+    elif node_detect_str == 'qstat':
         num_nodes, ppn, mixed_nodes, listOfNodes = get_qstat_jobinfo()
         accurateNodes = False
-    elif node_detect_str == "qstat2":
+    elif node_detect_str == 'qstat2':
         num_nodes, ppn, mixed_nodes, listOfNodes = get_qstat_jobinfo2()
         accurateNodes = True
-    elif node_detect_str == "pbs_env":
+    elif node_detect_str == 'pbs_env':
         num_nodes, ppn, mixed_nodes, listOfNodes = get_pbs_info()
         if ppn == 0:
             ppn = 1
         if not listOfNodes:
             for n in range(num_nodes):
-                listOfNodes.append(("dummynode%d" % n, ppn))
+                listOfNodes.append(('dummynode%d' % n, ppn))
         else:
             accurateNodes = True
-    elif node_detect_str == "slurm_env":
+    elif node_detect_str == 'slurm_env':
         num_nodes, ppn, mixed_nodes, listOfNodes = get_slurm_info()
         accurateNodes = True
-    elif node_detect_str == "manual":
+    elif node_detect_str == 'manual':
         num_nodes, ppn, mixed_nodes, listOfNodes = manual_detection(services)
         accurateNodes = False
     else:
-        print("WARNING: no node detection strategy specified in platform config file ('NODE_DETECTION'). "
-              "Valid options are: checkjob, qstat, pbs_env, slurm_env, manual.  Trying all detection schemes.")
+        print(
+            "WARNING: no node detection strategy specified in platform config file ('NODE_DETECTION'). "
+            'Valid options are: checkjob, qstat, pbs_env, slurm_env, manual.  Trying all detection schemes.'
+        )
         try:
             num_nodes, ppn, mixed_nodes, listOfNodes = get_checkjob_info()
             accurateNodes = True
@@ -370,7 +374,7 @@ def getResourceList(services, host, partial_nodes=False):
                         ppn = 1
                     if not listOfNodes:
                         for n in range(num_nodes):
-                            listOfNodes.append(("dummynode%d" % n, ppn))
+                            listOfNodes.append(('dummynode%d' % n, ppn))
                     else:
                         accurateNodes = True
                 except Exception:
@@ -382,7 +386,7 @@ def getResourceList(services, host, partial_nodes=False):
                             num_nodes, ppn, mixed_nodes, listOfNodes = manual_detection(services)
                             accurateNodes = False
                         except Exception:
-                            print("*** NO DETECTION MECHANISM WORKS ***")
+                            print('*** NO DETECTION MECHANISM WORKS ***')
                             raise
     # detect topology
     cpn = int(services.get_platform_parameter('CORES_PER_NODE'))
@@ -398,13 +402,14 @@ def getResourceList(services, host, partial_nodes=False):
     if spn <= 0:
         spn = 1
     elif spn > cpn:
-        raise InvalidResourceSettingsException("spn > cpn", spn, cpn)
+        raise InvalidResourceSettingsException('spn > cpn', spn, cpn)
     elif cpn % spn != 0:
-        raise InvalidResourceSettingsException("spn not divisible by cpn", spn, cpn)
+        raise InvalidResourceSettingsException('spn not divisible by cpn', spn, cpn)
     return listOfNodes, cpn, spn, ppn, accurateNodes
 
+
 def get_platform_info():
-    """ Get information about the platform
+    """Get information about the platform
 
     Used to gather runtime information about the current platform. This can be
     be used for debugging purposes to ensure that the framework is running
@@ -413,9 +418,7 @@ def get_platform_info():
     :returns: A dictionary containing hostname, cpu count, cpu core id for
         current running process, and available GPU devices if set
     """
-    result = {'hostname': platform.node(),
-              'cpu_count': psutil.cpu_count(),
-              'pid': os.getpid()}
+    result = {'hostname': platform.node(), 'cpu_count': psutil.cpu_count(), 'pid': os.getpid()}
 
     if 'CUDA_VISIBLE_DEVICES' in os.environ:
         result['cuda_visible_devices'] = os.environ['CUDA_VISIBLE_DEVICES']
@@ -426,11 +429,9 @@ def get_platform_info():
         p = psutil.Process()
         with p.oneshot():
             result['core_id'] = p.cpu_num()
-    except:
+    except Exception:
         # cpu_num() only available on linux (and BSD systems), so this will
         # throw an exception on other platforms
         pass
 
     return result
-
-

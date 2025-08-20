@@ -9,7 +9,7 @@ class driver(Component):
         port_dict = {}
         port_id_list = []
         for port_name in port_names:
-            if port_name in ["DRIVER"]:
+            if port_name in ['DRIVER']:
                 continue
             port = self.services.get_port(port_name)
             port_dict[port_name] = port

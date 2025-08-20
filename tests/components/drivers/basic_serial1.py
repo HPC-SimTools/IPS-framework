@@ -8,6 +8,7 @@ as a typical SWIM run (similar number of input and output files, size
 of components, resource requirements, etc.).  This test scenario should
 always pass.
 """
+
 from ipsframework import Component
 
 
@@ -61,7 +62,7 @@ class basic_serial1(Component):
         services.call(w3, 'finalize', 99)
 
     def process_event(self, topicName, theEvent):
-        print("Driver: processed ", (topicName, str(theEvent)))
+        print('Driver: processed ', (topicName, str(theEvent)))
 
     def terminate(self, status):
         self.services.log('Really Calling terminate()')

@@ -1,4 +1,5 @@
 import pytest
+
 from ipsframework.componentRegistry import ComponentID
 
 try:
@@ -12,6 +13,7 @@ else:
 try:
     import psutil
 except ImportError:
+
     @pytest.fixture(autouse=True)
     def run_around_tests():
         # Reset the ComponentID.seq_num so that each test is independent
@@ -19,8 +21,9 @@ except ImportError:
 
         yield
 else:
+
     def on_terminate(proc):
-        print("Process {} terminated with exit code {}".format(proc, proc.returncode))
+        print('Process {} terminated with exit code {}'.format(proc, proc.returncode))
 
     @pytest.fixture(autouse=True)
     def run_around_tests():
@@ -36,32 +39,33 @@ else:
             child.terminate()
         _, alive = psutil.wait_procs(children, timeout=3, callback=on_terminate)
         for p in alive:
-            print(f"Killing {p}")
+            print(f'Killing {p}')
             p.kill()
 
 
 # Add a mark for test that should only run on Cori
 
+
 def pytest_addoption(parser):
-    parser.addoption("--runcori", action="store_true", default=False, help="run Cori tests")
-    parser.addoption("--runperlmutter", action="store_true", default=False, help="run Perlmutter tests")
+    parser.addoption('--runcori', action='store_true', default=False, help='run Cori tests')
+    parser.addoption('--runperlmutter', action='store_true', default=False, help='run Perlmutter tests')
 
 
 def pytest_configure(config):
-    config.addinivalue_line("markers", "cori: mark test to only work on Cori")
-    config.addinivalue_line("markers", "perlmutter: mark test to only work on Perlmutter")
+    config.addinivalue_line('markers', 'cori: mark test to only work on Cori')
+    config.addinivalue_line('markers', 'perlmutter: mark test to only work on Perlmutter')
 
 
 def pytest_collection_modifyitems(config, items):
-    if not config.getoption("--runcori"):
+    if not config.getoption('--runcori'):
         # --runcori given in cli: do not skip slow tests
-        skip_cori = pytest.mark.skip(reason="need --runcori option to run")
+        skip_cori = pytest.mark.skip(reason='need --runcori option to run')
         for item in items:
-            if "cori" in item.keywords:
+            if 'cori' in item.keywords:
                 item.add_marker(skip_cori)
-    if not config.getoption("--runperlmutter"):
+    if not config.getoption('--runperlmutter'):
         # --runperlmutter given in cli: do not skip slow tests
-        skip_cori = pytest.mark.skip(reason="need --runperlmutter option to run")
+        skip_cori = pytest.mark.skip(reason='need --runperlmutter option to run')
         for item in items:
-            if "perlmutter" in item.keywords:
+            if 'perlmutter' in item.keywords:
                 item.add_marker(skip_cori)

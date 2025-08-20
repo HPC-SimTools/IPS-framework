@@ -41,6 +41,9 @@ This directory has all of the user guides for using the IPS (see the component a
 :doc:`Using the IPS Portal<portal_guides>`
      How to setup simulation to use the IPS portal.
 
+:doc:`Jupyter<jupyter>`
+     How to setup Jupyter workflows for your simulation.
+
 .. toctree::
    :maxdepth: 1
 
@@ -53,4 +56,5 @@ This directory has all of the user guides for using the IPS (see the component a
    nersc_conda
    ensembles
    portal_guides
+   jupyter
    dask

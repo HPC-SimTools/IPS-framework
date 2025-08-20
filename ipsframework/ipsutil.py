@@ -1,15 +1,17 @@
 # -------------------------------------------------------------------------------
 # Copyright 2006-2022 UT-Battelle, LLC. See LICENSE for more information.
 # -------------------------------------------------------------------------------
+import csv
+import glob
 import os
 import shutil
 import time
-import csv
-import glob
+
 try:
     import Pyro4
 except ImportError:
     pass
+import sys
 
 
 def which(program, alt_paths=None):
@@ -21,7 +23,7 @@ def which(program, alt_paths=None):
         if is_exe(program):
             return program
     else:
-        for path in os.environ["PATH"].split(os.pathsep):
+        for path in os.environ['PATH'].split(os.pathsep):
             exe_file = os.path.join(path, program)
             if is_exe(exe_file):
                 return exe_file
@@ -36,16 +38,16 @@ def which(program, alt_paths=None):
 
 def copyFiles(src_dir, src_file_list, target_dir, prefix='', keep_old=False):
     """
-       Copy files in *src_file_list* from *src_dir* to *target_dir* with an
-       optional prefix.  If *keep_old* is ``True``, existing files in
-       *target_dir* will not be overridden, otherwise files can be clobbered
-       (default).
-       Wild-cards in file name specification are allowed.
+    Copy files in *src_file_list* from *src_dir* to *target_dir* with an
+    optional prefix.  If *keep_old* is ``True``, existing files in
+    *target_dir* will not be overridden, otherwise files can be clobbered
+    (default).
+    Wild-cards in file name specification are allowed.
     """
 
-    use_data_server = os.getenv('USE_DATA_SERVER', "DATA_SERVER_NOT_USED")
-    if use_data_server != "DATA_SERVER_NOT_USED":
-        data_server = Pyro4.Proxy("PYRONAME:DataServer")
+    use_data_server = os.getenv('USE_DATA_SERVER', 'DATA_SERVER_NOT_USED')
+    if use_data_server != 'DATA_SERVER_NOT_USED':
+        data_server = Pyro4.Proxy('PYRONAME:DataServer')
         data_server.copyFiles(src_dir, src_file_list, target_dir, prefix, keep_old)
         return
 
@@ -56,7 +58,6 @@ def copyFiles(src_dir, src_file_list, target_dir, prefix='', keep_old=False):
 
     globbed_file_list = []
     for src_file in file_list:
-
         if not target_dir == src_dir:
             src_file_full = os.path.join(src_dir, src_file)
 
@@ -75,10 +76,10 @@ def copyFiles(src_dir, src_file_list, target_dir, prefix='', keep_old=False):
     for src_file in globbed_file_list:
         target = prefix + os.path.basename(src_file)
         target_file = os.path.join(target_dir, target)
-        if (os.path.isfile(target_file) and os.path.samefile(src_file, target_file)):
+        if os.path.isfile(target_file) and os.path.samefile(src_file, target_file):
             continue
-    # Do not overwrite existing target files.
-        if (keep_old and os.path.isfile(target_file)):
+        # Do not overwrite existing target files.
+        if keep_old and os.path.isfile(target_file):
             for i in range(1000):
                 new_name = target_file + '.' + str(i)
                 if os.path.isfile(new_name):
@@ -90,7 +91,7 @@ def copyFiles(src_dir, src_file_list, target_dir, prefix='', keep_old=False):
         try:
             os.makedirs(head, exist_ok=True)
         except OSError as oserr:
-            print('Error creating directory %s : %s' % (head, oserr.strerror))
+            print('Error creating directory %s : %s' % (head, oserr.strerror), file=sys.stderr)
             raise
         try:
             shutil.copy(src_file, target_file)
@@ -154,7 +155,7 @@ def params_from_csv(infile):
         # Get the names of the components and their parameters
         for col in header:
             comp_name, param_name = col.split(':')
-            comp_name = comp_name.strip() # because there may be extraneous spaces
+            comp_name = comp_name.strip()  # because there may be extraneous spaces
             param_name = param_name.strip()
 
             if comp_name not in variables:
@@ -164,7 +165,7 @@ def params_from_csv(infile):
 
         # Read the values for each simulation and parameter
         for row in reader:
-            if row == []: # there was an extra space or return at the EOF
+            if row == []:  # there was an extra space or return at the EOF
                 break
             for i, col in enumerate(header):
                 comp_name, param_name = col.split(':')
@@ -175,12 +176,11 @@ def params_from_csv(infile):
     return variables
 
 
-
 if __name__ == '__main__':
     # test harness where a CSV file is passed in on the command line and
     # returns the dictionary of parameters
-    import sys
     import json
+    import sys
 
     variables = params_from_csv(sys.argv[1])
 

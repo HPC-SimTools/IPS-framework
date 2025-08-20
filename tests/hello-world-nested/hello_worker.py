@@ -17,8 +17,8 @@ class HelloWorker(Component):
         override = {}
         override['PWD'] = self.services.get_config_param('PWD')
         with open(self.OUTPUT_FILES, 'w') as f:
-            f.write("SUB INPUT FILE\n")
-        (_, _, driver) = self.services.create_sub_workflow("Subflow_01", subflow_config, override)
+            f.write('SUB INPUT FILE\n')
+        (_, _, driver) = self.services.create_sub_workflow('Subflow_01', subflow_config, override)
         self.services.stage_input_files('')
         self.services.call(driver, 'init', '0.0')
         self.services.call(driver, 'step', '0.0')

@@ -8,6 +8,7 @@ https://www.cca-forum.org/wiki/tiki-index.php?page=Event+Specification+Proposal
 It pretty much forwards calls to an event proxy which in turn talks to the
 central event service.
 """
+
 from copy import deepcopy
 
 _proxy = None
@@ -32,9 +33,7 @@ class PublisherEventService:
     """
 
     def getTopic(self, topicName):
-        """
-
-        """
+        """ """
         return _proxy.getTopic(topicName)
 
     def existsTopic(self, topicName):
@@ -73,7 +72,7 @@ class Event:
     def getBody(self):
         return self.body
 
-    def __str__(self):
+    def __str__(self) -> str:
         return str(self.body)
 
 
@@ -107,8 +106,7 @@ class Subscription:
         self.subscriptionName = subscriptionName
 
     def registerEventListener(self, listenerKey, theListener):
-        _proxy.registerEventListener(self.subscriberid, self.subscriptionName,
-                                     listenerKey, theListener.listenerid, theListener)
+        _proxy.registerEventListener(self.subscriberid, self.subscriptionName, listenerKey, theListener.listenerid, theListener)
 
     def unregisterEventListener(self, listenerKey):
         _proxy.unregisterEventListener(self.subscriberid, self.subscriptionName, listenerKey)
@@ -124,7 +122,7 @@ class Subscription:
 
 
 def initialize_event_service(service):
-    global _proxy
+    global _proxy  # noqa: PLW0603
 
     if isinstance(service, EventService):
         _proxy = EventServiceFwkProxy(service)
@@ -134,4 +132,4 @@ def initialize_event_service(service):
 
 # pylint: disable=wrong-import-position
 from .eventService import EventService  # noqa: E402
-from .eventServiceProxy import EventServiceFwkProxy, EventServiceCmpProxy  # noqa: E402
+from .eventServiceProxy import EventServiceCmpProxy, EventServiceFwkProxy  # noqa: E402

@@ -17,8 +17,8 @@ class eventManager:
     def __init__(self, obj_ref):
         self.obj_ref = obj_ref
         self.objcache = {}
-        self.publisher = "self.publisher"
-        self.subscriber = "self.subscriber"
+        self.publisher = 'self.publisher'
+        self.subscriber = 'self.subscriber'
 
     def publish(self, topicName, eventName, eventBody):
         if self.publisher in self.objcache:
@@ -64,12 +64,12 @@ class eventManager:
             self.objcache[topicName].unregisterEventListener(topicName)
             del self.objcache[topicName]
         # else:
-            # TODO: do we notify the client to do a subscribe first?
-            #      throw an exception?
+        # TODO: do we notify the client to do a subscribe first?
+        #      throw an exception?
 
     def process_events(self):
         if self.subscriber in self.objcache:
             self.objcache[self.subscriber].processEvents()
         # else:
-            # TODO: do we notify the client to do a subscribe before processing?
-            #      throw an exception?
+        # TODO: do we notify the client to do a subscribe before processing?
+        #      throw an exception?

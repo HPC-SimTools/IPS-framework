@@ -1,13 +1,6 @@
 from ipsframework import Framework
 
-
-map_log_to_level = {"log": "INFO",
-                    "debug": "DEBUG",
-                    "info": "INFO",
-                    "warning": "WARNING",
-                    "error": "ERROR",
-                    "exception": "ERROR",
-                    "critical": "CRITICAL"}
+map_log_to_level = {'log': 'INFO', 'debug': 'DEBUG', 'info': 'INFO', 'warning': 'WARNING', 'error': 'ERROR', 'exception': 'ERROR', 'critical': 'CRITICAL'}
 
 
 def write_basic_config_and_platform_files(tmpdir, debug=False):
@@ -27,16 +20,16 @@ SCRATCH =
 
     config_file = tmpdir.join('ips.config')
 
-    log_level = "DEBUG" if debug else "WARNING"
+    log_level = 'DEBUG' if debug else 'WARNING'
 
     config = f"""RUN_COMMENT = testing
 SIM_NAME = test
-LOG_FILE = {str(tmpdir)}/sim.log
+LOG_FILE = {tmpdir!s}/sim.log
 LOG_LEVEL = {log_level}
-SIM_ROOT = {str(tmpdir)}
+SIM_ROOT = {tmpdir!s}
 SIMULATION_MODE = NORMAL
 OUT_REDIRECT = True
-OUT_REDIRECT_FNAME = {str(tmpdir)}/$SIM_NAME.out
+OUT_REDIRECT_FNAME = {tmpdir!s}/$SIM_NAME.out
 [PORTS]
     NAMES = DRIVER
     [[DRIVER]]
@@ -62,13 +55,15 @@ OUT_REDIRECT_FNAME = {str(tmpdir)}/$SIM_NAME.out
 def test_component_logging(tmpdir):
     platform_file, config_file = write_basic_config_and_platform_files(tmpdir)
 
-    framework = Framework(config_file_list=[str(config_file)],
-                          log_file_name=str(tmpdir.join('ips.log')),
-                          platform_file_name=str(platform_file),
-                          debug=None,
-                          verbose_debug=None,
-                          cmd_nodes=0,
-                          cmd_ppn=0)
+    framework = Framework(
+        config_file_list=[str(config_file)],
+        log_file_name=str(tmpdir.join('ips.log')),
+        platform_file_name=str(platform_file),
+        debug=None,
+        verbose_debug=None,
+        cmd_nodes=0,
+        cmd_ppn=0,
+    )
 
     framework.run()
 
@@ -79,41 +74,43 @@ def test_component_logging(tmpdir):
     # remove timestamp
     lines = [line[24:] for line in lines]
 
-    component_id = "LOGGING__logging_tester_1"
+    component_id = 'LOGGING__logging_tester_1'
 
     # for log_level=WARNING only WARNING, ERROR and CRITICAL logs should be included
     # DEBUG and INFO should be excluded
-    for method in ["init", "step", "finalize"]:
-        for log_type in ["warning", "error", "exception", "critical"]:
+    for method in ['init', 'step', 'finalize']:
+        for log_type in ['warning', 'error', 'exception', 'critical']:
             assert f'{component_id} {map_log_to_level[log_type]:8} {method} msg: {log_type}\n' in lines
-        for log_type in ["log", "debug", "info"]:
+        for log_type in ['log', 'debug', 'info']:
             assert f'{component_id} {map_log_to_level[log_type]:8} {method} msg: {log_type}\n' not in lines
 
     # check message formatting with arguments
-    for log_type in ["warning", "error", "exception", "critical"]:
+    for log_type in ['warning', 'error', 'exception', 'critical']:
         assert f'{component_id} {map_log_to_level[log_type]:8} step msg: {log_type} timestamp=0 test\n' in lines
-    for log_type in ["log", "debug", "info"]:
+    for log_type in ['log', 'debug', 'info']:
         assert f'{component_id} {map_log_to_level[log_type]:8} step msg: {log_type} timestamp=0 test\n' not in lines
 
     # check stdout redirect
     with open(str(tmpdir.join('test.out')), 'r') as f:
         lines = f.readlines()
 
-    assert lines[0] == "test@logging_tester@1.init\n"
-    assert lines[1] == "test@logging_tester@1.step\n"
-    assert lines[2] == "test@logging_tester@1.finalize\n"
+    assert lines[0] == 'test@logging_tester@1.init\n'
+    assert lines[1] == 'test@logging_tester@1.step\n'
+    assert lines[2] == 'test@logging_tester@1.finalize\n'
 
 
 def test_component_logging_debug(tmpdir):
     platform_file, config_file = write_basic_config_and_platform_files(tmpdir, debug=True)
 
-    framework = Framework(config_file_list=[str(config_file)],
-                          log_file_name=str(tmpdir.join('ips.log')),
-                          platform_file_name=str(platform_file),
-                          debug=None,
-                          verbose_debug=None,
-                          cmd_nodes=0,
-                          cmd_ppn=0)
+    framework = Framework(
+        config_file_list=[str(config_file)],
+        log_file_name=str(tmpdir.join('ips.log')),
+        platform_file_name=str(platform_file),
+        debug=None,
+        verbose_debug=None,
+        cmd_nodes=0,
+        cmd_ppn=0,
+    )
 
     framework.run()
 
@@ -124,13 +121,13 @@ def test_component_logging_debug(tmpdir):
     # remove timestamp
     lines = [line[24:] for line in lines]
 
-    component_id = "LOGGING__logging_tester_1"
+    component_id = 'LOGGING__logging_tester_1'
 
     # for log_level=DEBUG all logs should be included
-    for method in ["init", "step", "finalize"]:
-        for log_type in ["log", "debug", "info", "warning", "error", "exception", "critical"]:
+    for method in ['init', 'step', 'finalize']:
+        for log_type in ['log', 'debug', 'info', 'warning', 'error', 'exception', 'critical']:
             assert f'{component_id} {map_log_to_level[log_type]:8} {method} msg: {log_type}\n' in lines
 
     # check message formatting with arguments
-    for log_type in ["log", "debug", "info", "warning", "error", "exception", "critical"]:
+    for log_type in ['log', 'debug', 'info', 'warning', 'error', 'exception', 'critical']:
         assert f'{component_id} {map_log_to_level[log_type]:8} step msg: {log_type} timestamp=0 test\n' in lines

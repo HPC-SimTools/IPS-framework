@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-""" Component wrapper for the ensemble example for `another_sim`. """
+"""Component wrapper for the ensemble example for `another_sim`."""
+
 from ipsframework import Component
 
 

@@ -1,0 +1,38 @@
+{
+  "code": "DASK_WORKER__DaskWorker",
+  "eventtype": "IPS_LAUNCH_DASK_TASK",
+  "walltime": "2.33",
+  "comment": "task_name = method, Target = myMethod(0.5)",
+}
+{
+  "code": "DASK_WORKER__DaskWorker",
+  "eventtype": "IPS_LAUNCH_DASK_TASK",
+  "walltime": "2.33",
+  "comment": "task_name = function, Target = myFun(0.5)",
+}
+{
+  "code": "DASK_WORKER__DaskWorker",
+  "eventtype": "IPS_LAUNCH_DASK_TASK",
+  "walltime": "2.33",
+  "state": "Running",
+  "comment": "task_name = binary, Target = sleep 0.5",
+}
+{
+  "code": "DASK_WORKER__DaskWorker",
+  "eventtype": "IPS_TASK_END",
+  "walltime": "2.83",
+  "comment": "task_name = method, elapsed time = 0.50s",
+}
+{
+  "code": "DASK_WORKER__DaskWorker",
+  "eventtype": "IPS_TASK_END",
+  "walltime": "2.83",
+  "comment": "task_name = function, elapsed time = 0.50s",
+}
+{
+  "code": "DASK_WORKER__DaskWorker",
+  "eventtype": "IPS_TASK_END",
+  "walltime": "2.85",
+  "state": "Running",
+  "comment": "task_name = binary, elapsed time = 0.52s",
+}
