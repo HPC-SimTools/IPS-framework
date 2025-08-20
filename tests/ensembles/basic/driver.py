@@ -63,15 +63,23 @@ class ensemble_driver(Component):
         # the config sections in the template file so we know where to look
         # for variable substitutions.
         variables = {
-            'a_sim_comp': {'A': [3, 2, 4], 'B': [2.34, 5.82, 0.1], 'C': ['bar', 'baz', 'quux']},
-            'another_sim_comp': {'D': [7, 5, 9], 'B': [0.775, 0.080, 29.2], 'F': ['xyzzy', 'plud', 'thud']},
+                'a_comp'      : {
+                        'A': [3, 2, 4],
+                        'B': [2.34, 5.82, 0.1],
+                        'C': ['bar', 'baz', 'quux']},
+                'another_comp': {
+                        'D': [7, 5, 9],
+                        'B': [0.775, 0.080, 29.2],
+                        'F': ['xyzzy', 'plud', 'thud']},
         }
 
         # Spins up N tasks, in this case three, each with a different set of
         # variable values. `mapping` is a data struct that associates the
         # specific simulation to a given run directory so that the user can
         # easily find output for a specific run.
-        mapping = self.services.run_ensemble(template, variables, run_dir, platform_config, prefix)
+        mapping = self.services.run_ensemble(template, variables, run_dir,
+                                             name=prefix,
+                                             num_nodes=1)
 
         self.services.info(f'Mapping of dirs to parameters: {mapping!s}')
 
