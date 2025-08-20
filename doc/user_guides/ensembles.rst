@@ -257,42 +257,42 @@ Use ``?`` syntax for placeholders.  It is otherwise a standard IPS configuration
     [TRANSPORT]
         IMPLEMENTATION = transport_component
 
-[driver]
-    CLASS = driver
-    SUB_CLASS =
-    NAME = instance_driver
-    SCRIPT = /my/bin/path/instance_driver.py
-    NPROC = 1
-    INPUT_FILES =
-    OUTPUT_FILES =
-    RESTART_FILES =
+    [driver]
+        CLASS = driver
+        SUB_CLASS =
+        NAME = instance_driver
+        SCRIPT = /my/bin/path/instance_driver.py
+        NPROC = 1
+        INPUT_FILES =
+        OUTPUT_FILES =
+        RESTART_FILES =
 
-[physics_component]
-    BIN_PATH = /my/bin/path
-    CLASS = workers
-    SUB_CLASS =
-    NAME = physics_comp
-    SCRIPT = ${BIN_PATH}/physics_comp.py
-    NPROC = 1
-    INPUT_FILES =
-    OUTPUT_FILES =
-    RESTART_FILES =
-    POWER = ?
-    BEAM_ENERGY = ?
-    CHI_I = ?
+    [physics_component]
+        BIN_PATH = /my/bin/path
+        CLASS = workers
+        SUB_CLASS =
+        NAME = physics_comp
+        SCRIPT = ${BIN_PATH}/physics_comp.py
+        NPROC = 1
+        INPUT_FILES =
+        OUTPUT_FILES =
+        RESTART_FILES =
+        POWER = ?
+        BEAM_ENERGY = ?
+        CHI_I = ?
 
-[transport_component]
-    BIN_PATH = /my/bin/path
-    CLASS = workers
-    SUB_CLASS =
-    NAME = transport_comp
-    SCRIPT = ${BIN_PATH}/transport_comp.py
-    NPROC = 1
-    INPUT_FILES =
-    OUTPUT_FILES =
-    RESTART_FILES =
-    DENSITY = ?
-    TEMPERATURE = ?
+    [transport_component]
+        BIN_PATH = /my/bin/path
+        CLASS = workers
+        SUB_CLASS =
+        NAME = transport_comp
+        SCRIPT = ${BIN_PATH}/transport_comp.py
+        NPROC = 1
+        INPUT_FILES =
+        OUTPUT_FILES =
+        RESTART_FILES =
+        DENSITY = ?
+        TEMPERATURE = ?
 
 
 Directory Structure

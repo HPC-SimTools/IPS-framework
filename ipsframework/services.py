@@ -127,7 +127,41 @@ def launch(binary, task_name, working_dir, *args, **keywords):
         new_env = os.environ.copy()
         new_env.update(task_env)
 
-        timeout = float(keywords.get('timeout', 1.0e9))
+        # Check that the DVM environment variables are set.
+        if hasattr(worker, 'dvm_uri_file'):
+            dvm_uri_file = Path(worker.dvm_uri_file)
+            if not dvm_uri_file.exists():
+                worker.logger.error(f"DVM URI file {dvm_uri_file} does not exist")
+                print(f"DVM URI file {dvm_uri_file} does not exist", flush=True)
+            else:
+                worker.logger.info(f"Using DVM URI file: {dvm_uri_file}")
+                print(f'Using DVM URI file: {dvm_uri_file}', flush=True)
+
+        if task_env is not None and task_env is not {}:
+            if not 'PMIX_SERVER_URI41' in task_env:
+                worker.logger.error("DVM environment variable "
+                                    "PMIX_SERVER_URI41 not set in task_env")
+                print("DVM environment variable PMIX_SERVER_URI41 not "
+                      "set in task_env", flush=True)
+            else:
+                worker.logger.info(f"DVM environment variable "
+                                   "PMIX_SERVER_URI41 set in task_env to"
+                                   " {task_env['PMIX_SERVER_URI41']}")
+                print(f'DVM environment variable PMIX_SERVER_URI41 set in '
+                      f'task_env to {task_env["PMIX_SERVER_URI41"]}', flush=True)
+        if not 'PMIX_SERVER_URI41' in os.environ:
+            worker.logger.error("DVM environment variable "
+                                "PMIX_SERVER_URI41 not set in os.environ")
+            print("DVM environment variable PMIX_SERVER_URI41 not set "
+                  "in os.environ", flush=True)
+        else:
+            worker.logger.info(f"DVM environment variable "
+                               "PMIX_SERVER_URI41 set in os.environ to"
+                               " {os.environ['PMIX_SERVER_URI41']}")
+            print(f'DVM environment variable PMIX_SERVER_URI41 set in os.environ'
+                  f' to {os.environ["PMIX_SERVER_URI41"]}', flush=True)
+
+        timeout = float(keywords.get("timeout", 1.e9))
 
         cmd = f'{binary} {" ".join(map(str, args))}'
 
@@ -227,6 +261,9 @@ def launch(binary, task_name, working_dir, *args, **keywords):
     worker.logger.info(f'Task {task_name} finished with return value: {ret_val}')
 
     return task_name, ret_val
+
+
+
 
 
 class ServicesProxy:
@@ -2620,7 +2657,6 @@ class DVMPlugin(WorkerPlugin):
     def __init__(self, logger):
         super().__init__()
 
-        # Access the service's logger that's passed in
         self.logger = logger
 
     def setup(self, worker: Worker):
@@ -2632,19 +2668,29 @@ class DVMPlugin(WorkerPlugin):
         # invoking client.forward_logging() elsewhere, so I shouldn't have to
         # do this.
         self.logger.setLevel(logging.DEBUG)
-        self.logger.info('Launching DVM')
-        self.worker.dvm_uri_file = f'/tmp/dvm.uri.{os.getpid()}'
-        command = ['prte', '--map-by', ':OVERSUBSCRIBE', '--report-uri', self.worker.dvm_uri_file]
-        self.worker.dvm_proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        self.logger.info(f"Launching DVM")
+        self.worker.dvm_uri_file = f"/tmp/dvm.uri.{os.getpid()}"
+        command = ['prte',
+                   # '--map-by', ':OVERSUBSCRIBE',
+                   '--report-uri',
+                   self.worker.dvm_uri_file]
+        self.worker.dvm_proc = subprocess.Popen(command,
+                                                stdout=subprocess.PIPE,
+                                                stderr=subprocess.STDOUT)
         ready = self.worker.dvm_proc.stdout.readline()
-        self.logger.info(f'Ready Message : {ready}')
-        self.worker.dvm_uri = open(self.worker.dvm_uri_file).readline()
-        os.environ['PMIX_MCA_pmix_server_uri'] = 'file:' + self.worker.dvm_uri
-        # This was an artifact from Wael's notebook; kept because presumably
-        # this env variable might be used.  Can't hurt to be redundant.
-        os.environ['PMIX_SERVER_URI41'] = 'file:' + self.worker.dvm_uri
-        os.environ['PMIX_MCA_pmix_base_session_dir'] = '/tmp/prte_sessions'
-        self.logger.debug(f'dvm URI = {self.worker.dvm_uri}')
+        self.logger.info(f"Ready Message : {ready}")
+        print(f"Ready Message : {ready}", flush=True)
+
+        with open(self.worker.dvm_uri_file, 'r') as f:
+            self.worker.dvm_uri = f.readline()
+            print(f"Read DVM URI: {self.worker.dvm_uri}", flush=True)
+            self.logger.debug(f"Read DVM URI: {self.worker.dvm_uri}")
+
+        os.environ['PMIX_SERVER_URI41'] = self.worker.dvm_uri
+        os.environ['PRTE_MCA_rmaps_default_mapping_policy'] = ':oversubscribe'
+
+        return
+
 
     def teardown(self, worker: Worker):
         self.logger.info(f'Shutting down DVM at {self.worker.dvm_uri}')
@@ -2965,8 +3011,6 @@ class TaskPool:
 
         # Regardless of any other worker plugins, we need this plugin to setup
         # the DVM for the workers so that OpenMPI can work properly.
-        # TODO is there some sort of context state to check to determine if
-        # we even need to do this?  E.g., this won't work on a laptop.
         self.dask_client.register_plugin(DVMPlugin(logger=services.logger))
 
         try:
