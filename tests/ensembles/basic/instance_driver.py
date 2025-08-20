@@ -27,11 +27,11 @@ class instance_driver(Component):
         unique parameters.
         """
         self.services.info('Getting component ports')
-        a_sim_comp = self.services.get_port('A_SIM_COMP')
-        another_sim_comp = self.services.get_port('ANOTHER_SIM_COMP')
+        a_omp = self.services.get_port('A_COMP')
+        another_comp = self.services.get_port('ANOTHER_COMP')
 
         self.services.info('Stepping components')
-        self.services.call(a_sim_comp, 'step', 0.0)
-        self.services.call(another_sim_comp, 'step', 0.0)
+        self.services.call(a_comp, 'step', 0.0)
+        self.services.call(another_comp, 'step', 0.0)
 
         self.services.info('Finished stepping components')
