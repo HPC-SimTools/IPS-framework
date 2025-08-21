@@ -65,41 +65,6 @@ def send_post(conn: Connection, stop: EventType, url: str):
             break
 
 
-def send_post_data(conn: Connection, stop: EventType, url: str):
-    fail_count = 0
-
-    http = urllib3.PoolManager(retries=urllib3.util.Retry(3, backoff_factor=0.25))
-
-    while True:
-        if conn.poll(0.1):
-            next_val: dict[str, Any] = conn.recv()
-            # TODO - consider using multipart/form-data instead
-            try:
-                headers = {
-                    'Content-Type': 'application/octet-stream',
-                    'X-IPS-Tag': next_val['tag'],
-                    'X-IPS-Portal-Runid': next_val['portal_runid'],
-                }
-                resp = http.request(
-                    'POST',
-                    url,
-                    body=next_val['data'],
-                    headers=headers,
-                )
-            except urllib3.exceptions.MaxRetryError as e:
-                fail_count += 1
-                conn.send((999, str(e)))
-            else:
-                conn.send((resp.status, resp.data.decode()))
-                fail_count = 0
-
-            if fail_count >= 3:
-                conn.send((-1, 'Too many consecutive failed connections'))
-                break
-        elif stop.is_set():
-            break
-
-
 def send_jupyter_notebook(conn: Connection, stop: EventType, url: str, api_key: str, username: str):
     fail_count = 0
 
@@ -235,7 +200,6 @@ class PortalBridge(Component):
         self.childProcess = None
         self.childProcessStop = None
         self.parent_conn = None
-        self.url_manager_data = None
         self.url_manager_jupyter_notebook = None
         self.url_manager_jupyter_data = None
         self.mpo = None
@@ -348,10 +312,6 @@ class PortalBridge(Component):
 
         portal_data['portal_runid'] = sim_data.portal_runid
 
-        if portal_data['eventtype'] == 'PORTAL_DATA':
-            self.send_data(sim_data, portal_data)
-            return
-
         if portal_data['eventtype'] == 'IPS_SET_MONITOR_URL':
             sim_data.monitor_url = portal_data['vizurl']
         elif sim_data.monitor_url:
@@ -442,6 +402,7 @@ class PortalBridge(Component):
             try:
                 data = json.loads(msg)
                 if 'runid' in data and 'simname' in data:
+                    # Indicates IPS-START event return
                     self.services.info('Run Portal URL = %s/%s', self.portal_url, data.get('runid'))
                     self.services.set_config_param('_IPS_PORTAL_RUNID', str(data.get('runid')), target_sim_name=data.get('simname'))
 
@@ -477,16 +438,6 @@ class PortalBridge(Component):
                 self.services.error('Portal Error: %d %s', code, msg)
             else:
                 self.services.debug('Portal Response: %d %s', code, msg)
-
-    def send_data(self, sim_data, event_data):
-        """
-        Send contents of *event_data* and *sim_data* to portal.
-        """
-
-        if self.portal_url:
-            if not self.url_manager_data:
-                self.url_manager_data = UrlRequestProcessManager(send_post_data, self.portal_url + '/api/data')
-            self.http_req_and_response(self.url_manager_data, event_data)
 
     def send_jupyter_notebook(self, sim_data, event_data):
         if self.portal_url and self.portal_api_key:
@@ -656,7 +607,8 @@ class PortalBridge(Component):
         sim_data = self.SimulationData()
         sim_data.sim_name = sim_name
         sim_data.sim_root = sim_root
-        self.services.set_config_param('_IPS_PORTAL_API_KEY', self._IPS_PORTAL_API_KEY, target_sim_name=sim_name)
+        if hasattr(self, '_IPS_PORTAL_API_KEY'):
+            self.services.set_config_param('_IPS_PORTAL_API_KEY', self._IPS_PORTAL_API_KEY, target_sim_name=sim_name)
 
         d = datetime.datetime.now()
         date_str = '%s.%03d' % (d.strftime('%Y-%m-%dT%H:%M:%S'), int(d.microsecond / 1000))
@@ -710,8 +662,6 @@ class PortalBridge(Component):
         """
         if self.childProcess:
             self.childProcess.terminate()
-        if self.url_manager_data:
-            self.url_manager_data.childProcess.terminate()
         if self.url_manager_jupyter_data:
             self.url_manager_jupyter_data.childProcess.terminate()
         if self.url_manager_jupyter_notebook:

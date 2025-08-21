@@ -5,16 +5,17 @@ import csv
 import glob
 import os
 import shutil
+import sys
 import time
+from typing import Iterable, Optional, Union
 
 try:
     import Pyro4
 except ImportError:
     pass
-import sys
 
 
-def which(program, alt_paths=None):
+def which(program, alt_paths: Optional[list[str]] = None):
     def is_exe(fpath):
         return os.path.exists(fpath) and os.access(fpath, os.X_OK)
 
@@ -36,7 +37,7 @@ def which(program, alt_paths=None):
                     return exe_file
 
 
-def copyFiles(src_dir, src_file_list, target_dir, prefix='', keep_old=False):
+def copyFiles(src_dir: str, src_file_list: Union[str, Iterable[str]], target_dir: str, prefix='', keep_old: bool = False):
     """
     Copy files in *src_file_list* from *src_dir* to *target_dir* with an
     optional prefix.  If *keep_old* is ``True``, existing files in
@@ -99,7 +100,7 @@ def copyFiles(src_dir, src_file_list, target_dir, prefix='', keep_old=False):
             raise
 
 
-def getTimeString(timeArg=None):
+def getTimeString(timeArg: Optional[time.struct_time] = None):
     """
     Return a string representation of *timeArg*. *timeArg* is expected
     to be an appropriate object to be processed by :py:meth:`time.strftime`.
@@ -112,7 +113,7 @@ def getTimeString(timeArg=None):
     return time.strftime('%Y-%m-%d|%H:%M:%S%Z', arg)
 
 
-def params_from_csv(infile):
+def params_from_csv(infile: Union[str, os.PathLike]) -> dict[str, dict[str, list[str]]]:
     """
     Read a CSV file and return a dictionary of parameters suitable for
     passing to services.run_ensemble()
@@ -146,7 +147,7 @@ def params_from_csv(infile):
     :param infile: Path to the CSV file
     :returns: Dictionary of parameters suitable for use in run_ensemble()
     """
-    variables = {}
+    variables: dict[str, dict[str, list[str]]] = {}
 
     with open(infile, 'r') as f:
         reader = csv.reader(f)

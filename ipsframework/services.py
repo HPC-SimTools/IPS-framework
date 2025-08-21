@@ -19,21 +19,25 @@ import sys
 import threading
 import time
 import traceback
+import uuid
 import weakref
 from copy import deepcopy
 from multiprocessing import Queue
 from operator import iadd, itemgetter
 from pathlib import Path
-from typing import Any, Callable, Iterable, NamedTuple, Optional, Union
-from distributed import Client
+from typing import TYPE_CHECKING, Any, Callable, Iterable, NamedTuple, Optional, Union
 
 from configobj import ConfigObj
-from distributed import Worker, WorkerPlugin
+from distributed import Client, Worker, WorkerPlugin
 
 from ipsframework import ipsutil, messages
 from ipsframework.cca_es_spec import initialize_event_service
+from ipsframework.componentRegistry import ComponentID
 from ipsframework.ips_es_spec import eventManager
 from ipsframework.taskManager import TaskInit
+
+if TYPE_CHECKING:
+    from ipsframework.component import Component
 
 
 class RunningTask(NamedTuple):
@@ -47,7 +51,7 @@ class RunningTask(NamedTuple):
     args: list[str]
 
 
-def launch(binary, task_name, working_dir, *args, **keywords):
+def launch(binary: Any, task_name: str, working_dir: Union[str, os.PathLike], *args, **keywords):
     """This is used by
     :meth:`TaskPool.submit_dask_tasks` as the
     input to :meth:`dask.distributed.Client.submit`.
@@ -71,7 +75,7 @@ def launch(binary, task_name, working_dir, *args, **keywords):
     assigning a threading lock to it. This is used to ensure that
     the worker's event log is written to in a thread-safe manner.
 
-    :param binary: The binary to launch.
+    :param binary: The binary to launch. Either a string or a class.
     :param task_name: The name of the task.
     :param working_dir: The working directory in which to run this task
     :returns: The task name and the return value from running the binary.
@@ -268,18 +272,18 @@ class ServicesProxy:
         self.svc_response_q = svc_response_q
         self.sim_conf = sim_conf
         self.log_pipe_name = log_pipe_name
-        self.component_ref = None
+        self.component_ref: Component = None  # type: ignore
         self.incomplete_calls = {}
         self.finished_calls = {}
         self.task_map: dict[int, RunningTask] = {}
         self.workdir = ''
         self.full_comp_id = ''
-        self.logger = None
+        self.logger: logging.Logger = None  # type: ignore
         self.start_time = time.time()
         self.cur_time = self.start_time
         self.event_service = None
         self.counter = 0
-        self.monitor_url = None
+        self.monitor_url = ''
         self.call_targets = {}
         self.task_pools: dict[str, TaskPool] = {}
         self.time_loop = None
@@ -302,6 +306,10 @@ class ServicesProxy:
         - Non-negative integer = successfully initialized
         - -1 = portal not yet contacted
         - -2 = portal initialization failed
+        """
+        self._fallback_portal_runid = str(uuid.uuid4())
+        """
+        This is meant to be a unique identifier fallback in the event we can't get the portal runid.
         """
 
     def __initialize__(self, component_ref):
@@ -370,7 +378,7 @@ class ServicesProxy:
                 base_dir = sorted(chkpts, key=lambda d: float(os.path.basename(d)))[-1]
                 self.sim_conf['RESTART_TIME'] = os.path.basename(base_dir)
 
-    def _init_event_service(self):
+    def _init_event_service(self) -> None:
         """
         Initialize connection to the central framework event service
         """
@@ -379,7 +387,7 @@ class ServicesProxy:
         initialize_event_service(self)
         self.event_service = eventManager(self.component_ref)
 
-    def _get_elapsed_time(self):
+    def _get_elapsed_time(self) -> float:
         """
         Return total elapsed time since simulation started in seconds
         (including a possible fraction)
@@ -388,7 +396,7 @@ class ServicesProxy:
         delta_t = self.cur_time - self.start_time
         return delta_t
 
-    def _get_incoming_responses(self, block=False):
+    def _get_incoming_responses(self, block: bool = False) -> list[Any]:
         """
         Get all pending responses on the service response queue.
 
@@ -454,7 +462,7 @@ class ServicesProxy:
         # if this message corresponds to a finish invocation, return the response message
         return self.finished_calls.pop(msg_id, None)
 
-    def _invoke_service(self, component_id, method_name, *args, **keywords):
+    def _invoke_service(self, component_id: ComponentID, method_name: str, *args, **keywords):
         """Call a method for the given component
 
         Create and place in the ``self.fwk_in_q`` a new
@@ -517,7 +525,7 @@ class ServicesProxy:
         procs_requested=None,
         cores_allocated=None,
         call_id=0,
-    ):
+    ) -> None:
         """
         Construct and send an event populated with the component's
         information, *eventType*, *comment*, *ok*, *state*, and a wall time
@@ -566,7 +574,7 @@ class ServicesProxy:
         event_data['portal_data'] = portal_data
         self.publish('_IPS_MONITOR', 'PORTAL_EVENT', event_data)
 
-    def get_port(self, port_name):
+    def get_port(self, port_name: str) -> ComponentID:
         """
         :param port_name: port name
         :type port_name: str
@@ -589,7 +597,7 @@ class ServicesProxy:
             except Exception:
                 pass
 
-    def call_nonblocking(self, component_id, method_name, *args, **keywords):
+    def call_nonblocking(self, component_id: ComponentID, method_name: str, *args, **keywords) -> int:
         r"""Invoke method *method_name* on component *component_id* with
         optional arguments *\*args*. Will not wait until finished.
 
@@ -612,7 +620,7 @@ class ServicesProxy:
         self.call_targets[call_id] = (target, method_name, args, time.time())
         return call_id
 
-    def call(self, component_id, method_name, *args, **keywords):
+    def call(self, component_id: ComponentID, method_name: str, *args, **keywords):
         r"""Invoke method *method_name* on component *component_id* with
         optional arguments *\*args*. Will wait until call is
         finished. Return result from invoking the method.
@@ -630,7 +638,7 @@ class ServicesProxy:
         retval = self.wait_call(call_id, block=True)
         return retval
 
-    def wait_call(self, call_id, block=True):
+    def wait_call(self, call_id: int, block: bool = True):
         """If *block* is ``True``, return when the call has completed with
         the return code from the call.  If *block* is ``False``, raise
         :exc:`~ipsframework.ipsExceptions.IncompleteCallException` if
@@ -679,7 +687,7 @@ class ServicesProxy:
         del self.call_targets[call_id]
         return response
 
-    def wait_call_list(self, call_id_list, block=True):
+    def wait_call_list(self, call_id_list: list[int], block=True):
         """Check the status of each of the call in *call_id_list*.  If
         *block* is ``True``, return when *all* calls are finished.  If
         *block* is ``False``, raise
@@ -855,7 +863,7 @@ class ServicesProxy:
 
         return task_id
 
-    def _launch_task(self, nproc, working_dir, task_id, command, cores_allocated, env_update, tag, keywords, binary, args):
+    def _launch_task(self, nproc: int, working_dir: str, task_id, command, cores_allocated, env_update, tag, keywords, binary: str, *args):
         log_filename = keywords.get('logfile')
         timeout = keywords.get('timeout', 1.0e9)
 
@@ -973,7 +981,7 @@ class ServicesProxy:
 
         return active_tasks
 
-    def kill_task(self, task_id: int):
+    def kill_task(self, task_id: int) -> None:
         """Kill launched task *task_id*.  Return if successful.  Raises
         exceptions if the task or process cannot be found or killed
         successfully.
@@ -981,8 +989,7 @@ class ServicesProxy:
         :param task_id: task ID
         :type task_id: int
 
-        :return: if successfully killed
-        :rtype: bool
+        :raises: Exception - if task could not successfully be killed.
         """
         try:
             process = self.task_map[task_id].process
@@ -1007,7 +1014,7 @@ class ServicesProxy:
             self.exception('Error finalizing task  %s', task_id)
             raise
 
-    def kill_all_tasks(self):
+    def kill_all_tasks(self) -> None:
         """
         Kill all tasks associated with this component.
         """
@@ -1048,7 +1055,7 @@ class ServicesProxy:
             retval = self.wait_task(task_id)
             return retval
 
-    def wait_task(self, task_id, timeout=-1, delay=1):
+    def wait_task(self, task_id: int, timeout: int = -1, delay: int = 1) -> int:
         """Check the status of task *task_id*.  Return the return value of
         the task when finished successfully.  Raise exceptions if the
         task is not found, or if there are problems finalizing the
@@ -1112,7 +1119,7 @@ class ServicesProxy:
             raise
         return task_retval
 
-    def wait_tasklist(self, task_id_list, block=True):
+    def wait_tasklist(self, task_id_list: list[int], block: bool = True) -> dict[int, int]:
         """Check the status of a list of tasks.  If ``block`` is ``True``,
         return a dictionary of return values when *all* tasks have
         completed.  If ``block`` is ``False``, return a dictionary
@@ -1152,7 +1159,7 @@ class ServicesProxy:
             time.sleep(0.05)
         return ret_dict
 
-    def get_config_param(self, param, silent=False):
+    def get_config_param(self, param: str, silent: bool = False, log: bool = True) -> Any:
         """
         Return the value of the configuration parameter ``param``.  Raise
         exception if not found and silent is False.
@@ -1182,6 +1189,9 @@ class ServicesProxy:
         :param silent: If True and parameter isn't found then exception is not raised, default False
         :type silent: bool
 
+        :param log: If silent is False, determine whether or not to record the exception. Set to False if you expect to need to retry this call.
+        :type log: bool
+
         :return: dictionary of given parameter from configuration
         :rtype: dict
         """
@@ -1194,10 +1204,11 @@ class ServicesProxy:
             except Exception:
                 if not silent:
                     self.exception('Error retrieving value of config parameter %s', param)
-                raise
+                    raise
+                return None
         return val
 
-    def set_config_param(self, param, value, target_sim_name=None):
+    def set_config_param(self, param: str, value: Any, target_sim_name: Optional[str] = None) -> Any:
         """Set configuration parameter *param* to *value*.  Raise exceptions
         if the parameter cannot be changed or if there are problems
         setting the value. This tell the framework to call
@@ -1226,7 +1237,7 @@ class ServicesProxy:
             raise
         return retval
 
-    def get_time_loop(self):
+    def get_time_loop(self) -> list[float]:
         """
         Return the list of times as specified in the configuration file.
 
@@ -1443,7 +1454,7 @@ class ServicesProxy:
         return ret_dict
 
     # DM getWorkDir
-    def get_working_dir(self):
+    def get_working_dir(self) -> str:
         """
         Return the working directory of the calling component.
 
@@ -1462,7 +1473,7 @@ class ServicesProxy:
         return self.workdir
 
     # DM stageInput
-    def stage_input_files(self, input_file_list: Union[str, Iterable[str]]):
+    def stage_input_files(self, input_file_list: Union[str, Iterable[str]]) -> None:
         """
         Copy component input files to the component working directory
         (as obtained via a call to :py:meth:`ServicesProxy.get_working_dir`). Input files
@@ -1518,7 +1529,7 @@ class ServicesProxy:
             operation=str(input_file_list),
         )
 
-    def stage_subflow_output_files(self, subflow_name='ALL'):
+    def stage_subflow_output_files(self, subflow_name: str = 'ALL') -> dict[str, list[str]]:
         """Gather outputs from sub-workflows. Sub-workflow output is defined
         to be the output files from its DRIVER component as they exist
         in the sub-workflow driver's work area at the end of the
@@ -1556,7 +1567,7 @@ class ServicesProxy:
                     return_dict[sim_name] = output_files
         return return_dict
 
-    def stage_output_files(self, timeStamp, file_list, keep_old_files=True, save_plasma_state=True):
+    def stage_output_files(self, timeStamp: float, file_list: Union[str, list[str]], keep_old_files: bool = True, save_plasma_state: bool = True) -> None:
         """
         Copy associated component output files (from the working directory)
         to the component simulation results directory. Output files
@@ -1687,7 +1698,7 @@ class ServicesProxy:
             operation=str(file_list),
         )
 
-    def save_restart_files(self, timeStamp, file_list):
+    def save_restart_files(self, timeStamp: float, file_list: Union[str, list[str]]) -> None:
         """
         Copy files needed for component restart to the restart directory::
 
@@ -1721,7 +1732,7 @@ class ServicesProxy:
 
         self._send_monitor_event('IPS_SAVE_RESTART', 'Files = ' + str(file_list))
 
-    def get_restart_files(self, restart_root, timeStamp, file_list):
+    def get_restart_files(self, restart_root: str, timeStamp: float, file_list: Union[str, list[str]]) -> None:
         """
         Copy files needed for component restart from the restart directory::
 
@@ -1746,7 +1757,7 @@ class ServicesProxy:
 
         self._send_monitor_event('IPS_GET_RESTART', 'Files = ' + str(file_list))
 
-    def stage_state(self, state_files=None):
+    def stage_state(self, state_files: Optional[list[str]] = None) -> None:
         """
         Copy current state to work directory.
         """
@@ -1780,7 +1791,7 @@ class ServicesProxy:
             operation=str(files),
         )
 
-    def update_state(self, state_files=None):
+    def update_state(self, state_files: Optional[list[str]] = None) -> None:
         """
         Copy local (updated) state to global state.  If no  state
         files are specified, component configuration specification is used.
@@ -1817,7 +1828,7 @@ class ServicesProxy:
             operation=str(files),
         )
 
-    def merge_current_state(self, partial_state_file, logfile=None, merge_binary=None):
+    def merge_current_state(self, partial_state_file: str, logfile: Optional[str] = None, merge_binary: Optional[str] = None) -> None:
         """
         Merge partial plasma state with global state.  Partial plasma state
         contains only the values that the component contributes to the
@@ -1855,7 +1866,7 @@ class ServicesProxy:
             self.error('Error merging update %s into current plasma state file %s', partial_state_file, current_plasma_state)
             raise Exception('Error merging update %s into current plasma state file %s' % (partial_state_file, current_plasma_state))
 
-    def update_time_stamp(self, new_time_stamp=-1):
+    def update_time_stamp(self, new_time_stamp=-1) -> None:
         """
         Update time stamp on portal.
         """
@@ -1870,33 +1881,7 @@ class ServicesProxy:
         self.publish('_IPS_MONITOR', 'PORTALBRIDGE_UPDATE_TIMESTAMP', event_data)
         self._send_monitor_event('IPS_UPDATE_TIME_STAMP', 'Timestamp = ' + str(new_time_stamp))
 
-    # instead of explicit content_type_enum - parse file? Focus just on E2E for now
-    # TODO - change API to send a file path instead of raw data
-    def send_portal_data(self, tag: float, data: bytes):
-        """
-        Send data to the portal
-
-        Params:
-          - tag: currently, use the timestep for this
-          - data: raw data of statefile - must be in bytes format
-        """
-        if not isinstance(data, bytes):
-            self.error('Data argument passed to "services.send_portal_data" must be bytes')
-            return
-
-        event_data = {}
-        event_data['sim_name'] = self.sim_conf['__PORTAL_SIM_NAME']
-        event_data['real_sim_name'] = self.sim_name
-
-        portal_data: dict[str, Any] = {}
-        portal_data['tag'] = str(tag)
-        portal_data['data'] = data
-        portal_data['eventtype'] = 'PORTAL_DATA'
-        event_data['portal_data'] = portal_data
-        self.publish('_IPS_MONITOR', 'PORTAL_DATA', event_data)
-        self._send_monitor_event('IPS_PORTAL_DATA', f'Tag = {tag}')
-
-    def setMonitorURL(self, url=''):
+    def setMonitorURL(self, url: str = '') -> None:
         """
         Send event to portal setting the URL where the monitor component will
         put data.
@@ -1942,12 +1927,12 @@ class ServicesProxy:
         max_attempts = 30
         while True:
             try:
-                # TODO we would ideally not log this
-                value = self.get_config_param('_IPS_PORTAL_RUNID', silent=True)
+                # We expect to fail this call a few times, so do not log the failed attempts
+                value = self.get_config_param('_IPS_PORTAL_RUNID', log=False)
                 try:
                     value = int(value)
                 except Exception:
-                    self.warning('got back invalid value for runid from portal')
+                    self.warning('got back invalid value for runid from portal: %s', value)
                     self._portal_runid = -2
                     return -2
                 self._portal_runid = value
@@ -1996,7 +1981,7 @@ class ServicesProxy:
         self.publish('_IPS_MONITOR', 'PORTAL_REGISTER_NOTEBOOK', event_data)
         self._send_monitor_event('IPS_PORTAL_REGISTER_NOTEBOOK', f'FILENAME = {dest_notebook_name}')
 
-    def add_analysis_data_files(self, current_data_file_paths: list[str], timestamp: float = 0.0, replace: bool = False):
+    def add_analysis_data_files(self, current_data_file_paths: list[str], timestamp: float = 0.0, replace: bool = False) -> None:
         """Add data file to the module file referenced by the Jupyter Notebook.
 
         Params:
@@ -2032,7 +2017,7 @@ class ServicesProxy:
             self.publish('_IPS_MONITOR', 'PORTAL_ADD_JUPYTER_DATA', event_data)
             self._send_monitor_event('IPS_PORTAL_ADD_JUPYTER_DATA', f'SOURCE = {source} TIMESTAMP = {timestamp} REPLACE = {replace}')
 
-    def publish(self, topicName: str, eventName: str, eventBody: Any):
+    def publish(self, topicName: str, eventName: str, eventBody: Any) -> None:
         """
         Publish event consisting of *eventName* and *eventBody* to topic *topicName* to the IPS event service.
         """
@@ -2040,7 +2025,7 @@ class ServicesProxy:
             topicName = self.sim_name + '_' + topicName
         self.event_service.publish(topicName, eventName, eventBody)
 
-    def subscribe(self, topicName: str, callback: Callable):
+    def subscribe(self, topicName: str, callback: Callable) -> None:
         """
         Subscribe to topic *topicName* on the IPS event service and register *callback* as the method to be invoked when an event is published to that topic.
         """
@@ -2048,7 +2033,7 @@ class ServicesProxy:
             topicName = self.sim_name + '_' + topicName
         self.event_service.subscribe(topicName, callback)
 
-    def unsubscribe(self, topicName: str):
+    def unsubscribe(self, topicName: str) -> None:
         """
         Remove subscription to topic *topicName*.
         """
@@ -2056,13 +2041,13 @@ class ServicesProxy:
             topicName = self.sim_name + '_' + topicName
         self.event_service.unsubscribe(topicName)
 
-    def process_events(self):
+    def process_events(self) -> None:
         """
         Poll for events on subscribed topics.
         """
         self.event_service.process_events()
 
-    def send_portal_event(self, event_type='COMPONENT_EVENT', event_comment='', event_time=None, elapsed_time=None):
+    def send_portal_event(self, event_type: str = 'COMPONENT_EVENT', event_comment: str = '', event_time=None, elapsed_time=None):
         """
         Send event to web portal.
         """
@@ -2080,37 +2065,37 @@ class ServicesProxy:
         """
         self.logger.debug(msg, *args)
 
-    def info(self, msg, *args):
+    def info(self, msg: object, *args):
         """
         Produce **informational** message in simulation log file. See :func:`logging.info` for usage.
         """
         self.logger.info(msg, *args)
 
-    def warning(self, msg, *args):
+    def warning(self, msg: object, *args):
         """
         Produce **warning** message in simulation log file. See :func:`logging.warning` for usage.
         """
         self.logger.warning(msg, *args)
 
-    def error(self, msg, *args):
+    def error(self, msg: object, *args):
         """
         Produce **error** message in simulation log file. See :func:`logging.error` for usage.
         """
         self.logger.error(msg, *args)
 
-    def exception(self, msg, *args):
+    def exception(self, msg: object, *args):
         """
         Produce **exception** message in simulation log file. See :func:`logging.exception` for usage.
         """
         self.logger.exception(msg, *args)
 
-    def critical(self, msg, *args):
+    def critical(self, msg: object, *args):
         """
         Produce **critical** message in simulation log file. See :func:`logging.critical` for usage.
         """
         self.logger.critical(msg, *args)
 
-    def create_task_pool(self, task_pool_name):
+    def create_task_pool(self, task_pool_name: str):
         """
         Create an empty pool of tasks with the name *task_pool_name*.  Raise exception if duplicate name.
         """
@@ -2118,7 +2103,7 @@ class ServicesProxy:
             raise Exception('Error: Duplicate task pool name %s' % (task_pool_name))
         self.task_pools[task_pool_name] = TaskPool(task_pool_name, self)
 
-    def add_task(self, task_pool_name, task_name, nproc, working_dir, binary, *args, **keywords):
+    def add_task(self, task_pool_name: str, task_name: str, nproc: int, working_dir: str, binary: str, *args, **keywords):
         """
         Add task *task_name* to task pool *task_pool_name*.  Remaining arguments are the same as
         in :py:meth:`ServicesProxy.launch_task`.
@@ -2161,14 +2146,14 @@ class ServicesProxy:
         self._send_monitor_event('IPS_TASK_POOL_END', 'task_pool = %s  elapsed time = %.2f S' % (task_pool_name, elapsed_time), elapsed_time=elapsed_time)
         return retval
 
-    def get_finished_tasks(self, task_pool_name):
+    def get_finished_tasks(self, task_pool_name: str):
         """
         Return dictionary of finished tasks and return values in task pool *task_pool_name*.  Raise exception if no active or finished tasks.
         """
         task_pool = self.task_pools[task_pool_name]
         return task_pool.get_finished_tasks_status()
 
-    def remove_task_pool(self, task_pool_name):
+    def remove_task_pool(self, task_pool_name: str):
         """
         Kill all running tasks, clean up all finished tasks, and delete task pool.
         """
@@ -2176,7 +2161,7 @@ class ServicesProxy:
         task_pool.terminate_tasks()
         del self.task_pools[task_pool_name]
 
-    def create_sub_workflow(self, sub_name, config_file, override=None, input_dir=None):
+    def create_sub_workflow(self, sub_name, config_file, override: Optional[dict[str, Any]] = None, input_dir=None):
         """Create sub-workflow
 
         :param sub_name: name of sub-workflow
@@ -2511,9 +2496,9 @@ class ServicesProxy:
             platform_config['NODE_ALLOCATION_MODE'] = 'SHARED'
 
             # inherit the portal information from the top-level
-            use_portal = self.get_config_param('USE_PORTAL', silent=True)
-            if use_portal is not None or use_portal != '':
-                platform_config['USE_PORTAL'] = self.get_config_param('USE_PORTAL', silent=True)
+            portal_url = self.get_config_param('PORTAL_URL', silent=True)
+            if portal_url:
+                platform_config['USE_PORTAL'] = 'True'
             else:  # None specified, so we're going to have it default to False
                 # This turns off logging for the portal
                 platform_config['USE_PORTAL'] = 'False'
@@ -2726,7 +2711,7 @@ class TaskPool:
         while len(self.active_tasks) > 0:
             self._wait_any_task()
 
-    def add_task(self, task_name, nproc, working_dir, binary, *args, **keywords):
+    def add_task(self, task_name: str, nproc: int, working_dir: str, binary: str, *args, **keywords):
         """
         Create :py:obj:`Task` object and add to *queued_tasks* of the task
         pool.  Raise exception if task name already exists in task pool.
@@ -2800,7 +2785,7 @@ class TaskPool:
         :returns: number of tasks submitted
         """
 
-        def _make_worker_args(num_workers, num_threads, use_shifter, shifter_args=None):
+        def _make_worker_args(num_workers: int, num_threads: int, use_shifter: bool, shifter_args=None):
             """Make Dask worker command line arguments.
 
             :param num_workers: Number of workers to start
@@ -2970,11 +2955,8 @@ class TaskPool:
         self.dask_client.register_plugin(DVMPlugin(logger=services.logger))
 
         try:
-            # FIXME why does this need PORTAL_RUNID, especially if
-            # USE_PORTAL is False?  Temporarily hacked it out; portal guy needs
-            # to look at this, though.
-            # self.worker_event_logfile = services.sim_name + '_' + services.get_config_param("PORTAL_RUNID") + '_' + self.name + '_{}.json'
-            self.worker_event_logfile = services.sim_name + '_' + self.name + '_{}.json'
+            file_id = str(self.services._portal_runid) if self.services._portal_runid > 0 else self.services._fallback_portal_runid
+            self.worker_event_logfile = services.sim_name + '_' + file_id + '_' + self.name + '_{}.json'
             self.services.debug(f'Worker event log file: {self.worker_event_logfile}')
         except KeyError:
             # USE_PORTAL == False

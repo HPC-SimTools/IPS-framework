@@ -175,35 +175,35 @@ class Component:
     def args(self):
         return self.__args
 
-    def init(self, timestamp=0.0, **keywords):
+    def init(self, timestamp: float = 0.0, **keywords):
         """
         Produce some default debugging information before the rest of the code
         is executed.
         """
         self.services.debug('init() method called')
 
-    def restart(self, timestamp=0.0, **keywords):
+    def restart(self, timestamp: float = 0.0, **keywords):
         """
         Produce some default debugging information before the rest of the code
         is executed.
         """
         self.services.debug('restart() method called')
 
-    def step(self, timestamp=0.0, **keywords):
+    def step(self, timestamp: float = 0.0, **keywords):
         """
         Produce some default debugging information before the rest of the code
         is executed.
         """
         self.services.debug('step() method called')
 
-    def finalize(self, timestamp=0.0, **keywords):
+    def finalize(self, timestamp: float = 0.0, **keywords):
         """
         Produce some default debugging information before the rest of the code
         is executed.
         """
         self.services.debug('finalize() method called')
 
-    def checkpoint(self, timestamp=0.0, **keywords):
+    def checkpoint(self, timestamp: float = 0.0, **keywords):
         """
         Produce some default debugging information before the rest of the code
         is executed.
