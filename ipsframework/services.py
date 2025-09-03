@@ -2689,8 +2689,10 @@ class DVMPlugin(WorkerPlugin):
                    '--report-uri',
                    self.worker.dvm_uri_file]
         if self.oversubscribe:
-            # insert arguments for oversubscription if this was requested
-            command[1:1] = ['--map-by', ':OVERSUBSCRIBE']
+            # This environment variable is specific to OpenMPI's PRTE and
+            # allows oversubscription of nodes.
+            self.logger.info(f"Allowing oversubscription of nodes")
+            os.environ['PRTE_MCA_rmaps_default_mapping_policy'] = ':oversubscribe'
 
         self.worker.dvm_proc = subprocess.Popen(command,
                                                 stdout=subprocess.PIPE,
@@ -2706,7 +2708,6 @@ class DVMPlugin(WorkerPlugin):
             self.logger.debug(f"Read DVM URI: {self.worker.dvm_uri}")
 
         os.environ['PMIX_SERVER_URI41'] = self.worker.dvm_uri
-        # os.environ['PRTE_MCA_rmaps_default_mapping_policy'] = ':oversubscribe'
 
         return
 
