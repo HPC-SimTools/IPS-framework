@@ -21,7 +21,7 @@ class Node:
       * *status*: indicates if the node is 'UP' or 'DOWN'.  Currently not used, all nodes are considered functional..
     """
 
-    def __init__(self, name, socks, cores, p):
+    def __init__(self, name, socks: int, cores: int, p):
         self.status = 'UP'
         self.name = name
         self.task_ids = []
@@ -287,7 +287,7 @@ class Core:
         self.task_id = -1
         self.owner = ''
 
-    def allocate(self, tid, o):
+    def allocate(self, tid: int, o):
         """
         Mark core as allocated.
         """
@@ -300,7 +300,7 @@ class Core:
             print('trying to allocate core that is not available')
             raise RuntimeError('trying to allocate core that is not available')
 
-    def release(self):
+    def release(self) -> None:
         """
         Mark core as available.
         """

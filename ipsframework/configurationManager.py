@@ -11,7 +11,7 @@ import tempfile
 import time
 import uuid
 from multiprocessing import Process, Queue, set_start_method
-from typing import Optional
+from typing import Optional, Union
 
 from configobj import ConfigObj
 
@@ -61,7 +61,7 @@ class ConfigurationManager:
             self.component_process = None
             self.process_list = []
 
-    def __init__(self, fwk, config_file_list, platform_file_name):
+    def __init__(self, fwk, config_file_list: list[Union[str, os.PathLike]], platform_file_name: Union[str, os.PathLike]):
         """
         Initialize the values to be used by the configuration manager.  Also
         specified are the required fields of the simulation configuration

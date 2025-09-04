@@ -131,10 +131,10 @@ class Framework:
         config_file_list: List[str],
         log_file_name: str,
         platform_file_name: Optional[str] = None,
-        debug=False,
-        verbose_debug=False,
-        cmd_nodes=0,
-        cmd_ppn=0,
+        debug: bool = False,
+        verbose_debug: bool = False,
+        cmd_nodes: int = 0,
+        cmd_ppn: int = 0,
     ):
         # added compset_list for list of components to load config files for
         # command line option

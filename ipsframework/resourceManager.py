@@ -6,6 +6,7 @@ import os
 import time
 from collections import namedtuple
 from math import ceil
+from typing import Union
 
 from .ips_es_spec import eventManager
 from .ipsExceptions import (
@@ -229,7 +230,7 @@ class ResourceManager:
         print(notes, file=self.reporting_file)
         self.reporting_file.flush()
 
-    def printRMState(self):
+    def printRMState(self) -> None:
         """
         Print the node tree to ``stdout``.
         """
@@ -239,7 +240,7 @@ class ResourceManager:
             i.print_sockets()
         print('=====================')
 
-    def add_nodes(self, listOfNodes):
+    def add_nodes(self, listOfNodes: list[tuple[str, int]]) -> int:
         """
         Add node entries to ``self.nodes``.  Typically used by
         :py:meth:`.initialize` to initialize ``self.nodes``.
@@ -542,7 +543,7 @@ class ResourceManager:
         else:
             return False, 'mismatch'
 
-    def check_core_cap(self, nproc, ppn):
+    def check_core_cap(self, nproc: int, ppn: int) -> tuple[bool, Union[str, list[Node]]]:
         """
         Determine if it is currently possible to allocate *nproc* processes
         with a ppn of *ppn* without further restrictions..  Return ``True``

@@ -2,6 +2,10 @@
 # Copyright 2006-2022 UT-Battelle, LLC. See LICENSE for more information.
 # -------------------------------------------------------------------------------
 
+from typing import Literal
+
+from ipsframework.componentRegistry import ComponentID
+
 
 class Message:
     """
@@ -15,7 +19,7 @@ class Message:
     identifier = 'MESSAGE'
     counter = 0
 
-    def __init__(self, sender_id, receiver_id):
+    def __init__(self, sender_id: ComponentID, receiver_id: ComponentID):
         self.sender_id = sender_id
         self.receiver_id = receiver_id
         self.message_id = None
@@ -44,7 +48,7 @@ class ServiceRequestMessage(Message):
     delimiter = '|'
     identifier = 'REQUEST'
 
-    def __init__(self, sender_id, receiver_id, target_comp_id, target_method, *args, **keywords):
+    def __init__(self, sender_id: ComponentID, receiver_id: ComponentID, target_comp_id: ComponentID, target_method: str, *args, **keywords):
         super().__init__(sender_id, receiver_id)
         self.target_comp_id = target_comp_id
         self.target_method = target_method
@@ -69,7 +73,7 @@ class ServiceResponseMessage(Message):
     delimiter = '|'
     identifier = 'RESPONSE'
 
-    def __init__(self, sender_id, receiver_id, request_msg_id, status, *args):
+    def __init__(self, sender_id: ComponentID, receiver_id: ComponentID, request_msg_id: str, status: Literal[0, 1], *args):
         super().__init__(sender_id, receiver_id)
         self.request_msg_id = request_msg_id
         self.status = status
@@ -98,7 +102,7 @@ class MethodInvokeMessage(Message):
     delimiter = '|'
     identifier = 'INVOKE'
 
-    def __init__(self, sender_id, receiver_id, call_id, target_method, *args, **keywords):
+    def __init__(self, sender_id: ComponentID, receiver_id: ComponentID, call_id: int, target_method: str, *args, **keywords):
         super().__init__(sender_id, receiver_id)
         self.call_id = call_id
         self.target_method = target_method
@@ -122,7 +126,7 @@ class MethodResultMessage(Message):
     delimiter = '|'
     identifier = 'RESULT'
 
-    def __init__(self, sender_id, receiver_id, call_id, status, *args):
+    def __init__(self, sender_id: ComponentID, receiver_id: ComponentID, call_id: int, status: Literal[0, 1], *args):
         super().__init__(sender_id, receiver_id)
         self.call_id = call_id
         self.args = args
