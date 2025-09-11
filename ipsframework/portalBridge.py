@@ -234,7 +234,7 @@ class PortalBridge(Component):
             self.dump_freq = freq
 
         try:
-            self.html_dir = self.services.get_config_param('USER_W3_DIR', silent=True)
+            self.html_dir = self.services.get_config_param('USER_W3_DIR', silent=True) or ''
         except Exception:
             self.services.warning('Missing USER_W3_DIR configuration - disabling web-visible logging')
             self.write_to_htmldir = False
