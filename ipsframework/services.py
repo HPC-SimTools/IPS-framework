@@ -136,37 +136,27 @@ def launch(binary: Any, task_name: str, working_dir: Union[str, os.PathLike], *a
         if hasattr(worker, 'dvm_uri_file'):
             dvm_uri_file = Path(worker.dvm_uri_file)
             if not dvm_uri_file.exists():
-                worker.logger.error(f"DVM URI file {dvm_uri_file} does not exist")
-                print(f"DVM URI file {dvm_uri_file} does not exist", flush=True)
+                worker.logger.error(f'DVM URI file {dvm_uri_file} does not exist')
+                print(f'DVM URI file {dvm_uri_file} does not exist', flush=True)
             else:
-                worker.logger.info(f"Using DVM URI file: {dvm_uri_file}")
+                worker.logger.info(f'Using DVM URI file: {dvm_uri_file}')
                 print(f'Using DVM URI file: {dvm_uri_file}', flush=True)
 
         if task_env is not None and task_env is not {}:
             if not 'PMIX_SERVER_URI41' in task_env:
-                worker.logger.error("DVM environment variable "
-                                    "PMIX_SERVER_URI41 not set in task_env")
-                print("DVM environment variable PMIX_SERVER_URI41 not "
-                      "set in task_env", flush=True)
+                worker.logger.error('DVM environment variable PMIX_SERVER_URI41 not set in task_env')
+                print('DVM environment variable PMIX_SERVER_URI41 not set in task_env', flush=True)
             else:
-                worker.logger.info(f"DVM environment variable "
-                                   "PMIX_SERVER_URI41 set in task_env to"
-                                   " {task_env['PMIX_SERVER_URI41']}")
-                print(f'DVM environment variable PMIX_SERVER_URI41 set in '
-                      f'task_env to {task_env["PMIX_SERVER_URI41"]}', flush=True)
+                worker.logger.info(f"DVM environment variable PMIX_SERVER_URI41 set in task_env to {{task_env['PMIX_SERVER_URI41']}}")
+                print(f'DVM environment variable PMIX_SERVER_URI41 set in task_env to {task_env["PMIX_SERVER_URI41"]}', flush=True)
         if not 'PMIX_SERVER_URI41' in os.environ:
-            worker.logger.error("DVM environment variable "
-                                "PMIX_SERVER_URI41 not set in os.environ")
-            print("DVM environment variable PMIX_SERVER_URI41 not set "
-                  "in os.environ", flush=True)
+            worker.logger.error('DVM environment variable PMIX_SERVER_URI41 not set in os.environ')
+            print('DVM environment variable PMIX_SERVER_URI41 not set in os.environ', flush=True)
         else:
-            worker.logger.info(f"DVM environment variable "
-                               "PMIX_SERVER_URI41 set in os.environ to"
-                               " {os.environ['PMIX_SERVER_URI41']}")
-            print(f'DVM environment variable PMIX_SERVER_URI41 set in os.environ'
-                  f' to {os.environ["PMIX_SERVER_URI41"]}', flush=True)
+            worker.logger.info(f"DVM environment variable PMIX_SERVER_URI41 set in os.environ to {{os.environ['PMIX_SERVER_URI41']}}")
+            print(f'DVM environment variable PMIX_SERVER_URI41 set in os.environ to {os.environ["PMIX_SERVER_URI41"]}', flush=True)
 
-        timeout = float(keywords.get("timeout", 1.e9))
+        timeout = float(keywords.get('timeout', 1.0e9))
 
         cmd = f'{binary} {" ".join(map(str, args))}'
 
@@ -266,9 +256,6 @@ def launch(binary: Any, task_name: str, working_dir: Union[str, os.PathLike], *a
     worker.logger.info(f'Task {task_name} finished with return value: {ret_val}')
 
     return task_name, ret_val
-
-
-
 
 
 class ServicesProxy:
@@ -901,7 +888,9 @@ class ServicesProxy:
 
         return task_id
 
-    def _launch_task(self, nproc: int, working_dir: str, task_id, command, cores_allocated, env_update, tag, keywords, binary: str, args: Union[list[str], tuple[str, ...]]):
+    def _launch_task(
+        self, nproc: int, working_dir: str, task_id, command, cores_allocated, env_update, tag, keywords, binary: str, args: Union[list[str], tuple[str, ...]]
+    ):
         log_filename = keywords.get('logfile')
         timeout = keywords.get('timeout', 1.0e9)
 
@@ -2165,7 +2154,7 @@ class ServicesProxy:
         shifter_args=None,
         dask_worker_plugin=None,
         dask_worker_per_gpu=False,
-            oversubscribe=False
+        oversubscribe=False,
     ):
         """
         Launch all unfinished tasks in task pool *task_pool_name*.  If *block* is ``True``,
@@ -2314,9 +2303,7 @@ class ServicesProxy:
             raise
         return (sim_name, init_comp, driver_comp)
 
-    def run_ensemble(self, template, variables, run_dir, name, num_nodes,
-                     cores_per_instance=None,
-                     oversubscribe=False):
+    def run_ensemble(self, template, variables, run_dir, name, num_nodes, cores_per_instance=None, oversubscribe=False):
         """Run ensemble of simulations given the template and variables.
 
         `variables` is a nested dict that looks like this:
@@ -2552,6 +2539,32 @@ class ServicesProxy:
 
             return platform_config_file_path
 
+        def send_ensemble_instance_to_portal(name: str, variables: list[list[Union[str, dict[str, Any]]]]) -> None:
+            # Make sure we actually want to use the portal in the first place
+            portal_runid = self.get_config_param('PORTAL_RUNID', silent=True)
+            portal_url = self.get_config_param('PORTAL_URL', silent=True)
+            if not portal_runid or not portal_url:
+                return
+
+            # ensure that the portal is initialized
+            portal_runid = self._get_jupyter_runid()
+            if portal_runid < 0:
+                return
+
+            event_data = {}
+            event_data['sim_name'] = self.sim_conf['__PORTAL_SIM_NAME']
+            event_data['real_sim_name'] = self.sim_name
+
+            portal_data: dict[str, Any] = {}
+            portal_data['eventtype'] = 'PORTAL_UPLOAD_ENSEMBLE_PARAMS'
+            portal_data['ensemble_name'] = name
+            portal_data['ensemble_data'] = variables
+            portal_data['username'] = self.get_config_param('USER')
+            portal_data['portal_runid'] = portal_runid
+            event_data['portal_data'] = portal_data
+            self.publish('_IPS_MONITOR', 'PORTAL_UPLOAD_ENSEMBLE_PARAMS', event_data)
+            self._send_monitor_event('IPS_PORTAL_UPLOAD_ENSEMBLE_PARAMS', f'NAME = {name}')
+
         self.info(f'Preparing to run ensembles in {run_dir}')
 
         # Forcing this since the debugging level isn't get set to
@@ -2620,6 +2633,8 @@ class ServicesProxy:
 
             self.add_task(task_pool_name, instance[0], 1, working_dir, 'ips.py', *args)
 
+            send_ensemble_instance_to_portal(instance[0], instance[1])
+
         try:
             # Note that we *always* use Dask to run the ensemble tasks
             num_submitted = self.submit_tasks(
@@ -2627,7 +2642,7 @@ class ServicesProxy:
                 use_dask=True,
                 dask_nodes=num_nodes,
                 dask_ppw=cores_per_instance,
-                    oversubscribe=oversubscribe,
+                oversubscribe=oversubscribe,
                 # launch_interval=0.0,
                 # use_shifter=False,
                 # shifter_args=None,
@@ -2648,12 +2663,11 @@ class ServicesProxy:
 
 
 class DVMPlugin(WorkerPlugin):
-    def __init__(self, logger,  oversubscribe=False):
+    def __init__(self, logger, oversubscribe=False):
         super().__init__()
 
         self.logger = logger
         self.oversubscribe = oversubscribe
-
 
     def setup(self, worker: Worker):
         """
@@ -2669,35 +2683,30 @@ class DVMPlugin(WorkerPlugin):
         # invoking client.forward_logging() elsewhere, so I shouldn't have to
         # do this.
         self.logger.setLevel(logging.DEBUG)
-        self.logger.info(f"Launching DVM")
+        self.logger.info(f'Launching DVM')
         # TODO could make this more OS agnostic by using tempfile.mkstemp
-        self.worker.dvm_uri_file = f"/tmp/dvm.uri.{os.getpid()}"
-        command = ['prte',
-                   '--report-uri',
-                   self.worker.dvm_uri_file]
+        self.worker.dvm_uri_file = f'/tmp/dvm.uri.{os.getpid()}'
+        command = ['prte', '--report-uri', self.worker.dvm_uri_file]
         if self.oversubscribe:
             # This environment variable is specific to OpenMPI's PRTE and
             # allows oversubscription of nodes.
-            self.logger.info(f"Allowing oversubscription of nodes")
+            self.logger.info(f'Allowing oversubscription of nodes')
             os.environ['PRTE_MCA_rmaps_default_mapping_policy'] = ':oversubscribe'
 
-        self.worker.dvm_proc = subprocess.Popen(command,
-                                                stdout=subprocess.PIPE,
-                                                stderr=subprocess.STDOUT)
+        self.worker.dvm_proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 
         ready = self.worker.dvm_proc.stdout.readline()
-        self.logger.info(f"Ready Message : {ready}")
-        print(f"Ready Message : {ready}", flush=True)
+        self.logger.info(f'Ready Message : {ready}')
+        print(f'Ready Message : {ready}', flush=True)
 
         with open(self.worker.dvm_uri_file, 'r') as f:
             self.worker.dvm_uri = f.readline()
-            print(f"Read DVM URI: {self.worker.dvm_uri}", flush=True)
-            self.logger.debug(f"Read DVM URI: {self.worker.dvm_uri}")
+            print(f'Read DVM URI: {self.worker.dvm_uri}', flush=True)
+            self.logger.debug(f'Read DVM URI: {self.worker.dvm_uri}')
 
         os.environ['PMIX_SERVER_URI41'] = self.worker.dvm_uri
 
         return
-
 
     def teardown(self, worker: Worker):
         self.logger.info(f'Shutting down DVM at {self.worker.dvm_uri}')
@@ -2818,10 +2827,15 @@ class TaskPool:
         self.queued_tasks[task_name] = Task(task_name, nproc, working_dir, binary_fullpath, *args, **keywords['keywords'])
 
     def submit_dask_tasks(
-        self, block=True, dask_nodes=1, dask_ppw=None, use_shifter=False,
-            shifter_args=None,
-            dask_worker_plugin=None, dask_worker_per_gpu=False,
-            oversubscribe=False
+        self,
+        block=True,
+        dask_nodes=1,
+        dask_ppw=None,
+        use_shifter=False,
+        shifter_args=None,
+        dask_worker_plugin=None,
+        dask_worker_per_gpu=False,
+        oversubscribe=False,
     ):
         """Launch tasks in *queued_tasks* using dask.
 
@@ -3024,8 +3038,7 @@ class TaskPool:
 
         # Regardless of any other worker plugins, we need this plugin to setup
         # the DVM for the workers so that OpenMPI can work properly.
-        self.dask_client.register_plugin(DVMPlugin(logger=services.logger,
-                                                   oversubscribe=oversubscribe))
+        self.dask_client.register_plugin(DVMPlugin(logger=services.logger, oversubscribe=oversubscribe))
 
         try:
             file_id = str(self.services._portal_runid) if self.services._portal_runid > 0 else self.services._fallback_portal_runid
@@ -3051,7 +3064,7 @@ class TaskPool:
                     **task.keywords,
                     key=task_name,
                     cpus_per_proc=dask_ppw,
-                    worker_event_logfile=self.worker_event_logfile
+                    worker_event_logfile=self.worker_event_logfile,
                 )
             )
         self.active_tasks = self.queued_tasks
@@ -3069,7 +3082,7 @@ class TaskPool:
         shifter_args=None,
         dask_worker_plugin=None,
         dask_worker_per_gpu=False,
-            oversubscribe=False,
+        oversubscribe=False,
     ):
         """Launch tasks in *queued_tasks*.  Finished tasks are handled before
         launching new ones.  If *block* is ``True``, the number of
@@ -3114,7 +3127,9 @@ class TaskPool:
                     self.services.error('Requested to run dask within shifter but shifter not available')
                     raise RuntimeError('shifter not found')
                 else:
-                    return self.submit_dask_tasks(block, dask_nodes, dask_ppw, use_shifter, shifter_args, dask_worker_plugin, dask_worker_per_gpu, oversubscribe)
+                    return self.submit_dask_tasks(
+                        block, dask_nodes, dask_ppw, use_shifter, shifter_args, dask_worker_plugin, dask_worker_per_gpu, oversubscribe
+                    )
             elif not TaskPool.dask or not TaskPool.distributed:
                 raise RuntimeError('Requested use_dask but cannot because import dask or distributed failed')
             elif not self.serial_pool:

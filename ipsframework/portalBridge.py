@@ -147,6 +147,43 @@ def send_jupyter_notebook_data(conn: Connection, stop: EventType, url: str, api_
             break
 
 
+def send_ensemble_variables(conn: Connection, stop: EventType, url: str, api_key: str, username: str):
+    fail_count = 0
+
+    http = urllib3.PoolManager(retries=urllib3.util.Retry(3, backoff_factor=0.25))
+
+    while True:
+        if conn.poll(0.1):
+            next_val: dict[str, Any] = conn.recv()
+            try:
+                headers = {
+                    'X-Api-Key': api_key,
+                    'Content-Type': 'application/json',
+                    'X-Ips-Username': username,
+                    'X-Ips-Portal-Runid': next_val['portal_runid'],
+                    'X-Ips-Ensemble-Name': next_val['ensemble_name'],
+                }
+                body = json.dumps(next_val['ensemble_data'])
+                resp = http.request(
+                    'POST',
+                    url,
+                    body=body,
+                    headers=headers,
+                )
+            except (urllib3.exceptions.MaxRetryError, OSError) as e:
+                fail_count += 1
+                conn.send((999, str(e)))
+            else:
+                conn.send((resp.status, resp.data.decode()))
+                fail_count = 0
+
+            if fail_count >= 3:
+                conn.send((-1, 'Too many consecutive failed connections'))
+                break
+        elif stop.is_set():
+            break
+
+
 class UrlRequestProcessManager:
     def __init__(self, target: Callable, *args):
         """
@@ -202,6 +239,7 @@ class PortalBridge(Component):
         self.parent_conn = None
         self.url_manager_jupyter_notebook = None
         self.url_manager_jupyter_data = None
+        self.url_manager_ensemble_uploads = None
         self.mpo = None
         self.mpo_name_counter = defaultdict(lambda: 0)
         self.counter = 0
@@ -308,6 +346,10 @@ class PortalBridge(Component):
                 portal_data['data_source'] = tarpath
 
             self.send_notebook_data(sim_data, portal_data)
+            return
+
+        if portal_data['eventtype'] == 'PORTAL_UPLOAD_ENSEMBLE_PARAMS':
+            self.send_ensemble_variables(sim_data, portal_data)
             return
 
         portal_data['portal_runid'] = sim_data.portal_runid
@@ -454,6 +496,14 @@ class PortalBridge(Component):
                     send_jupyter_notebook_data, self.portal_url + '/api/data/add_data_file', self.portal_api_key, self.USER
                 )
             self.http_req_and_response(self.url_manager_jupyter_data, event_data)
+
+    def send_ensemble_variables(self, sim_data, event_data):
+        if self.portal_url and self.portal_api_key:
+            if not self.url_manager_ensemble_uploads:
+                self.url_manager_ensemble_uploads = UrlRequestProcessManager(
+                    send_ensemble_variables, self.portal_url + '/api/data/add_ensemble_variables', self.portal_api_key, self.USER
+                )
+            self.http_req_and_response(self.url_manager_ensemble_uploads, event_data)
 
     def send_mpo_data(self, event_data, sim_data):  # pragma: no cover
         def md5(fname):
@@ -666,5 +716,7 @@ class PortalBridge(Component):
             self.url_manager_jupyter_data.childProcess.terminate()
         if self.url_manager_jupyter_notebook:
             self.url_manager_jupyter_notebook.childProcess.terminate()
+        if self.url_manager_ensemble_uploads:
+            self.url_manager_ensemble_uploads.childProcess.terminate()
 
         Component.terminate(self, status)
