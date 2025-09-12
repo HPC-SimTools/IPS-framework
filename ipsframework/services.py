@@ -901,7 +901,7 @@ class ServicesProxy:
 
         return task_id
 
-    def _launch_task(self, nproc: int, working_dir: str, task_id, command, cores_allocated, env_update, tag, keywords, binary: str, *args):
+    def _launch_task(self, nproc: int, working_dir: str, task_id, command, cores_allocated, env_update, tag, keywords, binary: str, args: Union[list[str], tuple[str, ...]]):
         log_filename = keywords.get('logfile')
         timeout = keywords.get('timeout', 1.0e9)
 
