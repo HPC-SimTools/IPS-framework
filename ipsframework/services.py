@@ -901,7 +901,7 @@ class ServicesProxy:
 
         return task_id
 
-    def _launch_task(self, nproc: int, working_dir: str, task_id, command, cores_allocated, env_update, tag, keywords, binary: str, *args):
+    def _launch_task(self, nproc: int, working_dir: str, task_id, command, cores_allocated, env_update, tag, keywords, binary: str, args: Union[list[str], tuple[str, ...]]):
         log_filename = keywords.get('logfile')
         timeout = keywords.get('timeout', 1.0e9)
 
@@ -2417,6 +2417,16 @@ class ServicesProxy:
             # by setting SIM_ROOT to the prefix path.
             template['SIM_ROOT'] = Path(working_dir)
 
+            # Handle portal configuration, note that PORTAL_API_KEY should be an environment variable and will be passed in later.
+            portal_runid = self.get_config_param('PORTAL_RUNID', silent=True)
+            portal_url = self.get_config_param('PORTAL_URL', silent=True)
+            if portal_runid and portal_url:
+                template['PORTAL_URL'] = portal_url
+                template['USE_PORTAL'] = 'True'
+                template['PARENT_PORTAL_RUNID'] = portal_runid
+            else:
+                template['USE_PORTAL'] = 'False'
+
             # We need to plug in the variables, so we need to find the section
             # for a each component, and then find the corresponding variables
             # to then assign the associated value.
@@ -2537,14 +2547,6 @@ class ServicesProxy:
             # define node allocation mode to be shared since we'll have more
             # than one ensemble instance per node.
             platform_config['NODE_ALLOCATION_MODE'] = 'SHARED'
-
-            # inherit the portal information from the top-level
-            portal_url = self.get_config_param('PORTAL_URL', silent=True)
-            if portal_url:
-                platform_config['USE_PORTAL'] = 'True'
-            else:  # None specified, so we're going to have it default to False
-                # This turns off logging for the portal
-                platform_config['USE_PORTAL'] = 'False'
 
             platform_config.write()
 
