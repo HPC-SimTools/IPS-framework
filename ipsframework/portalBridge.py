@@ -158,12 +158,14 @@ def send_ensemble_variables(conn: Connection, stop: EventType, url: str, api_key
             try:
                 headers = {
                     'X-Api-Key': api_key,
-                    'Content-Type': 'application/json',
+                    'Content-Type': 'text/csv',
                     'X-Ips-Username': username,
                     'X-Ips-Portal-Runid': next_val['portal_runid'],
                     'X-Ips-Ensemble-Name': next_val['ensemble_name'],
                 }
-                body = json.dumps(next_val['ensemble_data'])
+                # TODO check to see that file size is < 1MB
+                with open(next_val['ensemble_data'], 'rb') as fd:
+                    body = fd.read()
                 resp = http.request(
                     'POST',
                     url,

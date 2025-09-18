@@ -2303,7 +2303,16 @@ class ServicesProxy:
             raise
         return (sim_name, init_comp, driver_comp)
 
-    def run_ensemble(self, template, variables, run_dir, name, num_nodes, cores_per_instance=None, oversubscribe=False):
+    def run_ensemble(
+        self,
+        template: Union[str, os.PathLike],
+        variables: dict[str, dict[str, list[str]]],
+        run_dir: Union[str, os.PathLike],
+        name: str,
+        num_nodes: int,
+        cores_per_instance: Optional[int] = None,
+        oversubscribe: bool = False,
+    ):
         """Run ensemble of simulations given the template and variables.
 
         `variables` is a nested dict that looks like this:
@@ -2344,38 +2353,6 @@ class ServicesProxy:
         :returns: a list of dicts mapping created subdirs to simulation names
             and their parameters
         """
-
-        def group_into_instances(variables, name):
-            """convert component variables into something like this:
-
-            [['prefix_0', [['a_sim_comp', {'A': 3, 'B': 2.34, 'C': 'bar'}],
-                             ['another_sim_comp', {'D': 7, 'B': 0.775, 'F': 'xyzzy'}]]],
-             ['prefix_1', [['a_sim_comp', {'A': 2, 'B': 5.82, 'C': 'baz'}],
-                             ['another_sim_comp', {'D': 5, 'B': 0.08, 'F': 'plud'}]]],
-             ['prefix_2', [['a_sim_comp', {'A': 4, 'B': 0.1, 'C': 'quux'}],
-                             ['another_sim_comp', {'D': 9, 'B': 29.2, 'F': 'thud'}]]]]
-
-              prefix_n corresponds to a specific ensemble instance and will
-              be used for a unique subdir name.  That, in turn, references a
-              list of lists where each list element is a component that, in
-              turn, has a dict mapping component variables to values that will
-              then be later used to flesh out a config file from a config
-              template file.
-            """
-            # Transpose the data for each simulation component; essentially
-            # convert the list of variable values into corresponding dicts
-            # mapping the variables to specific values.  Sorta like a
-            # column-wise to row-wise transposition.
-            transposed = {key: [dict(zip(inner.keys(), values)) for values in zip(*inner.values())] for key, inner in variables.items()}
-
-            # Build the final structure where each instance is named
-            # {prefix}_n
-            result = [
-                [f'{name}{i}', [[sim_name, sim_data] for sim_name, sim_data_list in transposed.items() for sim_data in [sim_data_list[i]]]]
-                for i in range(len(next(iter(transposed.values()))))
-            ]
-
-            return result
 
         def create_driver_config_file(template, working_dir, variables, name):
             """Create an IPS config file for an ensemble instance
@@ -2539,7 +2516,7 @@ class ServicesProxy:
 
             return platform_config_file_path
 
-        def send_ensemble_instance_to_portal(name: str, variables: list[list[Union[str, dict[str, Any]]]]) -> None:
+        def send_ensemble_instance_to_portal(data_path: Path) -> None:
             # Make sure we actually want to use the portal in the first place
             portal_runid = self.get_config_param('PORTAL_RUNID', silent=True)
             portal_url = self.get_config_param('PORTAL_URL', silent=True)
@@ -2557,7 +2534,7 @@ class ServicesProxy:
 
             portal_data: dict[str, Any] = {}
             portal_data['eventtype'] = 'PORTAL_UPLOAD_ENSEMBLE_PARAMS'
-            portal_data['ensemble_name'] = name
+            portal_data['ensemble_name'] = data_path.name
             portal_data['ensemble_data'] = variables
             portal_data['username'] = self.get_config_param('USER')
             portal_data['portal_runid'] = portal_runid
@@ -2573,6 +2550,12 @@ class ServicesProxy:
         # is being ignored.
         self.logger.setLevel(logging.DEBUG)
 
+        # Ensure that we create a unique task pool name for this using the
+        # instance prefix `name`
+        # check this first to ensure uniqueness of `name` parameter
+        task_pool_name = f'{name}_ensemble_task_pool'
+        self.create_task_pool(task_pool_name)
+
         # Grab the IPS config template to be used for all ensemble instances;
         # str to convert from pathlib.Path; harmless conversion if already a
         # Path.
@@ -2584,12 +2567,12 @@ class ServicesProxy:
         # Let's first "flatten" the hierarchical variables dict into a list
         # of lists of dicts, where the top-level of which contains the ensemble
         # instance name and associated parameters.
-        instances = group_into_instances(variables, name)
+        instances = ipsutil.group_ensemble_variables_into_instances(variables, name)
 
-        # Ensure that we create a unique task pool name for this using the
-        # instance prefix `name`
-        task_pool_name = f'{name}_ensemble_task_pool'
-        self.create_task_pool(task_pool_name)
+        # save the variables on both disk and to the IPS Portal
+        csv_out = Path(run_dir) / f'{name}__ensemble_variables.csv'
+        ipsutil.ensemble_instances_to_csv(instances, csv_out)
+        send_ensemble_instance_to_portal(csv_out)
 
         # For each coupled simulation instance
         for instance in instances:
@@ -2632,8 +2615,6 @@ class ServicesProxy:
                 args.insert(1, '--verbose')
 
             self.add_task(task_pool_name, instance[0], 1, working_dir, 'ips.py', *args)
-
-            send_ensemble_instance_to_portal(instance[0], instance[1])
 
         try:
             # Note that we *always* use Dask to run the ensemble tasks
