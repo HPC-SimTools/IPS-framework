@@ -154,7 +154,7 @@ def launch(binary: Any, task_name: str, working_dir: Union[str, os.PathLike], *a
                                    " {task_env['PMIX_SERVER_URI41']}")
                 print(f'DVM environment variable PMIX_SERVER_URI41 set in '
                       f'task_env to {task_env["PMIX_SERVER_URI41"]}', flush=True)
-        if not 'PMIX_SERVER_URI41' in os.environ:
+        elif not 'PMIX_SERVER_URI41' in os.environ:
             worker.logger.error("DVM environment variable "
                                 "PMIX_SERVER_URI41 not set in os.environ")
             print("DVM environment variable PMIX_SERVER_URI41 not set "
