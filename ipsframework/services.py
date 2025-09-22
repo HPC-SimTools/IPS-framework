@@ -851,6 +851,8 @@ class ServicesProxy:
         self.debug(f'whole_nodes = {whole_nodes}')
         self.debug(f'whole_socks = {whole_socks}')
 
+        task_id = command = env_update = cores_allocated = None
+
         try:
             # SIMYAN: added working_dir to component method invocation
             msg_id = self._invoke_service(
