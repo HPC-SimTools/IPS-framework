@@ -2376,7 +2376,7 @@ class ServicesProxy:
             # ENSEMBLE_INSTANCE so that the user can optionally use that string
             # in their reporting.
             template['ENSEMBLE_INSTANCE'] = name
-            template['PORTAL_ENSEMBLE_ID'] = portal_ensemble_id
+            template['_IPS_PORTAL_ENSEMBLE_ID'] = portal_ensemble_id
             template['SIM_NAME'] = name
 
             if 'SIM_ROOT' in template and template['SIM_ROOT'] is not None and template['SIM_ROOT'].strip() != '':
