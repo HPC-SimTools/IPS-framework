@@ -2356,7 +2356,7 @@ class ServicesProxy:
 
         # This should be a unique variable across all ensembles we keep track of in the portal
         # This ID should only be shared by runs within an ensemble
-        portal_ensemble_id = uuid.uuid4()
+        portal_ensemble_id = str(uuid.uuid4())
 
         def create_driver_config_file(template, working_dir, variables, name):
             """Create an IPS config file for an ensemble instance
@@ -2521,7 +2521,7 @@ class ServicesProxy:
 
             return platform_config_file_path
 
-        def send_ensemble_instance_to_portal(data_path: Path) -> None:
+        def send_ensemble_instance_to_portal(sim_name: str, data_path: Path) -> None:
             # Make sure we actually want to use the portal in the first place
             portal_runid = self.get_config_param('PORTAL_RUNID', silent=True)
             portal_url = self.get_config_param('PORTAL_URL', silent=True)
@@ -2540,6 +2540,7 @@ class ServicesProxy:
             portal_data: dict[str, Any] = {}
             portal_data['eventtype'] = 'PORTAL_UPLOAD_ENSEMBLE_PARAMS'
             portal_data['sim_name'] = data_path.name
+            portal_data['ensemble_id'] = portal_ensemble_id
             portal_data['ensemble_data'] = variables
             portal_data['username'] = self.get_config_param('USER')
             portal_data['portal_runid'] = portal_runid
@@ -2577,7 +2578,7 @@ class ServicesProxy:
         # save the variables on both disk and to the IPS Portal
         csv_out = Path(run_dir) / f'{name}__ensemble_variables.csv'
         ipsutil.ensemble_instances_to_csv(instances, csv_out)
-        send_ensemble_instance_to_portal(csv_out)
+        send_ensemble_instance_to_portal(name, csv_out)
 
         # For each coupled simulation instance
         for instance in instances:
