@@ -2354,6 +2354,10 @@ class ServicesProxy:
             and their parameters
         """
 
+        # This should be a unique variable across all ensembles we keep track of in the portal
+        # This ID should only be shared by runs within an ensemble
+        portal_ensemble_id = uuid.uuid4()
+
         def create_driver_config_file(template, working_dir, variables, name):
             """Create an IPS config file for an ensemble instance
 
@@ -2372,6 +2376,7 @@ class ServicesProxy:
             # ENSEMBLE_INSTANCE so that the user can optionally use that string
             # in their reporting.
             template['ENSEMBLE_INSTANCE'] = name
+            template['PORTAL_ENSEMBLE_ID'] = portal_ensemble_id
             template['SIM_NAME'] = name
 
             if 'SIM_ROOT' in template and template['SIM_ROOT'] is not None and template['SIM_ROOT'].strip() != '':
