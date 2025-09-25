@@ -161,7 +161,7 @@ def send_ensemble_variables(conn: Connection, stop: EventType, url: str, api_key
                     'Content-Type': 'text/csv',
                     'X-Ips-Username': username,
                     'X-Ips-Portal-Runid': next_val['portal_runid'],
-                    'X-Ips-Ensemble-Name': next_val['ensemble_name'],
+                    'X-Ips-Ensemble-Name': next_val['sim_name'],
                 }
                 # TODO check to see that file size is < 1MB
                 with open(next_val['ensemble_data'], 'rb') as fd:

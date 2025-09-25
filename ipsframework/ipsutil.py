@@ -241,7 +241,7 @@ def ensemble_instances_to_csv(instances: list[tuple[str, list[tuple[str, dict[st
         # header row
         writer.writerow(
             functools.reduce(
-                operator.iconcat, [[f'{instance[0]}:{component}' for component in list(instance[1].keys())] for instance in instances[0][1]], ['ensemble_name']
+                operator.iconcat, [[f'{instance[0]}:{component}' for component in list(instance[1].keys())] for instance in instances[0][1]], ['sim_name']
             )
         )
         # data rows

@@ -2534,7 +2534,7 @@ class ServicesProxy:
 
             portal_data: dict[str, Any] = {}
             portal_data['eventtype'] = 'PORTAL_UPLOAD_ENSEMBLE_PARAMS'
-            portal_data['ensemble_name'] = data_path.name
+            portal_data['sim_name'] = data_path.name
             portal_data['ensemble_data'] = variables
             portal_data['username'] = self.get_config_param('USER')
             portal_data['portal_runid'] = portal_runid
