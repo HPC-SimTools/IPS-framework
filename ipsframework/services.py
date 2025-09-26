@@ -2521,7 +2521,7 @@ class ServicesProxy:
 
             return platform_config_file_path
 
-        def send_ensemble_instance_to_portal(sim_name: str, data_path: Path) -> None:
+        def send_ensemble_instance_to_portal(ensemble_name: str, data_path: Path) -> None:
             # Make sure we actually want to use the portal in the first place
             portal_runid = self.get_config_param('PORTAL_RUNID', silent=True)
             portal_url = self.get_config_param('PORTAL_URL', silent=True)
@@ -2539,7 +2539,7 @@ class ServicesProxy:
 
             portal_data: dict[str, Any] = {}
             portal_data['eventtype'] = 'PORTAL_UPLOAD_ENSEMBLE_PARAMS'
-            portal_data['sim_name'] = data_path.name
+            portal_data['ensemble_name'] = ensemble_name
             portal_data['ensemble_id'] = portal_ensemble_id
             portal_data['ensemble_data'] = variables
             portal_data['username'] = self.get_config_param('USER')
