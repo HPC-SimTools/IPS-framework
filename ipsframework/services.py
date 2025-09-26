@@ -2541,7 +2541,7 @@ class ServicesProxy:
             portal_data['eventtype'] = 'PORTAL_UPLOAD_ENSEMBLE_PARAMS'
             portal_data['ensemble_name'] = ensemble_name
             portal_data['ensemble_id'] = portal_ensemble_id
-            portal_data['ensemble_data'] = variables
+            portal_data['ensemble_data_path'] = data_path
             portal_data['username'] = self.get_config_param('USER')
             portal_data['portal_runid'] = portal_runid
             event_data['portal_data'] = portal_data

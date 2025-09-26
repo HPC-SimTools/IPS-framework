@@ -165,7 +165,7 @@ def send_ensemble_variables(conn: Connection, stop: EventType, url: str, api_key
                     'X-Ips-Ensemble-Id': next_val['ensemble_id'],
                 }
                 # TODO check to see that file size is < 1MB
-                with open(next_val['ensemble_data'], 'rb') as fd:
+                with open(next_val['ensemble_data_path'], 'rb') as fd:
                     body = fd.read()
                 resp = http.request(
                     'POST',
