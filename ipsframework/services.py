@@ -2539,6 +2539,7 @@ class ServicesProxy:
 
             portal_data: dict[str, Any] = {}
             portal_data['eventtype'] = 'PORTAL_UPLOAD_ENSEMBLE_PARAMS'
+            portal_data['component_name'] = self.component_ref.config['NAME']
             portal_data['ensemble_name'] = ensemble_name
             portal_data['ensemble_id'] = portal_ensemble_id
             portal_data['ensemble_data_path'] = data_path

@@ -161,6 +161,7 @@ def send_ensemble_variables(conn: Connection, stop: EventType, url: str, api_key
                     'Content-Type': 'text/csv',
                     'X-Ips-Username': username,
                     'X-Ips-Portal-Runid': next_val['portal_runid'],
+                    'X-Ips-Component-Name': next_val['component_name'],
                     'X-Ips-Ensemble-Name': next_val['ensemble_name'],
                     'X-Ips-Ensemble-Id': next_val['ensemble_id'],
                 }
