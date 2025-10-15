@@ -1,8 +1,8 @@
 # Jupyter Notebook appending workflow
 
-This is an example which utilizes the time loop. The config file specifies that the script will execute all timestamps in the range of 1.0 to 100.0 (both inclusive), incrementing by 1.0 for each cycle.
+This is an example which utilizes the time loop. The config file specifies that the script will execute all timestamps in the range of 1.0 to 30.0 (both inclusive), incrementing by 1.0 for each cycle.
 
-For each timestep, the worker component will update the state file with random JSON data. Note that with this implementation, the state file is overridden on each new timestep (the final timestep called will persist after the application).
+For each timestep, the worker component will update the state file with random JSON data. Note that with this implementation, the state file is appended to on each new timestep (the final timestep called will persist after the application).
 
 Additionally, the `Monitor` component in `component_monitor.py` showcases an example of integrating an IPS run with the IPS JupyterHub workflow. It requires a connection to the IPS web portal to be open to work, but the associated notebooks will show up on the portal. The JupyterHub workflow is designed to allow users to run custom visualizations during an IPS run; the framework can update the data in such a way that it will not interrupt the visualization process.
 

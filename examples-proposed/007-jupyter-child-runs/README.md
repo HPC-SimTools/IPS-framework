@@ -2,8 +2,6 @@
 
 This is an example run where we use the Jupyter workflow in conjunction with parent/child runs.
 
-
-
 ## Instructions
 
 To install, you can run:
