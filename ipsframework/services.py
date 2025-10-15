@@ -838,6 +838,8 @@ class ServicesProxy:
         self.debug(f'whole_nodes = {whole_nodes}')
         self.debug(f'whole_socks = {whole_socks}')
 
+        task_id = command = env_update = cores_allocated = None
+
         try:
             # SIMYAN: added working_dir to component method invocation
             msg_id = self._invoke_service(
@@ -2155,6 +2157,7 @@ class ServicesProxy:
         dask_worker_plugin=None,
         dask_worker_per_gpu=False,
         oversubscribe=False,
+        hwthreads=False,
     ):
         """
         Launch all unfinished tasks in task pool *task_pool_name*.  If *block* is ``True``,
@@ -2168,7 +2171,7 @@ class ServicesProxy:
         self._send_monitor_event('IPS_TASK_POOL_BEGIN', 'task_pool = %s ' % task_pool_name)
         task_pool: TaskPool = self.task_pools[task_pool_name]
         retval = task_pool.submit_tasks(
-            block, use_dask, dask_nodes, dask_ppw, launch_interval, use_shifter, shifter_args, dask_worker_plugin, dask_worker_per_gpu, oversubscribe
+            block, use_dask, dask_nodes, dask_ppw, launch_interval, use_shifter, shifter_args, dask_worker_plugin, dask_worker_per_gpu, oversubscribe, hwthreads
         )
         elapsed_time = time.time() - start_time
         self._send_monitor_event('IPS_TASK_POOL_END', 'task_pool = %s  elapsed time = %.2f S' % (task_pool_name, elapsed_time), elapsed_time=elapsed_time)
@@ -2312,6 +2315,7 @@ class ServicesProxy:
         num_nodes: int,
         cores_per_instance: Optional[int] = None,
         oversubscribe: bool = False,
+        hwthreads: bool = False,
     ):
         """Run ensemble of simulations given the template and variables.
 
@@ -2350,6 +2354,7 @@ class ServicesProxy:
             nodes.
         :param oversubscribe: Whether to allow oversubscription of nodes
             when launching the ensemble runs. Default is False.
+        :param hwthreads: Whether to use hardware threads
         :returns: a list of dicts mapping created subdirs to simulation names
             and their parameters
         """
@@ -2631,6 +2636,7 @@ class ServicesProxy:
                 dask_nodes=num_nodes,
                 dask_ppw=cores_per_instance,
                 oversubscribe=oversubscribe,
+                hwthreads=hwthreads,
                 # launch_interval=0.0,
                 # use_shifter=False,
                 # shifter_args=None,
@@ -2651,11 +2657,21 @@ class ServicesProxy:
 
 
 class DVMPlugin(WorkerPlugin):
-    def __init__(self, logger, oversubscribe=False):
+    def __init__(self, logger, oversubscribe=False, hwthreads=False):
+        """
+        Dask worker plugin to launch and manage an OpenMPI PRTE DVM on each
+        worker node.
+
+        :param logger: Logger object
+        :param oversubscribe: Whether to allow oversubscription of nodes
+            when launching the ensemble runs. Default is False.
+        :param hwthreads: Whether to use hardware threads
+        """
         super().__init__()
 
         self.logger = logger
         self.oversubscribe = oversubscribe
+        self.hwthreads = hwthreads
 
     def setup(self, worker: Worker):
         """
@@ -2675,11 +2691,19 @@ class DVMPlugin(WorkerPlugin):
         # TODO could make this more OS agnostic by using tempfile.mkstemp
         self.worker.dvm_uri_file = f'/tmp/dvm.uri.{os.getpid()}'
         command = ['prte', '--report-uri', self.worker.dvm_uri_file]
+
+        mapping_policy = 'core'  # by default bind to cores
+        if self.hwthreads:
+            # ... unless you want to bind to hardware threads
+            self.logger.info(f'Binding to hardware threads')
+            mapping_policy = 'hwtcpus'
+
         if self.oversubscribe:
-            # This environment variable is specific to OpenMPI's PRTE and
-            # allows oversubscription of nodes.
             self.logger.info(f'Allowing oversubscription of nodes')
-            os.environ['PRTE_MCA_rmaps_default_mapping_policy'] = ':oversubscribe'
+            mapping_policy += ':oversubscribe'
+
+        # This environment variable is specific to OpenMPI's PRTE
+        os.environ['PRTE_MCA_rmaps_default_mapping_policy'] = mapping_policy
 
         self.worker.dvm_proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 
@@ -2824,6 +2848,7 @@ class TaskPool:
         dask_worker_plugin=None,
         dask_worker_per_gpu=False,
         oversubscribe=False,
+        hwthreads=False,
     ):
         """Launch tasks in *queued_tasks* using dask.
 
@@ -2853,6 +2878,8 @@ class TaskPool:
         :param oversubscribe: Whether to allow oversubscription of nodes
             when launching the dask workers. Default is False.
         :type oversubscribe: bool
+        :param hwthreads: Whether to use hardware threads
+        :type hwthreads: bool
 
         FIXME consider having n processes instead of n threads given that we're
             likely running in a HPC context.
@@ -3026,7 +3053,7 @@ class TaskPool:
 
         # Regardless of any other worker plugins, we need this plugin to setup
         # the DVM for the workers so that OpenMPI can work properly.
-        self.dask_client.register_plugin(DVMPlugin(logger=services.logger, oversubscribe=oversubscribe))
+        self.dask_client.register_plugin(DVMPlugin(logger=services.logger, oversubscribe=oversubscribe, hwthreads=hwthreads))
 
         try:
             file_id = str(self.services._portal_runid) if self.services._portal_runid > 0 else self.services._fallback_portal_runid
@@ -3071,6 +3098,7 @@ class TaskPool:
         dask_worker_plugin=None,
         dask_worker_per_gpu=False,
         oversubscribe=False,
+        hwthreads=False,
     ):
         """Launch tasks in *queued_tasks*.  Finished tasks are handled before
         launching new ones.  If *block* is ``True``, the number of
@@ -3106,6 +3134,9 @@ class TaskPool:
         :param oversubscribe: If True then pass the oversubscribe option to
             mpirun when launching dask workers
         :type oversubscribe: bool
+        :param hwthreads: If True then use hardware threads when launching
+            tasks. Default is False.
+        :type hwthreads: bool
         """
 
         if use_dask:
@@ -3116,7 +3147,7 @@ class TaskPool:
                     raise RuntimeError('shifter not found')
                 else:
                     return self.submit_dask_tasks(
-                        block, dask_nodes, dask_ppw, use_shifter, shifter_args, dask_worker_plugin, dask_worker_per_gpu, oversubscribe
+                        block, dask_nodes, dask_ppw, use_shifter, shifter_args, dask_worker_plugin, dask_worker_per_gpu, oversubscribe, hwthreads
                     )
             elif not TaskPool.dask or not TaskPool.distributed:
                 raise RuntimeError('Requested use_dask but cannot because import dask or distributed failed')
