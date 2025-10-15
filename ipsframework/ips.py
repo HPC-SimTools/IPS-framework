@@ -598,6 +598,10 @@ class Framework:
             except KeyError:
                 pass
             try:
+                portal_data['portal_ensemble_id'] = get_config(sim_name, '_IPS_PORTAL_ENSEMBLE_ID')
+            except KeyError:
+                pass
+            try:
                 portal_data['tag'] = get_config(sim_name, 'TAG')
             except KeyError:
                 pass

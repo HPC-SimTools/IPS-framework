@@ -2,7 +2,9 @@
 # Copyright 2006-2022 UT-Battelle, LLC. See LICENSE for more information.
 # -------------------------------------------------------------------------------
 import csv
+import functools
 import glob
+import operator
 import os
 import shutil
 import sys
@@ -175,6 +177,77 @@ def params_from_csv(infile: Union[str, os.PathLike]) -> dict[str, dict[str, list
                 variables[comp_name][param_name].append(row[i].strip())
 
     return variables
+
+
+def group_ensemble_variables_into_instances(variables: dict[str, dict[str, list[str]]], name: str):
+    """convert component variables into something like this:
+
+    [['prefix_0', [['a_sim_comp', {'A': 3, 'B': 2.34, 'C': 'bar'}],
+                        ['another_sim_comp', {'D': 7, 'B': 0.775, 'F': 'xyzzy'}]]],
+        ['prefix_1', [['a_sim_comp', {'A': 2, 'B': 5.82, 'C': 'baz'}],
+                        ['another_sim_comp', {'D': 5, 'B': 0.08, 'F': 'plud'}]]],
+        ['prefix_2', [['a_sim_comp', {'A': 4, 'B': 0.1, 'C': 'quux'}],
+                        ['another_sim_comp', {'D': 9, 'B': 29.2, 'F': 'thud'}]]]]
+
+        prefix_n corresponds to a specific ensemble instance and will
+        be used for a unique subdir name.  That, in turn, references a
+        list of lists where each list element is a component that, in
+        turn, has a dict mapping component variables to values that will
+        then be later used to flesh out a config file from a config
+        template file.
+    """
+    # Transpose the data for each simulation component; essentially
+    # convert the list of variable values into corresponding dicts
+    # mapping the variables to specific values.  Sorta like a
+    # column-wise to row-wise transposition.
+    transposed = {key: [dict(zip(inner.keys(), values)) for values in zip(*inner.values())] for key, inner in variables.items()}
+
+    # Build the final structure where each instance is named
+    # {prefix}_n
+    result = [
+        (f'{name}{i}', [(sim_name, sim_data) for sim_name, sim_data_list in transposed.items() for sim_data in [sim_data_list[i]]])
+        for i in range(len(next(iter(transposed.values()))))
+    ]
+
+    return result
+
+
+def ensemble_instances_to_csv(instances: list[tuple[str, list[tuple[str, dict[str, object]]]]], path: Union[str, os.PathLike]) -> None:
+    """
+    Take in a structure of variables suitable for passing to services.run_ensemble(), and write a CSV file from it.
+
+    So, for example, if the structure looks like this:
+
+        variables = {'a_comp': {'A': [3, 2, 4],
+                                'B': [2.34, 5.82, 0.1],
+                                'C': ['bar', 'baz', 'quux']},
+                     'another_comp': {'D': [7, 5, 9],
+                                      'B': [0.775, 0.080, 29.2],
+                                      'F': ['xyzzy', 'plud', 'thud']}}
+
+    The written CSV file will look like this:
+        a_comp:A,a_comp:B,a_comp:C,another_comp:D,another_comp:B,another_comp:F
+        3,2.34,bar,7,0.775,xyzzy
+        2,5.82,baz,5,0.080,plud
+        4,0.1,quux,9,29.2,thud
+
+    The generated CSV file follows RFC-4180 precisely.
+
+    :param variables: dictionary of parameters identical to the return value of params_from_csv
+    :param path: Path to the CSV file
+    """
+    with open(path, 'w') as fd:
+        writer = csv.writer(fd)
+        # header row
+        writer.writerow(
+            functools.reduce(
+                operator.iconcat, [[f'{instance[0]}:{component}' for component in list(instance[1].keys())] for instance in instances[0][1]], ['sim_name']
+            )
+        )
+        # data rows
+        writer.writerows(
+            [functools.reduce(operator.iconcat, [list(component[1].values()) for component in instance[1]], [instance[0]]) for instance in instances]
+        )
 
 
 if __name__ == '__main__':
