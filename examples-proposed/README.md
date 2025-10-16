@@ -18,3 +18,4 @@ Note that each example will explicitly need to be installed into its own virtual
 - `008-jupyter-multiple-runs` - This is not an IPS framework example itself, but an example of how the results of a parent/child run would be stored on a Jupyter instance, and how you can analyze this data.
 - `009-task-pool-sync` - showcases a simple example utilizing `dask` to simulate parallelism
 - `010-adios-example` - meant to be a hello-world example for utilizing ADIOS files with the IPS Portal API.
+- `020-simple-ensemble` - simple example of how to run an ensemble of simulations
