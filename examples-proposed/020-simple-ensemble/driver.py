@@ -32,7 +32,7 @@ class EnsembleDriver(Component):
         # correspond to the variable values.  Naturally, the size of the lists
         # should be identical. Note that placeholders for these variables must
         # be defined in a special template IPS configuration file, in this case,
-        # `simpletemplate.conf`.
+        # `template.conf`.
         variables = {
                 'instance_component': {
                         'A': [3, 2, 4],

@@ -12,12 +12,12 @@ class InstanceComponent(Component):
         # the `run_ensemble()` `name` argument prepended to a unique number
         # for each instance.  E.g., ENSEMBLE_INSTANCE might be "MY_INSTANCE_23".
         instance_id = self.services.get_config_param('ENSEMBLE_INSTANCE')
-        self.services.info(f'{instance_id}: Start of step of instance '
-                           f'component.')
-        
-        # Echo the parameters we're expecting, A, B, and C
-        self.services.info(f'{instance_id}: instance component parameters: '
-                           f'A={self.A}, B={self.B}, C={self.C}')
+        print(f'{instance_id}: Start of step of instance '
+              f'component.')
 
-        self.services.info(f'{instance_id}: End of step of instance '
-                           f'component.')
+        # Echo the parameters we're expecting, A, B, and C
+        print(f'{instance_id}: instance component parameters: '
+              f'A={self.A}, B={self.B}, C={self.C}')
+
+        print(f'{instance_id}: End of step of instance '
+              f'component.')
