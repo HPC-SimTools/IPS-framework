@@ -11,7 +11,7 @@ class InstanceDriver(Component):
     """
 
     def step(self, timestamp: float = 0.0, **keywords):
-        instance_component = self.services.get_port('COMPONENT')
+        instance_component = self.services.get_port('WORKER')
 
         self.services.call(instance_component, 'step', 0.0)
 
