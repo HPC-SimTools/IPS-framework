@@ -7,7 +7,7 @@ import sys
 import csv
 from time import time
 
-from ips_framework import Component
+from ipsframework import Component
 from ipsframework.resourceHelper import get_platform_info
 
 
