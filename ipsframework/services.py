@@ -2977,6 +2977,10 @@ class TaskPool:
 
         self.services.debug(f'Dask scheduler pid: {self.dask_sched_pid}')
 
+        if not Path(self.dask_scheduler_file).exists():
+            self.services.critical(f'Dask scheduler file '
+                                   f'{self.dask_scheduler_file} does not exist')
+
         dask_nodes = 1 if dask_nodes is None else dask_nodes
         if services.get_config_param('MPIRUN') == 'eval':
             # TODO Why?
@@ -3005,6 +3009,10 @@ class TaskPool:
             # Dask worker they want.)
             # nthreads = dask_ppw if dask_ppw else services.get_config_param("PROCS_PER_NODE")
             cores_per_node = services.get_config_param('PROCS_PER_NODE')
+            if not cores_per_node or cores_per_node < 1:
+                # if PROCS_PER_NODE is missing, fall back on CORES_PER_NODE
+                cores_per_node = services.get_config_param('CORES_PER_NODE')
+
             if dask_ppw is not None:
                 self.services.debug(f'Using {dask_ppw} processes per Dask worker via dask_ppw argument')
                 print(f'Using {dask_ppw} processes per Dask worker via dask_ppw argument', flush=True)
