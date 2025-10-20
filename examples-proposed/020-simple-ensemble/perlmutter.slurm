@@ -9,15 +9,13 @@
 #SBATCH --account=atom # REPLACE WITH YOUR PROJECT ID
 #SBATCH --constraint=cpu
 #SBATCH --nodes=1
-#SBATCH --time=30
-#SBATCH --qos=regular
-
+#SBATCH --time=5
+#SBATCH -p debug
 
 module load PrgEnv-gnu openmpi python
 
 # Again, this assumes that there exists a conda environment named "ips".
 conda activate ips
-
 
 ips.py -v --debug --log=${SLURM_JOBID}_full.log \
   --simulation=ensemble.conf --platform=perlmutter.conf 2>&1 | tee ${SLURM_JOBID}_ips.log
