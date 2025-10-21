@@ -14,7 +14,8 @@ class EnsembleDriver(Component):
         # Read in the variable combinations from a CSV file.  The CSV file
         # contains the same instance values as shown in
         # `example-proposed/020-simple-ensemble`
-        variables = params_from_csv('variables.csv')
+        print(f'CWD: {Path(".").absolute()}')
+        variables = params_from_csv('../variables.csv')
 
         # This is the IPS configuration file for the instances that looks like
         # a regular configuration file except there are slots for the 'A', 'B',
