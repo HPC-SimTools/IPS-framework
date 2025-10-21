@@ -27,6 +27,8 @@ To run the code, run:
 ```bash
 ips.py --platform platform.conf --simulation ensemble.conf
 ```
+__NOTE__: disable Global Protect VPN if you are using it, as it can interfere 
+with Dask.
 
 ### Perlmutter
 
