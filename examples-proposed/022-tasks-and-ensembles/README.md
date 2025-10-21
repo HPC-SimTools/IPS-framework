@@ -49,3 +49,10 @@ To run on Perlmutter, follow these steps
     ```bash
      sbatch perlmutter.slurm
     ```
+
+
+## Output
+
+The output is the similar to the `020-simple-ensemble` example in that the 
+instances write statistics to `stats.csv`, but there
+is more information written, such as MPI rank and core affinities.

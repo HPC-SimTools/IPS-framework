@@ -2,6 +2,7 @@
 """
     Component to be stepped in instance
 """
+from pathlib import Path
 from time import time
 
 from ipsframework import Component
