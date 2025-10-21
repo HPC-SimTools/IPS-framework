@@ -1,4 +1,4 @@
-a_comp:A, a_comp:B, a_comp:C, another_comp:D, another_comp:B, another_comp:F
-3, 2.34, bar, 7, 0.775, xyzzy
-2, 5.82, baz, 5, 0.080, plud
-4, 0.1, quux, 9, 29.2, thud
+instance_component:A, instance_component:B, instance_component:C
+3, 2.34, bar
+2, 5.82, baz
+4, 0.1, quux
