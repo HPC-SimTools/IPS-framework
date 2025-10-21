@@ -24,8 +24,8 @@ if __name__ == '__main__':
     parser.add_argument('-i', '--id', type=str,
                         default=str(os.getpid()),
                         help='Task ID')
-    parser.add_argument('-s', '--sleep', type=float,
-                        default=5,
+    parser.add_argument('-s', '--sleep',
+                        default=5.0, type=float,
                         help='Sleep time in seconds')
     parser.add_argument('-o', '--output', type=str,
                         default=None, help='Output CSV file')
