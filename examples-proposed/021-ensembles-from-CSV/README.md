@@ -42,3 +42,8 @@ To run on Perlmutter, follow these steps
     ```bash
      sbatch perlmutter.slurm
     ```
+
+## Output
+
+The output is the same as with the `020-simple-ensemble` example.  Please refer
+to that example's `README.md` for details.
