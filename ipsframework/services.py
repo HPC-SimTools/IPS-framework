@@ -58,16 +58,13 @@ def launch(binary: Any, task_name: str, working_dir: Union[str, os.PathLike], *a
 
     Valid keywords:
     * `worker_event_logfile` - where JSON log messages are written
-    * `logfile` - where the task output is written; if not specified,
-        STDOUT used
-    * `errfile` - where the task error output is written; if not specified,
-        STDOUT used
+    * `logfile` - where the task output is written; if not specified, STDOUT used
+    * `errfile` - where the task error output is written; if not specified, STDOUT used
     * `task_env` - A dictionary of environment variables to set
     * `timeout` - The timeout in seconds for the task to complete.
-    * `cpus_per_proc` - The number of cpus per process to use for the task.
-        This implies that the DVMPlugin has set up a DVM daemon for this node.
-    * `oversubscribe` - If `True`, then the number of processes can exceed
-        the number of cores on the node.  Default is `False`.
+    * `cpus_per_proc` - The number of cpus per process to use for the task. This implies that the DVMPlugin has set up a DVM daemon for this node.
+    * `oversubscribe` - If `True`, then the number of processes can exceed the number of cores on the node.  Default is `False`.
+    
     If the worker has the attribute `dvm_uri_file`, then we are running
     with a DVM (Distributed Virtual Machine) so the `binary` needs a
     `prun` prepended pointing to that.
@@ -2013,10 +2010,9 @@ class ServicesProxy:
     def add_analysis_data_files(self, current_data_file_paths: list[str], timestamp: float = 0.0, replace: bool = False) -> None:
         """Add data file to the module file referenced by the Jupyter Notebook.
 
-        Params:
-        - current_data_file_paths: list of paths to the current data files we want to copy to the Jupyter directory. These paths may be either absolute paths or IPS-appropriate relative paths.
-        - timestamp: label to assign to the data (currently must be a floating point value)
-        - replace: If True, replace the last data file added with the new data file. If False, simply append the new data file. (default: False)
+        :param current_data_file_paths: list of paths to the current data files we want to copy to the Jupyter directory. These paths may be either absolute paths or IPS-appropriate relative paths.
+        :param timestamp: label to assign to the data (currently must be a floating point value)
+        :param replace: If True, replace the last data file added with the new data file. If False, simply append the new data file. (default: False)
               Note that if replace is not True but you attempt to overwrite it, a ValueError will be thrown.
         """
         portal_runid = self._get_jupyter_runid()
@@ -2320,6 +2316,8 @@ class ServicesProxy:
         """Run ensemble of simulations given the template and variables.
 
         `variables` is a nested dict that looks like this:
+
+        .. code-block:: python
 
                 variables = {'a_sim_comp': {'A': [3, 2, 4],
                                             'B': [2.34, 5.82, 0.1],

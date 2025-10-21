@@ -19,3 +19,4 @@ Note that each example will explicitly need to be installed into its own virtual
 - `009-task-pool-sync` - showcases a simple example utilizing `dask` to simulate parallelism
 - `010-adios-example` - meant to be a hello-world example for utilizing ADIOS files with the IPS Portal API.
 - `020-simple-ensemble` - simple example of how to run an ensemble of simulations
+- `020-simple-ensemble-with-portal` - same as the `020-simple-ensemble` example, but with IPS Portal integration.

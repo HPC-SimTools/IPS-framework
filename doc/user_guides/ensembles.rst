@@ -19,6 +19,7 @@ Method Signature
 ----------------
 
 .. automethod:: ipsframework.services.ServicesProxy.run_ensemble
+    :noindex:
 
 Parameters
 ----------
@@ -132,6 +133,7 @@ Function Signature
 ~~~~~~~~~~~~~~~~~~
 
 .. autofunction:: ipsframework.ipsutil.params_from_csv
+    :no-index:
 
 CSV File Format
 ~~~~~~~~~~~~~~~

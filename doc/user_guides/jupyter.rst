@@ -1,15 +1,15 @@
 Jupyter
 =======
 
-The IPS Framework supports automatically creating Juypter-based workflows. You can automatically upload Jupyter Notebooks and associated data files to the IPS Portal, which will in turn upload these to the appropriate JupyterHub directory.
+The IPS Framework supports automatically creating Jupyter-based workflows. You can automatically upload Jupyter Notebooks and associated data files to the IPS Portal, which will in turn upload these to the appropriate JupyterHub directory.
 
-**Configuration File**
+**Environment Variables**
 
 The following variables are additional variables which are mandatory for an IPS simulation wanting to utilize the Jupyter workflow. They are required and do not utilize any default values.
 
 *PORTAL_URL* - This should be the hostname of the IPS web portal you are interacting with (do not include any subpath). The IPS Portal will associate your run with a specific ID, which is used on JupyterHub/JupyterLab .
 
-*PORTAL_API_KEY* - To use the JupyterHub capabilities of the IPS Portal, an API key is required. This API key should not be committed directly to a public version control repository.
+*PORTAL_API_KEY* - To use the JupyterHub capabilities of the IPS Portal, an API key is required. This API key should not be committed directly to a public version control repository. It is recommended that you set this as an environment variable in the run.
 
 **Notebook Input File information**
 
@@ -130,18 +130,25 @@ The IPS Portal will always be reading and writing files to a specific directory 
         │   │   ├── 7.766666666666667_state.json
         │   │   ├── 8.733333333333334_state.json
         │   │   └── 9.7_state.json
-        │   └── data_listing.py
+        |   ├── ensembles
+        │   │   ├── my_first_ensemble.csv
+        │   │   └── my_second_ensemble.csv
+        │   ├── ips_analysis_api_child_runs.txt        
+        │   └── ips_analysis_api_data_listing.json
         ├── 2
         │   ├── basic.ipynb
         |   ├── data
         │   │   └── 0.0_state.json
-        │   └── data_listing.py
+        |   ├── ensembles
+        │   ├── ips_analysis_api_child_runs.txt        
+        │   └── ips_analysis_api_data_listing.json
         ├── api_v1_notebook.ipynb
         └── api_v1.py
 
 - From base directory, runs are organized into specific usernames.
 - From the username directory, the directory tree will continue based on runids as managed by the IPS Portal. Note that files titled `api_v*.py` and `api_v*_notebook.ipynb` will be added to this directory as well. These files may potentially be overwritten by the framework, but should always be done so in a backwards compatible manner.
 - From the runid directory, a few additional files will be added:
-    - Notebooks generated from your input notebooks. You should not change its name, but may freely edit its content.
-    - A `data_listing.py` Python module file which is imported from and which exports a dictionary containing a mapping of timestamps to data file names. Note that this file is likely to be modified during a run, do NOT change it yourself unless you're sure the run has been finalized.
+    - Notebooks generated from your input notebooks. You should not change a notebook's name, but may freely edit its content.
+    - IPS analysis files used for the IPS Analysis API to help organize run information (`ips_analysis_api_child_runs.txt`, `ips_analysis_api_data_listing.json`). These files should not be modified.
     - A `data` directory which will contain all data files you added during the run. (Note that the data files are determined on the domain science side, and can be of any content-type, not just JSON.) You should not change the names of these files.
+    - An `ensembles` directory which will contain the CSV files summarizing any ensembles this run initiated. Do not modify any of these files.
