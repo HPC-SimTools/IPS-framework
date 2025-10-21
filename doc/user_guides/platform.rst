@@ -484,8 +484,8 @@ A sample platform configuration file for a workstation.  It assumes that the wor
   # tasks per node.
   NODE_ALLOCATION_MODE = SHARED # SHARED | EXCLUSIVE
 
-
-.. [#manual_only] These need to be updated to match the "allocation"
-   size each time.  Alternatively, you can just use the 
-   :doc:`command line<basic_guide>` to specify the number of nodes 
-   and processes per node.
+..
+  .. [#manual_only] These need to be updated to match the "allocation"
+    size each time.  Alternatively, you can just use the 
+    :doc:`command line<basic_guide>` to specify the number of nodes 
+    and processes per node.

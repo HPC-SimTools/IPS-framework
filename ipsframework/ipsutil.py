@@ -126,12 +126,16 @@ def params_from_csv(infile: Union[str, os.PathLike]) -> dict[str, dict[str, list
 
     So, for example, if the CSV file looks like this:
 
+    .. code-block:: text
+
         a_comp:A, a_comp:B, a_comp:C, another_comp:D, another_comp:B, another_comp:F
         3, 2.34, bar, 7, 0.775, xyzzy
         2, 5.82, baz, 5, 0.080, plud
         4, 0.1, quux, 9, 29.2, thud
 
     The returned structure will look like this:
+
+    .. code-block:: python    
 
         variables = {'a_comp': {'A': [3, 2, 4],
                                 'B': [2.34, 5.82, 0.1],
@@ -182,19 +186,21 @@ def params_from_csv(infile: Union[str, os.PathLike]) -> dict[str, dict[str, list
 def group_ensemble_variables_into_instances(variables: dict[str, dict[str, list[str]]], name: str):
     """convert component variables into something like this:
 
-    [['prefix_0', [['a_sim_comp', {'A': 3, 'B': 2.34, 'C': 'bar'}],
-                        ['another_sim_comp', {'D': 7, 'B': 0.775, 'F': 'xyzzy'}]]],
-        ['prefix_1', [['a_sim_comp', {'A': 2, 'B': 5.82, 'C': 'baz'}],
-                        ['another_sim_comp', {'D': 5, 'B': 0.08, 'F': 'plud'}]]],
-        ['prefix_2', [['a_sim_comp', {'A': 4, 'B': 0.1, 'C': 'quux'}],
-                        ['another_sim_comp', {'D': 9, 'B': 29.2, 'F': 'thud'}]]]]
+    .. code-block:: python
 
-        prefix_n corresponds to a specific ensemble instance and will
-        be used for a unique subdir name.  That, in turn, references a
-        list of lists where each list element is a component that, in
-        turn, has a dict mapping component variables to values that will
-        then be later used to flesh out a config file from a config
-        template file.
+        [['prefix_0', [['a_sim_comp', {'A': 3, 'B': 2.34, 'C': 'bar'}],
+                            ['another_sim_comp', {'D': 7, 'B': 0.775, 'F': 'xyzzy'}]]],
+            ['prefix_1', [['a_sim_comp', {'A': 2, 'B': 5.82, 'C': 'baz'}],
+                            ['another_sim_comp', {'D': 5, 'B': 0.08, 'F': 'plud'}]]],
+            ['prefix_2', [['a_sim_comp', {'A': 4, 'B': 0.1, 'C': 'quux'}],
+                            ['another_sim_comp', {'D': 9, 'B': 29.2, 'F': 'thud'}]]]]
+
+    prefix_n corresponds to a specific ensemble instance and will
+    be used for a unique subdir name.  That, in turn, references a
+    list of lists where each list element is a component that, in
+    turn, has a dict mapping component variables to values that will
+    then be later used to flesh out a config file from a config
+    template file.
     """
     # Transpose the data for each simulation component; essentially
     # convert the list of variable values into corresponding dicts
@@ -218,6 +224,8 @@ def ensemble_instances_to_csv(instances: list[tuple[str, list[tuple[str, dict[st
 
     So, for example, if the structure looks like this:
 
+    .. code-block:: python
+
         variables = {'a_comp': {'A': [3, 2, 4],
                                 'B': [2.34, 5.82, 0.1],
                                 'C': ['bar', 'baz', 'quux']},
@@ -226,6 +234,9 @@ def ensemble_instances_to_csv(instances: list[tuple[str, list[tuple[str, dict[st
                                       'F': ['xyzzy', 'plud', 'thud']}}
 
     The written CSV file will look like this:
+
+    .. code-block:: text
+
         a_comp:A,a_comp:B,a_comp:C,another_comp:D,another_comp:B,another_comp:F
         3,2.34,bar,7,0.775,xyzzy
         2,5.82,baz,5,0.080,plud

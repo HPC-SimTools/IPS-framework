@@ -2,6 +2,8 @@
 
 This is an example run where we use the Jupyter workflow in conjunction with parent/child runs.
 
+Note that the child runs are not considered part of an ensemble in this instance.
+
 ## Instructions
 
 To install, you can run:
