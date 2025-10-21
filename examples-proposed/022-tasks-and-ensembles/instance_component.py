@@ -4,7 +4,6 @@
 """
 import os
 from pathlib import Path
-from time import time
 
 from ipsframework import Component
 
@@ -12,8 +11,6 @@ from ipsframework import Component
 class InstanceComponent(Component):
 
     def step(self, timestamp: float = 0.0, **keywords):
-        start = time()
-
         # ENSEMBLE_INSTANCE is a special IPS variable that contains the
         # string uniquely identifying this instance.  Each instance will have
         # the `run_ensemble()` `name` argument prepended to a unique number
