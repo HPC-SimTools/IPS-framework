@@ -47,7 +47,7 @@ class EnsembleDriver(Component):
                                              run_dir=Path('.').absolute(),
                                              name='INSTANCE_',
                                              num_nodes=1,
-                                             cores_per_instance=2)
+                                             cores_per_instance=3)
         # Print each mapping of instance name to what variable values were used.
         for instance in mapping:
             self.services.info(f'{instance!s}')
