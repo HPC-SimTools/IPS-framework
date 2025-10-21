@@ -24,7 +24,7 @@ if __name__ == '__main__':
     parser.add_argument('-i', '--id', type=str,
                         default=str(os.getpid()),
                         help='Task ID')
-    parser.add_argument('-s', '--sleep', type=int,
+    parser.add_argument('-s', '--sleep', type=float,
                         default=5,
                         help='Sleep time in seconds')
     parser.add_argument('-o', '--output', type=str,
@@ -64,7 +64,7 @@ if __name__ == '__main__':
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
 
             writer.writeheader()
-            writer.writerow({'i': args.i, 'hostname': hostname,
+            writer.writerow({'i': args.id, 'hostname': hostname,
                              'rank': rank, 'size': size, 'pid': pid,
                              'n_cores': n_cores, 'affinity': str(affinity), 's': args.sleep,
                              'start': start, 'end': time()})
