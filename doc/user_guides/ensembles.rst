@@ -133,7 +133,7 @@ Function Signature
 ~~~~~~~~~~~~~~~~~~
 
 .. autofunction:: ipsframework.ipsutil.params_from_csv
-    :no-index:
+    :noindex:
 
 CSV File Format
 ~~~~~~~~~~~~~~~
