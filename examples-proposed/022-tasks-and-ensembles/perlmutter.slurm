@@ -12,6 +12,9 @@
 #SBATCH --time=5
 #SBATCH -p debug
 
+# This sets the absolute path to the mpi_stats.py script, which is used by IPS to
+export MPI_STATS_EXEC = $(realpath ./mpi_stats.py)
+
 module load PrgEnv-gnu openmpi python
 
 # Again, this assumes that there exists a conda environment named "ips".

@@ -2,6 +2,7 @@
 """
     Component to be stepped in instance
 """
+import os
 from pathlib import Path
 from time import time
 
@@ -25,11 +26,12 @@ class InstanceComponent(Component):
         self.services.info(f'{instance_id}: instance component parameters: '
                            f'A={self.A}, B={self.B}, C={self.C}')
 
-        # We have to go three directory levels up because we're working off
-        # SIM_ROOT and the working directories that IPS constructed from there.
-        # I would recommend to reduce confusion to use absolute paths to
-        # any task executables.
-        mpi_executable = '../../../mpi_stats.py'
+        # We set the MPI executable path in the environment variable
+        # MPI_STATS_EXEC in the `perlmutter.slurm` script that launches this
+        # example. That way we don't have to play silly buggers figuring out
+        # how many directory levels up to go to find the original python
+        # script.
+        mpi_executable = os.environ['MPI_STATS_EXEC']
         self.services.info(f'{instance_id}: Launching MPI executable: '
                            f'{mpi_executable}')
         args = ['-i', instance_id,
