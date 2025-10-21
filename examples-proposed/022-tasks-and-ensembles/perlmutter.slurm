@@ -13,7 +13,9 @@
 #SBATCH -p debug
 
 # This sets the absolute path to the mpi_stats.py script, which is used by IPS to
-export MPI_STATS_EXEC = $(realpath ./mpi_stats.py)
+export MPI_STATS_EXEC=$(realpath ./mpi_stats.py)
+
+echo "Using MPI_STATS_EXEC: ${MPI_STATS_EXEC}"
 
 module load PrgEnv-gnu openmpi python
 
