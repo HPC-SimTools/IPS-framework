@@ -14,7 +14,10 @@ ignored.  These are due to Dask not having a clean shutdown.
 
 * `ensemble.conf` -- top-level configuration file
 * `platform.conf` -- platform configuration file
+* `perlmutter.conf` -- Perlmutter platform configuration file
 * `template.conf` -- ensemble instance configuration file
+
+* `perlmutter.slurm` -- SLURM submission script for Perlmutter
 
 
 ## Instructions
@@ -41,7 +44,7 @@ To run on Perlmutter, follow these steps
    
 ## Output
 
-Runnming the example will generate log files in the current directory.  However,
+Running the example will generate log files in the current directory.  However,
 the ensembles will be found in the `ENSEMBLES` directory, which was specified
 via SIM_ROOT in `ensemble.conf`.  The output inside `ENSEMBLES` will look like:
 
