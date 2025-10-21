@@ -13,9 +13,17 @@ class EnsembleDriver(Component):
     def step(self, timestamp=0.0):
         # Read in the variable combinations from a CSV file.  The CSV file
         # contains the same instance values as shown in
-        # `example-proposed/020-simple-ensemble`
-        print(f'CWD: {Path(".").absolute()}')
-        variables = params_from_csv('../variables.csv')
+        # `example-proposed/020-simple-ensemble`.  WARNING: if you use
+        # relative paths, as is done here, ensure that you know where this
+        # component is being run from, as the current working directory may not
+        # be what you expect.  When I run this example from the top-level IPS
+        # directory, this is the path I'm actually in: `/global/u1/m/mcoletti/\
+        # projects/IPS/IPS-framework/examples-proposed/021-ensembles-from-CSV/\
+        # ENSEMBLES/work/DRIVER__EnsembleDriver_1`, and the CSV file was
+        # really in `021-ensembles-from-CSV`.  Therefore, I suggest using
+        # absolute paths or constructing paths using `Path` objects to avoid
+        # confusion.
+        variables = params_from_csv('../../../variables.csv')
 
         # This is the IPS configuration file for the instances that looks like
         # a regular configuration file except there are slots for the 'A', 'B',
