@@ -163,3 +163,6 @@ simulation_log/
 simulation_setup/
 run.log
 resource_usage
+
+# readthedocs
+_build
