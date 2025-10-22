@@ -14,13 +14,13 @@ from ipsframework import Component
 from ipsframework.resourceHelper import get_platform_info
 
 
-def generate_fake_data(timestamp: float, a: float, b: float, c: str) -> dict[str, Any]:
+def generate_fake_data(timestamp: float, base_x: float, base_y: float, word: str) -> dict[str, Any]:
     x_data = []
     y_data = []
 
-    for idx, perm in enumerate(itertools.permutations(c)):
-        x = timestamp + idx + 1
-        y = timestamp + idx + 1
+    for idx, perm in enumerate(itertools.permutations(word)):
+        x = timestamp + (idx + 1) * base_x
+        y = timestamp + (idx + 1) * base_y
         for ch_idx, character in enumerate(perm):
             shrink_factor = 1 if ch_idx % 2 == 0 else -1
             x = abs(x + ((ord(character) + ch_idx + 1) * shrink_factor))
@@ -29,9 +29,9 @@ def generate_fake_data(timestamp: float, a: float, b: float, c: str) -> dict[str
             y_data.append(y)
 
     return {
-        'a': a,
-        'b': b,
-        'c': c,
+        'base_x': base_x,
+        'base_y': base_y,
+        'word': word,
         'x_data': x_data,
         'y_data': y_data,
     }
@@ -49,11 +49,11 @@ class InstanceComponent(Component):
         self.services.info(f'{instance_id}: Start of step of instance component.')
 
         # Echo the parameters we're expecting, A, B, and C
-        self.services.info(f'{instance_id}: instance component parameters: A={self.A}, B={self.B}, C={self.C}')
+        self.services.info(f'{instance_id}: instance component parameters: base_x={self.base_x}, base_y={self.base_y}, word={self.word}')
 
         # generate some fake data and save it
         data_fname = f'generated_{timestamp}.json'
-        data = generate_fake_data(timestamp, self.A, self.B, self.C)
+        data = generate_fake_data(timestamp, float(self.base_x), float(self.base_y), self.word)
         with open(data_fname, 'w') as fd:
             json.dump(data, fd)
 

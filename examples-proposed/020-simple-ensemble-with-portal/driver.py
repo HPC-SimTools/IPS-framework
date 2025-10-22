@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
 """
-    Simple ensemble driver that just dispatches an IPS ensemble.
+Simple ensemble driver that just dispatches an IPS ensemble.
 """
+
 from pathlib import Path
 
 from ipsframework import Component
 
 
 class EnsembleDriver(Component):
-    """ Kicks off a simple ensemble """
+    """Kicks off a simple ensemble"""
 
     def init(self, timestamp=0.0):
         NOTEBOOK_TEMPLATE = 'notebook.ipynb'
@@ -25,11 +26,11 @@ class EnsembleDriver(Component):
         # different values, which means that there will be three IPS
         # instances to run each of those.  E.g.,
 
-        # Instance  A   B       C
-        # --------  -   ----    ------
-        # 0         3   2.34    'bar'
-        # 1         2   5.82    'baz'
-        # 2         4   0.1     'quux'
+        # Instance  base_x   base_y  word
+        # --------  ------   ------  ------
+        # 0         3        2.34    'bar'
+        # 1         2        5.82    'baz'
+        # 2         4        0.1     'quux'
 
         # In other examples in sibling directories we show how to use a CSV
         # file to supply these kinds of variable values as well as how to
@@ -41,15 +42,11 @@ class EnsembleDriver(Component):
         # should be identical. Note that placeholders for these variables must
         # be defined in a special template IPS configuration file, in this case,
         # `template.conf`.
-        variables = {
-                'instance_component': {
-                        'A': [3, 2, 4],
-                        'B': [2.34, 5.82, 0.1],
-                        'C': ['bar', 'baz', 'quux']}}
+        variables = {'instance_component': {'base_x': [3, 2, 4], 'base_y': [2.34, 5.82, 0.1], 'word': ['bar', 'baz', 'quux']}}
 
         # This is the IPS configuration file for the instances that looks like
-        # a regular configuration file except there are slots for the 'A', 'B',
-        # and 'C' for variable substitution.  'TEMPLATE' is specified in the
+        # a regular configuration file except there are slots for the 'base_x', 'base_y',
+        # and 'word' for variable substitution.  'TEMPLATE' is specified in the
         # config file section for this driver.
         template = Path(self.config['TEMPLATE'])
         self.services.info(f'Using template config file {template}')
@@ -61,13 +58,9 @@ class EnsembleDriver(Component):
         # with each list element corresponding to an instance.  You can use
         # this information to find the specific instance run directory for a
         # given set of variables.  E.g., the instance corresponding to
-        # {'A' : 2, 'B' : 5.82, 'C' : 'baz'} is probably found in the
+        # {'base_x' : 2, 'base_y' : 5.82, 'word' : 'baz'} is probably found in the
         # `INSTANCE_1` subdirectory.
-        mapping = self.services.run_ensemble(template, variables,
-                                             run_dir=Path('.').absolute(),
-                                             name='INSTANCE_',
-                                             num_nodes=1,
-                                             cores_per_instance=1)
+        mapping = self.services.run_ensemble(template, variables, run_dir=Path('.').absolute(), name='INSTANCE_', num_nodes=1, cores_per_instance=1)
         # Print each mapping of instance name to what variable values were used.
         for instance in mapping:
             self.services.info(f'{instance!s}')
