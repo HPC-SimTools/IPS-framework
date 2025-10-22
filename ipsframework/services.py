@@ -1976,13 +1976,15 @@ class ServicesProxy:
         source_notebook_path: str,
         dest_notebook_name: Optional[str] = None,
     ) -> None:
-        """Loads a notebook from source_notebook_path, adds a cell to load the data, and then saves it to source_notebook_path. Will also try to register the notebook with the IPS Portal, if available.
+        """If the IPS Portal is available, this function loads a notebook from source_notebook_path, adds a cell to load the data, and then saves the concatenated notebook to the Portal.
+
+        If a connection to the IPS Portal cannot be verified for this run, this function does nothing.
 
         Does not modify the source notebook.
 
         Params:
           - source_notebook_path: location you want to load the source notebook from. This can be either an absolute path, or an IPS-appropriate relative path.
-          - dest_notebook_name: (optional, default None) name of the JupyterNotebook you want to write (do not include file paths).
+          - dest_notebook_name: (optional, default None) filename of the notebook to use when saving it to the IPS Portal. If not provided, this will defauly to the filename of the source notebook.
         """
         portal_runid = self._get_jupyter_runid()
         if portal_runid < 0:
@@ -2008,9 +2010,11 @@ class ServicesProxy:
         self._send_monitor_event('IPS_PORTAL_REGISTER_NOTEBOOK', f'FILENAME = {dest_notebook_name}')
 
     def add_analysis_data_files(self, current_data_file_paths: list[str], timestamp: float = 0.0, replace: bool = False) -> None:
-        """Add data file to the module file referenced by the Jupyter Notebook.
+        """If the IPS Portal is available, saves data files to IPS Portal. Files are indexed via specific timestamps.
 
-        :param current_data_file_paths: list of paths to the current data files we want to copy to the Jupyter directory. These paths may be either absolute paths or IPS-appropriate relative paths.
+        If a connection to the IPS Portal cannot be verified for this run, this function does nothing.
+
+        :param current_data_file_paths: list of paths to the current data files we want to copy to the Jupyter directory. These paths may be either absolute paths or IPS-appropriate relative paths. If path is a directory, add all files in directory and preserve directory structure on the IPS Portal.
         :param timestamp: label to assign to the data (currently must be a floating point value)
         :param replace: If True, replace the last data file added with the new data file. If False, simply append the new data file. (default: False)
               Note that if replace is not True but you attempt to overwrite it, a ValueError will be thrown.

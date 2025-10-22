@@ -44,7 +44,7 @@ This code initializes JupyterHub to work with this run and contacts the web port
 
 ---
 
-For updating data files, we generally accomodate for two approaches: one where you want to multiple data files for each timestamp called, and one where you maintain multiple data files for a single timestamp but replace it per timestamp call.
+For updating data files, we generally accommodate for two approaches: one where you want to multiple data files for each timestamp called, and one where you maintain multiple data files for a single timestamp but replace it per timestamp call. Both workflows utilize `self.services.add_analysis_data_file` .
 
 For the approach where data files for multiple timestamps are maintained, the below code provides an example of loading it from a file which is regularly updated with the IPS state:
 
@@ -85,6 +85,14 @@ Or, if you only want to maintain a single timestamp, set the "replace" flag to T
 "Replace" will allow you to completely overwrite an existing timestamp entry with new data. If you don't set the flag but try to overwrite a specific timestamp, a ValueError is raised.
 
 Note that if you attempt to overwrite an existing data file without setting `replace=True`, the file will not be overwritten remotely. You can check your IPS log file for "Portal Error" statements.
+
+**IPS Framework Jupyter API reference**
+
+.. automethod:: ipsframework.services.ServicesProxy.initialize_jupyter_notebook
+    :noindex:
+
+.. automethod:: ipsframework.services.ServicesProxy.add_analysis_data_files
+    :noindex:
 
 **IPS Notebook Analysis API Guide**
 
