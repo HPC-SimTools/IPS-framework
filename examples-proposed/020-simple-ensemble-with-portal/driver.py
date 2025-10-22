@@ -59,8 +59,10 @@ class EnsembleDriver(Component):
         # this information to find the specific instance run directory for a
         # given set of variables.  E.g., the instance corresponding to
         # {'base_x' : 2, 'base_y' : 5.82, 'word' : 'baz'} is probably found in the
-        # `INSTANCE_1` subdirectory.
-        mapping = self.services.run_ensemble(template, variables, run_dir=Path('.').absolute(), name='INSTANCE_', num_nodes=1, cores_per_instance=1)
+        # `my_simple_ensemble1` subdirectory.
+        #
+        # The "name" parameter must be unique for each ensemble within a run, and will be used as an identifier on the Portal.
+        mapping = self.services.run_ensemble(template, variables, run_dir=Path('.').absolute(), name='my_simple_ensemble', num_nodes=1, cores_per_instance=1)
         # Print each mapping of instance name to what variable values were used.
         for instance in mapping:
             self.services.info(f'{instance!s}')
