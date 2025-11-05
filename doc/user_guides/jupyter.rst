@@ -3,6 +3,17 @@ Jupyter
 
 The IPS Framework supports automatically creating Jupyter-based workflows. You can automatically upload Jupyter Notebooks and associated data files to the IPS Portal, which will in turn upload these to the appropriate JupyterHub directory.
 
+This guide covers two aspects of how to use Jupyter-based workflows:
+
+1. What you will need to set up on the IPS Framework side. This mostly involves understanding the APIs the framework provides, and configuration you will need to include.
+2. How the IPS Portal creates files on JupyterHub for you, and how you can utilize the IPS Analysis API in your Jupyter Notebook.
+
+The IPS Analysis API is an _indexing_ tool for allowing runs to quickly find any child or ensemble runs associated with them, and to quickly find the locations of any data files included with a run. Loading the data from the file locations, and constructing visualizations from the data, is left up to the end user.
+
+-------------
+IPS Framework
+-------------
+
 **Environment Variables**
 
 The following variables are additional variables which are mandatory for an IPS simulation wanting to utilize the Jupyter workflow. They are required and do not utilize any default values.
@@ -94,14 +105,20 @@ Note that if you attempt to overwrite an existing data file without setting `rep
 .. automethod:: ipsframework.services.ServicesProxy.add_analysis_data_files
     :noindex:
 
+----------
+IPS Portal
+----------
+
 **IPS Notebook Analysis API Guide**
+
+NOTE: while you can update the notebook on the Portal side, it's best to have the completed notebook ready on the Framework side.
 
 The IPS Portal will generate a cell prior to your own notebook which initializes a variable called ``ips_analysis_api``, which contains a number of helper functions for finding specific data locations.
 
 - ``ips_analysis_api.get_data()`` - this generates a generic IPS mapping - a mapping of floating-point timesteps to a list of data file paths (absolute). Note that your notebook will need to handle the actual loading of the data.
 - ``ips_analysis_api.get_child_data()`` - this generates a mapping of child runids to the "generic IPS mapping" described above.
 - ``ips_analysis_api.get_child_data_not_ensembles()`` - get the child runid mapping as described above, but only use child runids NOT associated with ensembles.
-- ``ips_analysis_api.get_child_data_by_ensemble_names()`` - gets the child runid mapping as described above, but will only retrieve child runids associated with ensembles. You can further filter this by ensemble name by providing an optional list of ensemble names; for example, ``ips_analysis_api.get_child_data_by_ensemble_names(['ensemble_name_1', 'ensemble_name_2'])`` will ONLY fetch the child runids associated with 'ensemble_name_1' and 'ensemble_name_2'.
+- ``ips_analysis_api.get_child_data_by_ensemble_names()`` - gets the child runid mapping as described above, but will only retrieve child runids associated with ensembles. You can further filter this by ensemble name by providing an optional list of component names and an optional list of ensemble names; for example, ``ips_analysis_api.get_child_data_by_ensemble_names(ensemble_names=['ensemble_name_1', 'ensemble_name_2'])`` will ONLY fetch the child runids associated with 'ensemble_name_1' and 'ensemble_name_2', but will search all components for this.
 
 **JupyterHub Filesystem Notes**
 
@@ -148,8 +165,9 @@ The IPS Portal will always be reading and writing files to a specific directory 
         │   │   ├── 8.733333333333334_state.json
         │   │   └── 9.7_state.json
         |   ├── ensembles
-        │   │   ├── my_first_ensemble.csv
-        │   │   └── my_second_ensemble.csv
+        │   │   ├── DriverComponent
+        │   │   │   ├── my_first_ensemble.csv
+        │   │   │   └── my_second_ensemble.csv
         │   ├── ips_analysis_api_child_runs.txt        
         │   └── ips_analysis_api_data_listing.json
         ├── 2
@@ -168,4 +186,4 @@ The IPS Portal will always be reading and writing files to a specific directory 
     - Notebooks generated from your input notebooks. You should not change a notebook's name, but may freely edit its content.
     - IPS analysis files used for the IPS Analysis API to help organize run information (`ips_analysis_api_child_runs.txt`, `ips_analysis_api_data_listing.json`). These files should not be modified.
     - A `data` directory which will contain all data files you added during the run. (Note that the data files are determined on the domain science side, and can be of any content-type, not just JSON.) You should not change the names of these files.
-    - An `ensembles` directory which will contain the CSV files summarizing any ensembles this run initiated. Do not modify any of these files.
+    - An `ensembles` directory which will contain the CSV files summarizing any ensembles this run initiated. Each CSV file is named after the name of the ensemble, and all CSV files are organized into additional directories named after the component which launched them. Do not modify any of these files.
