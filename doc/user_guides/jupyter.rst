@@ -120,6 +120,13 @@ The IPS Portal will generate a cell prior to your own notebook which initializes
 - ``ips_analysis_api.get_child_data_not_ensembles()`` - get the child runid mapping as described above, but only use child runids NOT associated with ensembles.
 - ``ips_analysis_api.get_child_data_by_ensemble_names()`` - gets the child runid mapping as described above, but will only retrieve child runids associated with ensembles. You can further filter this by ensemble name by providing an optional list of component names and an optional list of ensemble names; for example, ``ips_analysis_api.get_child_data_by_ensemble_names(ensemble_names=['ensemble_name_1', 'ensemble_name_2'])`` will ONLY fetch the child runids associated with 'ensemble_name_1' and 'ensemble_name_2', but will search all components for this.
 
+**IPS Notebook Analysis API Reference**
+
+.. autoclass:: doc.reference.portal_jupyter_api.ips_analysis_api_v1.IPSAnalysisApi
+    :members:
+    :undoc-members:    
+    :noindex:
+
 **JupyterHub Filesystem Notes**
 
 The IPS Portal will always be reading and writing files to a specific directory on a JupyterHub filesystem. From there, the filesystem organization will look somewhat like this:
