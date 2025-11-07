@@ -25,7 +25,9 @@ Parameters
 ----------
 
 template : str
-    Path to the configuration template file. This file should contain placeholder variables marked with ``?`` that will be replaced with actual values for each ensemble member.
+    Path to the configuration template file. This file will be used to generate individual configuration files for
+    each ensemble member by substituting parameter values.  One can declare the variables that will be used in the
+    generated driver configuration file, but the actual values will be filled in from the `variables` parameter.
 
 variables : dict
     A nested dictionary structure where:
@@ -279,6 +281,9 @@ Use ``?`` syntax for placeholders.  It is otherwise a standard IPS configuration
         INPUT_FILES =
         OUTPUT_FILES =
         RESTART_FILES =
+        # Note the use of ? for variable substitution is
+        # not mandatory, but helps to document parameters to be replaced
+        # for others.
         POWER = ?
         BEAM_ENERGY = ?
         CHI_I = ?
@@ -362,7 +367,7 @@ The ensemble system provides robust error handling:
 Limitations
 -----------
 
-- The method signature indicates ``cores_per_instance`` is not yet fully implemented
+- The method signature indicates `cores_per_instance` is not yet fully implemented
 - Parameter substitution is limited to simple string replacement
 
 See Also

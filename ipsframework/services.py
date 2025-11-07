@@ -2412,40 +2412,7 @@ class ServicesProxy:
                 for variable in component[1].keys():
                     # Substitute the individual variables for this component
                     self.debug(f'Assigning {component[1][variable]} to {variable}')
-                    if variable not in template[component[0]]:
-                        # If we are passed in a variable to be substituted
-                        # that isn't in the template, complain and move one.
-                        self.critical(f'Variable {variable} not found in template ... skipping')
-                        raise RuntimeError(f'Variable {variable} not found in template')
-                    elif template[component[0]][variable] is None or template[component[0]][variable] == '':
-                        # User probably forgot to put in a '?', so just
-                        # complain and keep moving.
-                        self.warning(f'Variable {variable} is empty and does not have a "?" indicating it is a variable')
-                        self.debug(f'Substituting {component[1][variable]} for {variable}')
-                        template[component[0]][variable] = component[1][variable]
-                    elif template[component[0]][variable] == '?':
-                        # This is the proper scenario where the user has
-                        # explicitly identified a variable with '?' in the
-                        # template config file to be substituted for one
-                        # of the given variables.
-                        # TODO that the next two statements show up in
-                        # the previous block means we can probably refactor
-                        # this if block to be more concise.
-                        self.debug(f'Substituting {component[1][variable]} for {variable}')
-                        template[component[0]][variable] = component[1][variable]
-                    else:
-                        # It already has a value, so complain and exit.
-                        self.critical(f'Variable {variable} already has a value of {template[component[0]][variable]}')
-                        raise RuntimeError(f'Variable {variable} already has a value')
-
-            # Now scan for any remaining '?' variables that haven't been
-            # assigned.
-            for section in template.keys():
-                if isinstance(template[section], dict):
-                    for variable in template[section].keys():
-                        if template[section][variable] == '?':
-                            self.critical(f'Variable {variable} in section {section} has not been assigned')
-                            raise RuntimeError(f'Variable {variable} in section {section} has not been assigned')
+                    template[component[0]][variable] = component[1][variable]
 
             template['LOG_FILE'] = working_dir / Path(name + '_run.log')
             template_filename = working_dir / Path(name + '.config')
@@ -2558,11 +2525,6 @@ class ServicesProxy:
 
         self.info(f'Preparing to run ensembles in {run_dir}')
 
-        # Forcing this since the debugging level isn't get set to
-        # this even though I specified that via --debug
-        # TODO this is a hack; need to figure out why the debugger log level
-        # is being ignored.
-        self.logger.setLevel(logging.DEBUG)
 
         # Ensure that we create a unique task pool name for this using the
         # instance prefix `name`
