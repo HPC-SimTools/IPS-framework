@@ -7,7 +7,7 @@ such as the MPI rank, hostname, process ID, core affinities, start and stop
 times.
 
 One difference from the 020 and 021 examples is that one of the instance 
-parameters, B, will be used control how long the task runs via a call to
+parameters, B, will be used to control how long the task runs via a call to
 time.sleep().
 
 
