@@ -129,6 +129,10 @@ def launch(binary: Any, task_name: str, working_dir: Union[str, os.PathLike], *a
         new_env = os.environ.copy()
         new_env.update(task_env)
 
+        if 'HWLOC_XMLFILE' in new_env:
+            worker.logger.debug('Removing HWLOC_XMLFILE from task environment')
+            del new_env['HWLOC_XMLFILE']
+
         # Check that the DVM environment variables are set.
         if hasattr(worker, 'dvm_uri_file'):
             dvm_uri_file = Path(worker.dvm_uri_file)
@@ -136,7 +140,7 @@ def launch(binary: Any, task_name: str, working_dir: Union[str, os.PathLike], *a
                 worker.logger.error(f'DVM URI file {dvm_uri_file} does not exist')
                 print(f'DVM URI file {dvm_uri_file} does not exist', flush=True)
             else:
-                worker.logger.info(f'Using DVM URI file: {dvm_uri_file}')
+                worker.logger.debug(f'Using DVM URI file: {dvm_uri_file}')
                 print(f'Using DVM URI file: {dvm_uri_file}', flush=True)
 
         # PMIX_SERVER_URI41 is used by prun to figure out how to talk to the DVM
@@ -145,13 +149,13 @@ def launch(binary: Any, task_name: str, working_dir: Union[str, os.PathLike], *a
         # in some HPC environments to ensure the output appears in the logs.
         if task_env is not None and task_env is not {}:
             if 'PMIX_SERVER_URI41' in task_env:
-                worker.logger.info(f"DVM environment variable PMIX_SERVER_URI41 "
+                worker.logger.debug(f"DVM environment variable PMIX_SERVER_URI41 "
                                    f"set in task_env to "
                                    f"{task_env['PMIX_SERVER_URI41']}")
                 print(f'DVM environment variable PMIX_SERVER_URI41 set in task_'
                       f'env to {task_env["PMIX_SERVER_URI41"]}', flush=True)
         if 'PMIX_SERVER_URI41' in os.environ:
-            worker.logger.info(f"DVM environment variable PMIX_SERVER_URI41 set "
+            worker.logger.debug(f"DVM environment variable PMIX_SERVER_URI41 set "
                                f"in os.environ to "
                                f"{os.environ['PMIX_SERVER_URI41']}")
             print(f'DVM environment variable PMIX_SERVER_URI41 set in os.environ '
@@ -171,7 +175,10 @@ def launch(binary: Any, task_name: str, working_dir: Union[str, os.PathLike], *a
 
         cmd_lst = cmd.split()
         try:
-            process = subprocess.Popen(cmd_lst, stdout=task_stdout, stderr=task_stderr, cwd=working_dir, preexec_fn=os.setsid, env=new_env)  # noqa: PLW1509 (TODO: look into this to potentially avoid deadlocks)
+            process = subprocess.Popen(cmd_lst, stdout=task_stdout,
+                                       stderr=task_stderr,
+                                       cwd=working_dir,
+                                       preexec_fn=os.setsid, env=new_env)  # noqa: PLW1509 (TODO: look into this to potentially avoid deadlocks)
         except Exception as e:
             with worker.lock:
                 print(
@@ -2650,10 +2657,6 @@ class DVMPlugin(WorkerPlugin):
         self.worker = worker
         worker.logger = self.logger
 
-        if 'HWLOC_XMLFILE' in os.environ:
-            # Remove HWLOC_XMLFILE to avoid issues with OpenMPI on Dask workers
-            del os.environ['HWLOC_XMLFILE']
-
         self.logger.info(f'Launching DVM')
         self.worker.dvm_uri_file = f'/tmp/dvm.uri.{os.getpid()}'
         command = ['prte', '--report-uri', self.worker.dvm_uri_file]
@@ -2671,7 +2674,8 @@ class DVMPlugin(WorkerPlugin):
         # This environment variable is specific to OpenMPI's PRTE
         os.environ['PRTE_MCA_rmaps_default_mapping_policy'] = mapping_policy
 
-        self.worker.dvm_proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        self.worker.dvm_proc = subprocess.Popen(command, stdout=subprocess.PIPE,
+                                                stderr=subprocess.STDOUT)
 
         ready = self.worker.dvm_proc.stdout.readline()
         self.logger.info(f'Ready Message : {ready}')
@@ -2683,6 +2687,10 @@ class DVMPlugin(WorkerPlugin):
             self.logger.debug(f'Read DVM URI: {self.worker.dvm_uri}')
 
         os.environ['PMIX_SERVER_URI41'] = self.worker.dvm_uri
+
+        if 'HWLOC_XMLFILE' in os.environ:
+            # Remove HWLOC_XMLFILE to avoid issues with OpenMPI on Dask workers
+            del os.environ['HWLOC_XMLFILE']
 
         return
 
