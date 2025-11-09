@@ -2690,6 +2690,8 @@ class DVMPlugin(WorkerPlugin):
 
         if 'HWLOC_XMLFILE' in os.environ:
             # Remove HWLOC_XMLFILE to avoid issues with OpenMPI on Dask workers
+            self.logger.debug('Removing HWLOC_XMLFILE environment variable for '
+                              'Dask worker')
             del os.environ['HWLOC_XMLFILE']
 
         return
