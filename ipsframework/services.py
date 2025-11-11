@@ -2659,7 +2659,8 @@ class DVMPlugin(WorkerPlugin):
 
         self.logger.info(f'Launching DVM')
         self.worker.dvm_uri_file = f'/tmp/dvm.uri.{os.getpid()}'
-        command = ['prte', '--report-uri', self.worker.dvm_uri_file]
+        command = ['srun', '--mpi=pmix', '-N', os.environ['SLURM_NNODES'],
+                   '--report-uri', self.worker.dvm_uri_file]
 
         mapping_policy = 'core'  # by default bind to cores
         if self.hwthreads:
