@@ -2654,6 +2654,12 @@ class DVMPlugin(WorkerPlugin):
         :param oversubscribe: Whether to allow oversubscription of nodes
             when launching the ensemble runs. Default is False.
         """
+        if 'HWLOC_XMLFILE' in os.environ:
+            # Remove HWLOC_XMLFILE to avoid issues with OpenMPI on Dask workers
+            self.logger.debug('Removing HWLOC_XMLFILE environment variable for '
+                              'Dask worker')
+            del os.environ['HWLOC_XMLFILE']
+
         self.worker = worker
         worker.logger = self.logger
 
@@ -2690,11 +2696,7 @@ class DVMPlugin(WorkerPlugin):
 
         os.environ['PMIX_SERVER_URI41'] = self.worker.dvm_uri
 
-        if 'HWLOC_XMLFILE' in os.environ:
-            # Remove HWLOC_XMLFILE to avoid issues with OpenMPI on Dask workers
-            self.logger.debug('Removing HWLOC_XMLFILE environment variable for '
-                              'Dask worker')
-            del os.environ['HWLOC_XMLFILE']
+
 
         return
 
