@@ -2659,6 +2659,9 @@ class DVMPlugin(WorkerPlugin):
             self.logger.debug('Removing HWLOC_XMLFILE environment variable for '
                               'Dask worker')
             del os.environ['HWLOC_XMLFILE']
+        else:
+            self.logger.debug('HWLOC_XMLFILE environment variable not set '
+                              'for Dask worker')
 
         self.worker = worker
         worker.logger = self.logger
