@@ -1,0 +1,4 @@
+instance_component:A, instance_component:B, instance_component:C
+3, 2.34, bar
+2, 5.82, baz
+4, 0.1, quux
