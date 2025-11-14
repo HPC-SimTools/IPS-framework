@@ -11,7 +11,6 @@ ignored.  These are due to Dask not having a clean shutdown.
 
 ## Contents
 
-* `__init__.py` -- empty python init file
 * `driver.py` -- top-level driver
 * `instance_component.py` -- component worker code
 * `instance_driver.py` -- component driver code

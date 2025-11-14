@@ -1,0 +1,47 @@
+#!/usr/bin/env python3
+"""
+Simple ensemble driver that just dispatches an IPS ensemble.
+"""
+
+from pathlib import Path
+
+from ipsframework import Component
+
+
+class EnsembleDriver(Component):
+    """Kicks off a simple ensemble"""
+
+    def init(self, timestamp=0.0):
+        NOTEBOOK_TEMPLATE = 'notebook.ipynb'
+        self.services.stage_input_files([NOTEBOOK_TEMPLATE])
+        try:
+            self.services.initialize_jupyter_notebook(NOTEBOOK_TEMPLATE)
+        except Exception:
+            print('did not add notebook to portal')
+
+    def step(self, timestamp=0.0):
+        # FIXME get a hold of INPUT FILES for
+        variables = params_from_csv('../../../variables.csv')
+
+        # This is the IPS configuration file for the instances that looks like
+        # a regular configuration file except there are slots for the 'base_x', 'base_y',
+        # and 'word' for variable substitution.  'TEMPLATE' is specified in the
+        # config file section for this driver.
+        template = Path(self.config['TEMPLATE'])
+        self.services.info(f'Using template config file {template}')
+
+        if not template.exists():
+            raise RuntimeError(f'{template} config template file does not exist')
+
+        # Now spin up and run the instances. This function will return a list
+        # with each list element corresponding to an instance.  You can use
+        # this information to find the specific instance run directory for a
+        # given set of variables.  E.g., the instance corresponding to
+        # {'base_x' : 2, 'base_y' : 5.82, 'word' : 'baz'} is probably found in the
+        # `my_simple_ensemble1` subdirectory.
+        #
+        # The "name" parameter must be unique for each ensemble within a run, and will be used as an identifier on the Portal.
+        mapping = self.services.run_ensemble(template, variables, run_dir=Path('.').absolute(), name='my_simple_ensemble', num_nodes=1, cores_per_instance=1)
+        # Print each mapping of instance name to what variable values were used.
+        for instance in mapping:
+            self.services.info(f'{instance!s}')
