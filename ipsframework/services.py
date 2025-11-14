@@ -64,7 +64,7 @@ def launch(binary: Any, task_name: str, working_dir: Union[str, os.PathLike], *a
     * `timeout` - The timeout in seconds for the task to complete.
     * `cpus_per_proc` - The number of cpus per process to use for the task. This implies that the DVMPlugin has set up a DVM daemon for this node.
     * `oversubscribe` - If `True`, then the number of processes can exceed the number of cores on the node.  Default is `False`.
-    
+
     If the worker has the attribute `dvm_uri_file`, then we are running
     with a DVM (Distributed Virtual Machine) so the `binary` needs a
     `prun` prepended pointing to that.
@@ -139,18 +139,18 @@ def launch(binary: Any, task_name: str, working_dir: Union[str, os.PathLike], *a
                 worker.logger.info(f'Using DVM URI file: {dvm_uri_file}')
                 print(f'Using DVM URI file: {dvm_uri_file}', flush=True)
 
-        if task_env is not None and task_env is not {}:
-            if not 'PMIX_SERVER_URI41' in task_env:
+        if task_env is not None and task_env != {}:
+            if 'PMIX_SERVER_URI41' not in task_env:
                 worker.logger.error('DVM environment variable PMIX_SERVER_URI41 not set in task_env')
                 print('DVM environment variable PMIX_SERVER_URI41 not set in task_env', flush=True)
             else:
-                worker.logger.info(f"DVM environment variable PMIX_SERVER_URI41 set in task_env to {{task_env['PMIX_SERVER_URI41']}}")
+                worker.logger.info("DVM environment variable PMIX_SERVER_URI41 set in task_env to {task_env['PMIX_SERVER_URI41']}")
                 print(f'DVM environment variable PMIX_SERVER_URI41 set in task_env to {task_env["PMIX_SERVER_URI41"]}', flush=True)
-        if not 'PMIX_SERVER_URI41' in os.environ:
+        if 'PMIX_SERVER_URI41' not in os.environ:
             worker.logger.error('DVM environment variable PMIX_SERVER_URI41 not set in os.environ')
             print('DVM environment variable PMIX_SERVER_URI41 not set in os.environ', flush=True)
         else:
-            worker.logger.info(f"DVM environment variable PMIX_SERVER_URI41 set in os.environ to {{os.environ['PMIX_SERVER_URI41']}}")
+            worker.logger.info("DVM environment variable PMIX_SERVER_URI41 set in os.environ to {os.environ['PMIX_SERVER_URI41']}")
             print(f'DVM environment variable PMIX_SERVER_URI41 set in os.environ to {os.environ["PMIX_SERVER_URI41"]}', flush=True)
 
         timeout = float(keywords.get('timeout', 1.0e9))
@@ -1229,7 +1229,8 @@ class ServicesProxy:
                 val = self._get_service_response(msg_id, block=True)
             except Exception:
                 if not silent:
-                    self.exception('Error retrieving value of config parameter %s', param)
+                    if log:
+                        self.exception('Error retrieving value of config parameter %s', param)
                     raise
                 return None
         return val
@@ -2525,7 +2526,6 @@ class ServicesProxy:
 
         self.info(f'Preparing to run ensembles in {run_dir}')
 
-
         # Ensure that we create a unique task pool name for this using the
         # instance prefix `name`
         # check this first to ensure uniqueness of `name` parameter
@@ -2651,7 +2651,7 @@ class DVMPlugin(WorkerPlugin):
         # invoking client.forward_logging() elsewhere, so I shouldn't have to
         # do this.
         self.logger.setLevel(logging.DEBUG)
-        self.logger.info(f'Launching DVM')
+        self.logger.info('Launching DVM')
         # TODO could make this more OS agnostic by using tempfile.mkstemp
         self.worker.dvm_uri_file = f'/tmp/dvm.uri.{os.getpid()}'
         command = ['prte', '--report-uri', self.worker.dvm_uri_file]
@@ -2659,11 +2659,11 @@ class DVMPlugin(WorkerPlugin):
         mapping_policy = 'core'  # by default bind to cores
         if self.hwthreads:
             # ... unless you want to bind to hardware threads
-            self.logger.info(f'Binding to hardware threads')
+            self.logger.info('Binding to hardware threads')
             mapping_policy = 'hwtcpus'
 
         if self.oversubscribe:
-            self.logger.info(f'Allowing oversubscription of nodes')
+            self.logger.info('Allowing oversubscription of nodes')
             mapping_policy += ':oversubscribe'
 
         # This environment variable is specific to OpenMPI's PRTE
@@ -2682,7 +2682,6 @@ class DVMPlugin(WorkerPlugin):
 
         os.environ['PMIX_SERVER_URI41'] = self.worker.dvm_uri
 
-        return
 
     def teardown(self, worker: Worker):
         self.logger.info(f'Shutting down DVM at {self.worker.dvm_uri}')
@@ -2942,8 +2941,7 @@ class TaskPool:
         self.services.debug(f'Dask scheduler pid: {self.dask_sched_pid}')
 
         if not Path(self.dask_scheduler_file).exists():
-            self.services.critical(f'Dask scheduler file '
-                                   f'{self.dask_scheduler_file} does not exist')
+            self.services.critical(f'Dask scheduler file {self.dask_scheduler_file} does not exist')
 
         dask_nodes = 1 if dask_nodes is None else dask_nodes
         if services.get_config_param('MPIRUN') == 'eval':
