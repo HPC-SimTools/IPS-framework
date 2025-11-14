@@ -50,8 +50,6 @@ class SimulationData:
         self.json_monitor_file: FileIO = None  # type: ignore
         self.phys_time_stamp = -1
         self.monitor_url = ''
-        self.mpo_steps = [None]
-        self.mpo_wid = None
         self.bigbuf = ''
 
 
@@ -61,8 +59,6 @@ class LocalEventLogger:
     def __init__(self) -> None:
         # self.curTime = time.localtime()
         # self.startTime = self.curTime
-        self.mpo = None
-        self.mpo_name_counter: defaultdict[str, int] = defaultdict(lambda: 0)
         self.counter = 0
         self.dump_freq = 10
         self.min_dump_interval = 300  # Minimum time interval in Sec for HTML dump operation
@@ -151,17 +147,6 @@ class LocalEventLogger:
         json_fname = sim_data.monitor_file_name.replace('eventlog', 'jsonl')
         sim_data.json_monitor_file = open(json_fname, 'w')
 
-        if self.mpo:  # pragma: no cover
-            try:
-                sim_data.mpo_wid = self.mpo.init(name='SWIM Workflow ' + os.environ['USER'], desc=sim_data.sim_name, wtype='SWIM')
-                print('sim_data.mpo_wid = ', sim_data.mpo_wid)
-            except Exception as e:
-                print(e)
-                print('sim_data.mpo_wid = ', sim_data.mpo_wid)
-                sim_data.mpo_wid = None
-            else:
-                sim_data.mpo_steps = [sim_data.mpo_wid['uid']]
-
         return sim_data
 
     def send_event(self, services: ServicesProxy, sim_data: SimulationData, event_data: dict[str, Any]):
@@ -197,148 +182,3 @@ class LocalEventLogger:
                 except Exception:
                     services.exception('Error writing html file into USER_W3_DIR directory')
                     self.write_to_htmldir = False
-
-        if sim_data.mpo_wid:
-            self.send_mpo_data(event_data, sim_data)
-
-    def send_mpo_data(self, event_data, sim_data: SimulationData):  # pragma: no cover
-        def md5(fname):
-            "Courtesy of stackoverflow 3431825"
-            hash_md5 = hashlib.md5()
-            with open(fname, 'rb') as f:
-                for chunk in iter(lambda: f.read(4096), b''):
-                    hash_md5.update(chunk)
-            return hash_md5.hexdigest()
-
-        def mpo_add_file(workflow, parent, file, shortname='Need a name', longdesc='did not add a description.'):
-            """Add a local file to the workflow attaching to parent. Calculate
-            checksum and if the file is already in the mpo database, use the
-            already the UID of the already existing file when adding the data
-            object - this creates a linkage to the original. The checksum and
-            local file path and name are added as metadata.
-
-            This function relies on the user space metadata, ips_checksum
-            and ips_filename. The checksum is the md5 sum and the filename
-            is expected should have at least a relative qualifying path.
-
-            workflow : workflow_id
-            parent : parent_id
-            """
-            # if file exist, look for its checksum in the database
-            try:
-                checksum = md5(file)
-            except Exception:
-                print(('checksum could not find file:', file))
-                raise
-
-            is_checksum = self.mpo.search('metadata', params={'key': 'ips_checksum', 'value': checksum})
-            # search always returns a list of dictionaries
-            # if checksum exists, use first dataobject that has it
-            # api search results are sorted by time
-            # Note, check this with eqdsk dataobject in test-api
-            print('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%')
-            print(len(is_checksum), file)
-            print('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%')
-
-            if len(is_checksum) > 0:
-                # uid is chosen to be first occurrence
-                # parent_uid is uid of object metadata is attached to.
-                file_uid = is_checksum[0]['parent_uid']
-
-                # Create dataobject reference by uid in the workflow
-                dataobject = self.mpo.add(workflow, parent, uid=file_uid, name=shortname, desc=longdesc)
-                self.mpo.meta(dataobject['uid'], 'ips_checksum', checksum)
-                # add filename metadata the dataobject reference
-                self.mpo.meta(dataobject['uid'], 'ips_filename', file)
-            else:
-                print(('file', file))
-                file_uri = file
-                # Create new dataobject by uri and insert reference in to workflow
-                dataobject = self.mpo.add(workflow, parent, uri=file_uri, name=shortname, desc=longdesc)
-                # add checksum metadata to original data object
-                # add function currently only returns uri field, so fetch full record
-                full_dataobject = self.mpo.search('dataobject/' + dataobject['uid'])[0]
-                # add checksum so dataobject and also
-                self.mpo.meta(full_dataobject['do_uid'], 'ips_checksum', checksum)
-                self.mpo.meta(dataobject['uid'], 'ips_filename', file)
-                self.mpo.meta(dataobject['uid'], 'ips_checksum', checksum)
-                dataobject = full_dataobject
-            return dataobject
-
-        recordable_events = ['IPS_CALL_BEGIN', 'IPS_STAGE_INPUTS', 'IPS_STAGE_OUTPUTS', 'IPS_CALL_END']
-        recordable_mpo_activities = ['IPS_CALL_BEGIN']
-        comment = event_data['comment']
-        event_type = event_data['eventtype']
-
-        if event_type not in recordable_events:
-            return
-        inp_objs = []
-        if event_type == 'IPS_CALL_END':
-            del sim_data.mpo_steps[-1]
-            return
-        try:
-            if event_type == 'IPS_STAGE_INPUTS':
-                r = re.compile(r'^Elapsed time = ([0-9]*\.[0-9]*) Path = ([^ ]*) Files = (.*)')
-                o = r.match(comment)
-                (_, path, files) = o.groups()
-                glist = [glob.glob(os.path.join(path, f)) for f in files.split()]
-                for file_name in [os.path.basename(f) for f in itertools.chain(*glist)]:
-                    mpo_data_obj = mpo_add_file(
-                        sim_data.mpo_wid, sim_data.mpo_wid['uid'], os.path.join(path, file_name), shortname=file_name, longdesc='An input file'
-                    )
-                    inp_objs.append(mpo_data_obj['uid'])
-
-            if event_type == 'IPS_STAGE_INPUTS' and not inp_objs:
-                return
-
-            count = self.mpo_name_counter[sim_data.sim_name + event_data['code']]
-            if event_type == 'IPS_CALL_BEGIN':
-                target = event_data['comment'].split()[-1]
-                step_name = '%s %d' % (target, count)
-            else:
-                step_name = '{0:s} {1:s} {2:d}'.format(event_data['code'].split('_')[-1], event_type, count)
-
-            if event_type == 'IPS_STAGE_OUTPUTS':
-                r = re.compile(r'^Elapsed time = ([0-9]*\.[0-9]*) Path = ([^ ]*) Files = (.*)')
-                o = r.match(comment)
-                (_, path, files) = o.groups()
-                if not files:
-                    return
-            activity = self.mpo.step(
-                workflow_ID=sim_data.mpo_wid, parentobj_ID=sim_data.mpo_steps[-1], input_objs=inp_objs, name=step_name, desc='%s' % event_data['comment']
-            )
-            self.mpo_name_counter[sim_data.sim_name + event_data['code']] += 1
-            if event_type == 'IPS_STAGE_OUTPUTS':
-                glist = [glob.glob(os.path.join(path, f)) for f in files.split()]
-                for file_name in [os.path.basename(f) for f in itertools.chain(*glist)]:
-                    """
-                    (f_uid, f_hash) = get_file_uid(path, file_name)
-                    if f_uid:
-                        mpo_data_obj = self.mpo.add(workflow_ID=sim_data.mpo_wid,
-                                                parentobj_ID=activity['uid'],
-                                                name=file_name,
-                                                desc="An output file",
-                                                uri='file:' + os.path.join(path, file_name),
-                                                uid=f_uid,
-                                                source = f_uid)
-                    else:
-                        mpo_data_obj = self.mpo.add(workflow_ID=sim_data.mpo_wid,
-                                                parentobj_ID=activity['uid'],
-                                                name=file_name,
-                                                desc="An output file",
-                                                uri='file:' + os.path.join(path, file_name))
-                    """
-                    mpo_data_obj = mpo_add_file(
-                        sim_data.mpo_wid,
-                        activity['uid'],
-                        # sim_data.mpo_wid['uid'],
-                        os.path.join(path, file_name),
-                        shortname=file_name,
-                        longdesc='An output file',
-                    )
-
-        except Exception as e:
-            print('*************', e)
-        else:
-            if event_type in recordable_mpo_activities:
-                sim_data.mpo_steps.append(activity['uid'])
