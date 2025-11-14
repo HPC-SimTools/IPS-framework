@@ -12,15 +12,15 @@
 #SBATCH --time=5
 #SBATCH -p debug
 
-# This sets the absolute path to the mpi_stats.py script, which is used by IPS to
-export MPI_STATS_EXEC=$(realpath ./mpi_stats.py)
-
-echo "Using MPI_STATS_EXEC: ${MPI_STATS_EXEC}"
-
 module load PrgEnv-gnu openmpi python
 
 # Again, this assumes that there exists a conda environment named "ips".
 conda activate ips
+
+# This sets the absolute path to the mpi_stats.py script, which is used by IPS to
+export MPI_STATS_EXEC=$(realpath ./mpi_stats.py)
+
+echo "Using MPI_STATS_EXEC: ${MPI_STATS_EXEC}"
 
 # The 2>&1 binds stderr to stdout so that both are captured in the tee log file.  The
 # `tee` command allows you to see the output on the terminal as well as save it.
