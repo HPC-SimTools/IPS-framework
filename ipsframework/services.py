@@ -147,7 +147,7 @@ def launch(binary: Any, task_name: str, working_dir: Union[str, os.PathLike], *a
         # It can be defined in `task_env` or in `os.environ`, so we look in
         # both locations to just echo its presence. The flushes are necessary
         # in some HPC environments to ensure the output appears in the logs.
-        if task_env is not None and task_env is not {}:
+        if task_env is not None and task_env != {}:
             if 'PMIX_SERVER_URI41' in task_env:
                 worker.logger.debug(f"DVM environment variable PMIX_SERVER_URI41 "
                                    f"set in task_env to "
@@ -2664,12 +2664,12 @@ class DVMPlugin(WorkerPlugin):
                               'for Dask worker')
 
         # Necessary to ensure the DVM "sees" all the resources to manage
-        os.environ['PRTE_MCA_ras_slurm_use_entire_allocation'] = "1"
+        os.environ['PRTE_MCA_ras_slurm_use_entire_allocation'] = '1'
 
         self.worker = worker
         worker.logger = self.logger
 
-        self.logger.info(f'Launching DVM')
+        self.logger.info('Launching DVM')
         self.worker.dvm_uri_file = f'/tmp/dvm.uri.{os.getpid()}'
         command = [#'srun', '--mpi=pmix_v4', '-N', os.environ['SLURM_NNODES'], '--ntasks-per-node=1',
                    'prte', #'--no-daemonize',
