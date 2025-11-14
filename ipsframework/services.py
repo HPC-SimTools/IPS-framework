@@ -129,6 +129,10 @@ def launch(binary: Any, task_name: str, working_dir: Union[str, os.PathLike], *a
         new_env = os.environ.copy()
         new_env.update(task_env)
 
+        if 'HWLOC_XMLFILE' in new_env:
+            worker.logger.debug('Removing HWLOC_XMLFILE from task environment')
+            del new_env['HWLOC_XMLFILE']
+
         # Check that the DVM environment variables are set.
         if hasattr(worker, 'dvm_uri_file'):
             dvm_uri_file = Path(worker.dvm_uri_file)
@@ -136,22 +140,26 @@ def launch(binary: Any, task_name: str, working_dir: Union[str, os.PathLike], *a
                 worker.logger.error(f'DVM URI file {dvm_uri_file} does not exist')
                 print(f'DVM URI file {dvm_uri_file} does not exist', flush=True)
             else:
-                worker.logger.info(f'Using DVM URI file: {dvm_uri_file}')
+                worker.logger.debug(f'Using DVM URI file: {dvm_uri_file}')
                 print(f'Using DVM URI file: {dvm_uri_file}', flush=True)
 
+        # PMIX_SERVER_URI41 is used by prun to figure out how to talk to the DVM
+        # It can be defined in `task_env` or in `os.environ`, so we look in
+        # both locations to just echo its presence. The flushes are necessary
+        # in some HPC environments to ensure the output appears in the logs.
         if task_env is not None and task_env is not {}:
-            if not 'PMIX_SERVER_URI41' in task_env:
-                worker.logger.error('DVM environment variable PMIX_SERVER_URI41 not set in task_env')
-                print('DVM environment variable PMIX_SERVER_URI41 not set in task_env', flush=True)
-            else:
-                worker.logger.info(f"DVM environment variable PMIX_SERVER_URI41 set in task_env to {{task_env['PMIX_SERVER_URI41']}}")
-                print(f'DVM environment variable PMIX_SERVER_URI41 set in task_env to {task_env["PMIX_SERVER_URI41"]}', flush=True)
-        if not 'PMIX_SERVER_URI41' in os.environ:
-            worker.logger.error('DVM environment variable PMIX_SERVER_URI41 not set in os.environ')
-            print('DVM environment variable PMIX_SERVER_URI41 not set in os.environ', flush=True)
-        else:
-            worker.logger.info(f"DVM environment variable PMIX_SERVER_URI41 set in os.environ to {{os.environ['PMIX_SERVER_URI41']}}")
-            print(f'DVM environment variable PMIX_SERVER_URI41 set in os.environ to {os.environ["PMIX_SERVER_URI41"]}', flush=True)
+            if 'PMIX_SERVER_URI41' in task_env:
+                worker.logger.debug(f"DVM environment variable PMIX_SERVER_URI41 "
+                                   f"set in task_env to "
+                                   f"{task_env['PMIX_SERVER_URI41']}")
+                print(f'DVM environment variable PMIX_SERVER_URI41 set in task_'
+                      f'env to {task_env["PMIX_SERVER_URI41"]}', flush=True)
+        if 'PMIX_SERVER_URI41' in os.environ:
+            worker.logger.debug(f"DVM environment variable PMIX_SERVER_URI41 set "
+                               f"in os.environ to "
+                               f"{os.environ['PMIX_SERVER_URI41']}")
+            print(f'DVM environment variable PMIX_SERVER_URI41 set in os.environ '
+                  f'to {os.environ["PMIX_SERVER_URI41"]}', flush=True)
 
         timeout = float(keywords.get('timeout', 1.0e9))
 
@@ -167,7 +175,10 @@ def launch(binary: Any, task_name: str, working_dir: Union[str, os.PathLike], *a
 
         cmd_lst = cmd.split()
         try:
-            process = subprocess.Popen(cmd_lst, stdout=task_stdout, stderr=task_stderr, cwd=working_dir, preexec_fn=os.setsid, env=new_env)  # noqa: PLW1509 (TODO: look into this to potentially avoid deadlocks)
+            process = subprocess.Popen(cmd_lst, stdout=task_stdout,
+                                       stderr=task_stderr,
+                                       cwd=working_dir,
+                                       preexec_fn=os.setsid, env=new_env)  # noqa: PLW1509 (TODO: look into this to potentially avoid deadlocks)
         except Exception as e:
             with worker.lock:
                 print(
@@ -2643,18 +2654,26 @@ class DVMPlugin(WorkerPlugin):
         :param oversubscribe: Whether to allow oversubscription of nodes
             when launching the ensemble runs. Default is False.
         """
+        if 'HWLOC_XMLFILE' in os.environ:
+            # Remove HWLOC_XMLFILE to avoid issues with OpenMPI on Dask workers
+            self.logger.debug('Removing HWLOC_XMLFILE environment variable for '
+                              'Dask worker')
+            del os.environ['HWLOC_XMLFILE']
+        else:
+            self.logger.debug('HWLOC_XMLFILE environment variable not set '
+                              'for Dask worker')
+
+        # Necessary to ensure the DVM "sees" all the resources to manage
+        os.environ['PRTE_MCA_ras_slurm_use_entire_allocation'] = "1"
+
         self.worker = worker
         worker.logger = self.logger
-        # FIXME this is a temporary hack to ensure that the logger honors
-        # debug messages.  I don't know why this is otherwise being
-        # ignored when specifying --debug on the command line.  I am
-        # invoking client.forward_logging() elsewhere, so I shouldn't have to
-        # do this.
-        self.logger.setLevel(logging.DEBUG)
+
         self.logger.info(f'Launching DVM')
-        # TODO could make this more OS agnostic by using tempfile.mkstemp
         self.worker.dvm_uri_file = f'/tmp/dvm.uri.{os.getpid()}'
-        command = ['prte', '--report-uri', self.worker.dvm_uri_file]
+        command = [#'srun', '--mpi=pmix_v4', '-N', os.environ['SLURM_NNODES'], '--ntasks-per-node=1',
+                   'prte', #'--no-daemonize',
+                   '--report-uri', self.worker.dvm_uri_file]
 
         mapping_policy = 'core'  # by default bind to cores
         if self.hwthreads:
@@ -2669,7 +2688,8 @@ class DVMPlugin(WorkerPlugin):
         # This environment variable is specific to OpenMPI's PRTE
         os.environ['PRTE_MCA_rmaps_default_mapping_policy'] = mapping_policy
 
-        self.worker.dvm_proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        self.worker.dvm_proc = subprocess.Popen(command, stdout=subprocess.PIPE,
+                                                stderr=subprocess.STDOUT)
 
         ready = self.worker.dvm_proc.stdout.readline()
         self.logger.info(f'Ready Message : {ready}')
@@ -2681,6 +2701,8 @@ class DVMPlugin(WorkerPlugin):
             self.logger.debug(f'Read DVM URI: {self.worker.dvm_uri}')
 
         os.environ['PMIX_SERVER_URI41'] = self.worker.dvm_uri
+
+
 
         return
 
