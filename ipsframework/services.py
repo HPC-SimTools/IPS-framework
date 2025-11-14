@@ -2663,6 +2663,9 @@ class DVMPlugin(WorkerPlugin):
             self.logger.debug('HWLOC_XMLFILE environment variable not set '
                               'for Dask worker')
 
+        # Necessary to ensure the DVM "sees" all the resources to manage
+        os.environ['PRTE_MCA_ras_slurm_use_entire_allocation'] = "1"
+
         self.worker = worker
         worker.logger = self.logger
 
