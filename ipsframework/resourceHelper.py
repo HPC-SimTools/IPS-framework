@@ -436,9 +436,12 @@ def get_platform_info():
                 # Not all platforms support `cpu_affinity`, which is why
                 # we check first.
                 result['affinity'] = p.cpu_affinity()
+            else:
+                result['affinity'] = 'Unsupported Op'
     except Exception:
         # cpu_num() only available on linux (and BSD systems), so this will
         # throw an exception on other platforms
-        pass
+        result['core_id'] = 'Unsupported Op'
+        result['affinity'] = 'Unsupported Op'
 
     return result
