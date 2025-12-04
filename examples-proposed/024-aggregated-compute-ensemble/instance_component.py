@@ -15,6 +15,8 @@ from ipsframework.resourceHelper import get_platform_info
 
 
 def generate_fake_data(timestamp: float, base_x: float, base_y: float, word: str) -> dict[str, Any]:
+    # From code Lance originally wrote for a different example and will
+    # be replaced.
     x_data = []
     y_data = []
 
@@ -66,9 +68,12 @@ class InstanceComponent(Component):
             writer.writerow(['instance', 'executable', 'hostname', 'pid', 'core', 'start', 'end'])
             writer.writerow([instance_id, sys.argv[0], run_env['hostname'], run_env['pid'], run_env['core_id'], start, time()])
 
-        try:
-            self.services.add_analysis_data_files([data_fname, stats_fname], timestamp)
-        except Exception:
-            print('did not add data files to portal, check logs')
+        # TODO temporarily commenting this out until the actual
+        # example is ready to consider adding data files to the portal.  This
+        # originally came from code Lance wrote in a previous example.
+        # try:
+        #     self.services.add_analysis_data_files([data_fname, stats_fname], timestamp)
+        # except Exception:
+        #     print('did not add data files to portal, check logs')
 
         self.services.info(f'{instance_id}: End of step of instance component.')
