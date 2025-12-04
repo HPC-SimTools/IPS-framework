@@ -14,7 +14,7 @@ from ipsframework import Component
 from ipsframework.resourceHelper import get_platform_info
 
 
-def generate_fake_data(timestamp: float, base_x: float, base_y: float, word: str) -> dict[str, Any]:
+def generate_synthetic_data(timestamp: float, base_x: float, base_y: float, word: str) -> dict[str, Any]:
     # From code Lance originally wrote for a different example and will
     # be replaced.
     x_data = []
@@ -55,7 +55,7 @@ class InstanceComponent(Component):
 
         # generate some fake data and save it
         data_fname = f'generated_{timestamp}.json'
-        data = generate_fake_data(timestamp, float(self.base_x), float(self.base_y), self.word)
+        data = generate_synthetic_data(timestamp, float(self.base_x), float(self.base_y), self.word)
         with open(data_fname, 'w') as fd:
             json.dump(data, fd)
 
@@ -64,9 +64,19 @@ class InstanceComponent(Component):
         run_env = get_platform_info()
 
         with open(stats_fname, 'w') as f:
+            # Write run-time stats to a CSV as well as the runtime parameters
+            # specific to this instance.
             writer = csv.writer(f)
-            writer.writerow(['instance', 'executable', 'hostname', 'pid', 'core', 'start', 'end'])
-            writer.writerow([instance_id, sys.argv[0], run_env['hostname'], run_env['pid'], run_env['core_id'], start, time()])
+            writer.writerow(
+                    ['instance', 'executable', 'hostname', 'pid', 'core',
+                     'affinity',
+                     'alpha', 'L', 'T_final', 'Nx', 'Nt',
+                     'start', 'end'])
+            writer.writerow([instance_id, sys.argv[0], run_env['hostname'],
+                             run_env['pid'], run_env['core_id'],
+                             run_env['affinity'],
+                             self.alpha, self.L, self.T_final, self.Nx, self.Nt,
+                             start, time()])
 
         # TODO temporarily commenting this out until the actual
         # example is ready to consider adding data files to the portal.  This
