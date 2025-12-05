@@ -7,6 +7,7 @@ compute application.
 from pathlib import Path
 
 from ipsframework import Component
+from ipsframework.ipsutil import params_from_csv
 
 
 class EnsembleDriver(Component):
