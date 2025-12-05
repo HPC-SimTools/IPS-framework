@@ -90,7 +90,11 @@ class InstanceComponent(Component):
 
         # generate some fake data and save it
         data_fname = f'generated_{timestamp}.json'
-        data = generate_synthetic_data(self.alpha, self.L, self.T_final, self.Nx, self.Nt)
+        data = generate_synthetic_data(float(self.alpha),
+                                       float(self.L),
+                                       float(self.T_final),
+                                       int(self.Nx),
+                                       int(self.Nt))
         with open(data_fname, 'w') as fd:
             json.dump(data, fd)
 
