@@ -35,7 +35,7 @@ def generate_synthetic_data(alpha: float, L:float, T_final:float, Nx:int, Nt:int
     dx = L / (Nx - 1)
     dt = T_final / Nt
     r = alpha * dt / (dx ** 2)
-    #
+
     # # Check stability condition for explicit method
     if r > 0.5:
         print("Warning: Stability condition r <= 0.5 is not met. "

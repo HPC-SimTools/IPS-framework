@@ -30,11 +30,10 @@ class EnsembleDriver(Component):
         # different instances.
         variables = params_from_csv(self.config['PARAMETER_FILE'])
 
-        # This is the IPS configuration file for the instances that looks like
-        # a regular configuration file except there are slots for the
-        # 'base_x', 'base_y',
-        # and 'word' for variable substitution.  'TEMPLATE' is specified in the
-        # config file section for this driver.
+        # This is the IPS configuration file for the instances that looks
+        # like a regular configuration file except there are slots for the
+        # variables (e.g., 'alpha', 'T_final', etc.).  'TEMPLATE' is
+        # specified in the config file section for this driver.
         template = Path(self.config['TEMPLATE'])
         self.services.info(f'Using template config file {template}')
 
@@ -45,9 +44,7 @@ class EnsembleDriver(Component):
         # Now spin up and run the instances. This function will return a list
         # with each list element corresponding to an instance.  You can use
         # this information to find the specific instance run directory for a
-        # given set of variables.  E.g., the instance corresponding to
-        # {'base_x' : 2, 'base_y' : 5.82, 'word' : 'baz'} is probably found
-        # in the `INSTANCE_` subdirectory.
+        # given set of variables.
         #
         # The "name" parameter must be unique for each ensemble within a run,
         # and will be used as an identifier on the Portal.
