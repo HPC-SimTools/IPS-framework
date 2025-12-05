@@ -68,7 +68,7 @@ def generate_synthetic_data(alpha: float, L:float, T_final:float, Nx:int, Nt:int
     plt.grid(True)
     plt.savefig("solution.png")
 
-    return {'x': x, 'u': u}
+    return {'x': x.tolist(), 'u': u.tolist()}
 
 
 class InstanceComponent(Component):
