@@ -13,6 +13,7 @@ class EnsembleDriver(Component):
     """Kicks off a simple ensemble"""
 
     def init(self, timestamp=0.0):
+        pass
         # TODO temporarily commenting this out until the actual
         # example is ready to consider adding a notebook to the portal.
 

@@ -10,33 +10,65 @@ import sys
 from time import time
 from typing import Any
 
+import numpy as np
+import matplotlib.pyplot as plt
+
 from ipsframework import Component
 from ipsframework.resourceHelper import get_platform_info
 
 
-def generate_synthetic_data(timestamp: float, base_x: float, base_y: float, word: str) -> dict[str, Any]:
-    # From code Lance originally wrote for a different example and will
-    # be replaced.
-    x_data = []
-    y_data = []
+def generate_synthetic_data(alpha: float, L:float, T_final:float, Nx:int, Nt:int) -> dict[str, Any]:
+    """ Generate synthetic data to emulate an actual simulation or complex
+        calculation.
 
-    for idx, perm in enumerate(itertools.permutations(word)):
-        x = timestamp + (idx + 1) * base_x
-        y = timestamp + (idx + 1) * base_y
-        for ch_idx, character in enumerate(perm):
-            shrink_factor = 1 if ch_idx % 2 == 0 else -1
-            x = abs(x + ((ord(character) + ch_idx + 1) * shrink_factor))
-            y = abs(y + ((ord(character) * (ch_idx + 1)) * shrink_factor))
-            x_data.append(x)
-            y_data.append(y)
+    As a side-effect it will save a plot to the current working directory with
+    the name `solution.png`.
 
-    return {
-        'base_x': base_x,
-        'base_y': base_y,
-        'word': word,
-        'x_data': x_data,
-        'y_data': y_data,
-    }
+    :param alpha: thermal diffusivity
+    :param L: domain length
+    :param T_final: final time
+    :param Nx: number of spatial grid points
+    :param Nt: number of time steps
+    :returns: x, y, where x is the steps and u the corresponding values
+    """
+    # Discretization
+    dx = L / (Nx - 1)
+    dt = T_final / Nt
+    r = alpha * dt / (dx ** 2)
+    #
+    # # Check stability condition for explicit method
+    if r > 0.5:
+        print("Warning: Stability condition r <= 0.5 is not met. "
+              "Results may be inaccurate.")
+
+    # Initialize solution array
+    u = np.zeros(Nx)
+
+    # Initial condition (e.g., a sine wave)
+    x = np.linspace(0, L, Nx)
+    u = np.sin(np.pi * x)
+
+    # Boundary conditions (Dirichlet, e.g., u(0,t) = 0, u(L,t) = 0) These are
+    # already handled by the initial setup of u=0 at boundaries if the
+    # initial condition is 0 there. If non-zero, they would be set within the
+    # time loop.
+
+    # Time evolution
+    for n in range(Nt):
+        u_new = np.copy(u)  # Create a copy for updating
+        for i in range(1, Nx - 1):
+            u_new[i] = u[i] + r * (u[i + 1] - 2 * u[i] + u[i - 1])
+        u = u_new
+
+    # Plotting the result
+    plt.plot(x, u)
+    plt.xlabel("Position (x)")
+    plt.ylabel("Temperature (u)")
+    plt.title("Solution of 1D Heat Equation")
+    plt.grid(True)
+    plt.savefig("solution.png")
+
+    return {'x': x, 'u': u}
 
 
 class InstanceComponent(Component):
@@ -51,11 +83,14 @@ class InstanceComponent(Component):
         self.services.info(f'{instance_id}: Start of step of instance component.')
 
         # Echo the parameters we're expecting, A, B, and C
-        self.services.info(f'{instance_id}: instance component parameters: base_x={self.base_x}, base_y={self.base_y}, word={self.word}')
+        self.services.info(f'{instance_id}: instance component parameters: '
+                           f'alpha={self.alpha}, L={self.L}, '
+                           f'T_final={self.T_final}, Nx={self.Nx}, '
+                           f'Nt={self.Nt}')
 
         # generate some fake data and save it
         data_fname = f'generated_{timestamp}.json'
-        data = generate_synthetic_data(timestamp, float(self.base_x), float(self.base_y), self.word)
+        data = generate_synthetic_data(self.alpha, self.L, self.T_final, self.Nx, self.Nt)
         with open(data_fname, 'w') as fd:
             json.dump(data, fd)
 
