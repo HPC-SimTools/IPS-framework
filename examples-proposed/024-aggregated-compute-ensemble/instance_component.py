@@ -23,7 +23,7 @@ def create_cmd(alpha: float, L:float, T_final:float, Nx:int, Nt:int) -> list[Any
     :param Nt: number of time steps
     :returns: list of command line arguments to be executed in step()
     """
-    cmd = ['gen_data.py', '--alpha', alpha, '--L', L, '--T_final', T_final,
+    cmd = ['python3', 'gen_data.py', '--alpha', alpha, '--L', L, '--T_final', T_final,
            '--Nx', Nx, '--Nt', Nt]
     return cmd
 
