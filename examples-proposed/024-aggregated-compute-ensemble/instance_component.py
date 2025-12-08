@@ -4,71 +4,28 @@ Component to be stepped in instance
 """
 
 import csv
-import itertools
-import json
 import sys
 from time import time
 from typing import Any
-
-import numpy as np
-import matplotlib.pyplot as plt
+from pathlib import Path
 
 from ipsframework import Component
 from ipsframework.resourceHelper import get_platform_info
 
 
-def generate_synthetic_data(alpha: float, L:float, T_final:float, Nx:int, Nt:int) -> dict[str, Any]:
-    """ Generate synthetic data to emulate an actual simulation or complex
-        calculation.
-
-    As a side-effect it will save a plot to the current working directory with
-    the name `solution.png`.
+def create_cmd(alpha: float, L:float, T_final:float, Nx:int, Nt:int) -> list[Any]:
+    """ create the command to run the external data generator
 
     :param alpha: thermal diffusivity
     :param L: domain length
     :param T_final: final time
     :param Nx: number of spatial grid points
     :param Nt: number of time steps
-    :returns: x, y, where x is the steps and u the corresponding values
+    :returns: list of command line arguments to be executed in step()
     """
-    # Discretization
-    dx = L / (Nx - 1)
-    dt = T_final / Nt
-    r = alpha * dt / (dx ** 2)
-
-    # # Check stability condition for explicit method
-    if r > 0.5:
-        print("Warning: Stability condition r <= 0.5 is not met. "
-              "Results may be inaccurate.")
-
-    # Initialize solution array
-    u = np.zeros(Nx)
-
-    # Initial condition (e.g., a sine wave)
-    x = np.linspace(0, L, Nx)
-    u = np.sin(np.pi * x)
-
-    # Boundary conditions (Dirichlet, e.g., u(0,t) = 0, u(L,t) = 0) These are
-    # already handled by the initial setup of u=0 at boundaries if the
-    # initial condition is 0 there. If non-zero, they would be set within the
-    # time loop.
-
-    # Time evolution
-    for n in range(Nt):
-        u_new = np.copy(u)  # Create a copy for updating
-        for i in range(1, Nx - 1):
-            u_new[i] = u[i] + r * (u[i + 1] - 2 * u[i] + u[i - 1])
-        u = u_new
-
-    # Plotting the result
-    plt.plot(x, u)
-    plt.xlabel("Position (x)")
-    plt.ylabel("Temperature (u)")
-    plt.title("Solution of 1D Heat Equation")
-    plt.grid(True)
-    plt.savefig("solution.png")
-
-    return {'x': x.tolist(), 'u': u.tolist()}
+    cmd = ['gen_data.py', '--alpha', alpha, '--L', L, '--T_final', T_final,
+           '--Nx', Nx, '--Nt', Nt]
+    return cmd
 
 
 class InstanceComponent(Component):
@@ -88,15 +45,24 @@ class InstanceComponent(Component):
                            f'T_final={self.T_final}, Nx={self.Nx}, '
                            f'Nt={self.Nt}')
 
-        # generate some fake data and save it
-        data_fname = f'generated_{timestamp}.json'
-        data = generate_synthetic_data(float(self.alpha),
-                                       float(self.L),
-                                       float(self.T_final),
-                                       int(self.Nx),
-                                       int(self.Nt))
-        with open(data_fname, 'w') as fd:
-            json.dump(data, fd)
+        cmd = create_cmd()
+
+        working_dir = str(Path('.').absolute())
+        self.services.info(f'{instance_id}: Launching executable '
+                           f'in {working_dir}')
+        run_id = None
+        try:
+            run_id = self.services.launch_task(nproc=2,
+                                               working_dir=working_dir,
+                                               binary=cmd)
+        except Exception as e:
+            self.services.critical(f'{instance_id}: Unable to launch '
+                                   f'executable in {working_dir}')
+
+        self.services.wait_task(run_id)  # block until done
+
+        self.services.info(f'{instance_id}: Completed MPI executable.')
+
 
         # Save some per-component stats
         stats_fname = f'stats_{timestamp}.csv'
