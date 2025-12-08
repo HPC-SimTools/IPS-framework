@@ -52,6 +52,7 @@ class InstanceComponent(Component):
                            f'in {working_dir}')
         run_id = None
         try:
+            cmd = ' '.join(cmd) # need one big ole string for executing tasks
             run_id = self.services.launch_task(nproc=2,
                                                working_dir=working_dir,
                                                binary=cmd)
