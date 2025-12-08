@@ -45,7 +45,7 @@ class InstanceComponent(Component):
                            f'T_final={self.T_final}, Nx={self.Nx}, '
                            f'Nt={self.Nt}')
 
-        cmd = create_cmd()
+        cmd = create_cmd(self.alpha, self.L, self.T_final, self.Nx, self.Nt)
 
         working_dir = str(Path('.').absolute())
         self.services.info(f'{instance_id}: Launching executable '
