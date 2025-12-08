@@ -1,21 +1,23 @@
 #!/usr/bin/env python3
 """
-Component to be stepped in instance
-"""
+Component to be stepped in instance.
 
-import csv
-import sys
+This should generate a PNG image, a JSON file, and a CSV file.  The first
+two are from synthetic data generated from `gen_data.py`.  The latter is
+also generated from provenance data captured in `gen_data.py`, too.
+"""
+from pathlib import Path
 from time import time
 from typing import Any
-from pathlib import Path
 
 from ipsframework import Component
-from ipsframework.resourceHelper import get_platform_info
 
 
-def create_cmd(alpha: float, L:float, T_final:float, Nx:int, Nt:int) -> list[Any]:
+def create_cmd(instance: str, alpha: float, L:float, T_final:float,
+               Nx:int, Nt:int) -> list[Any]:
     """ create the command to run the external data generator
 
+    :parma instance: instance name
     :param alpha: thermal diffusivity
     :param L: domain length
     :param T_final: final time
@@ -23,7 +25,8 @@ def create_cmd(alpha: float, L:float, T_final:float, Nx:int, Nt:int) -> list[Any
     :param Nt: number of time steps
     :returns: list of command line arguments to be executed in step()
     """
-    cmd = ['python3', 'gen_data.py', '--alpha', alpha, '--L', L, '--T_final', T_final,
+    cmd = ['python3', 'gen_data.py', '--instance', instance,
+           '--alpha', alpha, '--L', L, '--T_final', T_final,
            '--Nx', Nx, '--Nt', Nt]
     return cmd
 
@@ -45,7 +48,8 @@ class InstanceComponent(Component):
                            f'T_final={self.T_final}, Nx={self.Nx}, '
                            f'Nt={self.Nt}')
 
-        cmd = create_cmd(self.alpha, self.L, self.T_final, self.Nx, self.Nt)
+        cmd = create_cmd(instance_id,
+                         self.alpha, self.L, self.T_final, self.Nx, self.Nt)
 
         working_dir = str(Path('.').absolute())
         self.services.info(f'{instance_id}: Launching executable '
@@ -60,29 +64,10 @@ class InstanceComponent(Component):
             self.services.critical(f'{instance_id}: Unable to launch '
                                    f'executable in {working_dir}')
 
-        self.services.wait_task(run_id)  # block until done
+        return_value = self.services.wait_task(run_id)  # block until done
 
-        self.services.info(f'{instance_id}: Completed MPI executable.')
-
-
-        # Save some per-component stats
-        stats_fname = f'stats_{timestamp}.csv'
-        run_env = get_platform_info()
-
-        with open(stats_fname, 'w') as f:
-            # Write run-time stats to a CSV as well as the runtime parameters
-            # specific to this instance.
-            writer = csv.writer(f)
-            writer.writerow(
-                    ['instance', 'executable', 'hostname', 'pid', 'core',
-                     'affinity',
-                     'alpha', 'L', 'T_final', 'Nx', 'Nt',
-                     'start', 'end'])
-            writer.writerow([instance_id, sys.argv[0], run_env['hostname'],
-                             run_env['pid'], run_env['core_id'],
-                             run_env['affinity'],
-                             self.alpha, self.L, self.T_final, self.Nx, self.Nt,
-                             start, time()])
+        self.services.info(f'{instance_id}: Completed MPI executable with '
+                           f'return value: {return_value}.')
 
         # TODO temporarily commenting this out until the actual
         # example is ready to consider adding data files to the portal.  This

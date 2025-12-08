@@ -5,24 +5,28 @@
 import argparse
 from typing import Any
 import json
+import csv
 import numpy as np
 import matplotlib.pyplot as plt
 
+from ipsframework.resourceHelper import get_platform_info
 
-def main(alpha: float, L:float, T_final:float, Nx:int, Nt:int) -> dict[str, Any]:
+def main(instance: str,
+         alpha: float, L:float, T_final:float, Nx:int, Nt:int) -> dict[str, Any]:
     """ Generate synthetic data to emulate an actual simulation or complex
             calculation.
 
         As a side-effect it will save a plot to the current working directory with
         the name `solution.png`.
 
+        :param instance: instance name
         :param alpha: thermal diffusivity
         :param L: domain length
         :param T_final: final time
         :param Nx: number of spatial grid points
         :param Nt: number of time steps
         :returns: x, y, where x is the steps and u the corresponding values
-        """
+    """
     # Discretization
     dx = L / (Nx - 1)
     dt = T_final / Nt
@@ -32,9 +36,6 @@ def main(alpha: float, L:float, T_final:float, Nx:int, Nt:int) -> dict[str, Any]
     if r > 0.5:
         print("Warning: Stability condition r <= 0.5 is not met. "
               "Results may be inaccurate.")
-
-    # Initialize solution array
-    u = np.zeros(Nx)
 
     # Initial condition (e.g., a sine wave)
     x = np.linspace(0, L, Nx)
@@ -60,13 +61,36 @@ def main(alpha: float, L:float, T_final:float, Nx:int, Nt:int) -> dict[str, Any]
     plt.grid(True)
     plt.savefig("solution.png")
 
+    # Save some per-component stats
+    stats_fname = f'{instance}_stats_{timestamp}.csv'
+    run_env = get_platform_info()
+
+    with open(stats_fname, 'w') as f:
+        # Write run-time stats to a CSV as well as the runtime parameters
+        # specific to this instance.
+        writer = csv.writer(f)
+        writer.writerow(
+                ['instance', 'hostname', 'pid', 'core',
+                 'affinity',
+                 'alpha', 'L', 'T_final', 'Nx', 'Nt',
+                 'start', 'end'])
+
+        writer.writerow([instance_id, run_env['hostname'],
+                         run_env['pid'], run_env['core_id'],
+                         run_env['affinity'],
+                         alpha, L, T_final, Nx, Nt,
+                         start, time()])
+
     return {'x': x.tolist(), 'u': u.tolist()}
 
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Generate synthetic data to '
-                                                 'emulate an actual simulation or complex')
+                                                 'emulate an actual simulation '
+                                                 'or complex')
+    parser.add_argument('--instance', type=str,
+                        help='instance name')
     parser.add_argument('--alpha', type=float, default=1.0,)
     parser.add_argument('--L', type=float, default=1.0,)
     parser.add_argument('--T_final', type=float, default=1.0,)
@@ -75,7 +99,12 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    data = main(args.alpha, args.L, args.T_final, args.Nx, args.Nt)
+    data = main(args.instance,
+                args.alpha, args.L, args.T_final, args.Nx, args.Nt)
 
-    with open('solution.json', 'w') as f:
+    file_name = f'{args.instance}_solution.json'
+
+    print(f'Writing to {file_name}')
+
+    with open(file_name, 'w') as f:
         json.dump(data, f)
