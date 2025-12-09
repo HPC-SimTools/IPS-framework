@@ -6,6 +6,7 @@ import argparse
 from typing import Any
 import json
 import csv
+from time import time
 from traceback import print_exc
 import numpy as np
 import matplotlib.pyplot as plt
@@ -28,6 +29,8 @@ def main(instance: str,
         :param Nt: number of time steps
         :returns: x, y, where x is the steps and u the corresponding values
     """
+    start = time()
+
     # Discretization
     dx = L / (Nx - 1)
     dt = T_final / Nt
@@ -63,7 +66,7 @@ def main(instance: str,
     plt.savefig("solution.png")
 
     # Save some per-component stats
-    stats_fname = f'{instance}_stats_{timestamp}.csv'
+    stats_fname = f'{instance}_stats.csv'
     run_env = get_platform_info()
 
     with open(stats_fname, 'w') as f:
@@ -76,7 +79,7 @@ def main(instance: str,
                  'alpha', 'L', 'T_final', 'Nx', 'Nt',
                  'start', 'end'])
 
-        writer.writerow([instance_id, run_env['hostname'],
+        writer.writerow([instance, run_env['hostname'],
                          run_env['pid'], run_env['core_id'],
                          run_env['affinity'],
                          alpha, L, T_final, Nx, Nt,
@@ -111,5 +114,5 @@ if __name__ == '__main__':
 
     except Exception as e:
         print(f'Encountered error: {e}')
-        print(f'Encountered error: {e}', file=gen_data_error.txt)
+        print(f'Encountered error: {e}', file='gen_data_error.txt')
         print_exc()
