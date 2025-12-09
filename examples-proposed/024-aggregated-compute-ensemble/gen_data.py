@@ -63,7 +63,7 @@ def main(instance: str,
     plt.ylabel("Temperature (u)")
     plt.title("Solution of 1D Heat Equation")
     plt.grid(True)
-    plt.savefig("solution.png")
+    plt.savefig(f"{instance}_solution.png")
 
     # Save some per-component stats
     stats_fname = f'{instance}_stats.csv'
