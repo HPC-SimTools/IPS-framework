@@ -101,14 +101,11 @@ if __name__ == '__main__':
 
         args = parser.parse_args()
 
-            data = main(args.instance,
-                        args.alpha, args.L, args.T_final, args.Nx, args.Nt)
-
+        data = main(args.instance,
+                    args.alpha, args.L, args.T_final, args.Nx, args.Nt)
 
         file_name = f'{args.instance}_solution.json'
-
         print(f'Writing to {file_name}')
-
         with open(file_name, 'w') as f:
             json.dump(data, f)
 
