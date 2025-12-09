@@ -6,6 +6,7 @@ import argparse
 from typing import Any
 import json
 import csv
+from traceback import print_exc
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -86,25 +87,32 @@ def main(instance: str,
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Generate synthetic data to '
-                                                 'emulate an actual simulation '
-                                                 'or complex')
-    parser.add_argument('--instance', type=str,
-                        help='instance name')
-    parser.add_argument('--alpha', type=float, default=1.0,)
-    parser.add_argument('--L', type=float, default=1.0,)
-    parser.add_argument('--T_final', type=float, default=1.0,)
-    parser.add_argument('--Nx', type=int, default=100,)
-    parser.add_argument('--Nt', type=int, default=100,)
+    try:
+        parser = argparse.ArgumentParser(description='Generate synthetic data to '
+                                                     'emulate an actual simulation '
+                                                     'or complex')
+        parser.add_argument('--instance', type=str,
+                            help='instance name')
+        parser.add_argument('--alpha', type=float, default=1.0,)
+        parser.add_argument('--L', type=float, default=1.0,)
+        parser.add_argument('--T_final', type=float, default=1.0,)
+        parser.add_argument('--Nx', type=int, default=100,)
+        parser.add_argument('--Nt', type=int, default=100,)
 
-    args = parser.parse_args()
+        args = parser.parse_args()
 
-    data = main(args.instance,
-                args.alpha, args.L, args.T_final, args.Nx, args.Nt)
+            data = main(args.instance,
+                        args.alpha, args.L, args.T_final, args.Nx, args.Nt)
 
-    file_name = f'{args.instance}_solution.json'
 
-    print(f'Writing to {file_name}')
+        file_name = f'{args.instance}_solution.json'
 
-    with open(file_name, 'w') as f:
-        json.dump(data, f)
+        print(f'Writing to {file_name}')
+
+        with open(file_name, 'w') as f:
+            json.dump(data, f)
+
+    except Exception as e:
+        print(f'Encountered error: {e}')
+        print(f'Encountered error: {e}', file=gen_data_error.txt)
+        print_exc()
