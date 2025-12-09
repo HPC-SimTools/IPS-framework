@@ -13,11 +13,12 @@ from typing import Any
 from ipsframework import Component
 
 
-def create_cmd(instance: str, alpha: float, L:float, T_final:float,
+def create_cmd(instance: str, path: Path, alpha: float, L:float, T_final:float,
                Nx:int, Nt:int) -> list[Any]:
     """ create the command to run the external data generator
 
-    :parma instance: instance name
+    :param instance: instance name
+    :param path: path to data generator script directory
     :param alpha: thermal diffusivity
     :param L: domain length
     :param T_final: final time
@@ -25,7 +26,8 @@ def create_cmd(instance: str, alpha: float, L:float, T_final:float,
     :param Nt: number of time steps
     :returns: list of command line arguments to be executed in step()
     """
-    cmd = ['python3', 'gen_data.py', '--instance', instance,
+    executable = f'{path!s}/gen_data.py'
+    cmd = ['python3', executable, '--instance', instance,
            '--alpha', alpha, '--L', L, '--T_final', T_final,
            '--Nx', Nx, '--Nt', Nt]
     return cmd
@@ -48,7 +50,7 @@ class InstanceComponent(Component):
                            f'T_final={self.T_final}, Nx={self.Nx}, '
                            f'Nt={self.Nt}')
 
-        cmd = create_cmd(instance_id,
+        cmd = create_cmd(instance_id, Path(self.BIN_PATH),
                          self.alpha, self.L, self.T_final, self.Nx, self.Nt)
 
         working_dir = str(Path('.').absolute())
