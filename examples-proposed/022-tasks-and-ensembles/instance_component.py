@@ -11,6 +11,11 @@ from ipsframework import Component
 class InstanceComponent(Component):
 
     def step(self, timestamp: float = 0.0, **keywords):
+        if 'HWLOC_XMLFILE' in os.environ:
+            self.services.warning(f'HWLOC_XMLfile still set!')
+        else:
+            self.services.info('HWLOC_XMLFILE is not set')
+        
         # ENSEMBLE_INSTANCE is a special IPS variable that contains the
         # string uniquely identifying this instance.  Each instance will have
         # the `run_ensemble()` `name` argument prepended to a unique number
@@ -37,7 +42,7 @@ class InstanceComponent(Component):
                 '-o', 'stats.csv']
         cmd = str(mpi_executable) + ' ' + ' '.join(args)
         try:
-            run_id = self.services.launch_task(nproc=1,
+            run_id = self.services.launch_task(nproc=5,
                                                working_dir=working_dir,
                                                binary=cmd)
         except Exception as e:

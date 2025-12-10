@@ -416,9 +416,12 @@ def get_platform_info():
     properly for a given system.
 
     :returns: A dictionary containing hostname, cpu count, cpu core id for
-        current running process, and available GPU devices if set
+        current running process, and available GPU devices if set; if the
+        platform is supported it will also return CPU affinity
     """
-    result = {'hostname': platform.node(), 'cpu_count': psutil.cpu_count(), 'pid': os.getpid()}
+    result = {'hostname': platform.node(),
+              'cpu_count': psutil.cpu_count(),
+              'pid': os.getpid()}
 
     if 'CUDA_VISIBLE_DEVICES' in os.environ:
         result['cuda_visible_devices'] = os.environ['CUDA_VISIBLE_DEVICES']
@@ -429,9 +432,16 @@ def get_platform_info():
         p = psutil.Process()
         with p.oneshot():
             result['core_id'] = p.cpu_num()
+            if hasattr(p, 'cpu_affinity'):
+                # Not all platforms support `cpu_affinity`, which is why
+                # we check first.
+                result['affinity'] = p.cpu_affinity()
+            else:
+                result['affinity'] = 'Unsupported Op'
     except Exception:
         # cpu_num() only available on linux (and BSD systems), so this will
         # throw an exception on other platforms
-        pass
+        result['core_id'] = 'Unsupported Op'
+        result['affinity'] = 'Unsupported Op'
 
     return result
