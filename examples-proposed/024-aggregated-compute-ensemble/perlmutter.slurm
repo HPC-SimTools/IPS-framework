@@ -6,7 +6,7 @@
 # free to create your own environment with a different name; but, be sure to
 # change the "conda activate" line below accordingly if you do so.
 #
-#SBATCH --account=atom # REPLACE WITH YOUR PROJECT ID
+#SBATCH --account=atom # REPLACE "atom" WITH YOUR PROJECT ID
 #SBATCH --constraint=cpu
 #SBATCH --nodes=1
 #SBATCH --time=5
@@ -16,6 +16,9 @@ module load PrgEnv-gnu openmpi python
 
 # Again, this assumes that there exists a conda environment named "ips".
 conda activate ips
+
+# Set the API key and portal URL
+source /global/common/software/atom/ips-portal/credentials/ips-portal-development
 
 # The 2>&1 binds stderr to stdout so that both are captured in the tee log file.  The
 # `tee` command allows you to see the output on the terminal as well as save it.
