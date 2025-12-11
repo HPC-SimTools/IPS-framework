@@ -53,6 +53,7 @@ For further design information see
 """
 
 import argparse
+import datetime
 import hashlib
 import inspect
 import logging
@@ -587,8 +588,14 @@ class Framework:
         # portal_data['phystimestamp'] = self.timeStamp
         get_config = self.config_manager.get_config_parameter
         if eventType == 'IPS_START':
+            user = self.config_manager.get_platform_parameter('USER')
+            host = self.config_manager.get_platform_parameter('HOST')
+            d = datetime.datetime.now()
+            date_str = '%s.%03d' % (d.strftime('%Y-%m-%dT%H:%M:%S'), int(d.microsecond / 1000))
+            portal_runid = f'{sim_name}_{host}_{user}_{date_str}'
+
             portal_data['state'] = 'Running'
-            portal_data['host'] = self.config_manager.get_platform_parameter('HOST')
+            portal_data['host'] = host
             try:
                 portal_data['outputprefix'] = get_config(sim_name, 'OUTPUT_PREFIX')
             except KeyError:
@@ -631,6 +638,7 @@ class Framework:
             portal_data['startat'] = getTimeString(time.localtime(self.config_manager.sim_map[sim_name].start_time))
             portal_data['ips_version'] = get_versions()['version']
 
+            portal_data['portal_runid'] = portal_runid
             try:
                 portal_data['parent_portal_runid'] = get_config(sim_name, 'PARENT_PORTAL_RUNID')
             except KeyError:

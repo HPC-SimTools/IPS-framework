@@ -11,7 +11,7 @@ import tempfile
 import time
 import uuid
 from multiprocessing import Process, Queue, set_start_method
-from typing import Optional, Union
+from typing import Any, Optional, Union
 
 from configobj import ConfigObj
 
@@ -358,41 +358,56 @@ class ConfigurationManager:
 
         # SIMYAN: set up The Portal bridge, allowing for an absence of a portal
         use_portal = True
-        if 'USE_PORTAL' in self.sim_map[self.fwk_sim_name].sim_conf:
+        # If users explicitly disable the Portal via 'USE_PORTAL=false', or do not include a PORTAL_URL, assume the no-portal workflow.
+        # Otherwise, always initialize the Portal workflow
+        if 'PORTAL_URL' not in self.sim_map[self.fwk_sim_name].sim_conf:
+            use_portal = False
+        elif 'USE_PORTAL' in self.sim_map[self.fwk_sim_name].sim_conf:
             use_portal = self.sim_map[self.fwk_sim_name].sim_conf['USE_PORTAL']
             if use_portal.lower() == 'false':
                 use_portal = False
+
+        fwk_components = [('local_logging_bridge', 'LocalLoggingBridge', lambda _config: None)]
+        """tuple of the component module, the component name, and a specialized configuration function which takes in a dict and modifies it"""
+
         if use_portal:
-            portal_conf = {}
-            portal_conf['CLASS'] = 'FWK'
-            portal_conf['SUB_CLASS'] = 'COMP'
-            portal_conf['NAME'] = 'PortalBridge'
+
+            def _config_portal(config: dict[str, Any]):
+                config['PORTAL_URL'] = self.get_platform_parameter('PORTAL_URL', silent=True)
+                if config['PORTAL_URL']:
+                    bridge_conf['_IPS_PORTAL_API_KEY'] = self.get_platform_parameter('_IPS_PORTAL_API_KEY', silent=True)
+
+            fwk_components.append(('portal_bridge', 'PortalBridge', _config_portal))
+
+        for fwk_comp in fwk_components:
+            bridge_conf = {}
+            bridge_conf['CLASS'] = 'FWK'
+            bridge_conf['SUB_CLASS'] = 'COMP'
+            bridge_conf['NAME'] = fwk_comp[1]
             if 'FWK_COMPS_PATH' in self.sim_map[self.fwk_sim_name].sim_conf:
-                portal_conf['BIN_PATH'] = self.sim_map[self.fwk_sim_name].sim_conf['FWK_COMPS_PATH']
-                portal_conf['SCRIPT'] = os.path.join(portal_conf['BIN_PATH'], 'portalBridge.py')
+                bridge_conf['BIN_PATH'] = self.sim_map[self.fwk_sim_name].sim_conf['FWK_COMPS_PATH']
+                bridge_conf['SCRIPT'] = os.path.join(bridge_conf['BIN_PATH'], 'bridges', f'{fwk_comp[0]}.py')
             else:
-                portal_conf['SCRIPT'] = ''
-                portal_conf['MODULE'] = 'ipsframework.portalBridge'
-            portal_conf['INPUT_DIR'] = '/dev/null'
-            portal_conf['INPUT_FILES'] = ''
-            portal_conf['DATA_FILES'] = ''
-            portal_conf['OUTPUT_FILES'] = ''
-            portal_conf['NPROC'] = 1
-            portal_conf['LOG_LEVEL'] = 'INFO'
+                bridge_conf['SCRIPT'] = ''
+                bridge_conf['MODULE'] = f'ipsframework.bridges.{fwk_comp[0]}'
+            bridge_conf['INPUT_DIR'] = '/dev/null'
+            bridge_conf['INPUT_FILES'] = ''
+            bridge_conf['DATA_FILES'] = ''
+            bridge_conf['OUTPUT_FILES'] = ''
+            bridge_conf['NPROC'] = 1
+            bridge_conf['LOG_LEVEL'] = 'INFO'
             try:
-                portal_conf['USER'] = self.sim_map[self.fwk_sim_name].sim_conf['USER']
+                bridge_conf['USER'] = self.sim_map[self.fwk_sim_name].sim_conf['USER']
             except KeyError:
-                portal_conf['USER'] = self.platform_conf['USER']
-            portal_conf['HOST'] = self.platform_conf['HOST']
+                bridge_conf['USER'] = self.platform_conf['USER']
+            bridge_conf['HOST'] = self.platform_conf['HOST']
             if self.fwk.log_level == logging.DEBUG:
-                portal_conf['LOG_LEVEL'] = 'DEBUG'
+                bridge_conf['LOG_LEVEL'] = 'DEBUG'
 
-            portal_conf['PORTAL_URL'] = self.get_platform_parameter('PORTAL_URL', silent=True)
+            # additional configuration
+            fwk_comp[2](bridge_conf)
 
-            if portal_conf['PORTAL_URL']:
-                portal_conf['_IPS_PORTAL_API_KEY'] = self.get_platform_parameter('_IPS_PORTAL_API_KEY', silent=True)
-
-            component_id = self._create_component(portal_conf, self.sim_map[self.fwk_sim_name])
+            component_id = self._create_component(bridge_conf, self.sim_map[self.fwk_sim_name])
             self.fwk_components.append(component_id)
 
     def _initialize_sim(self, sim_data):

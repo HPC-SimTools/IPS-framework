@@ -64,7 +64,7 @@ def launch(binary: Any, task_name: str, working_dir: Union[str, os.PathLike], *a
     * `timeout` - The timeout in seconds for the task to complete.
     * `cpus_per_proc` - The number of cpus per process to use for the task. This implies that the DVMPlugin has set up a DVM daemon for this node.
     * `oversubscribe` - If `True`, then the number of processes can exceed the number of cores on the node.  Default is `False`.
-    
+
     If the worker has the attribute `dvm_uri_file`, then we are running
     with a DVM (Distributed Virtual Machine) so the `binary` needs a
     `prun` prepended pointing to that.
@@ -147,7 +147,7 @@ def launch(binary: Any, task_name: str, working_dir: Union[str, os.PathLike], *a
         # It can be defined in `task_env` or in `os.environ`, so we look in
         # both locations to just echo its presence. The flushes are necessary
         # in some HPC environments to ensure the output appears in the logs.
-        if task_env is not None and task_env is not {}:
+        if task_env is not None and task_env != {}:
             if 'PMIX_SERVER_URI41' in task_env:
                 worker.logger.debug(f"DVM environment variable PMIX_SERVER_URI41 "
                                    f"set in task_env to "
@@ -1240,7 +1240,8 @@ class ServicesProxy:
                 val = self._get_service_response(msg_id, block=True)
             except Exception:
                 if not silent:
-                    self.exception('Error retrieving value of config parameter %s', param)
+                    if log:
+                        self.exception('Error retrieving value of config parameter %s', param)
                     raise
                 return None
         return val
@@ -2053,7 +2054,6 @@ class ServicesProxy:
             portal_data['replace'] = replace
             portal_data['portal_runid'] = portal_runid
             event_data['portal_data'] = portal_data
-            # TODO make sure that we do NOT log the raw data in the IPS log file
             self.publish('_IPS_MONITOR', 'PORTAL_ADD_JUPYTER_DATA', event_data)
             self._send_monitor_event('IPS_PORTAL_ADD_JUPYTER_DATA', f'SOURCE = {source} TIMESTAMP = {timestamp} REPLACE = {replace}')
 
@@ -2536,7 +2536,6 @@ class ServicesProxy:
 
         self.info(f'Preparing to run ensembles in {run_dir}')
 
-
         # Ensure that we create a unique task pool name for this using the
         # instance prefix `name`
         # check this first to ensure uniqueness of `name` parameter
@@ -2664,12 +2663,12 @@ class DVMPlugin(WorkerPlugin):
                               'for Dask worker')
 
         # Necessary to ensure the DVM "sees" all the resources to manage
-        os.environ['PRTE_MCA_ras_slurm_use_entire_allocation'] = "1"
+        os.environ['PRTE_MCA_ras_slurm_use_entire_allocation'] = '1'
 
         self.worker = worker
         worker.logger = self.logger
 
-        self.logger.info(f'Launching DVM')
+        self.logger.info('Launching DVM')
         self.worker.dvm_uri_file = f'/tmp/dvm.uri.{os.getpid()}'
         command = [#'srun', '--mpi=pmix_v4', '-N', os.environ['SLURM_NNODES'], '--ntasks-per-node=1',
                    'prte', #'--no-daemonize',
@@ -2678,11 +2677,11 @@ class DVMPlugin(WorkerPlugin):
         mapping_policy = 'core'  # by default bind to cores
         if self.hwthreads:
             # ... unless you want to bind to hardware threads
-            self.logger.info(f'Binding to hardware threads')
+            self.logger.info('Binding to hardware threads')
             mapping_policy = 'hwtcpus'
 
         if self.oversubscribe:
-            self.logger.info(f'Allowing oversubscription of nodes')
+            self.logger.info('Allowing oversubscription of nodes')
             mapping_policy += ':oversubscribe'
 
         # This environment variable is specific to OpenMPI's PRTE
@@ -2702,9 +2701,6 @@ class DVMPlugin(WorkerPlugin):
 
         os.environ['PMIX_SERVER_URI41'] = self.worker.dvm_uri
 
-
-
-        return
 
     def teardown(self, worker: Worker):
         self.logger.info(f'Shutting down DVM at {self.worker.dvm_uri}')
@@ -2964,8 +2960,7 @@ class TaskPool:
         self.services.debug(f'Dask scheduler pid: {self.dask_sched_pid}')
 
         if not Path(self.dask_scheduler_file).exists():
-            self.services.critical(f'Dask scheduler file '
-                                   f'{self.dask_scheduler_file} does not exist')
+            self.services.critical(f'Dask scheduler file {self.dask_scheduler_file} does not exist')
 
         dask_nodes = 1 if dask_nodes is None else dask_nodes
         if services.get_config_param('MPIRUN') == 'eval':
