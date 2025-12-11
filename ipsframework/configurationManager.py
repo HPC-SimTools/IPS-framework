@@ -11,7 +11,7 @@ import tempfile
 import time
 import uuid
 from multiprocessing import Process, Queue, set_start_method
-from typing import Optional, Union
+from typing import Any, Optional, Union
 
 from configobj import ConfigObj
 
@@ -367,44 +367,48 @@ class ConfigurationManager:
             if use_portal.lower() == 'false':
                 use_portal = False
 
-        if use_portal:
-            bridge_module = 'portal_bridge'
-            bridge_name = 'PortalBridge'
-        else:
-            bridge_module = 'basic_bridge'
-            bridge_name = 'BasicBridge'
-
-        bridge_conf = {}
-        bridge_conf['CLASS'] = 'FWK'
-        bridge_conf['SUB_CLASS'] = 'COMP'
-        bridge_conf['NAME'] = bridge_name
-        if 'FWK_COMPS_PATH' in self.sim_map[self.fwk_sim_name].sim_conf:
-            bridge_conf['BIN_PATH'] = self.sim_map[self.fwk_sim_name].sim_conf['FWK_COMPS_PATH']
-            bridge_conf['SCRIPT'] = os.path.join(bridge_conf['BIN_PATH'], 'bridges', f'{bridge_module}.py')
-        else:
-            bridge_conf['SCRIPT'] = ''
-            bridge_conf['MODULE'] = f'ipsframework.bridges.{bridge_module}'
-        bridge_conf['INPUT_DIR'] = '/dev/null'
-        bridge_conf['INPUT_FILES'] = ''
-        bridge_conf['DATA_FILES'] = ''
-        bridge_conf['OUTPUT_FILES'] = ''
-        bridge_conf['NPROC'] = 1
-        bridge_conf['LOG_LEVEL'] = 'INFO'
-        try:
-            bridge_conf['USER'] = self.sim_map[self.fwk_sim_name].sim_conf['USER']
-        except KeyError:
-            bridge_conf['USER'] = self.platform_conf['USER']
-        bridge_conf['HOST'] = self.platform_conf['HOST']
-        if self.fwk.log_level == logging.DEBUG:
-            bridge_conf['LOG_LEVEL'] = 'DEBUG'
+        fwk_components = [('local_logging_bridge', 'LocalLoggingBridge', lambda _config: None)]
+        """tuple of the component module, the component name, and a specialized configuration function which takes in a dict and modifies it"""
 
         if use_portal:
-            bridge_conf['PORTAL_URL'] = self.get_platform_parameter('PORTAL_URL', silent=True)
-            if bridge_conf['PORTAL_URL']:
-                bridge_conf['_IPS_PORTAL_API_KEY'] = self.get_platform_parameter('_IPS_PORTAL_API_KEY', silent=True)
 
-        component_id = self._create_component(bridge_conf, self.sim_map[self.fwk_sim_name])
-        self.fwk_components.append(component_id)
+            def _config_portal(config: dict[str, Any]):
+                config['PORTAL_URL'] = self.get_platform_parameter('PORTAL_URL', silent=True)
+                if config['PORTAL_URL']:
+                    bridge_conf['_IPS_PORTAL_API_KEY'] = self.get_platform_parameter('_IPS_PORTAL_API_KEY', silent=True)
+
+            fwk_components.append(('portal_bridge', 'PortalBridge', _config_portal))
+
+        for fwk_comp in fwk_components:
+            bridge_conf = {}
+            bridge_conf['CLASS'] = 'FWK'
+            bridge_conf['SUB_CLASS'] = 'COMP'
+            bridge_conf['NAME'] = fwk_comp[1]
+            if 'FWK_COMPS_PATH' in self.sim_map[self.fwk_sim_name].sim_conf:
+                bridge_conf['BIN_PATH'] = self.sim_map[self.fwk_sim_name].sim_conf['FWK_COMPS_PATH']
+                bridge_conf['SCRIPT'] = os.path.join(bridge_conf['BIN_PATH'], 'bridges', f'{fwk_comp[0]}.py')
+            else:
+                bridge_conf['SCRIPT'] = ''
+                bridge_conf['MODULE'] = f'ipsframework.bridges.{fwk_comp[0]}'
+            bridge_conf['INPUT_DIR'] = '/dev/null'
+            bridge_conf['INPUT_FILES'] = ''
+            bridge_conf['DATA_FILES'] = ''
+            bridge_conf['OUTPUT_FILES'] = ''
+            bridge_conf['NPROC'] = 1
+            bridge_conf['LOG_LEVEL'] = 'INFO'
+            try:
+                bridge_conf['USER'] = self.sim_map[self.fwk_sim_name].sim_conf['USER']
+            except KeyError:
+                bridge_conf['USER'] = self.platform_conf['USER']
+            bridge_conf['HOST'] = self.platform_conf['HOST']
+            if self.fwk.log_level == logging.DEBUG:
+                bridge_conf['LOG_LEVEL'] = 'DEBUG'
+
+            # additional configuration
+            fwk_comp[2](bridge_conf)
+
+            component_id = self._create_component(bridge_conf, self.sim_map[self.fwk_sim_name])
+            self.fwk_components.append(component_id)
 
     def _initialize_sim(self, sim_data):
         """

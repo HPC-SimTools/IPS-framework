@@ -2054,7 +2054,6 @@ class ServicesProxy:
             portal_data['replace'] = replace
             portal_data['portal_runid'] = portal_runid
             event_data['portal_data'] = portal_data
-            # TODO make sure that we do NOT log the raw data in the IPS log file
             self.publish('_IPS_MONITOR', 'PORTAL_ADD_JUPYTER_DATA', event_data)
             self._send_monitor_event('IPS_PORTAL_ADD_JUPYTER_DATA', f'SOURCE = {source} TIMESTAMP = {timestamp} REPLACE = {replace}')
 

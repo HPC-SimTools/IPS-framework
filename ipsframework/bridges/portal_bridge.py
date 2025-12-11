@@ -9,12 +9,11 @@ import time
 from multiprocessing import Event, Pipe, Process
 from multiprocessing.connection import Connection
 from multiprocessing.synchronize import Event as EventType
-from typing import Any, Callable, Literal
+from typing import Any, Callable, Literal, Union
 
 import urllib3
 
 from ipsframework import Component
-from ipsframework.bridges.local_event_logger import LocalEventLogger, SimulationData
 
 
 def send_post(conn: Connection, stop: EventType, url: str):
@@ -179,6 +178,28 @@ class UrlRequestProcessManager:
         self.childProcess.start()
 
 
+class PortalSimulationData:
+    """
+    Container for simulation data.
+    """
+
+    def __init__(self):
+        self.counter = 0
+        self.monitor_file_prefix = ''
+        """The name of the file, minus the extension ('.html', '.jsonl', etc.).
+        
+        If this is empty, you must either check to see if you can create the file, or you should assume that you can't create the file.
+        """
+        self.portal_runid: Union[str, None] = None
+        """Locally determined portal runid, also sent to the portal."""
+        self.parent_portal_runid: Union[str, None] = None
+        """Parent portal runid, derived from locally determined portal runid. Should explicitly be None (not empty string) if not set."""
+        self.sim_name = ''
+        self.sim_root = ''
+        self.phys_time_stamp = -1
+        self.monitor_url = ''
+
+
 class PortalBridge(Component):
     """
     Framework component to communicate with the IPS web portal.
@@ -190,9 +211,9 @@ class PortalBridge(Component):
         :py:class:`component.Component` object.
         """
         super().__init__(services, config)
-        self.sim_map: dict[str, SimulationData] = {}
+        self.sim_map: dict[str, PortalSimulationData] = {}
         self.done = False
-        self.local_event_logger = LocalEventLogger()
+        self.first_portal_runid = None
         self.portal_url = ''
         self.first_event = True
         self.childProcess = None
@@ -217,7 +238,6 @@ class PortalBridge(Component):
             pass
 
         self.services.subscribe('_IPS_MONITOR', 'process_event')
-        self.local_event_logger.init(self.services)
 
     def step(self, timestamp=0.0, **keywords):
         """
@@ -228,7 +248,7 @@ class PortalBridge(Component):
             time.sleep(0.5)
 
     def finalize(self, timestamp=0.0, **keywords):
-        self.local_event_logger.finalize(self.sim_map)
+        pass
 
     def process_event(self, topicName, theEvent):
         """
@@ -244,7 +264,7 @@ class PortalBridge(Component):
 
         if portal_data['eventtype'] == 'IPS_START':
             sim_root = event_body['sim_root']
-            self.init_simulation(sim_name, sim_root)
+            self.init_simulation(sim_name, sim_root, portal_data['portal_runid'])
 
         sim_data = self.sim_map[sim_name]
         if portal_data['eventtype'] == 'PORTALBRIDGE_UPDATE_TIMESTAMP':
@@ -290,8 +310,6 @@ class PortalBridge(Component):
 
         if 'trace' in portal_data:
             portal_data['trace']['traceId'] = hashlib.md5(sim_data.portal_runid.encode()).hexdigest()
-
-        self.local_event_logger.send_event(self.services, sim_data, portal_data)
 
         if self.portal_url:
             if self.first_event:  # First time, launch sendPost.py daemon
@@ -367,7 +385,7 @@ class PortalBridge(Component):
             else:
                 self.services.debug('Portal Response: %d %s', code, msg)
 
-    def send_jupyter_notebook(self, sim_data: SimulationData, event_data):
+    def send_jupyter_notebook(self, sim_data: PortalSimulationData, event_data):
         if self.portal_url and self.portal_api_key:
             if not self.url_manager_jupyter_notebook:
                 self.url_manager_jupyter_notebook = UrlRequestProcessManager(
@@ -375,7 +393,7 @@ class PortalBridge(Component):
                 )
             self.http_req_and_response(self.url_manager_jupyter_notebook, event_data)
 
-    def send_notebook_data(self, sim_data: SimulationData, event_data):
+    def send_notebook_data(self, sim_data: PortalSimulationData, event_data):
         if self.portal_url and self.portal_api_key:
             if not self.url_manager_jupyter_data:
                 self.url_manager_jupyter_data = UrlRequestProcessManager(
@@ -383,7 +401,7 @@ class PortalBridge(Component):
                 )
             self.http_req_and_response(self.url_manager_jupyter_data, event_data)
 
-    def send_ensemble_variables(self, sim_data: SimulationData, event_data):
+    def send_ensemble_variables(self, sim_data: PortalSimulationData, event_data):
         if self.portal_url and self.portal_api_key:
             if not self.url_manager_ensemble_uploads:
                 self.url_manager_ensemble_uploads = UrlRequestProcessManager(
@@ -391,7 +409,7 @@ class PortalBridge(Component):
                 )
             self.http_req_and_response(self.url_manager_ensemble_uploads, event_data)
 
-    def init_simulation(self, sim_name: str, sim_root: str):
+    def init_simulation(self, sim_name: str, sim_root: str, portal_runid: str):
         """
         Create and send information about simulation *sim_name* living in
         *sim_root* so the portal can set up corresponding structures to manage
@@ -401,8 +419,23 @@ class PortalBridge(Component):
         if hasattr(self, '_IPS_PORTAL_API_KEY'):
             self.services.set_config_param('_IPS_PORTAL_API_KEY', self._IPS_PORTAL_API_KEY, target_sim_name=sim_name)
 
-        sim_data = self.local_event_logger.init_simulation(self.services, sim_name, sim_root, self.HOST, self.USER)
-        self.sim_map[sim_data.sim_name] = sim_data
+        sim_data = PortalSimulationData()
+        sim_data.sim_name = sim_name
+        sim_data.sim_root = sim_root
+
+        sim_data.portal_runid = portal_runid
+        try:
+            self.services.set_config_param('PORTAL_RUNID', sim_data.portal_runid, target_sim_name=sim_name)
+        except Exception:
+            self.services.error('Simulation %s is not accessible', sim_name)
+            return
+
+        if self.first_portal_runid:
+            sim_data.parent_portal_runid = self.first_portal_runid
+        else:
+            self.first_portal_runid = sim_data.portal_runid
+
+        self.sim_map[sim_name] = sim_data
 
     def terminate(self, status: Literal[0, 1]):
         """
