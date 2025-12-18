@@ -12,6 +12,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from ipsframework.resourceHelper import get_platform_info
+from ipsframework.services import add_analysis_data_file
 
 def main(instance: str,
          alpha: float, L:float, T_final:float, Nx:int, Nt:int) -> dict[str, Any]:
@@ -114,5 +115,6 @@ if __name__ == '__main__':
 
     except Exception as e:
         print(f'Encountered error: {e}')
-        print(f'Encountered error: {e}', file='gen_data_error.txt')
+        with open('gen_data_error.txt', 'w') as f:
+            print(f'Encountered error: {e!s}', file=f)
         print_exc()
