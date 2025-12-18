@@ -55,7 +55,7 @@ This code initializes JupyterHub to work with this run and contacts the web port
 
 ---
 
-For updating data files, we generally accommodate for two approaches: one where you want to multiple data files for each timestamp called, and one where you maintain multiple data files for a single timestamp but replace it per timestamp call. Both workflows utilize `self.services.add_analysis_data_file` .
+For updating data files, we generally accommodate for two approaches: one where you want to multiple data files for each timestamp called, and one where you maintain multiple data files for a single timestamp but replace it per timestamp call. Both workflows utilize `self.services.add_analysis_data_files` .
 
 For the approach where data files for multiple timestamps are maintained, the below code provides an example of loading it from a file which is regularly updated with the IPS state:
 
@@ -70,7 +70,7 @@ For the approach where data files for multiple timestamps are maintained, the be
             # and that this file is updated per timestamp call
             # In this example, we just want to snapshot our IPS state and save it in our JupyterHub workflow
             data_file = f'{timestamp}_state.json' # get current data file
-            self.services.add_analysis_data_file(
+            self.services.add_analysis_data_files(
                 current_data_file_path=data_file,
                 timestamp=timestamp,
             )
@@ -88,7 +88,7 @@ Or, if you only want to maintain a single timestamp, set the "replace" flag to T
         def step(self, timestamp=0.0):
             # assume that we continually update our state
             data_file = 'state.json' # get current data file
-            self.services.add_analysis_data_file(
+            self.services.add_analysis_data_files(
                 current_data_file_path=data_file,
                 replace=True,
             )

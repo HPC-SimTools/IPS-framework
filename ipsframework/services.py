@@ -1994,9 +1994,8 @@ class ServicesProxy:
 
         Does not modify the source notebook.
 
-        Params:
-          - source_notebook_path: location you want to load the source notebook from. This can be either an absolute path, or an IPS-appropriate relative path.
-          - dest_notebook_name: (optional, default None) filename of the notebook to use when saving it to the IPS Portal. If not provided, this will defauly to the filename of the source notebook.
+        :param source_notebook_path: location you want to load the source notebook from. This can be either an absolute path, or an IPS-appropriate relative path.
+        :param dest_notebook_name: (optional, default None) filename of the notebook to use when saving it to the IPS Portal. If not provided, this will defauly to the filename of the source notebook.
         """
         portal_runid = self._get_jupyter_runid()
         if portal_runid < 0:
@@ -2060,6 +2059,12 @@ class ServicesProxy:
     def publish(self, topicName: str, eventName: str, eventBody: Any) -> None:
         """
         Publish event consisting of *eventName* and *eventBody* to topic *topicName* to the IPS event service.
+
+        Publishing an event multiple components are subscribed to will cause each component to handle the message simultaneously.
+
+        :param topicName: the name of the topic to publish on, top-level namespace
+        :param eventName: event associated with the topic 
+        :param eventBody: data to send
         """
         if not topicName.startswith('_IPS'):
             topicName = self.sim_name + '_' + topicName
@@ -2068,6 +2073,11 @@ class ServicesProxy:
     def subscribe(self, topicName: str, callback: Callable) -> None:
         """
         Subscribe to topic *topicName* on the IPS event service and register *callback* as the method to be invoked when an event is published to that topic.
+
+        Multiple components can subscribe to the same topic name; if this is the case, each component will handle the message separately when the topic is published to.
+        
+        :param topicName: the name of the topic to subscribe to, top-level namespace
+        :param callback: the function which will be called on receiving a message
         """
         if not topicName.startswith('_IPS'):
             topicName = self.sim_name + '_' + topicName
@@ -2076,6 +2086,8 @@ class ServicesProxy:
     def unsubscribe(self, topicName: str) -> None:
         """
         Remove subscription to topic *topicName*.
+
+        :param topicName: the name of the topic to unsubscribe from
         """
         if not topicName.startswith('_IPS'):
             topicName = self.sim_name + '_' + topicName

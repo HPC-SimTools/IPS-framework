@@ -561,16 +561,21 @@ class Framework:
 
     def _send_monitor_event(self, sim_name='', eventType='', comment='', ok=True, target=None, operation=None, start_time=None, end_time=None, call_id=0):
         """
-        Publish a portal monitor event to the *_IPS_MONITOR* event topic.
+        Publish a monitor event to the *_IPS_MONITOR* event topic.
         Event topics that start with an underscore are reserved for use by the
         IPS Framework and services.
 
-          * *sim_name*: The name of the simulation to which this even belongs.
-          * *eventType*: The type of the event.
-          * *comment*: A string containing comment that describes the event.
-          * *ok*: A string containing the values 'True' or 'False', based on
+        The IPS *LocalLoggingBridge* component will always be at least one consumer of these messages. If the web portal has been configured,
+        the IPS *PortalBridge* component will also consume these messages.
+        When a single message is published, ALL of these components will handle the published message (there is no "shared queue").
+
+        :param sim_name: The name of the simulation to which this even belongs.
+        :param eventType: The type of the event.
+        :param comment: A string containing comment that describes the event.
+        :param ok: A string containing the values 'True' or 'False', based on
             whether the event indicates normal simulation execution, or an
             error condition.
+        :param target:
         """
         event_time = time.time()
         if self.verbose_debug:
@@ -584,10 +589,12 @@ class Framework:
         portal_data['walltime'] = '%.2f' % (event_time - self.config_manager.sim_map[sim_name].start_time)
         portal_data['time'] = getTimeString(time.localtime(event_time))
 
-        topic_name = '_IPS_MONITOR'
         # portal_data['phystimestamp'] = self.timeStamp
         get_config = self.config_manager.get_config_parameter
         if eventType == 'IPS_START':
+            # The 'IPS_START' event is always the first event sent from a component, and it should always be submitted internally.
+            # This event will always mark the first time a component has registered,
+            # and sending this event is indicative of the first time we make a Web Portal call and the first time we write to the event log files.
             user = self.config_manager.get_platform_parameter('USER')
             host = self.config_manager.get_platform_parameter('HOST')
             d = datetime.datetime.now()
@@ -645,6 +652,7 @@ class Framework:
                 pass
 
         elif eventType == 'IPS_END':
+            # The IPS_END event is always the last event called by the framework, ONLY sent out to indicate that there are no remaining messages to handle.
             portal_data['state'] = 'Completed'
             portal_data['stopat'] = getTimeString(time.localtime(event_time))
             # Zipkin json format
@@ -656,6 +664,7 @@ class Framework:
                 'tags': {'total_cores': str(self.resource_manager.total_cores)},
             }
         elif eventType == 'IPS_CALL_END':
+            # The IPS_CALL_END event is always the last event called by the framework,
             trace = {}  # Zipkin json format
             if start_time is not None and end_time is not None:
                 trace['timestamp'] = int(start_time * 1e6)  # convert to microsecond
@@ -676,7 +685,8 @@ class Framework:
 
         if self.verbose_debug:
             self.debug('Publishing %s', str(event_body))
-        self.event_manager.publish(topic_name, 'IPS_SIM', event_body)
+        # this message will be published to any component subscribed to '_IPS_MONITOR' - this generally includes the local logger bridge and the portal bridge
+        self.event_manager.publish(topicName='_IPS_MONITOR', eventName='IPS_SIM', eventBody=event_body)
 
     def _send_dynamic_sim_event(self, sim_name='', event_type='', ok=True):
         self.debug('_send_dynamic_sim_event(%s:%s)', event_type, sim_name)
@@ -684,9 +694,8 @@ class Framework:
         event_data['eventtype'] = event_type
         event_data['SIM_NAME'] = sim_name
         event_data['ok'] = ok
-        topic_name = '_IPS_DYNAMIC_SIMULATION'
         self.debug('Publishing %s', str(event_data))
-        self.event_manager.publish(topic_name, 'IPS_DYNAMIC_SIM', event_data)
+        self.event_manager.publish(topicName='_IPS_DYNAMIC_SIMULATION', eventName='IPS_DYNAMIC_SIM', eventBody=event_data)
 
     # TODO mark status as a "Literal" if we move to Python >= 3.8
     def send_terminate_msg(self, sim_name: str, status=Message.SUCCESS):
