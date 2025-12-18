@@ -26,8 +26,8 @@ def create_cmd(instance: str, path: Path, alpha: float, L:float, T_final:float,
     :param Nt: number of time steps
     :returns: list of command line arguments to be executed in step()
     """
-    executable = f'{path!s}/gen_data.py'
-    cmd = ['python3', executable, '--instance', instance,
+    executable = path / 'gen_data.py'
+    cmd = ['python3', str(executable), '--instance', instance,
            '--alpha', alpha, '--L', L, '--T_final', T_final,
            '--Nx', Nx, '--Nt', Nt]
     return cmd
