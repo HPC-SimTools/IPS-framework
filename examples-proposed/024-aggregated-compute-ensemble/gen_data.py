@@ -19,7 +19,7 @@ from traceback import print_exc
 import numpy as np
 
 from ipsframework.resourceHelper import get_platform_info
-from ipsframework.services import add_analysis_data_file
+
 
 def main(instance: str,
          alpha: float, L:float, T_final:float, Nx:int, Nt:int) -> dict[str, Any]:
