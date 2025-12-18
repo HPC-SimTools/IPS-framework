@@ -1,6 +1,14 @@
 #!/usr/bin/env python3
 """
     Used to generate synthetic data as an example.
+
+    Writes two output files:
+
+    * `<instance ID>_solution.json`: contains the synthetic data
+    * `<instance ID>_stats.csv`: contains provenance information about the run
+
+    The JSON file is, in turn, read by the a per-instance jupyter notebook
+    available on the Portal to generate a plot of the data.
 """
 import argparse
 from typing import Any
@@ -9,7 +17,6 @@ import csv
 from time import time
 from traceback import print_exc
 import numpy as np
-import matplotlib.pyplot as plt
 
 from ipsframework.resourceHelper import get_platform_info
 from ipsframework.services import add_analysis_data_file
@@ -58,13 +65,7 @@ def main(instance: str,
             u_new[i] = u[i] + r * (u[i + 1] - 2 * u[i] + u[i - 1])
         u = u_new
 
-    # Plotting the result
-    plt.plot(x, u)
-    plt.xlabel("Position (x)")
-    plt.ylabel("Temperature (u)")
-    plt.title("Solution of 1D Heat Equation")
-    plt.grid(True)
-    plt.savefig(f"{instance}_solution.png")
+
 
     # Save some per-component stats
     stats_fname = f'{instance}_stats.csv'
