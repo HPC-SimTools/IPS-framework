@@ -26,8 +26,8 @@ def create_cmd(instance: str, path: Path, alpha: float, L:float, T_final:float,
     :param Nt: number of time steps
     :returns: list of command line arguments to be executed in step()
     """
-    executable = f'{path!s}/gen_data.py'
-    cmd = ['python3', executable, '--instance', instance,
+    executable = path / 'gen_data.py'
+    cmd = ['python3', str(executable), '--instance', instance,
            '--alpha', alpha, '--L', L, '--T_final', T_final,
            '--Nx', Nx, '--Nt', Nt]
     return cmd
@@ -71,12 +71,12 @@ class InstanceComponent(Component):
         self.services.info(f'{instance_id}: Completed MPI executable with '
                            f'return value: {return_value}.')
 
-        # TODO temporarily commenting this out until the actual
-        # example is ready to consider adding data files to the portal.  This
-        # originally came from code Lance wrote in a previous example.
-        # try:
-        #     self.services.add_analysis_data_files([data_fname, stats_fname], timestamp)
-        # except Exception:
-        #     print('did not add data files to portal, check logs')
+        # Add the generated data JSON and CSV files to the portal
+        try:
+            self.services.add_analysis_data_files([f'{instance_id}_solution.json',
+                                                   f'{instance_id}_stats.csv'],
+                                                  replace=True)
+        except Exception:
+            print('did not add data files to portal, check logs')
 
         self.services.info(f'{instance_id}: End of step of instance component.')

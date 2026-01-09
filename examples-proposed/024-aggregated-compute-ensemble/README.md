@@ -14,6 +14,7 @@ ignored.  These are due to Dask not having a clean shutdown.
 * `driver.py` -- top-level driver
 * `instance_component.py` -- component worker code
 * `instance_driver.py` -- component driver code
+* `gen_data.py` -- data generation code for the component
 
 * `ensemble.conf` -- top-level configuration file
 * `platform.conf` -- platform configuration file
