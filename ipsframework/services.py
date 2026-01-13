@@ -1942,18 +1942,21 @@ class ServicesProxy:
         if self._portal_runid == -2:
             return -2
 
-        # first, check to see if the portal URL was even initialized, fall back if not
-        try:
-            self.get_config_param('PORTAL_URL', silent=True)
-        except Exception:
-            self.warning('_get_jupyter_runid: PORTAL_URL was not defined, disabling Jupyter workflow')
+        # first, check to see if we even want to use the portal
+        use_portal = self.get_config_param('USE_PORTAL', silent=True)
+        if use_portal and use_portal.lower() == 'false':
+            self.warning('web portal disabled')
             self._portal_runid = -2
             return -2
 
+        # next, check to see if the portal URL was even initialized, fall back if not
+        if not self.get_config_param('PORTAL_URL', silent=True):
+            self.warning('_get_jupyter_runid: PORTAL_URL was not defined, disabling Jupyter workflow')
+            self._portal_runid = -2
+            return -2
+        
         # next, check to see if the user remembered to define an API key (adding data requires a runid)
-        try:
-            self.get_config_param('_IPS_PORTAL_API_KEY', silent=True)
-        except Exception:
+        if not self.get_config_param('_IPS_PORTAL_API_KEY', silent=True):
             self.warning('_get_jupyter_runid: PORTAL_API_KEY was not defined, disabling Jupyter workflow')
             self._portal_runid = -2
             return -2
@@ -2388,6 +2391,8 @@ class ServicesProxy:
         # This ID should only be shared by runs within an ensemble
         portal_ensemble_id = str(uuid.uuid4())
 
+        use_portal = self.get_config_param('USE_PORTAL', silent=True) != False  # noqa: E712
+
         def create_driver_config_file(template, working_dir, variables, name):
             """Create an IPS config file for an ensemble instance
 
@@ -2417,9 +2422,16 @@ class ServicesProxy:
             template['SIM_ROOT'] = Path(working_dir)
 
             # Handle portal configuration, note that PORTAL_API_KEY should be an environment variable and will be passed in later.
-            portal_runid = self.get_config_param('PORTAL_RUNID', silent=True)
-            portal_url = self.get_config_param('PORTAL_URL', silent=True)
-            if portal_runid and portal_url:
+            if use_portal:
+                # WARNING: portal_runid is set asynchronously by the Portal Bridge, wait for it to be set
+                # currently, the value we use in the config file is the value the Bridge component itself generates
+                # eventually, would like to rework this so we avoid ever setting this UUID value (and sending it to the portal),
+                # only using and sending the actual portal-generated value
+                portal_runid = None
+                while portal_runid is None:
+                    portal_runid = self.get_config_param('PORTAL_RUNID', silent=True)
+                portal_url = self.get_config_param('PORTAL_URL', silent=True)
+
                 template['PORTAL_URL'] = portal_url
                 template['USE_PORTAL'] = 'True'
                 template['PARENT_PORTAL_RUNID'] = portal_runid
@@ -2520,9 +2532,7 @@ class ServicesProxy:
 
         def send_ensemble_instance_to_portal(ensemble_name: str, data_path: Path) -> None:
             # Make sure we actually want to use the portal in the first place
-            portal_runid = self.get_config_param('PORTAL_RUNID', silent=True)
-            portal_url = self.get_config_param('PORTAL_URL', silent=True)
-            if not portal_runid or not portal_url:
+            if not use_portal:
                 return
 
             # ensure that the portal is initialized
