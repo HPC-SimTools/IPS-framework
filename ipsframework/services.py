@@ -2004,6 +2004,11 @@ class ServicesProxy:
         if portal_runid < 0:
             return
 
+        if not os.path.exists(source_notebook_path):
+            msg = f'Path to notebook {source_notebook_path} does not exist'
+            self.error(msg)
+            raise FileNotFoundError(msg)
+
         if dest_notebook_name is None:
             dest_notebook_name = os.path.basename(source_notebook_path)
         else:
