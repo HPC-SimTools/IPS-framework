@@ -9,21 +9,21 @@ from pathlib import Path
 from ipsframework import Component
 from ipsframework.ipsutil import params_from_csv
 
+# The notebook that will be copied for each ensemble instance
+SOURCE_NOTEBOOK_NAME='global_notebook.ipynb'
+
 
 class EnsembleDriver(Component):
     """Kicks off a simple ensemble"""
 
     def init(self, timestamp=0.0):
-        pass
-        # TODO temporarily commenting this out until the actual
-        # example is ready to consider adding a notebook to the portal.
+        self.services.stage_input_files([SOURCE_NOTEBOOK_NAME])
 
-        # NOTEBOOK_TEMPLATE = 'notebook.ipynb'
-        # self.services.stage_input_files([NOTEBOOK_TEMPLATE])
-        # try:
-        #     self.services.initialize_jupyter_notebook(NOTEBOOK_TEMPLATE)
-        # except Exception:
-        #     print('did not add notebook to portal')
+        self.services.initialize_jupyter_notebook(
+                dest_notebook_name='jupyterhub_global_notebook.ipynb',
+                source_notebook_path=SOURCE_NOTEBOOK_NAME,
+        )
+
 
     def step(self, timestamp=0.0):
         # This CSV file contains the parameters used for the
