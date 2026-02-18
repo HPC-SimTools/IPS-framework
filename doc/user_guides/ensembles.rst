@@ -15,6 +15,8 @@ Ensemble simulations are useful when you need to:
 
 The ensemble functionality automatically generates configuration files for each simulation instance, distributes the workload across available compute nodes, and manages the execution of all ensemble members.
 
+If interaction with the `IPS Portal <portal_guides.html>`_ is enabled, the ensemble system will also handle interaction with the IPS Portal automatically.
+
 Method Signature
 ----------------
 
