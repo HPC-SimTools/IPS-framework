@@ -2392,11 +2392,12 @@ class ServicesProxy:
             and their parameters
         """
 
-        # This should be a unique variable across all ensembles we keep track of in the portal
-        # This ID should only be shared by runs within an ensemble
+        # This should be a unique variable across all ensembles we keep track
+        # of in the portal This ID should only be shared by runs within an
+        # ensemble
         portal_ensemble_id = str(uuid.uuid4())
 
-        use_portal = self.get_config_param('USE_PORTAL', silent=True) != False  # noqa: E712
+        use_portal = self.get_config_param('USE_PORTAL', silent=True)
 
         def create_driver_config_file(template, working_dir, variables, name):
             """Create an IPS config file for an ensemble instance
@@ -2419,28 +2420,43 @@ class ServicesProxy:
             template['_IPS_PORTAL_ENSEMBLE_ID'] = portal_ensemble_id
             template['SIM_NAME'] = name
 
-            if 'SIM_ROOT' in template and template['SIM_ROOT'] is not None and template['SIM_ROOT'].strip() != '':
-                self.info(f'SIM_ROOT in template config assigned a value, {template["SIM_ROOT"]}, that will be ignored')
+            if 'SIM_ROOT' in template and \
+                    template['SIM_ROOT'] is not None and \
+                    template['SIM_ROOT'].strip() != '':
+                self.info(f'SIM_ROOT in template config assigned a value, '
+                          f'{template["SIM_ROOT"]}, that will be ignored')
 
             # Ensure that the instance gets a unique directory for its work
             # by setting SIM_ROOT to the prefix path.
             template['SIM_ROOT'] = Path(working_dir)
 
-            # Handle portal configuration, note that PORTAL_API_KEY should be an environment variable and will be passed in later.
+            # Handle portal configuration, note that PORTAL_API_KEY should be
+            # an environment variable and will be passed in later.
             if use_portal:
-                # WARNING: portal_runid is set asynchronously by the Portal Bridge, wait for it to be set
-                # currently, the value we use in the config file is the value the Bridge component itself generates
-                # eventually, would like to rework this so we avoid ever setting this UUID value (and sending it to the portal),
-                # only using and sending the actual portal-generated value
+                self.debug(f'USE_PORTAL is True, so emitting PORTAL variables.')
+                # WARNING: portal_runid is set asynchronously by the Portal
+                # Bridge, wait for it to be set currently, the value we use
+                # in the config file is the value the Bridge component itself
+                # generates eventually, would like to rework this so we avoid
+                # ever setting this UUID value (and sending it to the
+                # portal), only using and sending the actual portal-generated
+                # value
                 portal_runid = None
                 while portal_runid is None:
-                    portal_runid = self.get_config_param('PORTAL_RUNID', silent=True)
-                portal_url = self.get_config_param('PORTAL_URL', silent=True)
+                    self.debug('Attempting to get portal run ID')
+                    portal_runid = self.get_config_param('PORTAL_RUNID',
+                                                         silent=True)
+                self.debug(f'Using portal run ID: {portal_runid}')
+
+                portal_url = self.get_config_param('PORTAL_URL',
+                                                   silent=True)
 
                 template['PORTAL_URL'] = portal_url
                 template['USE_PORTAL'] = 'True'
                 template['PARENT_PORTAL_RUNID'] = portal_runid
             else:
+                self.debug('USE_PORTAL is False, so propagating that to '
+                           'ensemble instance config file.')
                 template['USE_PORTAL'] = 'False'
 
             # We need to plug in the variables, so we need to find the section
