@@ -2434,7 +2434,8 @@ class ServicesProxy:
 
             # Handle portal configuration, note that PORTAL_API_KEY should be
             # an environment variable and will be passed in later.
-            self.debug(f'use_portal inside create_driver_config_file: {use_portal}')
+            self.debug(f'use_portal inside create_driver_config_file: '
+                       f'{use_portal}, with type {type(use_portal)}')
             if use_portal:
                 self.debug(f'USE_PORTAL is True, so emitting PORTAL variables.')
                 # WARNING: portal_runid is set asynchronously by the Portal
