@@ -21,14 +21,14 @@ To use the portal on your local cluster, include the following variables in your
 
 .. code-block:: text
 
+   # make sure to set this if you actually want to use the portal
+   USE_PORTAL = true
    # stable version
    PORTAL_URL = http://lb.ipsportal.production.svc.spin.nersc.org
    # or, for the latest version
    # PORTAL_URL = http://lb.ipsportal.development.svc.spin.nersc.org
    # The API key is required for certain interactions with the portal, and will eventually become mandatory. This key should generally be set as an environment variable, and not saved to version control.
    PORTAL_API_KEY = "YOUR_PORTAL_API_KEY"  # change this
-   # To disable the portal even if PORTAL_URL is set, uncomment the next line.
-   # USE_PORTAL = false
 
 NOTE: On shared clusters, i.e. Perlmutter, there will generally be specific files that you can source in Slurm scripts which will automatically configure the Portal credentials for you, so you can skip settings these variables yourself. Please see the appropriate project documentation for information on how to configure this.
 

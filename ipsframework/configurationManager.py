@@ -357,14 +357,15 @@ class ConfigurationManager:
         self.fwk_components.append(runspace_component_id)
 
         # SIMYAN: set up The Portal bridge, allowing for an absence of a portal
-        use_portal = True
-        # If users explicitly disable the Portal via 'USE_PORTAL=false', or do not include a PORTAL_URL, assume the no-portal workflow.
-        # Otherwise, always initialize the Portal workflow
+        use_portal = False
+        # Users must set USE_PORTAL and include a PORTAL_URL in order to enable the portal
         if 'PORTAL_URL' not in self.sim_map[self.fwk_sim_name].sim_conf:
             use_portal = False
         elif 'USE_PORTAL' in self.sim_map[self.fwk_sim_name].sim_conf:
             use_portal = self.sim_map[self.fwk_sim_name].sim_conf['USE_PORTAL']
-            if use_portal.lower() == 'false':
+            if isinstance(use_portal, str) and use_portal.lower().strip() == 'true':
+                use_portal = True
+            else:
                 use_portal = False
 
         fwk_components = [('local_logging_bridge', 'LocalLoggingBridge', lambda _config: None)]

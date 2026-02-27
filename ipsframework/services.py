@@ -1927,8 +1927,21 @@ class ServicesProxy:
         self.monitor_url = url
         self._send_monitor_event(eventType='IPS_SET_MONITOR_URL', comment='SUCCESS')
 
-    def _get_jupyter_runid(self) -> int:
-        """Get the runid Jupyter will associate with this run.
+    def _should_use_portal(self) -> bool:
+        """Return True if we want to use the portal, False if not"""
+        use_portal_config = self.get_config_param('USE_PORTAL', silent=True)
+
+        if isinstance(use_portal_config, str):
+             return use_portal_config.strip().lower() == 'true'
+        elif use_portal_config is None:
+            return False
+        else:
+            # Because USE_PORTAL was not set in config file, or was mistakenly set as a dictionary.
+            self.warning('Unusual value for USE_PORTAL: %s', use_portal_config)
+            return False
+
+    def _get_portal_runid(self) -> int:
+        """Get the runid Jupyter and the Portal will associate with this run.
         Generally this will be the runid that the portal emits, but we will try to allow for fallbacks in certain cases.
 
         If value is < 0, we were unable to get the portal runid.
@@ -1943,8 +1956,7 @@ class ServicesProxy:
             return -2
 
         # first, check to see if we even want to use the portal
-        use_portal = self.get_config_param('USE_PORTAL', silent=True)
-        if use_portal and use_portal.lower() == 'false':
+        if not self._should_use_portal():
             self.warning('web portal disabled')
             self._portal_runid = -2
             return -2
@@ -2000,7 +2012,7 @@ class ServicesProxy:
         :param source_notebook_path: location you want to load the source notebook from. This can be either an absolute path, or an IPS-appropriate relative path.
         :param dest_notebook_name: (optional, default None) filename of the notebook to use when saving it to the IPS Portal. If not provided, this will defauly to the filename of the source notebook.
         """
-        portal_runid = self._get_jupyter_runid()
+        portal_runid = self._get_portal_runid()
         if portal_runid < 0:
             return
 
@@ -2038,7 +2050,7 @@ class ServicesProxy:
         :param replace: If True, replace the last data file added with the new data file. If False, simply append the new data file. (default: False)
               Note that if replace is not True but you attempt to overwrite it, a ValueError will be thrown.
         """
-        portal_runid = self._get_jupyter_runid()
+        portal_runid = self._get_portal_runid()
         if portal_runid < 0:
             return
 
@@ -2396,15 +2408,7 @@ class ServicesProxy:
         # ensemble
         portal_ensemble_id = str(uuid.uuid4())
 
-        # (get_config_param() will return a string of a whatever the user set
-        # or None)
-        use_portal = self.get_config_param('USE_PORTAL', silent=True)
-
-        if use_portal is None:
-            # Because USE_PORTAL was not set in config file.
-            use_portal = False
-        elif type(use_portal) == str:
-            use_portal = "true" == use_portal.strip().lower()
+        use_portal = self._should_use_portal()
 
         self.debug(f'use portal = {use_portal!s}')
 
@@ -2573,7 +2577,7 @@ class ServicesProxy:
                 return
 
             # ensure that the portal is initialized
-            portal_runid = self._get_jupyter_runid()
+            portal_runid = self._get_portal_runid()
             if portal_runid < 0:
                 return
 
