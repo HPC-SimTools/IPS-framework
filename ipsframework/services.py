@@ -2396,10 +2396,10 @@ class ServicesProxy:
         # ensemble
         portal_ensemble_id = str(uuid.uuid4())
 
-        # (Need explicit cast to bool since get_config_param() will return
-        # "True" or "False" as a string.)
-        use_portal = bool(self.get_config_param('USE_PORTAL',
-                                                silent=True))
+        # (get_config_param() will return a string; casting to boolean doesn't
+        # work since *any value* will be seen as non-zero and therefore `True` --
+        # even the string 'False'!!)
+        use_portal = self.get_config_param('USE_PORTAL', silent=True).strip() == 'True'
         self.debug(f'use portal = {use_portal}')
 
         def create_driver_config_file(template,
