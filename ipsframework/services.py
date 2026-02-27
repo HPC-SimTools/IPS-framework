@@ -2391,16 +2391,22 @@ class ServicesProxy:
         :returns: a list of dicts mapping created subdirs to simulation names
             and their parameters
         """
-
         # This should be a unique variable across all ensembles we keep track
         # of in the portal This ID should only be shared by runs within an
         # ensemble
         portal_ensemble_id = str(uuid.uuid4())
 
-        use_portal = self.get_config_param('USE_PORTAL', silent=True)
+        # (Need explicit cast to bool since get_config_param() will return
+        # "True" or "False" as a string.)
+        use_portal = bool(self.get_config_param('USE_PORTAL',
+                                                silent=True))
         self.debug(f'use portal = {use_portal}')
 
-        def create_driver_config_file(template, working_dir, variables, name, use_portal):
+        def create_driver_config_file(template,
+                                      working_dir,
+                                      variables,
+                                      name,
+                                      use_portal):
             """Create an IPS config file for an ensemble instance
 
             :param template: ConfigObj from which to derive the config file
