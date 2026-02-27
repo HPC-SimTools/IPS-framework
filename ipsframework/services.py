@@ -2398,6 +2398,7 @@ class ServicesProxy:
         portal_ensemble_id = str(uuid.uuid4())
 
         use_portal = self.get_config_param('USE_PORTAL', silent=True)
+        self.debug(f'use portal = {use_portal}')
 
         def create_driver_config_file(template, working_dir, variables, name):
             """Create an IPS config file for an ensemble instance
