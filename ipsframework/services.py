@@ -2400,7 +2400,7 @@ class ServicesProxy:
         use_portal = self.get_config_param('USE_PORTAL', silent=True)
         self.debug(f'use portal = {use_portal}')
 
-        def create_driver_config_file(template, working_dir, variables, name):
+        def create_driver_config_file(template, working_dir, variables, name, use_portal):
             """Create an IPS config file for an ensemble instance
 
             :param template: ConfigObj from which to derive the config file
@@ -2408,6 +2408,7 @@ class ServicesProxy:
             :param variables: component parameters that need to be plugged
                 into the template
             :param name: instance string prefix for file names
+            :param use_portal: whether to use portal
             :returns: The file name of the created driver config file
             """
             # ensure working_dir is Path obj since we use / operators later; no
@@ -2433,6 +2434,7 @@ class ServicesProxy:
 
             # Handle portal configuration, note that PORTAL_API_KEY should be
             # an environment variable and will be passed in later.
+            self.debug(f'use_portal inside create_driver_config_file: {use_portal}')
             if use_portal:
                 self.debug(f'USE_PORTAL is True, so emitting PORTAL variables.')
                 # WARNING: portal_runid is set asynchronously by the Portal
@@ -2627,12 +2629,20 @@ class ServicesProxy:
             # instance, particularly because part of the error checking is to
             # ensure that all the variables have been assigned.  The first
             # instance element contains the ensemble instance name.
-            simulation_filename = create_driver_config_file(deepcopy(template_config), working_dir, instance[1], instance[0])
-            self.debug(f'Simulation config file for instance {instance[0]} is {simulation_filename}')
+            simulation_filename = create_driver_config_file(deepcopy(template_config),
+                                                            working_dir,
+                                                            instance[1],
+                                                            instance[0],
+                                                            use_portal)
+            self.debug(f'Simulation config file for instance {instance[0]} is '
+                       f'{simulation_filename}')
 
             # Create the bespoke platform config file for this instance
-            platform_filename = create_platform_config_file(instance[0], working_dir, cores_per_instance)
-            self.debug(f'Platform config file for instance {instance[0]} is {platform_filename}')
+            platform_filename = create_platform_config_file(instance[0],
+                                                            working_dir,
+                                                            cores_per_instance)
+            self.debug(f'Platform config file for instance {instance[0]} is '
+                       f'{platform_filename}')
 
             # Submit a task to run the simulation instance, which is another
             # IPS run pointed to that config file.
