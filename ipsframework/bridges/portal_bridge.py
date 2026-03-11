@@ -316,19 +316,21 @@ class PortalBridge(Component):
             portal_data['trace']['traceId'] = hashlib.md5(sim_data.portal_runid.encode()).hexdigest()
 
         if self.portal_url:
+            polling_timeout = 0.0
             if self.first_event:  # First time, launch sendPost.py daemon
                 self.parent_conn, child_conn = Pipe()
                 self.childProcessStop = Event()
                 self.childProcess = Process(target=send_post, args=(child_conn, self.childProcessStop, self.portal_url))
                 self.childProcess.start()
                 self.first_event = False
+                polling_timeout = 5.0  # wait a little longer if this was the first event
 
             try:
                 self.parent_conn.send(portal_data)
             except OSError:
                 pass
 
-            self.check_send_post_responses()
+            self.check_send_post_responses(polling_timeout)
 
         if portal_data['eventtype'] == 'IPS_END':
             del self.sim_map[sim_name]
@@ -337,16 +339,16 @@ class PortalBridge(Component):
             if self.childProcess:
                 self.childProcessStop.set()
                 self.childProcess.join()
-                self.check_send_post_responses()
+                self.check_send_post_responses(0.0)
             self.done = True
             self.services.debug('No more simulation to monitor - exiting')
             time.sleep(1)
 
-    def check_send_post_responses(self):
+    def check_send_post_responses(self, polling_timeout: float = 0.0):
         if self.parent_conn is None:
             self.services.warning('Giving up on polling for portal responses')
             return
-        while self.parent_conn.poll(timeout=2.0):
+        while self.parent_conn.poll(timeout=polling_timeout):
             try:
                 code, msg = self.parent_conn.recv()
             except (EOFError, OSError):
