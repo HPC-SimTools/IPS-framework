@@ -344,6 +344,8 @@ class ServicesProxy:
         """
         This is meant to be a unique identifier fallback in the event we can't get the portal runid.
         """
+        self._portal_runid_event = threading.Event()
+        """Thread-safe means to detect if self._portal_runid has been set"""
 
     def __initialize__(self, component_ref):
         """
@@ -1940,45 +1942,52 @@ class ServicesProxy:
             self.warning('Unusual value for USE_PORTAL: %s', use_portal_config)
             return False
 
-    def _get_portal_runid(self) -> int:
+    def _establish_portal_runid(self) -> None:
         """Get the runid Jupyter and the Portal will associate with this run.
         Generally this will be the runid that the portal emits, but we will try to allow for fallbacks in certain cases.
 
-        If value is < 0, we were unable to get the portal runid.
+        If value >= 0, we have the portal runid
+        If value == -1, we have not yet set the portal runid
+        If value == -2, we have tried and failed to get the portal runid, and will not try again
+
+        You should explicitly check the value of self._portal_runid after this function, as this function is concerned with setting the value in a thread-safe context.
         """
 
-        # already successful
-        if self._portal_runid >= 0:
-            return self._portal_runid
-
-        # already failed
-        if self._portal_runid == -2:
-            return -2
+        # first, check if portal_runid was already set
+        if self._portal_runid_event.is_set():
+            return
 
         # first, check to see if we even want to use the portal
         if not self._should_use_portal():
             self.warning('web portal disabled')
             self._portal_runid = -2
-            return -2
+            self._portal_runid_event.set()
+            return
 
         # next, check to see if the portal URL was even initialized, fall back if not
         if not self.get_config_param('PORTAL_URL', silent=True):
             self.warning('_get_jupyter_runid: PORTAL_URL was not defined, disabling Jupyter workflow')
             self._portal_runid = -2
-            return -2
+            self._portal_runid_event.set()
+            return
         
         # next, check to see if the user remembered to define an API key (adding data requires a runid)
         if not self.get_config_param('_IPS_PORTAL_API_KEY', silent=True):
             self.warning('_get_jupyter_runid: PORTAL_API_KEY was not defined, disabling Jupyter workflow')
             self._portal_runid = -2
-            return -2
+            self._portal_runid_event.set()
+            return
 
         # Here, we will periodically check to see if we have our config param set
         # The IPS Portal Bridge component will set this after it gets a response back from the IPS_START event
         # Inside this IPS_START event is the runid as maintained by the IPS Portal itself
+
         attempts = 0
-        max_attempts = 30
-        while True:
+        max_attempts = 10
+        base_time = time.time()
+
+        # if the event flag is set from another call, self._portal_runid should also be set to a non-default value, so break early
+        while not self._portal_runid_event.is_set():
             try:
                 # We expect to fail this call a few times, so do not log the failed attempts
                 value = self.get_config_param('_IPS_PORTAL_RUNID', log=False)
@@ -1987,16 +1996,21 @@ class ServicesProxy:
                 except Exception:
                     self.warning('got back invalid value for runid from portal: %s', value)
                     self._portal_runid = -2
-                    return -2
+                    self._portal_runid_event.set()
+                    return
                 self._portal_runid = value
-                return value
+                self._portal_runid_event.set()
+                self.info('took this long to obtain PORTAL_RUNID: %d', time.time() - base_time)
+                return
             except Exception:
                 attempts += 1
                 if attempts >= max_attempts:
                     self.warning('_get_jupyter_runid: Unable to get RUNID directly from remote portal, disabling Jupyter workflow')
                     self._portal_runid = -2
-                    return -2
-                time.sleep(1.0)
+                    self._portal_runid_event.set()
+                    self.warning('took this amount of time to reach max attempts: %d', time.time() - base_time)
+                    return
+                self._portal_runid_event.wait(1.0)
 
     def initialize_jupyter_notebook(
         self,
@@ -2012,8 +2026,12 @@ class ServicesProxy:
         :param source_notebook_path: location you want to load the source notebook from. This can be either an absolute path, or an IPS-appropriate relative path.
         :param dest_notebook_name: (optional, default None) filename of the notebook to use when saving it to the IPS Portal. If not provided, this will defauly to the filename of the source notebook.
         """
-        portal_runid = self._get_portal_runid()
-        if portal_runid < 0:
+        # have we initialized a runid yet? if not, block this function call until we can establish or not establish one
+        if not self._portal_runid_event.is_set():
+            self._establish_portal_runid()
+        
+        # now check to see if we have a valid runid
+        if self._portal_runid < 0:
             return
 
         if not os.path.exists(source_notebook_path):
@@ -2035,7 +2053,7 @@ class ServicesProxy:
         portal_data['data_source'] = os.path.join(os.getcwd(), source_notebook_path) if not os.path.isabs(source_notebook_path) else source_notebook_path
         portal_data['username'] = self.get_config_param('USER')
         portal_data['filename'] = dest_notebook_name
-        portal_data['portal_runid'] = portal_runid
+        portal_data['portal_runid'] = self._portal_runid
         event_data['portal_data'] = portal_data
         self.publish('_IPS_MONITOR', 'PORTAL_REGISTER_NOTEBOOK', event_data)
         self._send_monitor_event('IPS_PORTAL_REGISTER_NOTEBOOK', f'FILENAME = {dest_notebook_name}')
@@ -2050,8 +2068,12 @@ class ServicesProxy:
         :param replace: If True, replace the last data file added with the new data file. If False, simply append the new data file. (default: False)
               Note that if replace is not True but you attempt to overwrite it, a ValueError will be thrown.
         """
-        portal_runid = self._get_portal_runid()
-        if portal_runid < 0:
+        # have we initialized a runid yet? if not, block this function call until we can establish or not establish one
+        if not self._portal_runid_event.is_set():
+            self._establish_portal_runid()
+
+        # now check to see if we have a valid runid
+        if self._portal_runid < 0:
             return
 
         for source in current_data_file_paths:
@@ -2071,7 +2093,7 @@ class ServicesProxy:
             portal_data['filename'] = filename
             portal_data['tag'] = timestamp
             portal_data['replace'] = replace
-            portal_data['portal_runid'] = portal_runid
+            portal_data['portal_runid'] = self._portal_runid
             event_data['portal_data'] = portal_data
             self.publish('_IPS_MONITOR', 'PORTAL_ADD_JUPYTER_DATA', event_data)
             self._send_monitor_event('IPS_PORTAL_ADD_JUPYTER_DATA', f'SOURCE = {source} TIMESTAMP = {timestamp} REPLACE = {replace}')
@@ -2576,11 +2598,13 @@ class ServicesProxy:
             if not use_portal:
                 return
 
-            # ensure that the portal is initialized
-            portal_runid = self._get_portal_runid()
-            if portal_runid < 0:
+            # have we initialized a runid yet? if not, block this function call until we can establish or not establish one
+            if not self._portal_runid_event.is_set():
+                self._establish_portal_runid()
+            
+            # now check to see if we have a valid runid
+            if self._portal_runid < 0:
                 return
-
             event_data = {}
             event_data['sim_name'] = self.sim_conf['__PORTAL_SIM_NAME']
             event_data['real_sim_name'] = self.sim_name
@@ -2592,7 +2616,7 @@ class ServicesProxy:
             portal_data['ensemble_id'] = portal_ensemble_id
             portal_data['ensemble_data_path'] = data_path
             portal_data['username'] = self.get_config_param('USER')
-            portal_data['portal_runid'] = portal_runid
+            portal_data['portal_runid'] = self._portal_runid
             event_data['portal_data'] = portal_data
             self.publish('_IPS_MONITOR', 'PORTAL_UPLOAD_ENSEMBLE_PARAMS', event_data)
             self._send_monitor_event('IPS_PORTAL_UPLOAD_ENSEMBLE_PARAMS', f'NAME = {name}')

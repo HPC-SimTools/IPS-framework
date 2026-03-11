@@ -11,15 +11,19 @@ from multiprocessing.connection import Connection
 from multiprocessing.synchronize import Event as EventType
 from typing import Any, Callable, Literal, Union
 
-import urllib3
+from urllib3 import PoolManager
+from urllib3.exceptions import MaxRetryError
+from urllib3.util import Retry as Urllib3Retry
 
 from ipsframework import Component
+
+MAX_RETRIES = 10
 
 
 def send_post(conn: Connection, stop: EventType, url: str):
     fail_count = 0
 
-    http = urllib3.PoolManager(retries=urllib3.util.Retry(3, backoff_factor=0.25), headers={'Content-Type': 'application/json'})
+    http = PoolManager(retries=Urllib3Retry(total=MAX_RETRIES, backoff_factor=1, respect_retry_after_header=True), headers={'Content-Type': 'application/json'})
 
     while True:
         if conn.poll(0.1):
@@ -28,14 +32,14 @@ def send_post(conn: Connection, stop: EventType, url: str):
                 msgs.append(conn.recv())
             try:
                 resp = http.request('POST', url, body=json.dumps(msgs).encode())
-            except urllib3.exceptions.MaxRetryError as e:
+            except MaxRetryError as e:
                 fail_count += 1
-                conn.send((999, str(e)))
+                conn.send((999, f'Max retry error: {e}'))
             else:
                 conn.send((resp.status, resp.data.decode()))
                 fail_count = 0
 
-            if fail_count >= 3:
+            if fail_count >= MAX_RETRIES:
                 conn.send((-1, 'Too many consecutive failed connections'))
                 break
         elif stop.is_set():
@@ -45,7 +49,7 @@ def send_post(conn: Connection, stop: EventType, url: str):
 def send_jupyter_notebook(conn: Connection, stop: EventType, url: str, api_key: str, username: str):
     fail_count = 0
 
-    http = urllib3.PoolManager(retries=urllib3.util.Retry(3, backoff_factor=0.25))
+    http = PoolManager(retries=Urllib3Retry(total=MAX_RETRIES, backoff_factor=1, respect_retry_after_header=True))
 
     while True:
         if conn.poll(0.1):
@@ -64,14 +68,14 @@ def send_jupyter_notebook(conn: Connection, stop: EventType, url: str, api_key: 
                         'X-Ips-Filename': next_val['filename'],
                     },
                 )
-            except urllib3.exceptions.MaxRetryError as e:
+            except MaxRetryError as e:
                 fail_count += 1
-                conn.send((999, str(e)))
+                conn.send((999, f'Max retry error: {e}'))
             else:
                 conn.send((resp.status, resp.data.decode()))
                 fail_count = 0
 
-            if fail_count >= 3:
+            if fail_count >= MAX_RETRIES:
                 conn.send((-1, 'Too many consecutive failed connections'))
                 break
         elif stop.is_set():
@@ -81,7 +85,7 @@ def send_jupyter_notebook(conn: Connection, stop: EventType, url: str, api_key: 
 def send_jupyter_notebook_data(conn: Connection, stop: EventType, url: str, api_key: str, username: str):
     fail_count = 0
 
-    http = urllib3.PoolManager(retries=urllib3.util.Retry(3, backoff_factor=0.25))
+    http = PoolManager(retries=Urllib3Retry(total=MAX_RETRIES, backoff_factor=1, respect_retry_after_header=True))
 
     while True:
         if conn.poll(0.1):
@@ -110,14 +114,14 @@ def send_jupyter_notebook_data(conn: Connection, stop: EventType, url: str, api_
                     body=body,
                     headers=headers,
                 )
-            except (urllib3.exceptions.MaxRetryError, OSError) as e:
+            except (MaxRetryError, OSError) as e:
                 fail_count += 1
-                conn.send((999, str(e)))
+                conn.send((999, f'Max retry error: {e}'))
             else:
                 conn.send((resp.status, resp.data.decode()))
                 fail_count = 0
 
-            if fail_count >= 3:
+            if fail_count >= MAX_RETRIES:
                 conn.send((-1, 'Too many consecutive failed connections'))
                 break
         elif stop.is_set():
@@ -127,7 +131,7 @@ def send_jupyter_notebook_data(conn: Connection, stop: EventType, url: str, api_
 def send_ensemble_variables(conn: Connection, stop: EventType, url: str, api_key: str, username: str):
     fail_count = 0
 
-    http = urllib3.PoolManager(retries=urllib3.util.Retry(3, backoff_factor=0.25))
+    http = PoolManager(retries=Urllib3Retry(total=MAX_RETRIES, backoff_factor=1, respect_retry_after_header=True))
 
     while True:
         if conn.poll(0.1):
@@ -151,14 +155,14 @@ def send_ensemble_variables(conn: Connection, stop: EventType, url: str, api_key
                     body=body,
                     headers=headers,
                 )
-            except (urllib3.exceptions.MaxRetryError, OSError) as e:
+            except (MaxRetryError, OSError) as e:
                 fail_count += 1
-                conn.send((999, str(e)))
+                conn.send((999, f'Max retry error: {e}'))
             else:
                 conn.send((resp.status, resp.data.decode()))
                 fail_count = 0
 
-            if fail_count >= 3:
+            if fail_count >= MAX_RETRIES:
                 conn.send((-1, 'Too many consecutive failed connections'))
                 break
         elif stop.is_set():
@@ -339,22 +343,15 @@ class PortalBridge(Component):
             time.sleep(1)
 
     def check_send_post_responses(self):
-        while self.parent_conn.poll():
+        if self.parent_conn is None:
+            self.services.warning('Giving up on polling for portal responses')
+            return
+        while self.parent_conn.poll(timeout=2.0):
             try:
                 code, msg = self.parent_conn.recv()
             except (EOFError, OSError):
                 break
 
-            try:
-                data = json.loads(msg)
-                if 'runid' in data and 'simname' in data:
-                    # Indicates IPS-START event return
-                    self.services.info('Run Portal URL = %s/%s', self.portal_url, data.get('runid'))
-                    self.services.set_config_param('_IPS_PORTAL_RUNID', str(data.get('runid')), target_sim_name=data.get('simname'))
-
-                msg = json.dumps(data)
-            except (TypeError, json.decoder.JSONDecodeError):
-                pass
             if code >= 400:
                 self.services.error('Portal Error: %d %s', code, msg)
             elif code == -1:
@@ -363,6 +360,14 @@ class PortalBridge(Component):
                 self.services.error('Disabling portal because: %s', msg)
             else:
                 self.services.debug('Portal Response: %d %s', code, msg)
+                try:
+                    data = json.loads(msg)
+                    if 'runid' in data and 'simname' in data:
+                        # Indicates IPS-START event return
+                        self.services.info('Run Portal URL = %s/%s', self.portal_url, data.get('runid'))
+                        self.services.set_config_param('_IPS_PORTAL_RUNID', str(data.get('runid')), target_sim_name=data.get('simname'))
+                except (TypeError, json.decoder.JSONDecodeError):
+                    pass
 
     def http_req_and_response(self, manager: UrlRequestProcessManager, event_data):
         try:
