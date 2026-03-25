@@ -11,7 +11,10 @@
 #SBATCH --nodes=1
 #SBATCH --time=5
 #SBATCH -p debug
-
+module purge
+# ensure we're not accidentally picking up this being set in the environment by the user, which can cause problems
+# with the MPI libraries.
+unset LD_LIBRARY_PATH
 module load PrgEnv-gnu openmpi python
 
 # Again, this assumes that there exists a conda environment named "ips".
