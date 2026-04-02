@@ -27,6 +27,16 @@ from operator import iadd, itemgetter
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Callable, Iterable, NamedTuple, Optional, Union
 
+from rich import pretty
+pretty.install()
+
+from rich.console import Console
+console = Console()
+
+import rich.traceback
+from rich.traceback import Traceback
+rich.traceback.install(show_locals=True)
+
 from configobj import ConfigObj
 from distributed import Client, Worker, WorkerPlugin
 
@@ -2782,8 +2792,21 @@ class DVMPlugin(WorkerPlugin):
         # This environment variable is specific to OpenMPI's PRTE
         os.environ['PRTE_MCA_rmaps_default_mapping_policy'] = mapping_policy
 
-        self.worker.dvm_proc = subprocess.Popen(command, stdout=subprocess.PIPE,
-                                                stderr=subprocess.STDOUT)
+        try:
+            self.logger.debug(f'Executing command: {command!s}')
+            self.worker.dvm_proc = subprocess.Popen(command,
+                                                    stdout=subprocess.PIPE,
+                                                    stderr=subprocess.STDOUT)
+        except Exception as e:
+            print(f'Exception during evaluation: {e}')
+            console.print(Traceback.from_exception(type(e), e, e.__traceback__))
+
+            # If there was an exception, dump any stdout/stderr we have
+            if hasattr(self.worker.dvm_proc, 'stdout'):
+                print(self.worker.dvm_proc.stdout, file=sys.stdout, flush=True)
+                print(self.worker.dvm_proc.stderr, file=sys.stderr, flush=True)
+
+        # TODO What if there was a subprocess exception?
 
         ready = self.worker.dvm_proc.stdout.readline()
         self.logger.info(f'Ready Message : {ready}')
