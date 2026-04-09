@@ -3022,7 +3022,7 @@ class TaskPool:
 
         services: ServicesProxy = self.services
 
-        self.dask_scheduler_file = os.path.join(os.getcwd(), f'.{self.name}_dask_shed_{time.time()}.json')
+        self.dask_scheduler_file = os.path.join(os.getcwd(), f'{self.name}_dask_shed_{time.time()}.json')
 
         if use_shifter:
             if shifter_args:
