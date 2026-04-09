@@ -9,6 +9,7 @@ import hashlib
 import json
 import logging
 import logging.handlers
+import datetime
 import os
 import queue
 import shutil
@@ -3022,7 +3023,11 @@ class TaskPool:
 
         services: ServicesProxy = self.services
 
-        self.dask_scheduler_file = os.path.join(os.getcwd(), f'{self.name}_dask_shed_{time.time()}.json')
+        # Note that we use the absolute path since at some point we may
+        # be in a different directory, which means that we otherwise would
+        # not be able to find the Dask scheduler file.
+        self.dask_scheduler_file = Path('.').absolute() / f'{self.name}_dask_sched_{datetime.now().strftime("%Y%m%d%S")}.json'
+        # self.dask_scheduler_file = os.path.join(os.getcwd(), f'{self.name}_dask_shed_{time.time()}.json')
 
         if use_shifter:
             if shifter_args:
