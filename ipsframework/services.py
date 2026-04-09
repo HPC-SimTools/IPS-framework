@@ -3080,11 +3080,6 @@ class TaskPool:
                 ]
             ).pid
 
-        self.services.debug(f'Dask scheduler pid: {self.dask_sched_pid}')
-
-        if not Path(self.dask_scheduler_file).exists():
-            self.services.critical(f'Dask scheduler file {self.dask_scheduler_file} does not exist')
-
         dask_nodes = 1 if dask_nodes is None else dask_nodes
         if services.get_config_param('MPIRUN') == 'eval':
             # TODO Why?
@@ -3150,6 +3145,14 @@ class TaskPool:
         self.services.debug(f'Dask workers command line: {workers_cmd_line}')
 
         self.dask_workers_tid = services.launch_task(dask_nodes, os.getcwd(), *workers_cmd_line, task_ppn=task_ppn, task_gpp=task_gpp)
+
+        self.services.debug(f'Dask scheduler pid: {self.dask_sched_pid}')
+
+        if not Path(self.dask_scheduler_file).exists():
+            self.services.critical(f'Dask scheduler file '
+                                   f'{self.dask_scheduler_file} does not exist')
+            raise RuntimeError(f'Dask scheduler file '
+                               f'{self.dask_scheduler_file} does not exist')
 
         self.dask_client = Client(scheduler_file=self.dask_scheduler_file)
         self.services.debug(f'Dask client: {self.dask_client!s}')
