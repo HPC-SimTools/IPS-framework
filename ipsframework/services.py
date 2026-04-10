@@ -3043,7 +3043,7 @@ class TaskPool:
                         '--idle-timeout',
                         str(TaskPool.IDLE_TIMEOUT),
                         '--scheduler-file',
-                        self.dask_scheduler_file,
+                        str(self.dask_scheduler_file),
                         '--port',
                         '0',
                     ]
@@ -3060,7 +3060,7 @@ class TaskPool:
                         '--idle-timeout',
                         str(TaskPool.IDLE_TIMEOUT),
                         '--scheduler-file',
-                        self.dask_scheduler_file,
+                        str(self.dask_scheduler_file),
                         '--port',
                         '0',
                     ]
@@ -3077,7 +3077,7 @@ class TaskPool:
                         '--idle-timeout',
                         str(TaskPool.IDLE_TIMEOUT),
                         '--scheduler-file',
-                        self.dask_scheduler_file,
+                        str(self.dask_scheduler_file),
                         '--port',
                         '0',
                     ]
@@ -3087,6 +3087,8 @@ class TaskPool:
             except Exception as e:
                 self.services.critical(f'Exception while starting Dask '
                                        f'scheduler: {e!s}')
+                # TODO better error handling than just re-raising the exception
+                raise
 
         dask_nodes = 1 if dask_nodes is None else dask_nodes
         if services.get_config_param('MPIRUN') == 'eval':
