@@ -3081,12 +3081,15 @@ class TaskPool:
                         '--port',
                         '0',
                     ]
-                self.services.debug(f'Scheduler args: {' '.join(args)}')
+                self.services.info(f'Scheduler args: {' '.join(args)}')
                 self.dask_sched_popen = subprocess.Popen(args)
                 self.dask_sched_pid = self.dask_sched_popen.pid
+                self.services.info(f'Scheduler pid: '
+                                   f'{self.dask_sched_popen.pid}')
             except Exception as e:
                 self.services.critical(f'Exception while starting Dask '
                                        f'scheduler: {e!s}')
+                console.print_exception(show_locals=True)
                 # TODO better error handling than just re-raising the exception
                 raise
 
