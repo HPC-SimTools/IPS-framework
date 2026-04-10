@@ -3161,12 +3161,6 @@ class TaskPool:
 
         self.services.debug(f'Dask scheduler pid: {self.dask_sched_popen.pid}')
 
-        if not Path(self.dask_scheduler_file).exists():
-            self.services.critical(f'Dask scheduler file '
-                                   f'{self.dask_scheduler_file} does not exist')
-            raise RuntimeError(f'Dask scheduler file '
-                               f'{self.dask_scheduler_file} does not exist')
-
         self.dask_client = Client(scheduler_file=self.dask_scheduler_file)
         self.services.debug(f'Dask client: {self.dask_client!s}')
 
@@ -3181,7 +3175,9 @@ class TaskPool:
 
         # Regardless of any other worker plugins, we need this plugin to setup
         # the DVM for the workers so that OpenMPI can work properly.
-        self.dask_client.register_plugin(DVMPlugin(logger=services.logger, oversubscribe=oversubscribe, hwthreads=hwthreads))
+        self.dask_client.register_plugin(DVMPlugin(logger=services.logger,
+                                                   oversubscribe=oversubscribe,
+                                                   hwthreads=hwthreads))
 
         try:
             file_id = str(self.services._portal_runid) if self.services._portal_runid > 0 else self.services._fallback_portal_runid
