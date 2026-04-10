@@ -2861,6 +2861,7 @@ class TaskPool:
         self.blocked_tasks = {}
         self.serial_pool = True
         self.dask_sched_pid = None
+        self.dask_sched_popen = None
         self.dask_workers_tid = None
         self.futures = None
         self.dask_scheduler_file = None
@@ -3031,7 +3032,7 @@ class TaskPool:
 
         if use_shifter:
             if shifter_args:
-                self.dask_sched_pid = subprocess.Popen(
+                self.dask_sched_popen = subprocess.Popen(
                     [
                         self.shifter,
                         shifter_args,
@@ -3046,9 +3047,10 @@ class TaskPool:
                         '--port',
                         '0',
                     ]
-                ).pid
+                )
+                self.dask_sched_pid = self.dask_sched_popen.pid
             else:
-                self.dask_sched_pid = subprocess.Popen(
+                self.dask_sched_popen = subprocess.Popen(
                     [
                         self.shifter,
                         *self.dask_scheduler,
@@ -3062,23 +3064,29 @@ class TaskPool:
                         '--port',
                         '0',
                     ]
-                ).pid
+                )
+                self.dask_sched_pid = self.dask_sched_popen.pid
 
-        else:
-            self.dask_sched_pid = subprocess.Popen(
-                [
-                    *self.dask_scheduler,
-                    '--no-dashboard',
-                    '--no-jupyter',
-                    '--no-show',
-                    '--idle-timeout',
-                    str(TaskPool.IDLE_TIMEOUT),
-                    '--scheduler-file',
-                    self.dask_scheduler_file,
-                    '--port',
-                    '0',
-                ]
-            ).pid
+        else: # We are NOT using shifter
+            try:
+                args = [
+                        *self.dask_scheduler,
+                        '--no-dashboard',
+                        '--no-jupyter',
+                        '--no-show',
+                        '--idle-timeout',
+                        str(TaskPool.IDLE_TIMEOUT),
+                        '--scheduler-file',
+                        self.dask_scheduler_file,
+                        '--port',
+                        '0',
+                    ]
+                self.services.debug(f'Scheduler args: {' '.join(args)}')
+                self.dask_sched_popen = subprocess.Popen(args)
+                self.dask_sched_pid = self.dask_sched_popen.pid
+            except Exception as e:
+                self.services.critical(f'Exception while starting Dask '
+                                       f'scheduler: {e!s}')
 
         dask_nodes = 1 if dask_nodes is None else dask_nodes
         if services.get_config_param('MPIRUN') == 'eval':
@@ -3146,7 +3154,7 @@ class TaskPool:
 
         self.dask_workers_tid = services.launch_task(dask_nodes, os.getcwd(), *workers_cmd_line, task_ppn=task_ppn, task_gpp=task_gpp)
 
-        self.services.debug(f'Dask scheduler pid: {self.dask_sched_pid}')
+        self.services.debug(f'Dask scheduler pid: {self.dask_sched_popen.pid}')
 
         if not Path(self.dask_scheduler_file).exists():
             self.services.critical(f'Dask scheduler file '
@@ -3292,19 +3300,32 @@ class TaskPool:
     def _shutdown_dask(self):
         """
         Shut down the dask client, scheduler, and workers.
+
+        Side effect is setting self.dask_sched_pid and self.dask_client
+        to None.
+
+        :returns: None
         """
         if self.dask_client is not None:
+            # Shutdown handles ending client, scheduler, and workers
             self.dask_client.shutdown()
-            self.dask_client.close()
-            self.dask_client = None
-        if self.dask_sched_pid is not None:
-            try:
-                os.kill(self.dask_sched_pid, signal.SIGTERM)
-            except OSError as e:
-                self.services.exception(f'Error shutting down dask scheduler: {e}')
-            self.dask_sched_pid = None
 
-        time.sleep(1)  # Give time for the scheduler to shut down
+            # Set these to None since we check for that for any
+            # subsequent Dask tasks
+            self.dask_sched_pid = None
+            self.dask_client = None
+
+            # No need for any of this nonsense:
+            # self.dask_client.close()
+        #     self.dask_client = None
+        # if self.dask_sched_pid is not None:
+        #     try:
+        #         os.kill(self.dask_sched_pid, signal.SIGTERM)
+        #     except OSError as e:
+        #         self.services.exception(f'Error shutting down dask scheduler: {e}')
+        #     self.dask_sched_pid = None
+        #
+        # time.sleep(1)  # Give time for the scheduler to shut down
 
     def get_dask_finished_tasks_status(self):
         """Return a dictionary of exit status values for all dask tasks that
@@ -3395,6 +3416,7 @@ class TaskPool:
         self.dask_scheduler_file = None
         self.dask_workers_tid = None
         self.dask_sched_pid: Optional[int] = None
+        self.dask_sched_popen = None
         self.dask_pool = False
         self.serial_pool = True
 
