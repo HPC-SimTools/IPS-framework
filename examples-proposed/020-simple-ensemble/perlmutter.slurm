@@ -12,10 +12,17 @@
 #SBATCH --time=5
 #SBATCH -p debug
 
-module load PrgEnv-gnu openmpi python
+module load PrgEnv-gnu python
 
 # Again, this assumes that there exists a conda environment named "ips".
 conda activate ips
+
+# You MUST load openmpi AFTER activating the conda environment.  This is because
+# the conda environment may have its own MPI libraries, and loading openmpi after
+# activating the conda environment ensures that the correct MPI libraries are used.
+# If you load openmpi before activating the conda environment, you may end up with
+# a mismatch of MPI libraries, which can lead to runtime errors.
+module load openmpi
 
 # The 2>&1 binds stderr to stdout so that both are captured in the tee log file.  The
 # `tee` command allows you to see the output on the terminal as well as save it.

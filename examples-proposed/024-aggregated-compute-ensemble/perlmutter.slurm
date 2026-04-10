@@ -11,14 +11,18 @@
 #SBATCH --nodes=1
 #SBATCH --time=5
 #SBATCH -p debug
-module purge
-# ensure we're not accidentally picking up this being set in the environment by the user, which can cause problems
-# with the MPI libraries.
-unset LD_LIBRARY_PATH
-module load PrgEnv-gnu openmpi python
+
+module load PrgEnv-gnu python
 
 # Again, this assumes that there exists a conda environment named "ips".
 conda activate ips
+
+# You MUST load openmpi AFTER activating the conda environment.  This is because
+# the conda environment may have its own MPI libraries, and loading openmpi after
+# activating the conda environment ensures that the correct MPI libraries are used.
+# If you load openmpi before activating the conda environment, you may end up with
+# a mismatch of MPI libraries, which can lead to runtime errors.
+module load openmpi
 
 # Set the API key and portal URL
 source /global/common/software/atom/ips-portal/credentials/ips-portal-development
