@@ -2799,7 +2799,7 @@ class DVMPlugin(WorkerPlugin):
                                                     stdout=subprocess.PIPE,
                                                     stderr=subprocess.STDOUT)
         except Exception as e:
-            print(f'Exception during evaluation: {e}')
+            print(f'Exception during setting up DVM: {e}')
             console.print(Traceback.from_exception(type(e), e, e.__traceback__))
 
             # If there was an exception, dump any stdout/stderr we have
@@ -3307,9 +3307,19 @@ class TaskPool:
 
         :returns: None
         """
+        # Gently release any pending futures
+        for f in self.futures:
+            f.release()
+
         if self.dask_client is not None:
             # Shutdown handles ending client, scheduler, and workers
             self.dask_client.shutdown()
+
+            # TODO a more gentle way to shutdown:
+            #  1. self.dask_client.close()
+            #  2. terminate the workers (we should use Popen objects,
+            #  so worker_popen.terminate())
+            #  3. terminate the scheduler via self.dask_sched_popen.terminate()
 
             # Set these to None since we check for that for any
             # subsequent Dask tasks
