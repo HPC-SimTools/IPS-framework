@@ -2723,7 +2723,7 @@ class ServicesProxy:
                 # dask_worker_plugin=None,
                 # dask_worker_per_gpu=False
             )
-            self.logger.info(f'Ran {num_submitted} ensemble tasks')
+            self.logger.info(f'Submitted {num_submitted} ensemble tasks')
         except Exception as e:
             self.critical(f'Got an exception running ensemble: {e!s}')
             traceback.print_exc()
