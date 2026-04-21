@@ -3350,19 +3350,21 @@ class TaskPool:
         for each record found in that file.  It will then remove these log
         files.
 
-        I recommend possibly splitting this into three different, focused
-        functions.  One for gathering the exit statuses from all workers.
-        Another for shutting down Dask, which means shutting down the client,
-        scheduler, *and* workers, not just the client.  (Though the scheduler
-        and workers will eventually expire due to timeouts.) And another for
-        creating events from Dask log messages.  (With a boolean argument to
-        denote whether these log files should be deleted after the fact.  I.e.,
-        the practitioner may want to look at those even if they're emitted
-        as IPS events.
+        TODO I recommend possibly splitting this into three different, focused
+         functions.  One for gathering the exit statuses from all workers.
+         Another for shutting down Dask, which means shutting down the client,
+         scheduler, *and* workers, not just the client.  (Though the scheduler
+         and workers will eventually expire due to timeouts.) And another for
+         creating events from Dask log messages.  (With a boolean argument to
+         denote whether these log files should be deleted after the fact.  I.e.,
+         the practitioner may want to look at those even if they're emitted
+         as IPS events.)
 
         This also presumes that the dask workers will return an exit status,
-        presumably of related subprocess calls.  FIXME What if we have other Dask
-        tasks that do not return an exit status?
+        presumably of related subprocess calls.
+
+        FIXME What if we have other Dask tasks that do not return an
+         exit status?
 
         :return: dict mapping task name to exit status
         :rtype: dict
@@ -3433,7 +3435,7 @@ class TaskPool:
 
         if result is not None:
             # FIXME assumes that we can convert `result` into a dict, which
-            # is doubtful.
+            #  is doubtful.
             return dict(result)
         return result  # which will be none
 
