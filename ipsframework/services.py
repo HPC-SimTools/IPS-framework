@@ -3202,6 +3202,7 @@ class TaskPool:
                     task.working_dir,
                     *task.args,
                     **task.keywords,
+                    pure=False,
                     key=task_name,
                     cpus_per_proc=dask_ppw,
                     worker_event_logfile=self.worker_event_logfile,
