@@ -3381,9 +3381,9 @@ class TaskPool:
 
             return {}
 
-        self.debug('get_dask_finished_tasks_status: before gather()')
+        self.services.debug('get_dask_finished_tasks_status: before gather()')
         result = self.dask_client.gather(self.futures)
-        self.debug('get_dask_finished_tasks_status: after gather()')
+        self.services.debug('get_dask_finished_tasks_status: after gather()')
 
         # If we don't have a result, then there were no tasks to gather.
         if result is None:
@@ -3391,19 +3391,19 @@ class TaskPool:
             self._shutdown_dask()
             return {}
         else:
-            self.debug(f'get_dask_finished_tasks_status: have {len(result)} futures')
+            self.services.debug(f'get_dask_finished_tasks_status: have {len(result)} futures')
 
         worker_names = [''.join(c for c in worker['name'] if c.isalnum()) for worker in self.dask_client.scheduler_info()['workers'].values()]
-        self.debug(f'get_dask_finished_tasks_status: worker_names: {worker_names!s}')
+        self.services.debug(f'get_dask_finished_tasks_status: worker_names: {worker_names!s}')
 
         # NOTE: You may get an exception stack trace from Dask, this is currently not believed to cause an issue.
         # We no longer need Dask running, so shut it down.
-        self.debug(f'get_dask_finished_tasks_status: before _shutdown_dask()')
+        self.services.debug(f'get_dask_finished_tasks_status: before _shutdown_dask()')
         self._shutdown_dask()
-        self.debug(f'get_dask_finished_tasks_status: after _shutdown_dask()')
+        self.services.debug(f'get_dask_finished_tasks_status: after _shutdown_dask()')
 
         if self.worker_event_logfile is not None:
-            self.debug(f'get_dask_finished_tasks_status: worker_event_logfile: '
+            self.services.debug(f'get_dask_finished_tasks_status: worker_event_logfile: '
                        f'{self.worker_event_logfile!s}')
             try:
                 events = []
@@ -3443,12 +3443,12 @@ class TaskPool:
         self.serial_pool = True
 
         if result is not None:
-            self.debug('get_dask_finished_tasks_status: have result')
+            self.services.debug('get_dask_finished_tasks_status: have result')
             # FIXME assumes that we can convert `result` into a dict, which
             #  is doubtful.
             return dict(result)
 
-        self.debug('get_dask_finished_tasks_status: no result, returning None')
+        self.services.debug('get_dask_finished_tasks_status: no result, returning None')
 
         return result  # which will be none
 
