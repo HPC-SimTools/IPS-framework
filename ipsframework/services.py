@@ -3161,7 +3161,8 @@ class TaskPool:
 
         self.services.debug(f'Dask scheduler pid: {self.dask_sched_popen.pid}')
 
-        self.dask_client = Client(scheduler_file=self.dask_scheduler_file)
+        self.dask_client = Client(scheduler_file=self.dask_scheduler_file,
+                                  direct_to_workers=True)
         self.services.debug(f'Dask client: {self.dask_client!s}')
 
         # And logging done via the dask workers will be forwarded to the root
