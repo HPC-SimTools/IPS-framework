@@ -3368,6 +3368,10 @@ class TaskPool:
         FIXME What if we have other Dask tasks that do not return an
          exit status?
 
+        FIXME Note that if we change to using the Dask event logging system
+         instead of the JSON file based approach that we will need to extract
+         the Dask events *before* shutting down Dask.
+
         :return: dict mapping task name to exit status
         :rtype: dict
         """
