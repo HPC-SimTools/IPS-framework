@@ -2947,6 +2947,25 @@ class TaskPool:
         self.serial_pool = self.serial_pool and (nproc == 1)
         self.queued_tasks[task_name] = Task(task_name, nproc, working_dir, binary_fullpath, *args, **keywords['keywords'])
 
+    def _process_dask_event(self, event):
+        """ This will create an IPS monitor event from a Dask event
+
+        These events will have been created in `launch()`.  As they are
+        created, this callback will be invoked to send the corresponding
+        IPS monitor event.
+
+        This callback is registered in `submit_dask_tasks()`.
+
+        :param event: Dask event tuple of (timestamp, dict)
+        """
+        timestamp, message = event
+
+        self.services.debug(f'Processing dask event: {message!s}, '
+                            f'timestamp: {timestamp!s}')
+
+        self.services._send_monitor_event(**message)
+
+
     def submit_dask_tasks(
         self,
         block=True,
@@ -3175,6 +3194,10 @@ class TaskPool:
         # And logging done via the dask workers will be forwarded to the root
         # logger so that it can be captured by the services.
         self.dask_client.forward_logging()
+
+        # Register callback to handle 'ips' events sent by
+        # launch() that will be converted to IPS monitor events.
+        self.dask_client.subscribe_topic('ips', self._process_dask_event)
 
         if dask_worker_plugin is not None:
             # TODO But what if there is more than one worker plugin?
