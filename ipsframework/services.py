@@ -89,7 +89,11 @@ def launch(binary: Any, task_name: str, working_dir: Union[str, os.PathLike], *a
     :param working_dir: The working directory in which to run this task
     :returns: The task name and the return value from running the binary.
     """
+    import logging
     from dask.distributed import get_worker  # pylint: disable=import-outside-toplevel
+
+    # We use Client.forward_logging() to handle these log messages.
+    log = logging.getLogger('launch')
 
     worker = get_worker()
     if not hasattr(worker, 'lock'):
@@ -97,7 +101,7 @@ def launch(binary: Any, task_name: str, working_dir: Union[str, os.PathLike], *a
 
     worker_name = ''.join(c for c in worker.name if c.isalnum())
 
-    worker.logger.info(f'Launching task {task_name} with worker {worker_name} in {working_dir}')
+    log.info(f'Launching task {task_name} with worker {worker_name} in {working_dir}')
 
     start_time = time.time()
     os.chdir(working_dir)
@@ -106,10 +110,10 @@ def launch(binary: Any, task_name: str, working_dir: Union[str, os.PathLike], *a
     try:
         event_logfile = keywords['worker_event_logfile'].format(worker_name)
     except (KeyError, AttributeError):
-        worker.logger.warning('No worker_event_logfile specified, using stdout for logging')
+        log.warning('No worker_event_logfile specified, using stdout for logging')
     else:
         worker_event_log = open(event_logfile, 'a')
-        worker.logger.info(f'Worker event log file: {event_logfile}')
+        log.info(f'Worker event log file: {event_logfile}')
 
     ret_val = None
     if isinstance(binary, str):
@@ -117,41 +121,41 @@ def launch(binary: Any, task_name: str, working_dir: Union[str, os.PathLike], *a
         try:
             log_filename = keywords['logfile']
         except KeyError:
-            worker.logger.info('No logfile specified, using stdout for task output')
+            log.info('No logfile specified, using stdout for task output')
         else:
             task_stdout = open(log_filename, 'w')
-            worker.logger.info(f'Task output log file: {log_filename}')
+            log.info(f'Task output log file: {log_filename}')
 
         task_stderr = subprocess.STDOUT
         try:
             err_filename = keywords['errfile']
         except KeyError:
-            worker.logger.info('No errfile specified, using STDOUT for task errors')
+            log.info('No errfile specified, using STDOUT for task errors')
         else:
             try:
                 task_stderr = open(err_filename, 'w')
             except OSError:
-                worker.logger.info(f'Could not open errfile {err_filename}, using STDOUT for task errors')
+                log.info(f'Could not open errfile {err_filename}, using STDOUT for task errors')
                 task_stderr = subprocess.STDOUT
             else:
-                worker.logger.info(f'Task error log file: {err_filename}')
+                log.info(f'Task error log file: {err_filename}')
 
         task_env = keywords.get('task_env', {})
         new_env = os.environ.copy()
         new_env.update(task_env)
 
         if 'HWLOC_XMLFILE' in new_env:
-            worker.logger.debug('Removing HWLOC_XMLFILE from task environment')
+            log.debug('Removing HWLOC_XMLFILE from task environment')
             del new_env['HWLOC_XMLFILE']
 
         # Check that the DVM environment variables are set.
         if hasattr(worker, 'dvm_uri_file'):
             dvm_uri_file = Path(worker.dvm_uri_file)
             if not dvm_uri_file.exists():
-                worker.logger.error(f'DVM URI file {dvm_uri_file} does not exist')
+                log.error(f'DVM URI file {dvm_uri_file} does not exist')
                 print(f'DVM URI file {dvm_uri_file} does not exist', flush=True)
             else:
-                worker.logger.debug(f'Using DVM URI file: {dvm_uri_file}')
+                log.debug(f'Using DVM URI file: {dvm_uri_file}')
                 print(f'Using DVM URI file: {dvm_uri_file}', flush=True)
 
         # PMIX_SERVER_URI41 is used by prun to figure out how to talk to the DVM
@@ -160,13 +164,13 @@ def launch(binary: Any, task_name: str, working_dir: Union[str, os.PathLike], *a
         # in some HPC environments to ensure the output appears in the logs.
         if task_env is not None and task_env != {}:
             if 'PMIX_SERVER_URI41' in task_env:
-                worker.logger.debug(f"DVM environment variable PMIX_SERVER_URI41 "
+                log.debug(f"DVM environment variable PMIX_SERVER_URI41 "
                                    f"set in task_env to "
                                    f"{task_env['PMIX_SERVER_URI41']}")
                 print(f'DVM environment variable PMIX_SERVER_URI41 set in task_'
                       f'env to {task_env["PMIX_SERVER_URI41"]}', flush=True)
         if 'PMIX_SERVER_URI41' in os.environ:
-            worker.logger.debug(f"DVM environment variable PMIX_SERVER_URI41 set "
+            log.debug(f"DVM environment variable PMIX_SERVER_URI41 set "
                                f"in os.environ to "
                                f"{os.environ['PMIX_SERVER_URI41']}")
             print(f'DVM environment variable PMIX_SERVER_URI41 set in os.environ '
@@ -176,7 +180,7 @@ def launch(binary: Any, task_name: str, working_dir: Union[str, os.PathLike], *a
 
         cmd = f'{binary} {" ".join(map(str, args))}'
 
-        worker.logger.debug(f'Launching task {task_name} with command: {cmd}')
+        log.debug(f'Launching task {task_name} with command: {cmd}')
 
         with worker.lock:
             print(
@@ -203,7 +207,7 @@ def launch(binary: Any, task_name: str, working_dir: Union[str, os.PathLike], *a
                     ),
                     file=worker_event_log,
                 )
-            worker.logger.error(f'Failed to launch task {task_name} with command {cmd}: {e}')
+            log.error(f'Failed to launch task {task_name} with command {cmd}: {e}')
             raise
 
         try:
@@ -231,7 +235,7 @@ def launch(binary: Any, task_name: str, working_dir: Union[str, os.PathLike], *a
                     file=worker_event_log,
                 )
             os.killpg(process.pid, signal.SIGKILL)
-            worker.logger.error(f'Task {task_name} with command {cmd} timed out after {timeout}s')
+            log.error(f'Task {task_name} with command {cmd} timed out after {timeout}s')
             ret_val = -1
         except Exception as e:
             with worker.lock:
@@ -240,7 +244,7 @@ def launch(binary: Any, task_name: str, working_dir: Union[str, os.PathLike], *a
                         {'eventType': 'IPS_TASK_END', 'event_time': time.time(), 'comment': f'task_name = {task_name} Exception when calling {binary!s}: {e}'}
                     ),
                 )
-            worker.logger.error(f'Task {task_name} with command {cmd} failed with {e}')
+            log.error(f'Task {task_name} with command {cmd} failed with {e}')
     else:
         with worker.lock:
             print(
@@ -272,7 +276,7 @@ def launch(binary: Any, task_name: str, working_dir: Union[str, os.PathLike], *a
                 file=worker_event_log,
             )
 
-    worker.logger.info(f'Task {task_name} finished with return value: {ret_val}')
+    log.info(f'Task {task_name} finished with return value: {ret_val}')
 
     return task_name, ret_val
 
