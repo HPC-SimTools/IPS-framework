@@ -3345,6 +3345,7 @@ class TaskPool:
 
         if self.dask_client is not None:
             # Shutdown handles ending client, scheduler, and workers
+            self.dask_client.unsubscribe_topic('ips') # unregister handler
             self.dask_client.shutdown()
 
             # TODO a more gentle way to shutdown:
@@ -3433,36 +3434,6 @@ class TaskPool:
         self.services.debug(f'get_dask_finished_tasks_status: before _shutdown_dask()')
         self._shutdown_dask()
         self.services.debug(f'get_dask_finished_tasks_status: after _shutdown_dask()')
-
-        if self.worker_event_logfile is not None:
-            self.services.debug(f'get_dask_finished_tasks_status: worker_event_logfile: '
-                       f'{self.worker_event_logfile!s}')
-            try:
-                events = []
-                for worker in worker_names:
-                    filename = self.worker_event_logfile.format(worker)
-                    try:
-                        lines = open(filename).readlines()
-                    except IOError:
-                        self.services.exception('Error opening dask worker log file: %s', filename)
-                    else:
-                        # convert to dict and sort by event_time
-                        for line in lines:
-                            try:
-                                events.append(json.loads(line.strip()))
-                            except json.decoder.JSONDecodeError:
-                                self.services.exception('Error reading line %s from dask worker log file: %s', line.strip(), filename)
-
-                events.sort(key=itemgetter('event_time'))
-                for event in events:
-                    self.services._send_monitor_event(**event)
-            except Exception as e:
-                # If it fails for any other reason, make sure we can continue
-                self.services.exception('Error while reading dask worker log files: %s', str(e))
-            else:
-                for worker in worker_names:
-                    if os.path.isfile(self.worker_event_logfile.format(worker)):
-                        os.remove(self.worker_event_logfile.format(worker))
 
         self.finished_tasks = {}
         self.active_tasks = {}
