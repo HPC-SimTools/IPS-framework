@@ -39,6 +39,7 @@ from rich.traceback import Traceback
 rich.traceback.install(show_locals=True)
 
 from configobj import ConfigObj
+from dask import get_current_task
 from distributed import Client, Worker, WorkerPlugin
 
 from ipsframework import ipsutil, messages
@@ -62,27 +63,28 @@ class RunningTask(NamedTuple):
     args: list[str]
 
 
-def launch(binary: Any, task_name: str, working_dir: Union[str, os.PathLike], *args, **keywords):
-    """This is used by
-    :meth:`TaskPool.submit_dask_tasks` as the
+def launch(binary: Any,
+           task_name: str,
+           working_dir: Union[str, os.PathLike],
+           *args, **kwargs):
+    """ This is used by :meth:`TaskPool.submit_dask_tasks` as the
     input to :meth:`dask.distributed.Client.submit`.
 
-    Valid keywords:
-    * `worker_event_logfile` - where JSON log messages are written
-    * `logfile` - where the task output is written; if not specified, STDOUT used
-    * `errfile` - where the task error output is written; if not specified, STDOUT used
+    Valid kwargs:
+    * `logfile` - where the task output is written; if not specified,
+        STDOUT used
+    * `errfile` - where the task error output is written; if not specified,
+        STDOUT used
     * `task_env` - A dictionary of environment variables to set
     * `timeout` - The timeout in seconds for the task to complete.
-    * `cpus_per_proc` - The number of cpus per process to use for the task. This implies that the DVMPlugin has set up a DVM daemon for this node.
-    * `oversubscribe` - If `True`, then the number of processes can exceed the number of cores on the node.  Default is `False`.
+    * `cpus_per_proc` - The number of cpus per process to use for the task.
+        This implies that the DVMPlugin has set up a DVM daemon for this node.
+    * `oversubscribe` - If `True`, then the number of processes can exceed the
+        number of cores on the node.  Default is `False`.
 
     If the worker has the attribute `dvm_uri_file`, then we are running
     with a DVM (Distributed Virtual Machine) so the `binary` needs a
     `prun` prepended pointing to that.
-
-    If the worker doesn't have a `lock` attribute, then we create one by
-    assigning a threading lock to it. This is used to ensure that
-    the worker's event log is written to in a thread-safe manner.
 
     :param binary: The binary to launch. Either a string or a class.
     :param task_name: The name of the task.
@@ -92,55 +94,50 @@ def launch(binary: Any, task_name: str, working_dir: Union[str, os.PathLike], *a
     import logging
     from dask.distributed import get_worker  # pylint: disable=import-outside-toplevel
 
-    # We use Client.forward_logging() to handle these log messages.
+    # Later, we use Client.forward_logging() to handle these log messages.
     log = logging.getLogger('launch')
 
     worker = get_worker()
-    if not hasattr(worker, 'lock'):
-        worker.lock = threading.Lock()
+    task_key = get_current_task()
 
-    worker_name = ''.join(c for c in worker.name if c.isalnum())
-
-    log.info(f'Launching task {task_name} with worker {worker_name} in {working_dir}')
+    log.info(f'Launching task {task_name} with id {task_key!s} and '
+             f'worker {worker.name!s} in {working_dir}')
 
     start_time = time.time()
     os.chdir(working_dir)
 
-    worker_event_log = sys.stdout
-    try:
-        event_logfile = keywords['worker_event_logfile'].format(worker_name)
-    except (KeyError, AttributeError):
-        log.warning('No worker_event_logfile specified, using stdout for logging')
-    else:
-        worker_event_log = open(event_logfile, 'a')
-        log.info(f'Worker event log file: {event_logfile}')
-
     ret_val = None
     if isinstance(binary, str):
-        task_stdout = sys.stdout
+        # This is presumably an external binary executable to be executed
+        # via a subprocess.Popen()
+
+        # Do we write the Popen stdout to sys.stdout or to a file?
+        subprocess_stdout = sys.stdout
         try:
-            log_filename = keywords['logfile']
+            log_filename = kwargs['logfile']
         except KeyError:
             log.info('No logfile specified, using stdout for task output')
         else:
-            task_stdout = open(log_filename, 'w')
+            subprocess_stdout = open(log_filename, 'w')
             log.info(f'Task output log file: {log_filename}')
 
+        # Repeat the same for stderr
         task_stderr = subprocess.STDOUT
         try:
-            err_filename = keywords['errfile']
+            subprocess_stderr = kwargs['errfile']
         except KeyError:
             log.info('No errfile specified, using STDOUT for task errors')
         else:
             try:
-                task_stderr = open(err_filename, 'w')
+                task_stderr = open(subprocess_stderr, 'w')
             except OSError:
-                log.info(f'Could not open errfile {err_filename}, using STDOUT for task errors')
+                log.info(f'Could not open errfile {subprocess_stderr}, '
+                         f'using STDOUT for task errors')
                 task_stderr = subprocess.STDOUT
             else:
-                log.info(f'Task error log file: {err_filename}')
+                log.info(f'Task error log file: {subprocess_stderr}')
 
-        task_env = keywords.get('task_env', {})
+        task_env = kwargs.get('task_env', {})
         new_env = os.environ.copy()
         new_env.update(task_env)
 
@@ -153,10 +150,10 @@ def launch(binary: Any, task_name: str, working_dir: Union[str, os.PathLike], *a
             dvm_uri_file = Path(worker.dvm_uri_file)
             if not dvm_uri_file.exists():
                 log.error(f'DVM URI file {dvm_uri_file} does not exist')
-                print(f'DVM URI file {dvm_uri_file} does not exist', flush=True)
+                # print(f'DVM URI file {dvm_uri_file} does not exist', flush=True)
             else:
                 log.debug(f'Using DVM URI file: {dvm_uri_file}')
-                print(f'Using DVM URI file: {dvm_uri_file}', flush=True)
+                # print(f'Using DVM URI file: {dvm_uri_file}', flush=True)
 
         # PMIX_SERVER_URI41 is used by prun to figure out how to talk to the DVM
         # It can be defined in `task_env` or in `os.environ`, so we look in
@@ -167,114 +164,120 @@ def launch(binary: Any, task_name: str, working_dir: Union[str, os.PathLike], *a
                 log.debug(f"DVM environment variable PMIX_SERVER_URI41 "
                                    f"set in task_env to "
                                    f"{task_env['PMIX_SERVER_URI41']}")
-                print(f'DVM environment variable PMIX_SERVER_URI41 set in task_'
-                      f'env to {task_env["PMIX_SERVER_URI41"]}', flush=True)
+                # print(f'DVM environment variable PMIX_SERVER_URI41 set in task_'
+                #       f'env to {task_env["PMIX_SERVER_URI41"]}', flush=True)
         if 'PMIX_SERVER_URI41' in os.environ:
             log.debug(f"DVM environment variable PMIX_SERVER_URI41 set "
                                f"in os.environ to "
                                f"{os.environ['PMIX_SERVER_URI41']}")
-            print(f'DVM environment variable PMIX_SERVER_URI41 set in os.environ '
-                  f'to {os.environ["PMIX_SERVER_URI41"]}', flush=True)
+            # print(f'DVM environment variable PMIX_SERVER_URI41 set in os.environ '
+            #       f'to {os.environ["PMIX_SERVER_URI41"]}', flush=True)
 
-        timeout = float(keywords.get('timeout', 1.0e9))
+        timeout = float(kwargs.get('timeout', 1.0e9))
 
         cmd = f'{binary} {" ".join(map(str, args))}'
 
         log.debug(f'Launching task {task_name} with command: {cmd}')
 
-        with worker.lock:
-            print(
-                json.dumps({'eventType': 'IPS_LAUNCH_DASK_TASK', 'event_time': time.time(), 'comment': f'task_name = {task_name}, Target = {cmd}'}),
-                file=worker_event_log,
-            )
+        worker.log_event('ips',
+                         {
+                                 'eventType' : 'IPS_LAUNCH_DASK_TASK',
+                                 'event_time': start_time,
+                                 'comment'   : f'task_name = {task_name}, '
+                                               f'Task key = {task_key!s}, '
+                                               f'Target = {cmd}'
+                                 })
 
         cmd_lst = cmd.split()
         try:
-            process = subprocess.Popen(cmd_lst, stdout=task_stdout,
+            process = subprocess.Popen(cmd_lst, stdout=subprocess_stdout,
                                        stderr=task_stderr,
                                        cwd=working_dir,
                                        preexec_fn=os.setsid, env=new_env)  # noqa: PLW1509 (TODO: look into this to potentially avoid deadlocks)
         except Exception as e:
-            with worker.lock:
-                print(
-                    json.dumps(
-                        {
-                            'eventType': 'IPS_TASK_END',
-                            'event_time': time.time(),
-                            'comment': f'task_name = {task_name} Exception when calling {binary!s}: {e}',
-                            'operation': ' '.join(map(str, args)),
-                        }
-                    ),
-                    file=worker_event_log,
-                )
-            log.error(f'Failed to launch task {task_name} with command {cmd}: {e}')
+            worker.log_event('ips',
+                             {
+                                     'eventType' : 'IPS_DASK_TASK_END',
+                                     'event_time': time.time(),
+                                     'comment'   : f'task_name = {task_name} '
+                                                   f'Exception when calling '
+                                                   f'{binary!s}: {e!s}',
+                                     'operation' : ' '.join(map(str, args)),
+                             })
+            log.error(f'Failed to launch task {task_name} with '
+                      f'command {cmd}: {e}')
             raise
 
         try:
             ret_val = process.wait(timeout)
             finish_time = time.time()
-            with worker.lock:
-                print(
-                    json.dumps(
-                        {
-                            'eventType': 'IPS_TASK_END',
-                            'event_time': finish_time,
-                            'comment': f'task_name = {task_name}, elapsed time = {finish_time - start_time:.2f}s',
-                            'start_time': start_time,
-                            'elapsed_time': finish_time - start_time,
-                            'target': binary,
-                            'operation': ' '.join(map(str, args)),
-                        }
-                    ),
-                    file=worker_event_log,
-                )
+            worker.log_event('ips',
+                             {
+                                     'eventType'   : 'IPS_DASK_TASK_END',
+                                     'event_time'  : finish_time,
+                                     'comment'     : f'task_name = '
+                                                     f'{task_name},'
+                                                     f' elapsed time = '
+                                                     f'{finish_time - start_time:.2f}s',
+                                     'start_time'  : start_time,
+                                     'elapsed_time': finish_time - start_time,
+                                     'target'      : binary,
+                                     'operation'   : ' '.join(map(str, args)),
+                             })
+
         except subprocess.TimeoutExpired:
-            with worker.lock:
-                print(
-                    json.dumps({'eventType': 'IPS_TASK_END', 'event_time': time.time(), 'comment': f'task_name = {task_name}, timed-out after {timeout}s'}),
-                    file=worker_event_log,
-                )
-            os.killpg(process.pid, signal.SIGKILL)
-            log.error(f'Task {task_name} with command {cmd} timed out after {timeout}s')
+            worker.log_event('ips',
+                             {
+                                     'eventType' : 'IPS_DASK_TASK_END',
+                                     'event_time': time.time(),
+                                     'comment'   : f'task_name = {task_name}, '
+                                                   f'timed-out after '
+                                                   f'{timeout}s'})
+            process.kill()
+            log.error(f'Task {task_name} with command {cmd} timed out '
+                      f'after {timeout}s')
             ret_val = -1
         except Exception as e:
-            with worker.lock:
-                print(
-                    json.dumps(
-                        {'eventType': 'IPS_TASK_END', 'event_time': time.time(), 'comment': f'task_name = {task_name} Exception when calling {binary!s}: {e}'}
-                    ),
-                )
-            log.error(f'Task {task_name} with command {cmd} failed with {e}')
-    else:
-        with worker.lock:
-            print(
-                json.dumps(
-                    {
-                        'eventType': 'IPS_LAUNCH_DASK_TASK',
-                        'event_time': time.time(),
-                        'comment': f'task_name = {task_name}, Target = {binary.__name__}({",".join(map(str, args))})',
-                    }
-                ),
-                file=worker_event_log,
-            )
+            worker.log_event('ips',
+                             {
+                                     'eventType' : 'IPS_DASK_TASK_END',
+                                     'event_time': time.time(),
+                                     'comment'   : f'task_name = {task_name} '
+                                                   f'Exception when calling '
+                                                   f'{binary!s}: {e!s}'})
+            log.error(f'Task {task_name} with command {cmd} failed with {e!s}')
+    elif isinstance(binary, Callable):
+        # binary not a string, but is a python callable, so we call it directly
+        # invoke it the given *args
+        worker.log_event('ips',
+                         {
+                                 'eventType' : 'IPS_LAUNCH_DASK_TASK',
+                                 'event_time': time.time(),
+                                 'comment'   : f'task_name = {task_name}, '
+                                               f'Target = {binary.__name__}('
+                                               f'{",".join(map(str, args))})',
+                         })
+
         ret_val = binary(*args)
         finish_time = time.time()
-        with worker.lock:
-            print(
-                json.dumps(
-                    {
-                        'eventType': 'IPS_TASK_END',
-                        'event_time': finish_time,
-                        'comment': f'task_name = {task_name}, elapsed time = {finish_time - start_time:.2f}s',
-                        'start_time': start_time,
-                        'elapsed_time': finish_time - start_time,
-                        'target': binary.__name__,
-                        'return_value': ret_val,
-                        'operation': f'({",".join(map(str, args))})',
-                    }
-                ),
-                file=worker_event_log,
-            )
+
+        worker.log_event('ips',
+                         {
+                                 'eventType'   : 'IPS_DASK_TASK_END',
+                                 'event_time'  : finish_time,
+                                 'comment'     : f'task_name = {task_name}, '
+                                                 f'elapsed time = '
+                                                 f'{finish_time - start_time:.2f}s',
+                                 'start_time'  : start_time,
+                                 'elapsed_time': finish_time - start_time,
+                                 'target'      : binary.__name__,
+                                 'return_value': ret_val,
+                                 'operation'   : f'({",".join(map(str, 
+                                                                  args))})',
+                         })
+    else:
+        raise RuntimeError(f'Binary argument {binary!s} is not a string or '
+                           f'callable, cannot launch task {task_name}')
 
     log.info(f'Task {task_name} finished with return value: {ret_val}')
 
