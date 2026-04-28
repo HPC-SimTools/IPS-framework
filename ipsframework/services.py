@@ -63,7 +63,7 @@ class RunningTask(NamedTuple):
     args: list[str]
 
 
-def launch(binary: Any,
+def launch(executable: Any,
            task_name: str,
            working_dir: Union[str, os.PathLike],
            *args, **kwargs):
@@ -86,7 +86,7 @@ def launch(binary: Any,
     with a DVM (Distributed Virtual Machine) so the `binary` needs a
     `prun` prepended pointing to that.
 
-    :param binary: The binary to launch. Either a string or a class.
+    :param executable: The binary to launch. Either a string or a class.
     :param task_name: The name of the task.
     :param working_dir: The working directory in which to run this task
     :returns: The task name and the return value from running the binary.
@@ -107,7 +107,7 @@ def launch(binary: Any,
     os.chdir(working_dir)
 
     ret_val = None
-    if isinstance(binary, str):
+    if isinstance(executable, str):
         # This is presumably an external binary executable to be executed
         # via a subprocess.Popen()
 
@@ -175,7 +175,7 @@ def launch(binary: Any,
 
         timeout = float(kwargs.get('timeout', 1.0e9))
 
-        cmd = f'{binary} {" ".join(map(str, args))}'
+        cmd = f'{executable} {" ".join(map(str, args))}'
 
         log.debug(f'Launching task {task_name} with command: {cmd}')
 
@@ -201,7 +201,7 @@ def launch(binary: Any,
                                      'event_time': time.time(),
                                      'comment'   : f'task_name = {task_name} '
                                                    f'Exception when calling '
-                                                   f'{binary!s}: {e!s}',
+                                                   f'{executable!s}: {e!s}',
                                      'operation' : ' '.join(map(str, args)),
                              })
             log.error(f'Failed to launch task {task_name} with '
@@ -221,7 +221,7 @@ def launch(binary: Any,
                                                      f'{finish_time - start_time:.2f}s',
                                      'start_time'  : start_time,
                                      'elapsed_time': finish_time - start_time,
-                                     'target'      : binary,
+                                     'target'      : executable,
                                      'operation'   : ' '.join(map(str, args)),
                              })
 
@@ -244,9 +244,9 @@ def launch(binary: Any,
                                      'event_time': time.time(),
                                      'comment'   : f'task_name = {task_name} '
                                                    f'Exception when calling '
-                                                   f'{binary!s}: {e!s}'})
+                                                   f'{executable!s}: {e!s}'})
             log.error(f'Task {task_name} with command {cmd} failed with {e!s}')
-    elif isinstance(binary, Callable):
+    elif isinstance(executable, Callable):
         # binary not a string, but is a python callable, so we call it directly
         # invoke it the given *args
         worker.log_event('ips',
@@ -254,11 +254,11 @@ def launch(binary: Any,
                                  'eventType' : 'IPS_LAUNCH_DASK_TASK',
                                  'event_time': time.time(),
                                  'comment'   : f'task_name = {task_name}, '
-                                               f'Target = {binary.__name__}('
+                                               f'Target = {executable.__name__}('
                                                f'{",".join(map(str, args))})',
                          })
 
-        ret_val = binary(*args)
+        ret_val = executable(*args)
         finish_time = time.time()
 
         worker.log_event('ips',
@@ -270,13 +270,13 @@ def launch(binary: Any,
                                                  f'{finish_time - start_time:.2f}s',
                                  'start_time'  : start_time,
                                  'elapsed_time': finish_time - start_time,
-                                 'target'      : binary.__name__,
+                                 'target'      : executable.__name__,
                                  'return_value': ret_val,
                                  'operation'   : f'({",".join(map(str, 
                                                                   args))})',
                          })
     else:
-        raise RuntimeError(f'Binary argument {binary!s} is not a string or '
+        raise RuntimeError(f'Binary argument {executable!s} is not a string or '
                            f'callable, cannot launch task {task_name}')
 
     log.info(f'Task {task_name} finished with return value: {ret_val}')
