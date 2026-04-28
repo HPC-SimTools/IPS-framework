@@ -263,24 +263,37 @@ def launch(executable: Any,
                                                f'{",".join(map(str, args))})',
                          })
 
-        ret_val = executable(*args)
-        finish_time = time.time()
+        try:
+            ret_val = executable(*args)
 
-        worker.log_event('ips',
-                         {
-                                 'eventType'   : 'IPS_DASK_TASK_END',
-                                 'event_time'  : finish_time,
-                                 'state'       : 'Succeeded',
-                                 'comment'     : f'task_name = {task_name}, '
-                                                 f'elapsed time = '
-                                                 f'{finish_time - start_time:.2f}s',
-                                 'start_time'  : start_time,
-                                 'elapsed_time': finish_time - start_time,
-                                 'target'      : executable.__name__,
-                                 'return_value': ret_val,
-                                 'operation'   : f'({",".join(map(str, 
-                                                                  args))})',
-                         })
+            finish_time = time.time()
+
+            worker.log_event('ips',
+                             {
+                                     'eventType'   : 'IPS_DASK_TASK_END',
+                                     'event_time'  : finish_time,
+                                     'state'       : 'Succeeded',
+                                     'comment'     : f'task_name = {task_name}, '
+                                                     f'elapsed time = '
+                                                     f'{finish_time - start_time:.2f}s',
+                                     'start_time'  : start_time,
+                                     'elapsed_time': finish_time - start_time,
+                                     'target'      : executable.__name__,
+                                     'return_value': ret_val,
+                                     'operation'   : f'({",".join(map(str, 
+                                                                      args))})',
+                             })
+        except Exception as e:
+            worker.log_event('ips',
+                             {
+                                     'eventType' : 'IPS_DASK_TASK_END',
+                                     'event_time': time.time(),
+                                     'state'     : 'Failed',
+                                     'comment'   : f'task_name = {task_name} '
+                                                   f'Exception when calling '
+                                                   f'{executable!s}: {e!s}'})
+            log.error(f'Task {task_name} with callable {executable!s} failed '
+                      f'with {e!s}')
     else:
         raise RuntimeError(f'Binary argument {executable!s} is not a string or '
                            f'callable, cannot launch task {task_name}')
