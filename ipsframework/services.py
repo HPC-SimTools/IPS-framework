@@ -280,8 +280,7 @@ def launch(executable: Any,
                                      'elapsed_time': finish_time - start_time,
                                      'target'      : executable.__name__,
                                      'return_value': ret_val,
-                                     'operation'   : f'({",".join(map(str, 
-                                                                      args))})',
+                                     'operation'   : f'({",".join(map(str, args))})',
                              })
         except Exception as e:
             worker.log_event('ips',
@@ -3133,7 +3132,7 @@ class TaskPool:
                         '--port',
                         '0',
                     ]
-                self.services.info(f'Scheduler args: {' '.join(args)}')
+                self.services.info(f'Scheduler args: {" ".join(args)}')
                 self.dask_sched_popen = subprocess.Popen(args)
                 self.dask_sched_pid = self.dask_sched_popen.pid
                 self.services.info(f'Scheduler pid: '
