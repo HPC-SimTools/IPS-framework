@@ -2961,6 +2961,8 @@ class TaskPool:
 
         self.services.debug(f'Processing dask event: {message!s}, '
                             f'timestamp: {timestamp!s}')
+        print(f'Processing dask event: {message!s}, '
+                            f'timestamp: {timestamp!s}')
 
         self.services._send_monitor_event(**message)
 
