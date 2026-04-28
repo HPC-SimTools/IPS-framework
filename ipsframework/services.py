@@ -182,6 +182,7 @@ def launch(executable: Any,
                          {
                                  'eventType' : 'IPS_LAUNCH_DASK_TASK',
                                  'event_time': start_time,
+                                 'state'     : 'Running',
                                  'comment'   : f'task_name = {task_name}, '
                                                f'Task key = {task_key!s}, '
                                                f'Target = {cmd}'
@@ -198,6 +199,7 @@ def launch(executable: Any,
                              {
                                      'eventType' : 'IPS_DASK_TASK_END',
                                      'event_time': time.time(),
+                                     'state'     : 'Failed',
                                      'comment'   : f'task_name = {task_name} '
                                                    f'Exception when calling '
                                                    f'{executable!s}: {e!s}',
@@ -214,6 +216,7 @@ def launch(executable: Any,
                              {
                                      'eventType'   : 'IPS_DASK_TASK_END',
                                      'event_time'  : finish_time,
+                                     'state'       : 'Succeeded',
                                      'comment'     : f'task_name = '
                                                      f'{task_name},'
                                                      f' elapsed time = '
@@ -229,6 +232,7 @@ def launch(executable: Any,
                              {
                                      'eventType' : 'IPS_DASK_TASK_END',
                                      'event_time': time.time(),
+                                     'state'     : 'Timed out',
                                      'comment'   : f'task_name = {task_name}, '
                                                    f'timed-out after '
                                                    f'{timeout}s'})
@@ -241,17 +245,19 @@ def launch(executable: Any,
                              {
                                      'eventType' : 'IPS_DASK_TASK_END',
                                      'event_time': time.time(),
+                                     'state'     : 'Failed',
                                      'comment'   : f'task_name = {task_name} '
                                                    f'Exception when calling '
                                                    f'{executable!s}: {e!s}'})
             log.error(f'Task {task_name} with command {cmd} failed with {e!s}')
     elif isinstance(executable, Callable):
         # binary not a string, but is a python callable, so we call it directly
-        # invoke it the given *args
+        # with the given *args
         worker.log_event('ips',
                          {
                                  'eventType' : 'IPS_LAUNCH_DASK_TASK',
                                  'event_time': time.time(),
+                                 'state'     : 'Running',
                                  'comment'   : f'task_name = {task_name}, '
                                                f'Target = {executable.__name__}('
                                                f'{",".join(map(str, args))})',
@@ -264,6 +270,7 @@ def launch(executable: Any,
                          {
                                  'eventType'   : 'IPS_DASK_TASK_END',
                                  'event_time'  : finish_time,
+                                 'state'       : 'Succeeded',
                                  'comment'     : f'task_name = {task_name}, '
                                                  f'elapsed time = '
                                                  f'{finish_time - start_time:.2f}s',
