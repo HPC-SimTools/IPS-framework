@@ -2961,8 +2961,13 @@ class TaskPool:
 
         self.services.debug(f'Processing dask event: {message!s}, '
                             f'timestamp: {timestamp!s}')
-        print(f'Processing dask event: {message!s}, '
-                            f'timestamp: {timestamp!s}')
+
+        if 'worker' in message:
+            # Sneaky Dask will surreptitiously add 'worker', which is
+            # not mentioned in the API documentation.  If we don't remove
+            # this, _send_monitor_event() will fail because it doesn't expect
+            # this argument.
+            del message['worker']
 
         self.services._send_monitor_event(**message)
 
