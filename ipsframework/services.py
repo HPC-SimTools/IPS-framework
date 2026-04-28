@@ -39,7 +39,6 @@ from rich.traceback import Traceback
 rich.traceback.install(show_locals=True)
 
 from configobj import ConfigObj
-from dask import get_current_task
 from distributed import Client, Worker, WorkerPlugin
 
 from ipsframework import ipsutil, messages
@@ -98,7 +97,7 @@ def launch(executable: Any,
     log = logging.getLogger('launch')
 
     worker = get_worker()
-    task_key = get_current_task()
+    task_key = worker.get_current_task()
 
     log.info(f'Launching task {task_name} with id {task_key!s} and '
              f'worker {worker.name!s} in {working_dir}')
