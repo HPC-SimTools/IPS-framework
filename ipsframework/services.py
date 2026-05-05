@@ -104,6 +104,7 @@ def launch(executable: Any,
              f'worker {worker.name!s} in {working_dir}')
 
     start_time = time.time()
+    original_directory = os.getcwd()
     os.chdir(working_dir)
 
     ret_val = None
@@ -295,11 +296,13 @@ def launch(executable: Any,
             log.error(f'Task {task_name} with callable {executable!s} failed '
                       f'with {e!s}')
     else:
+        os.chdir(original_directory)
         raise RuntimeError(f'Binary argument {executable!s} is not a string or '
                            f'callable, cannot launch task {task_name}')
 
     log.info(f'Task {task_name} finished with return value: {ret_val}')
 
+    os.chdir(original_directory)
     return task_name, ret_val
 
 
