@@ -42,6 +42,7 @@ from configobj import ConfigObj
 from distributed import Client, Worker, WorkerPlugin
 
 from ipsframework import ipsutil, messages
+from ipsframework._internal.definitions import IPS_EVENT_TYPE
 from ipsframework.cca_es_spec import initialize_event_service
 from ipsframework.componentRegistry import ComponentID
 from ipsframework.ips_es_spec import eventManager
@@ -583,19 +584,19 @@ class ServicesProxy:
 
     def _send_monitor_event(
         self,
-        eventType='',
-        comment='',
-        ok=True,
-        state='Running',
-        event_time=None,
-        elapsed_time=None,
-        start_time=None,
-        end_time=None,
-        target=None,
-        operation=None,
-        procs_requested=None,
-        cores_allocated=None,
-        call_id=0,
+        eventType: IPS_EVENT_TYPE = '',
+        comment: str = '',
+        ok: bool = True,
+        state: str = 'Running',
+        event_time: Optional[float] = None,
+        elapsed_time: Optional[float] = None,
+        start_time: Optional[float] = None,
+        end_time: Optional[float] = None,
+        target: Optional[str] = None,
+        operation: Optional[str] = None,
+        procs_requested: Optional[int] = None,
+        cores_allocated: Optional[int] = None,
+        call_id: int = 0,
     ) -> None:
         """
         Construct and send an event populated with the component's
@@ -2177,7 +2178,13 @@ class ServicesProxy:
         """
         self.event_service.process_events()
 
-    def send_portal_event(self, event_type: str = 'COMPONENT_EVENT', event_comment: str = '', event_time=None, elapsed_time=None):
+    def send_portal_event(
+        self,
+        event_type: IPS_EVENT_TYPE = 'COMPONENT_EVENT',
+        event_comment: str = '',
+        event_time: Optional[float] = None,
+        elapsed_time: Optional[float] = None,
+    ):
         """
         Send event to web portal.
         """

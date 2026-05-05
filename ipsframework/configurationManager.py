@@ -361,7 +361,7 @@ class ConfigurationManager:
         # Users must set USE_PORTAL and include a PORTAL_URL in order to enable the portal
         if 'PORTAL_URL' not in self.sim_map[self.fwk_sim_name].sim_conf:
             use_portal = False
-        elif 'USE_PORTAL' in self.sim_map[self.fwk_sim_name].sim_conf:
+        elif 'USE_PORTAL' in self.sim_map[self.fwk_sim_name].sim_conf and 'PORTAL_URL' in self.sim_map[self.fwk_sim_name].sim_conf:
             use_portal = self.sim_map[self.fwk_sim_name].sim_conf['USE_PORTAL']
             if isinstance(use_portal, str) and use_portal.lower().strip() == 'true':
                 use_portal = True
