@@ -11,7 +11,7 @@ import tempfile
 import time
 import uuid
 from multiprocessing import Process, Queue, set_start_method
-from typing import Any, Optional, Union
+from typing import Any, Iterable, Optional, Union
 
 from configobj import ConfigObj
 
@@ -44,7 +44,7 @@ class ConfigurationManager:
         entry in the configurationManager class
         """
 
-        def __init__(self, sim_name, start_time: Optional[float] = None):
+        def __init__(self, sim_name: str, start_time: Optional[float] = None) -> None:
             self.start_time = start_time if start_time else time.time()
             self.sim_name = sim_name
             self.portal_sim_name = None
@@ -61,7 +61,7 @@ class ConfigurationManager:
             self.component_process = None
             self.process_list = []
 
-    def __init__(self, fwk, config_file_list: list[Union[str, os.PathLike]], platform_file_name: Union[str, os.PathLike]):
+    def __init__(self, fwk: Any, config_file_list: list[Union[str, os.PathLike[str]]], platform_file_name: Union[str, os.PathLike[str]]) -> None:
         """
         Initialize the values to be used by the configuration manager.  Also
         specified are the required fields of the simulation configuration
@@ -91,18 +91,18 @@ class ConfigurationManager:
         self.log_dynamic_sim_queue = Queue(0)
 
         class Unbuffered:
-            def __init__(self, stream):
+            def __init__(self, stream: Any) -> None:
                 self.stream = stream
 
-            def write(self, data):
+            def write(self, data: str) -> None:
                 self.stream.write(data)
                 self.stream.flush()
 
-            def writelines(self, data):
+            def writelines(self, data: Iterable[str]) -> None:
                 self.stream.writelines(data)
                 self.stream.flush()
 
-            def __getattr__(self, attr):
+            def __getattr__(self, attr: str) -> Any:
                 return getattr(self.stream, attr)
 
         for conf_file in config_file_list:
@@ -132,7 +132,7 @@ class ConfigurationManager:
         self.log_process = None
 
     # CM initialize
-    def initialize(self, data_mgr, resource_mgr, task_mgr):
+    def initialize(self, data_mgr: Any, resource_mgr: Any, task_mgr: Any) -> None:
         """
         Parse the platform and simulation configuration files using the
         :py:obj:`ConfigObj` module.  Create and initialize simulation(s) and
@@ -328,7 +328,7 @@ class ConfigurationManager:
         # do later - subscribe to events, set up event publishing structure
         # publish "CM initialized" event
 
-    def _initialize_fwk_components(self):
+    def _initialize_fwk_components(self) -> None:
         """
         Initialize 'components' that are part of the framework infrastructure.
         Those components (for now) communicate using the event bus and are not
@@ -373,7 +373,7 @@ class ConfigurationManager:
 
         if use_portal:
 
-            def _config_portal(config: dict[str, Any]):
+            def _config_portal(config: dict[str, Any]) -> None:
                 config['PORTAL_URL'] = self.get_platform_parameter('PORTAL_URL', silent=True)
                 if config['PORTAL_URL']:
                     bridge_conf['_IPS_PORTAL_API_KEY'] = self.get_platform_parameter('_IPS_PORTAL_API_KEY', silent=True)
@@ -411,7 +411,7 @@ class ConfigurationManager:
             component_id = self._create_component(bridge_conf, self.sim_map[self.fwk_sim_name])
             self.fwk_components.append(component_id)
 
-    def _initialize_sim(self, sim_data):
+    def _initialize_sim(self, sim_data: "ConfigurationManager.SimulationData") -> None:
         """
         Parses the configuration data (*sim_conf*) associated with a simulation
         (*sim_name*). Instantiate the components associated with each simulation.
@@ -488,7 +488,7 @@ class ConfigurationManager:
         if sim_data.init_comp is None:
             self.fwk.warning('Missing INIT specification in ' + 'config file for simulation %s', sim_data.sim_name)
 
-    def _create_component(self, comp_conf, sim_data):
+    def _create_component(self, comp_conf: dict[str, Any], sim_data: "ConfigurationManager.SimulationData") -> ComponentID:
         """
         Create component and populate it with the information from the
         component's configuration section.
@@ -534,7 +534,7 @@ class ConfigurationManager:
         sim_data.all_comps.append(component_id)
         return component_id
 
-    def get_component_map(self):
+    def get_component_map(self) -> dict[str, list[ComponentID]]:
         """
         Return a dictionary of simulation names and lists of component
         references.  (May only be the driver, and init (if present)???)
@@ -546,7 +546,7 @@ class ConfigurationManager:
             sim_comps[sim_name] = self.get_simulation_components(sim_name)
         return sim_comps
 
-    def get_simulation_components(self, sim_name):
+    def get_simulation_components(self, sim_name: str) -> list[ComponentID]:
         comp_list = []
         sim_data = self.sim_map[sim_name]
         if sim_data.init_comp:
@@ -554,23 +554,23 @@ class ConfigurationManager:
         comp_list.append(sim_data.driver_comp)
         return comp_list
 
-    def get_all_simulation_components_map(self):
+    def get_all_simulation_components_map(self) -> dict[str, list[ComponentID]]:
         sim_comps = {name: sim_map.all_comps[:] for name, sim_map in self.sim_map.items()}
         del sim_comps[self.fwk_sim_name]
         return sim_comps
 
-    def get_all_simulation_sim_root(self):
+    def get_all_simulation_sim_root(self) -> dict[str, Any]:
         sim_roots = {name: sim_map.sim_root for name, sim_map in self.sim_map.items()}
         return sim_roots
 
-    def get_framework_components(self):
+    def get_framework_components(self) -> list[ComponentID]:
         """
         Return list of framework components.
         """
         fwk_components = self.fwk_components[:]
         return fwk_components
 
-    def get_sim_parameter(self, sim_name, param):
+    def get_sim_parameter(self, sim_name: str, param: str) -> Any:
         """
         Return value of *param* from simulation configuration file for
         *sim_name*.
@@ -586,13 +586,13 @@ class ConfigurationManager:
         self.fwk.debug('Returning value = %s for config parameter %s in simulation %s', val, param, sim_name)
         return val
 
-    def get_sim_names(self):
+    def get_sim_names(self) -> list[str]:
         """
         Return list of names of simulations.
         """
         return list(self.sim_map.keys())
 
-    def process_service_request(self, msg):
+    def process_service_request(self, msg: Any) -> Any:
         """
         Invokes public configuration manager method for a component.  Return
         method's return value.
@@ -604,7 +604,13 @@ class ConfigurationManager:
         retval = method(sim_name, *msg.args)
         return retval
 
-    def create_simulation(self, sim_name, config_file, override, sub_workflow=False):
+    def create_simulation(
+        self,
+        sim_name: str,
+        config_file: Union[str, os.PathLike[str]],
+        override: Optional[dict[str, Any]],
+        sub_workflow: bool = False,
+    ) -> tuple[str, Optional[ComponentID], Optional[ComponentID]]:
         try:
             conf = ConfigObj(config_file, interpolation='template', file_error=True)
         except IOError:
@@ -680,7 +686,7 @@ in configuration file %s',
 
         return (sim_name, new_sim.init_comp, new_sim.driver_comp)
 
-    def get_port(self, sim_name, port_name):
+    def get_port(self, sim_name: str, port_name: str) -> ComponentID:
         """
         Return a reference to the component from simulation *sim_name*
         implementing port *port_name*.
@@ -689,14 +695,14 @@ in configuration file %s',
         comp_id = sim_data.port_map[port_name]
         return comp_id
 
-    def get_config_parameter(self, sim_name, param):
+    def get_config_parameter(self, sim_name: str, param: str) -> Any:
         """
         Return value of *param* from simulation configuration file for
         *sim_name*.
         """
         return self.get_sim_parameter(sim_name, param)
 
-    def set_config_parameter(self, sim_name, param, value, target_sim_name):
+    def set_config_parameter(self, sim_name: str, param: str, value: Any, target_sim_name: str) -> Any:
         """
         Set the configuration parameter *param* to value *value* in
         *target_sim_name*.  If *target_sim_name* is the framework, all
@@ -718,7 +724,7 @@ in configuration file %s',
 
         return value
 
-    def get_platform_parameter(self, param, silent=False):
+    def get_platform_parameter(self, param: str, silent: bool = False) -> Any:
         """
         Return value of platform parameter *param*.  If *silent* is ``False``
         (default) ``None`` is returned when *param* not found, otherwise an
@@ -733,7 +739,7 @@ in configuration file %s',
                 raise
         return val
 
-    def terminate_sim(self, sim_name):
+    def terminate_sim(self, sim_name: str) -> None:
         sim_data = self.sim_map[sim_name]
         all_sim_components = sim_data.all_comps
         msg = 'END_SIM %s' % (sim_data.log_pipe_name)
@@ -753,7 +759,7 @@ in configuration file %s',
         self.finished_sim_map[sim_name] = sim_data
         del self.sim_map[sim_name]
 
-    def terminate(self, status):
+    def terminate(self, status: Any) -> None:
         """
         Terminates all processes attached to the framework.  *status* not used.
         """
