@@ -210,6 +210,8 @@ def launch(executable: Any,
             log.error(f'Failed to launch task {task_name} with '
                       f'command {cmd}: {e}')
             raise
+        finally:
+            os.chdir(original_directory)
 
         try:
             ret_val = process.wait(timeout)
