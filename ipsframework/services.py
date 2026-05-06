@@ -2748,7 +2748,8 @@ class ServicesProxy:
         try:
             # Note that we *always* use Dask to run the ensemble tasks
             num_submitted = self.submit_tasks(
-                task_pool_name,  # block=True,
+                task_pool_name,
+                    block=True,
                 use_dask=True,
                 dask_nodes=num_nodes,
                 dask_ppw=cores_per_instance,
@@ -3280,16 +3281,20 @@ class TaskPool:
         self.queued_tasks = {}
 
         if block:
+            self.services.debug(f'submit_dask_tasks: blocking tasks to await '
+                                f'results')
             # Await all the futures to finish, thereby blocking until they
             # are all done.
             result = self.dask_client.gather(self.futures, direct=True)
             self.services.debug(f'submit_dask_tasks: have {len(result)} '
-                                f'results')
+                                f'results, block released')
             # TODO check actual result values for problems
 
             # Set this to empty list so that get_dask_finished_tasks_status
             # doesn't try to gather() needlessly again.
             self.futures = []
+        else:
+            self.services.debug(f'submit_dask_tasks: not blocking tasks')
 
         return len(self.futures)
 
