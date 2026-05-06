@@ -189,11 +189,6 @@ class PortalSimulationData:
 
     def __init__(self):
         self.counter = 0
-        self.monitor_file_prefix = ''
-        """The name of the file, minus the extension ('.html', '.jsonl', etc.).
-        
-        If this is empty, you must either check to see if you can create the file, or you should assume that you can't create the file.
-        """
         self.portal_runid: Union[str, None] = None
         """Locally determined portal runid, also sent to the portal."""
         self.parent_portal_runid: Union[str, None] = None
