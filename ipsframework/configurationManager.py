@@ -387,10 +387,10 @@ class ConfigurationManager:
             bridge_conf['NAME'] = fwk_comp[1]
             if 'FWK_COMPS_PATH' in self.sim_map[self.fwk_sim_name].sim_conf:
                 bridge_conf['BIN_PATH'] = self.sim_map[self.fwk_sim_name].sim_conf['FWK_COMPS_PATH']
-                bridge_conf['SCRIPT'] = os.path.join(bridge_conf['BIN_PATH'], 'bridges', f'{fwk_comp[0]}.py')
+                bridge_conf['SCRIPT'] = os.path.join(bridge_conf['BIN_PATH'], '_internal', 'bridges', f'{fwk_comp[0]}.py')
             else:
                 bridge_conf['SCRIPT'] = ''
-                bridge_conf['MODULE'] = f'ipsframework.bridges.{fwk_comp[0]}'
+                bridge_conf['MODULE'] = f'ipsframework._internal.bridges.{fwk_comp[0]}'
             bridge_conf['INPUT_DIR'] = '/dev/null'
             bridge_conf['INPUT_FILES'] = ''
             bridge_conf['DATA_FILES'] = ''

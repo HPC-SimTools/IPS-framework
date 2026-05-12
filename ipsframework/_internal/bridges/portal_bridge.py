@@ -3,12 +3,15 @@
 # -------------------------------------------------------------------------------
 import hashlib
 import json
+import logging
+import logging.config
 import os
 import tarfile
 import time
 from multiprocessing import Event, Pipe, Process
 from multiprocessing.connection import Connection
 from multiprocessing.synchronize import Event as EventType
+from pathlib import Path
 from typing import Any, Callable, Literal, Union
 
 from urllib3 import PoolManager
@@ -20,10 +23,16 @@ from ipsframework import Component
 MAX_RETRIES = 10
 
 
+_portal_logger = logging.getLogger('ipsframework.bridges.portal_bridge')
+
+
 def send_post(conn: Connection, stop: EventType, url: str):
     fail_count = 0
 
-    http = PoolManager(retries=Urllib3Retry(total=MAX_RETRIES, backoff_factor=1, respect_retry_after_header=True), headers={'Content-Type': 'application/json'})
+    http = PoolManager(
+        retries=Urllib3Retry(total=MAX_RETRIES, backoff_factor=1, respect_retry_after_header=True),
+        headers={'Content-Type': 'application/json'},
+    )
 
     while True:
         if conn.poll(0.1):
@@ -31,7 +40,9 @@ def send_post(conn: Connection, stop: EventType, url: str):
             while conn.poll(0.01):
                 msgs.append(conn.recv())
             try:
+                start_walltime = time.time()
                 resp = http.request('POST', url, body=json.dumps(msgs).encode())
+                _portal_logger.debug('HTTP event took %s seconds', time.time() - start_walltime)
             except MaxRetryError as e:
                 fail_count += 1
                 conn.send((999, f'Max retry error: {e}'))
@@ -56,6 +67,7 @@ def send_jupyter_notebook(conn: Connection, stop: EventType, url: str, api_key: 
             next_val: dict[str, Any] = conn.recv()
             # TODO - consider using multipart/form-data instead
             try:
+                start_walltime = time.time()
                 resp = http.request(
                     'POST',
                     url,
@@ -67,6 +79,10 @@ def send_jupyter_notebook(conn: Connection, stop: EventType, url: str, api_key: 
                         'X-Ips-Portal-Runid': next_val['portal_runid'],
                         'X-Ips-Filename': next_val['filename'],
                     },
+                )
+                _portal_logger.debug(
+                    'Notebook HTTP request took %s seconds',
+                    time.time() - start_walltime,
                 )
             except MaxRetryError as e:
                 fail_count += 1
@@ -108,11 +124,16 @@ def send_jupyter_notebook_data(conn: Connection, stop: EventType, url: str, api_
                 # TODO - we should send the body in CHUNKS here.
                 with open(next_val['data_source'], 'rb') as f:
                     body = f.read()
+                start_walltime = time.time()
                 resp = http.request(
                     'POST',
                     url,
                     body=body,
                     headers=headers,
+                )
+                _portal_logger.debug(
+                    'Notebook HTTP request took %s seconds',
+                    time.time() - start_walltime,
                 )
             except (MaxRetryError, OSError) as e:
                 fail_count += 1
@@ -149,11 +170,16 @@ def send_ensemble_variables(conn: Connection, stop: EventType, url: str, api_key
                 # TODO check to see that file size is < 1MB
                 with open(next_val['ensemble_data_path'], 'rb') as fd:
                     body = fd.read()
+                start_walltime = time.time()
                 resp = http.request(
                     'POST',
                     url,
                     body=body,
                     headers=headers,
+                )
+                _portal_logger.debug(
+                    'Ensemble CSV response took %s seconds',
+                    time.time() - start_walltime,
                 )
             except (MaxRetryError, OSError) as e:
                 fail_count += 1
@@ -210,6 +236,7 @@ class PortalBridge(Component):
         :py:class:`component.Component` object.
         """
         super().__init__(services, config)
+
         self.sim_map: dict[str, PortalSimulationData] = {}
         self.done = False
         self.first_portal_runid = None
@@ -235,6 +262,20 @@ class PortalBridge(Component):
             self.portal_api_key = self._IPS_PORTAL_API_KEY
         except AttributeError:
             pass
+
+        if self.services.fwk.log_level == logging.DEBUG:
+            log_level = logging.DEBUG
+        else:
+            log_level = logging.INFO
+        _portal_logger.setLevel(log_level)
+        log_file = Path(self.services.get_working_dir()) / 'portal.log'
+        formatter = logging.Formatter('%(asctime)s %(name)-15s %(levelname)-8s %(message)s')
+        file_handler = logging.FileHandler(log_file)
+        file_handler.setFormatter(formatter)
+        _portal_logger.addHandler(file_handler)
+        console_handler = logging.StreamHandler()
+        console_handler.setFormatter(formatter)
+        _portal_logger.addHandler(console_handler)
 
         self.services.subscribe('_IPS_MONITOR', 'process_event')
 
@@ -315,7 +356,10 @@ class PortalBridge(Component):
             if self.first_event:  # First time, launch sendPost.py daemon
                 self.parent_conn, child_conn = Pipe()
                 self.childProcessStop = Event()
-                self.childProcess = Process(target=send_post, args=(child_conn, self.childProcessStop, self.portal_url))
+                self.childProcess = Process(
+                    target=send_post,
+                    args=(child_conn, self.childProcessStop, self.portal_url),
+                )
                 self.childProcess.start()
                 self.first_event = False
                 polling_timeout = 5.0  # wait a little longer if this was the first event
@@ -361,8 +405,16 @@ class PortalBridge(Component):
                     data = json.loads(msg)
                     if 'runid' in data and 'simname' in data:
                         # Indicates IPS-START event return
-                        self.services.info('Run Portal URL = %s/%s', self.portal_url, data.get('runid'))
-                        self.services.set_config_param('_IPS_PORTAL_RUNID', str(data.get('runid')), target_sim_name=data.get('simname'))
+                        self.services.info(
+                            'Run Portal URL = %s/%s',
+                            self.portal_url,
+                            data.get('runid'),
+                        )
+                        self.services.set_config_param(
+                            '_IPS_PORTAL_RUNID',
+                            str(data.get('runid')),
+                            target_sim_name=data.get('simname'),
+                        )
                 except (TypeError, json.decoder.JSONDecodeError):
                     pass
 
@@ -391,7 +443,10 @@ class PortalBridge(Component):
         if self.portal_url and self.portal_api_key:
             if not self.url_manager_jupyter_notebook:
                 self.url_manager_jupyter_notebook = UrlRequestProcessManager(
-                    send_jupyter_notebook, self.portal_url + '/api/data/add_notebook', self.portal_api_key, self.USER
+                    send_jupyter_notebook,
+                    self.portal_url + '/api/data/add_notebook',
+                    self.portal_api_key,
+                    self.USER,
                 )
             self.http_req_and_response(self.url_manager_jupyter_notebook, event_data)
 
@@ -399,7 +454,10 @@ class PortalBridge(Component):
         if self.portal_url and self.portal_api_key:
             if not self.url_manager_jupyter_data:
                 self.url_manager_jupyter_data = UrlRequestProcessManager(
-                    send_jupyter_notebook_data, self.portal_url + '/api/data/add_data_file', self.portal_api_key, self.USER
+                    send_jupyter_notebook_data,
+                    self.portal_url + '/api/data/add_data_file',
+                    self.portal_api_key,
+                    self.USER,
                 )
             self.http_req_and_response(self.url_manager_jupyter_data, event_data)
 
@@ -407,7 +465,10 @@ class PortalBridge(Component):
         if self.portal_url and self.portal_api_key:
             if not self.url_manager_ensemble_uploads:
                 self.url_manager_ensemble_uploads = UrlRequestProcessManager(
-                    send_ensemble_variables, self.portal_url + '/api/data/add_ensemble_variables', self.portal_api_key, self.USER
+                    send_ensemble_variables,
+                    self.portal_url + '/api/data/add_ensemble_variables',
+                    self.portal_api_key,
+                    self.USER,
                 )
             self.http_req_and_response(self.url_manager_ensemble_uploads, event_data)
 
@@ -417,9 +478,17 @@ class PortalBridge(Component):
         *sim_root* so the portal can set up corresponding structures to manage
         data from the sim.
         """
-        self.services.debug('Initializing simulation using PortalBridge: %s -- %s ', sim_name, sim_root)
+        self.services.debug(
+            'Initializing simulation using PortalBridge: %s -- %s ',
+            sim_name,
+            sim_root,
+        )
         if hasattr(self, '_IPS_PORTAL_API_KEY'):
-            self.services.set_config_param('_IPS_PORTAL_API_KEY', self._IPS_PORTAL_API_KEY, target_sim_name=sim_name)
+            self.services.set_config_param(
+                '_IPS_PORTAL_API_KEY',
+                self._IPS_PORTAL_API_KEY,
+                target_sim_name=sim_name,
+            )
 
         sim_data = PortalSimulationData()
         sim_data.sim_name = sim_name
