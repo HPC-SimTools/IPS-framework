@@ -3510,6 +3510,8 @@ class TaskPool:
         :return: dict mapping task name to exit status
         :rtype: dict
         """
+        result = None
+
         if self.dask_client is None:
             # FIXME How does this happen and is it ok when it does?
             self.services.warning('No dask client in call to finished tasks status')
@@ -3568,9 +3570,10 @@ class TaskPool:
             #  is doubtful.
             return dict(result)
 
-        self.services.debug('get_dask_finished_tasks_status: no result, returning None')
+        self.services.debug('get_dask_finished_tasks_status: no result, '
+                            'returning None')
 
-        return result  # which will be none
+        return result  # which will be none or {}
 
     def get_finished_tasks_status(self):
         """
