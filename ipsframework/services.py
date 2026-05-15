@@ -104,8 +104,7 @@ def launch(executable: Any,
              f'worker {worker.name!s} in {working_dir}')
 
     start_time = time.time()
-    original_directory = os.getcwd()
-    os.chdir(working_dir)
+    working_dir_path = Path(working_dir)
 
     ret_val = None
     if isinstance(executable, str):
@@ -120,9 +119,12 @@ def launch(executable: Any,
         except KeyError:
             log.info('No logfile specified, using stdout for task output')
         else:
-            subprocess_stdout = open(log_filename, 'w')
+            log_path = Path(log_filename)
+            if not log_path.is_absolute():
+                log_path = working_dir_path / log_path
+            subprocess_stdout = open(log_path, 'w')
             close_stdout = True # Welp, gotta close it now
-            log.info(f'Task output log file: {log_filename}')
+            log.info(f'Task output log file: {log_path}')
 
         # Repeat the same for stderr
         subprocess_errfile = subprocess.STDOUT
@@ -132,15 +134,18 @@ def launch(executable: Any,
         except KeyError:
             log.info('No errfile specified, using STDOUT for task errors')
         else:
+            err_path = Path(subprocess_errfile)
+            if not err_path.is_absolute():
+                err_path = working_dir_path / err_path
             try:
-                subprocess_errfile = open(subprocess_errfile, 'w')
+                subprocess_errfile = open(err_path, 'w')
             except OSError:
-                log.info(f'Could not open errfile {subprocess_errfile}, '
+                log.info(f'Could not open errfile {err_path}, '
                          f'using STDOUT for task errors')
                 subprocess_errfile = subprocess.STDOUT
             else:
                 close_stderr = True
-                log.info(f'Task error log file: {subprocess_errfile}')
+                log.info(f'Task error log file: {err_path}')
 
         task_env = kwargs.get('task_env', {})
         new_env = os.environ.copy()
@@ -195,81 +200,76 @@ def launch(executable: Any,
                                  })
 
         cmd_lst = cmd.split()
+        process = None
         try:
-            process = subprocess.Popen(cmd_lst,
-                                       stdout=subprocess_stdout,
-                                       stderr=subprocess_errfile,
-                                       cwd=working_dir,
-                                       preexec_fn=os.setsid, env=new_env)  # noqa: PLW1509 (TODO: look into this to potentially avoid deadlocks)
-        except Exception as e:
-            worker.log_event('ips',
-                             {
-                                     'eventType' : 'IPS_DASK_TASK_END',
-                                     'event_time': time.time(),
-                                     'state'     : 'Failed',
-                                     'comment'   : f'task_name = {task_name} '
-                                                   f'Exception when calling '
-                                                   f'{executable!s}: {e!s}',
-                                     'operation' : ' '.join(map(str, args)),
-                             })
-            log.error(f'Failed to launch task {task_name} with '
-                      f'command {cmd}: {e}')
-            raise
+            try:
+                process = subprocess.Popen(cmd_lst,
+                                           stdout=subprocess_stdout,
+                                           stderr=subprocess_errfile,
+                                           cwd=working_dir_path,
+                                           preexec_fn=os.setsid, env=new_env)  # noqa: PLW1509 (TODO: look into this to potentially avoid deadlocks)
+            except Exception as e:
+                worker.log_event('ips',
+                                 {
+                                         'eventType' : 'IPS_DASK_TASK_END',
+                                         'event_time': time.time(),
+                                         'state'     : 'Failed',
+                                         'comment'   : f'task_name = {task_name} '
+                                                       f'Exception when calling '
+                                                       f'{executable!s}: {e!s}',
+                                         'operation' : ' '.join(map(str, args)),
+                                 })
+                log.error(f'Failed to launch task {task_name} with '
+                          f'command {cmd}: {e}')
+                raise
+
+            try:
+                ret_val = process.wait(timeout)
+                finish_time = time.time()
+                worker.log_event('ips',
+                                 {
+                                         'eventType'   : 'IPS_DASK_TASK_END',
+                                         'event_time'  : finish_time,
+                                         'state'       : 'Succeeded',
+                                         'comment'     : f'task_name = '
+                                                         f'{task_name},'
+                                                         f' elapsed time = '
+                                                         f'{finish_time - start_time:.2f}s',
+                                         'start_time'  : start_time,
+                                         'elapsed_time': finish_time - start_time,
+                                         'target'      : executable,
+                                         'operation'   : ' '.join(map(str, args)),
+                                 })
+
+            except subprocess.TimeoutExpired:
+                worker.log_event('ips',
+                                 {
+                                         'eventType' : 'IPS_DASK_TASK_END',
+                                         'event_time': time.time(),
+                                         'state'     : 'Timed out',
+                                         'comment'   : f'task_name = {task_name}, '
+                                                       f'timed-out after '
+                                                       f'{timeout}s'})
+                process.kill()
+                log.error(f'Task {task_name} with command {cmd} timed out '
+                          f'after {timeout}s')
+                ret_val = -1
+            except Exception as e:
+                worker.log_event('ips',
+                                 {
+                                         'eventType' : 'IPS_DASK_TASK_END',
+                                         'event_time': time.time(),
+                                         'state'     : 'Failed',
+                                         'comment'   : f'task_name = {task_name} '
+                                                       f'Exception when calling '
+                                                       f'{executable!s}: {e!s}'})
+                log.error(f'Task {task_name} with command {cmd} failed with {e!s}')
         finally:
-            os.chdir(original_directory)
-
-            # Flush stdout and stderr because it's sometimes necessary on HPC
-            # systems to ensure that the output is actually processed.
-            subprocess_errfile.flush()
-            subprocess_stdout.flush()
-
             if close_stdout:
                 subprocess_stdout.close()
 
             if close_stderr:
                 subprocess_errfile.close()
-
-        try:
-            ret_val = process.wait(timeout)
-            finish_time = time.time()
-            worker.log_event('ips',
-                             {
-                                     'eventType'   : 'IPS_DASK_TASK_END',
-                                     'event_time'  : finish_time,
-                                     'state'       : 'Succeeded',
-                                     'comment'     : f'task_name = '
-                                                     f'{task_name},'
-                                                     f' elapsed time = '
-                                                     f'{finish_time - start_time:.2f}s',
-                                     'start_time'  : start_time,
-                                     'elapsed_time': finish_time - start_time,
-                                     'target'      : executable,
-                                     'operation'   : ' '.join(map(str, args)),
-                             })
-
-        except subprocess.TimeoutExpired:
-            worker.log_event('ips',
-                             {
-                                     'eventType' : 'IPS_DASK_TASK_END',
-                                     'event_time': time.time(),
-                                     'state'     : 'Timed out',
-                                     'comment'   : f'task_name = {task_name}, '
-                                                   f'timed-out after '
-                                                   f'{timeout}s'})
-            process.kill()
-            log.error(f'Task {task_name} with command {cmd} timed out '
-                      f'after {timeout}s')
-            ret_val = -1
-        except Exception as e:
-            worker.log_event('ips',
-                             {
-                                     'eventType' : 'IPS_DASK_TASK_END',
-                                     'event_time': time.time(),
-                                     'state'     : 'Failed',
-                                     'comment'   : f'task_name = {task_name} '
-                                                   f'Exception when calling '
-                                                   f'{executable!s}: {e!s}'})
-            log.error(f'Task {task_name} with command {cmd} failed with {e!s}')
     elif isinstance(executable, Callable):
         # binary not a string, but is a python callable, so we call it directly
         # with the given *args
@@ -284,6 +284,9 @@ def launch(executable: Any,
                          })
 
         try:
+            original_dir = Path.cwd()
+
+            os.chdir(str(working_dir_path))
             ret_val = executable(*args)
 
             finish_time = time.time()
@@ -313,16 +316,14 @@ def launch(executable: Any,
                                                    f'{executable!s}: {e!s}'})
             log.error(f'Task {task_name} with callable {executable!s} failed '
                       f'with {e!s}')
+        finally:
+            os.chdir(str(original_dir))
     else:
-        os.chdir(original_directory)
         raise RuntimeError(f'Binary argument {executable!s} is not a string or '
                            f'callable, cannot launch task {task_name}')
 
     log.info(f'Task {task_name} finished with return value: {ret_val}')
 
-
-
-    os.chdir(original_directory)
     return task_name, ret_val
 
 
