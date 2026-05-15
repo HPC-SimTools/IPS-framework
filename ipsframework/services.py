@@ -114,29 +114,33 @@ def launch(executable: Any,
 
         # Do we write the Popen stdout to sys.stdout or to a file?
         subprocess_stdout = sys.stdout
+        close_stdout = False # is true if we need to later close the file
         try:
             log_filename = kwargs['logfile']
         except KeyError:
             log.info('No logfile specified, using stdout for task output')
         else:
             subprocess_stdout = open(log_filename, 'w')
+            close_stdout = True # Welp, gotta close it now
             log.info(f'Task output log file: {log_filename}')
 
         # Repeat the same for stderr
-        task_stderr = subprocess.STDOUT
+        subprocess_errfile = subprocess.STDOUT
+        close_stderr = False
         try:
-            subprocess_stderr = kwargs['errfile']
+            subprocess_errfile = kwargs['errfile']
         except KeyError:
             log.info('No errfile specified, using STDOUT for task errors')
         else:
             try:
-                task_stderr = open(subprocess_stderr, 'w')
+                subprocess_errfile = open(subprocess_errfile, 'w')
             except OSError:
-                log.info(f'Could not open errfile {subprocess_stderr}, '
+                log.info(f'Could not open errfile {subprocess_errfile}, '
                          f'using STDOUT for task errors')
-                task_stderr = subprocess.STDOUT
+                subprocess_errfile = subprocess.STDOUT
             else:
-                log.info(f'Task error log file: {subprocess_stderr}')
+                close_stderr = True
+                log.info(f'Task error log file: {subprocess_errfile}')
 
         task_env = kwargs.get('task_env', {})
         new_env = os.environ.copy()
@@ -192,8 +196,9 @@ def launch(executable: Any,
 
         cmd_lst = cmd.split()
         try:
-            process = subprocess.Popen(cmd_lst, stdout=subprocess_stdout,
-                                       stderr=task_stderr,
+            process = subprocess.Popen(cmd_lst,
+                                       stdout=subprocess_stdout,
+                                       stderr=subprocess_errfile,
                                        cwd=working_dir,
                                        preexec_fn=os.setsid, env=new_env)  # noqa: PLW1509 (TODO: look into this to potentially avoid deadlocks)
         except Exception as e:
@@ -212,6 +217,17 @@ def launch(executable: Any,
             raise
         finally:
             os.chdir(original_directory)
+
+            # Flush stdout and stderr because it's sometimes necessary on HPC
+            # systems to ensure that the output is actually processed.
+            subprocess_errfile.flush()
+            subprocess_stdout.flush()
+
+            if close_stdout:
+                subprocess_stdout.close()
+
+            if close_stderr:
+                subprocess_errfile.close()
 
         try:
             ret_val = process.wait(timeout)
@@ -303,6 +319,8 @@ def launch(executable: Any,
                            f'callable, cannot launch task {task_name}')
 
     log.info(f'Task {task_name} finished with return value: {ret_val}')
+
+
 
     os.chdir(original_directory)
     return task_name, ret_val
