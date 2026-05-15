@@ -2787,7 +2787,7 @@ class ServicesProxy:
                 args.insert(1, '--debug')
                 args.insert(1, '--verbose')
 
-            self.add_task(task_pool_name, instance[0], 1, working_dir, 'ips.py', *args, keywords=kwargs)
+            self.add_task(task_pool_name, instance[0], 1, working_dir, 'ips.py', *args, **kwargs)
 
         try:
             # Note that we *always* use Dask to run the ensemble tasks
