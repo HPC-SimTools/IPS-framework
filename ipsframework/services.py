@@ -2744,12 +2744,16 @@ class ServicesProxy:
         # Let's first "flatten" the hierarchical variables dict into a list
         # of lists of dicts, where the top-level of which contains the ensemble
         # instance name and associated parameters.
+        self.debug(f'Grouping variables into instances')
         instances = ipsutil.group_ensemble_variables_into_instances(variables, name)
 
         # save the variables on both disk and to the IPS Portal
         csv_out = Path(run_dir) / f'{name}__ensemble_variables.csv'
         ipsutil.ensemble_instances_to_csv(instances, csv_out)
+
+        self.debug('Sending ensemble instance to portal')
         send_ensemble_instance_to_portal(name, csv_out)
+        self.debug('Done sending ensemble instance to portal')
 
         # For each coupled simulation instance
         for instance in instances:
@@ -2801,6 +2805,7 @@ class ServicesProxy:
 
 
             if self.fwk.logger.getEffectiveLevel() == logging.DEBUG:
+                self.debug(f'Setting subordinate instances logger to debug')
                 # If we're in debug mode, then also pass the debug flag.
                 # May as well pass in the --verbose, too.
                 args.insert(1, '--debug')
@@ -2810,6 +2815,7 @@ class ServicesProxy:
 
         try:
             # Note that we *always* use Dask to run the ensemble tasks
+            self.logger.debug(f'Submitting {len(instances)} ensemble tasks')
             num_submitted = self.submit_tasks(
                 task_pool_name,
                     block=True,
