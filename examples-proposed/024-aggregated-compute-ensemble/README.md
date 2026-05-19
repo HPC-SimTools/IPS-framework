@@ -1,12 +1,13 @@
 # An example ensemble simulation for aggregated computing
 
 This example demonstrates how to set up an ensemble simulation in IPS that 
-performs aggregated computing across multiple ensemble instances. Each ensemble 
+performs aggregated computing across multiple ensemble instances that 
+include two jupyter notebooks. Each ensemble
 instance runs a component for ${COMPUTE} that reports values local to the 
 instance, but that is then aggregated at the top-level after the instances
 have finished.
 
-Note that there will be Dask related errors and warnings at the end that can be
+Note that any Dask related errors and warnings at the end that can be
 ignored.  These are due to Dask not having a clean shutdown.
 
 ## Contents
@@ -17,8 +18,14 @@ ignored.  These are due to Dask not having a clean shutdown.
 * `gen_data.py` -- data generation code for the component
 
 * `ensemble.conf` -- top-level configuration file
-* `platform.conf` -- platform configuration file
 * `template.conf` -- ensemble instance configuration file
+* `platform.conf` -- an example generic platform configuration file
+* `perlmutter.slurm` -- an example platform configuration file for Perlmutter
+
+* `input_dir/` -- where the jupyter notebooks are
+* `input_dir/global_notebook.ipynb` -- notebook for the overall run
+* `input_dir/instance_notebook.ipynb` -- notebook that is associated with 
+  each instance
 
 
 ## Instructions

@@ -2835,6 +2835,7 @@ class ServicesProxy:
             self.critical(f'Got an exception running ensemble: {e!s}')
             traceback.print_exc()
         finally:
+            self.debug('Getting finished tasks')
             exit_status = self.get_finished_tasks(task_pool_name)
             self.info(f'Finished tasks: {exit_status!s}')
 
