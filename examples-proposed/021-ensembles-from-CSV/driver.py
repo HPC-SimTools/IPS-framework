@@ -40,12 +40,16 @@ class EnsembleDriver(Component):
         # this information to find the specific instance run directory for a
         # given set of variables.  E.g., the instance corresponding to
         # {'A' : 2, 'B' : 5.82, 'C' : 'baz'} is probably found in the
-        # `INSTANCE_1` subdirectory.
+        # `INSTANCE_1` subdirectory.  We also direct the stdout and stderr
+        # for each instance to `my_logfile.txt` and `my_errfile.txt`,
+        # respectively.
         mapping = self.services.run_ensemble(template, variables,
                                              run_dir=Path('.').absolute(),
                                              name='INSTANCE_',
                                              num_nodes=1,
-                                             cores_per_instance=1)
+                                             cores_per_instance=1,
+                                             logfile='my_logfile.txt',
+                                             errfile='my_errfile.txt')
         # Print each mapping of instance name to what variable values were used.
         for instance in mapping:
             self.services.info(f'{instance!s}')
