@@ -3310,13 +3310,17 @@ class TaskPool:
         if dask_worker_plugin is not None:
             # TODO But what if there is more than one worker plugin?
             # TODO And what about scheduler plugins?
+            self.debug('Register user provided plugin')
             self.dask_client.register_plugin(dask_worker_plugin)
+            self.debug('Done registering user provided pluging')
 
         # Regardless of any other worker plugins, we need this plugin to setup
         # the DVM for the workers so that OpenMPI can work properly.
+        self.debug('Registered DVMPlugin')
         self.dask_client.register_plugin(DVMPlugin(logger=services.logger,
                                                    oversubscribe=oversubscribe,
                                                    hwthreads=hwthreads))
+        self.debug('Registered DVMPlugin')
 
         try:
             # FIXME this is deprecated, but be mindful of blithely deleting
