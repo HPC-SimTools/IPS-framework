@@ -3316,7 +3316,7 @@ class TaskPool:
 
         # Regardless of any other worker plugins, we need this plugin to setup
         # the DVM for the workers so that OpenMPI can work properly.
-        self.services.debug('Registered DVMPlugin')
+        self.services.debug('Registering DVMPlugin')
         self.dask_client.register_plugin(DVMPlugin(logger=services.logger,
                                                    oversubscribe=oversubscribe,
                                                    hwthreads=hwthreads))
