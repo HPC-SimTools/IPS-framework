@@ -2469,7 +2469,7 @@ class ServicesProxy:
         variables: dict[str, dict[str, list[str]]],
         run_dir: Union[str, os.PathLike],
         name: str,
-        num_nodes: int,
+        num_nodes: int = None,
         cores_per_instance: Optional[int] = None,
         oversubscribe: bool = False,
         hwthreads: bool = False,
@@ -2520,7 +2520,8 @@ class ServicesProxy:
         :param cores_per_instance: How many cores per ensemble instances?
         :param num_nodes: Total number of nodes to allocate for the ensemble
             runs. There will be one Dask worker assigned to each of these
-            nodes.
+            nodes. If none specified, then assign a worker to each allocated
+            node.
         :param oversubscribe: Whether to allow oversubscription of nodes
             when launching the ensemble runs. Default is False.
         :param hwthreads: Whether to use hardware threads
@@ -2536,7 +2537,7 @@ class ServicesProxy:
 
         use_portal = self._should_use_portal()
 
-        self.debug(f'use portal = {use_portal!s}')
+        self.debug(f'run_ensemble() use portal = {use_portal!s}')
 
         def create_driver_config_file(template,
                                       working_dir,
@@ -2726,6 +2727,16 @@ class ServicesProxy:
             self._send_monitor_event('IPS_PORTAL_UPLOAD_ENSEMBLE_PARAMS', f'NAME = {name}')
 
         self.info(f'Preparing to run ensembles in {run_dir}')
+
+        # If the number of nodes is None and we're running in a Slurm
+        # environment, use as many nodes as has been allocated.  Otherwise,
+        # assume we're running just on a local host.
+        if 'SLURM_JOB_NUM_NODES' in os.environ and num_nodes is None:
+            num_nodes = int(os.environ['SLURM_JOB_NUM_NODES'])
+        elif num_nodes is None:
+            num_nodes = 1
+        self.debug(f'run_ensemble() num_nodes = {num_nodes}')
+
 
         # Ensure that we create a unique task pool name for this using the
         # instance prefix `name`
