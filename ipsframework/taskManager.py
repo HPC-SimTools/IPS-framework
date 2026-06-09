@@ -384,7 +384,7 @@ class TaskManager:
                     # resources managed by DVM for this task as displayed in
                     # detailed messages sent to stdout prior to running the
                     # desired IPS task.
-                    cmd = ' '.join([mpicmd, '--display', 'MAP_DEVEL', nproc_flag, str(nproc)])
+                    cmd = ' '.join([mpicmd, '--display', 'ALLOCATION,MAP-DEVEL,BINDINGS', nproc_flag, str(nproc)])
                 else:
                     cmd = ' '.join([mpicmd, nproc_flag, str(nproc), ppn_flag, str(ppn)])
                 cmd = f'{cmd} -x PYTHONPATH'  # Propagate PYTHONPATH to compute nodes
