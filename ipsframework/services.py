@@ -289,9 +289,9 @@ def launch(executable: Any,
                 log.error(f'Task {task_name} with command {cmd} failed with {e!s}')
                 print(f'Task {task_name} with command {cmd} failed with {e!s}')
         finally:
-            if 'logfile' is not in kwargs:
+            if 'logfile' not in kwargs:
                 print(process.stdout.read() if process and process.stdout else '')
-            if 'errfile' is not in kwargs:
+            if 'errfile' not in kwargs:
                 print(process.stderr.read() if process and process.stderr else '')
 
             if close_stdout:
