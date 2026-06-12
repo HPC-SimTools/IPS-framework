@@ -3366,6 +3366,20 @@ class TaskPool:
                                                    hwthreads=hwthreads))
         self.services.debug('Registered DVMPlugin')
 
+        # Wait for so many workers to be online before proceeding to
+        # more evenly spread the load instead of biasing the tasks by the
+        # first set of workers to spin up.  Note that we don't wait for
+        # 100% of the workers since it's possible that a few will have problems
+        # (e.g., due to node failures).
+        if dask_nodes > 1:
+            num_to_wait_for = max(1, int(dask_nodes * 0.8))
+            self.services.debug(f'Waiting for {num_to_wait_for} Dask workers')
+            self.dask_client.wait_for_workers(num_to_wait_for)
+            self.services.debug(f'Have {num_to_wait_for} Dask workers available ... proceeding')
+        else:
+            self.services.info('Only a single Dask worker needed, proceeding')
+
+
         try:
             # FIXME this is deprecated, but be mindful of blithely deleting
             file_id = str(self.services._portal_runid) if self.services._portal_runid > 0 else self.services._fallback_portal_runid
