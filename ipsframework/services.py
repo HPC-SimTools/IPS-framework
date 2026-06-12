@@ -102,6 +102,8 @@ def launch(executable: Any,
 
     log.info(f'Launching task {task_name} with id {task_key!s} and '
              f'worker {worker.name!s} in {working_dir}')
+    print(f'Launching task {task_name} with id {task_key!s} and '
+             f'worker {worker.name!s} in {working_dir}')
 
     start_time = time.time()
     working_dir_path = Path(working_dir)
@@ -118,6 +120,7 @@ def launch(executable: Any,
             log_filename = kwargs['logfile']
         except KeyError:
             log.info('No logfile specified, using stdout for task output')
+            print('No logfile specified, using stdout for task output')
         else:
             log_path = Path(log_filename)
             if not log_path.is_absolute():
@@ -125,6 +128,7 @@ def launch(executable: Any,
             subprocess_stdout = open(log_path, 'w')
             close_stdout = True # Welp, gotta close it now
             log.info(f'Task output log file: {log_path}')
+            print(f'Task output log file: {log_path}')
 
         # Repeat the same for stderr
         subprocess_errfile = subprocess.STDOUT
@@ -133,6 +137,7 @@ def launch(executable: Any,
             subprocess_errfile = kwargs['errfile']
         except KeyError:
             log.info('No errfile specified, using STDOUT for task errors')
+            print('No errfile specified, using STDOUT for task errors')
         else:
             err_path = Path(subprocess_errfile)
             if not err_path.is_absolute():
@@ -142,10 +147,13 @@ def launch(executable: Any,
             except OSError:
                 log.info(f'Could not open errfile {err_path}, '
                          f'using STDOUT for task errors')
+                print(f'Could not open errfile {err_path}, '
+                         f'using STDOUT for task errors')
                 subprocess_errfile = subprocess.STDOUT
             else:
                 close_stderr = True
                 log.info(f'Task error log file: {err_path}')
+                print(f'Task error log file: {err_path}')
 
         task_env = kwargs.get('task_env', {})
         new_env = os.environ.copy()
@@ -160,9 +168,11 @@ def launch(executable: Any,
             dvm_uri_file = Path(worker.dvm_uri_file)
             if not dvm_uri_file.exists():
                 log.error(f'DVM URI file {dvm_uri_file} does not exist')
+                print(f'DVM URI file {dvm_uri_file} does not exist')
                 # print(f'DVM URI file {dvm_uri_file} does not exist', flush=True)
             else:
                 log.debug(f'Using DVM URI file: {dvm_uri_file}')
+                print(f'Using DVM URI file: {dvm_uri_file}')
                 # print(f'Using DVM URI file: {dvm_uri_file}', flush=True)
 
         # PMIX_SERVER_URI41 is used by prun to figure out how to talk to the DVM
@@ -174,10 +184,16 @@ def launch(executable: Any,
                 log.debug(f"DVM environment variable PMIX_SERVER_URI41 "
                                    f"set in task_env to "
                                    f"{task_env['PMIX_SERVER_URI41']}")
+                print(f"DVM environment variable PMIX_SERVER_URI41 "
+                                   f"set in task_env to "
+                                   f"{task_env['PMIX_SERVER_URI41']}")
                 # print(f'DVM environment variable PMIX_SERVER_URI41 set in task_'
                 #       f'env to {task_env["PMIX_SERVER_URI41"]}', flush=True)
         if 'PMIX_SERVER_URI41' in os.environ:
             log.debug(f"DVM environment variable PMIX_SERVER_URI41 set "
+                               f"in os.environ to "
+                               f"{os.environ['PMIX_SERVER_URI41']}")
+            print(f"DVM environment variable PMIX_SERVER_URI41 set "
                                f"in os.environ to "
                                f"{os.environ['PMIX_SERVER_URI41']}")
             # print(f'DVM environment variable PMIX_SERVER_URI41 set in os.environ '
@@ -188,6 +204,7 @@ def launch(executable: Any,
         cmd = f'{executable} {" ".join(map(str, args))}'
 
         log.debug(f'Launching task {task_name} with command: {cmd}')
+        print(f'Launching task {task_name} with command: {cmd}')
 
         worker.log_event('ips',
                          {
@@ -221,6 +238,8 @@ def launch(executable: Any,
                                  })
                 log.error(f'Failed to launch task {task_name} with '
                           f'command {cmd}: {e}')
+                print(f'Failed to launch task {task_name} with '
+                          f'command {cmd}: {e}')
                 raise
 
             try:
@@ -253,6 +272,8 @@ def launch(executable: Any,
                 process.kill()
                 log.error(f'Task {task_name} with command {cmd} timed out '
                           f'after {timeout}s')
+                print(f'Task {task_name} with command {cmd} timed out '
+                          f'after {timeout}s')
                 ret_val = -1
             except Exception as e:
                 worker.log_event('ips',
@@ -264,6 +285,7 @@ def launch(executable: Any,
                                                        f'Exception when calling '
                                                        f'{executable!s}: {e!s}'})
                 log.error(f'Task {task_name} with command {cmd} failed with {e!s}')
+                print(f'Task {task_name} with command {cmd} failed with {e!s}')
         finally:
             if close_stdout:
                 subprocess_stdout.close()
@@ -316,6 +338,8 @@ def launch(executable: Any,
                                                    f'{executable!s}: {e!s}'})
             log.error(f'Task {task_name} with callable {executable!s} failed '
                       f'with {e!s}')
+            print(f'Task {task_name} with callable {executable!s} failed '
+                      f'with {e!s}')
         finally:
             os.chdir(str(original_dir))
     else:
@@ -323,6 +347,7 @@ def launch(executable: Any,
                            f'callable, cannot launch task {task_name}')
 
     log.info(f'Task {task_name} finished with return value: {ret_val}')
+    print(f'Task {task_name} finished with return value: {ret_val}')
 
     return task_name, ret_val
 
