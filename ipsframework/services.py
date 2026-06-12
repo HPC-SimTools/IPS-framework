@@ -94,11 +94,12 @@ def launch(executable: Any,
     import logging
     from dask.distributed import get_worker  # pylint: disable=import-outside-toplevel
 
-    # Later, we use Client.forward_logging() to handle these log messages.
-    log = logging.getLogger('launch')
-
     worker = get_worker()
     task_key = worker.get_current_task()
+
+    # Later, we use Client.forward_logging() to handle these log messages.  We
+    # access the root logger for forward_logging() to work.
+    log = logging.getLogger()
 
     log.info(f'Launching task {task_name} with id {task_key!s} and '
              f'worker {worker.name!s} in {working_dir}')
@@ -114,7 +115,7 @@ def launch(executable: Any,
         # via a subprocess.Popen()
 
         # Do we write the Popen stdout to sys.stdout or to a file?
-        subprocess_stdout = sys.stdout
+        subprocess_stdout = subprocess.PIPE
         close_stdout = False # is true if we need to later close the file
         try:
             log_filename = kwargs['logfile']
@@ -131,7 +132,7 @@ def launch(executable: Any,
             print(f'Task output log file: {log_path}')
 
         # Repeat the same for stderr
-        subprocess_errfile = subprocess.STDOUT
+        subprocess_errfile = subprocess.PIPE
         close_stderr = False
         try:
             subprocess_errfile = kwargs['errfile']
@@ -224,6 +225,7 @@ def launch(executable: Any,
                                            stdout=subprocess_stdout,
                                            stderr=subprocess_errfile,
                                            cwd=working_dir_path,
+                                           text=True,
                                            preexec_fn=os.setsid, env=new_env)  # noqa: PLW1509 (TODO: look into this to potentially avoid deadlocks)
             except Exception as e:
                 worker.log_event('ips',
@@ -287,11 +289,17 @@ def launch(executable: Any,
                 log.error(f'Task {task_name} with command {cmd} failed with {e!s}')
                 print(f'Task {task_name} with command {cmd} failed with {e!s}')
         finally:
+            if 'logfile' is not in kwargs:
+                print(process.stdout.read() if process and process.stdout else '')
+            if 'errfile' is not in kwargs:
+                print(process.stderr.read() if process and process.stderr else '')
+
             if close_stdout:
                 subprocess_stdout.close()
 
             if close_stderr:
                 subprocess_errfile.close()
+
     elif isinstance(executable, Callable):
         # binary not a string, but is a python callable, so we call it directly
         # with the given *args
