@@ -360,6 +360,39 @@ def launch(executable: Any,
     return task_name, ret_val
 
 
+def launch_mapped_task(
+        executable: Any,
+        task_name: str,
+        working_dir: Union[str, os.PathLike],
+        task_args: Iterable[Any],
+        task_keywords: dict[str, Any],
+        cpus_per_proc: int,
+        worker_event_logfile: Optional[str]):
+    """ Adapt task-specific launch arguments for :meth:`Client.map`.
+
+    This is a wrapper for `launch()` because we need to ensure `cpus_per_proc`
+    and `worker_event_logfile` get stuffed into the expected `task_args` and
+    `task_keywords` that `launch()` expects.
+
+    This is invoked in :meth:`TaskPool.submit_dask_tasks()`.
+
+    TODO remove `worker_event_logfile` since that's no longer needed.
+
+    :param executable: to be invoked
+    :param task_name: name of the task
+    :param working_dir: working directory
+    :param task_args: list of arguments
+    :param task_keywords: keyword arguments
+    :param cpus_per_proc: number of cpus
+    :param worker_event_logfile: event logfile
+    """
+    task_keywords = dict(task_keywords)
+    task_keywords['cpus_per_proc'] = cpus_per_proc
+    task_keywords['worker_event_logfile'] = worker_event_logfile
+
+    return launch(executable, task_name, working_dir, *task_args, **task_keywords)
+
+
 class ServicesProxy:
     """The *ServicesProxy* object is responsible for marshalling
     invocations of framework services to the framework process using a
@@ -2768,7 +2801,7 @@ class ServicesProxy:
             num_nodes = int(os.environ['SLURM_JOB_NUM_NODES'])
         elif num_nodes is None:
             num_nodes = 1
-        self.debug(f'run_ensemble() num_nodes = {num_nodes}')
+        self.info(f'run_ensemble() num_nodes = {num_nodes}')
 
 
         # Ensure that we create a unique task pool name for this using the
@@ -3389,26 +3422,41 @@ class TaskPool:
             # USE_PORTAL == False
             self.worker_event_logfile = None
 
+        # accumulate arguments for different tasks in lists suitable for
+        # invoking map().
         launch.__module__ = '__main__'
-        self.futures = []
+        launch_mapped_task.__module__ = '__main__'
+        task_names = []
+        binaries = []
+        working_dirs = []
+        task_args = []
+        task_keywords = []
+        cpus_per_procs = []
+        worker_event_logfiles = []
         for task_name, task in self.queued_tasks.items():
             self.services.debug(f'Submitting task {task_name} to dask client with {dask_ppw} cores per worker')
             self.services.debug(f'Task {task_name} working dir: {task.working_dir}')
             self.services.debug(f'Task args: {task.args} keywords: {task.keywords}')
-            self.futures.append(
-                self.dask_client.submit(
-                    launch,
-                    task.binary,
-                    task_name,
-                    task.working_dir,
-                    *task.args,
-                    **task.keywords,
-                    pure=False,
-                    key=task_name,
-                    cpus_per_proc=dask_ppw,
-                    worker_event_logfile=self.worker_event_logfile,
-                )
-            )
+            task_names.append(task_name)
+            binaries.append(task.binary)
+            working_dirs.append(task.working_dir)
+            task_args.append(task.args)
+            task_keywords.append(task.keywords)
+            cpus_per_procs.append(dask_ppw)
+            worker_event_logfiles.append(self.worker_event_logfile)
+
+        self.futures = self.dask_client.map(
+            launch_mapped_task,
+            binaries,
+            task_names,
+            working_dirs,
+            task_args,
+            task_keywords,
+            cpus_per_procs,
+            worker_event_logfiles,
+            pure=False,
+            key=task_names,
+        )
         self.active_tasks = self.queued_tasks
         self.queued_tasks = {}
 
