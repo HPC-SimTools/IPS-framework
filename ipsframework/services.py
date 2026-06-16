@@ -2912,9 +2912,9 @@ class ServicesProxy:
             self.critical(f'Got an exception running ensemble: {e!s}')
             traceback.print_exc()
         finally:
-            self.debug('Getting finished tasks')
-            exit_status = self.get_finished_tasks(task_pool_name)
-            self.info(f'Finished tasks: {exit_status!s}')
+            # self.debug('Getting finished tasks')
+            # exit_status = self.get_finished_tasks(task_pool_name)
+            # self.info(f'Finished tasks: {exit_status!s}')
 
             self.remove_task_pool(task_pool_name)
 
@@ -3473,6 +3473,9 @@ class TaskPool:
             # Set this to empty list so that get_dask_finished_tasks_status
             # doesn't try to gather() needlessly again.
             self.futures = []
+
+            # Since we're done with Dask, let's shut it down
+            self._shutdown_dask()
         else:
             self.services.debug(f'submit_dask_tasks: not blocking tasks')
 
@@ -3579,7 +3582,7 @@ class TaskPool:
         Shut down the dask client, scheduler, and workers.
 
         Side effect is setting self.dask_sched_pid and self.dask_client
-        to None.
+        to None as well as other internal state.
 
         :returns: None
         """
@@ -3614,6 +3617,19 @@ class TaskPool:
         #     self.dask_sched_pid = None
         #
         # time.sleep(1)  # Give time for the scheduler to shut down
+
+        self.finished_tasks = {}
+        self.active_tasks = {}
+        self.services.wait_task(self.dask_workers_tid)
+        self.dask_scheduler_file = None
+        self.dask_workers_tid = None
+        self.dask_sched_pid: Optional[int] = None
+        self.dask_sched_popen = None
+        self.dask_pool = False
+
+        # Presumably the default state for TaskPool is serial task execution, so
+        # we revert to that after the Dask system is shutdown.
+        self.serial_pool = True
 
     def get_dask_finished_tasks_status(self):
         """Return a dictionary of exit status values for all dask tasks that
@@ -3692,17 +3708,7 @@ class TaskPool:
         self._shutdown_dask()
         self.services.debug(f'get_dask_finished_tasks_status: after _shutdown_dask()')
 
-        # TODO These probably should be migrated to _shutdown_dask() since
-        #  these are part of that housekeeping.
-        self.finished_tasks = {}
-        self.active_tasks = {}
-        self.services.wait_task(self.dask_workers_tid)
-        self.dask_scheduler_file = None
-        self.dask_workers_tid = None
-        self.dask_sched_pid: Optional[int] = None
-        self.dask_sched_popen = None
-        self.dask_pool = False
-        self.serial_pool = True
+
 
         if result is not None:
             self.services.debug('get_dask_finished_tasks_status: have result')
