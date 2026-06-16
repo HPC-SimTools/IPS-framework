@@ -3586,14 +3586,19 @@ class TaskPool:
 
         :returns: None
         """
+        self.services.debug('Shutting down Dask client, scheduler, and workers')
+
         # Gently release any pending futures
         for f in self.futures:
             f.release()
+        self.services.debug('Released pending futures')
 
         if self.dask_client is not None:
             # Shutdown handles ending client, scheduler, and workers
             self.dask_client.unsubscribe_topic('ips') # unregister handler
+            self.services.debug('Unsubscribed from Dask client ips topic')
             self.dask_client.shutdown()
+            self.services.debug('Shutdown Dask client')
 
             # TODO a more gentle way to shutdown:
             #  1. self.dask_client.close()
@@ -3630,6 +3635,9 @@ class TaskPool:
         # Presumably the default state for TaskPool is serial task execution, so
         # we revert to that after the Dask system is shutdown.
         self.serial_pool = True
+
+        self.services.debug('Shutdown Dask system')
+
 
     def get_dask_finished_tasks_status(self):
         """Return a dictionary of exit status values for all dask tasks that
