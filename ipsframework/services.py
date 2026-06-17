@@ -2962,8 +2962,8 @@ class DVMPlugin(WorkerPlugin):
         self.logger.info('Launching DVM')
         self.worker.dvm_uri_file = f'/tmp/dvm.uri.{os.getpid()}'
         command = [#'srun', '--mpi=pmix_v4', '-N', os.environ['SLURM_NNODES'], '--ntasks-per-node=1',
-                   'prte', #'--no-daemonize',
-                   '--report-uri', self.worker.dvm_uri_file]
+                'prte', #'--no-daemonize',
+                '--report-uri', self.worker.dvm_uri_file]
 
         mapping_policy = 'core'  # by default bind to cores
         if self.hwthreads:
@@ -3008,10 +3008,27 @@ class DVMPlugin(WorkerPlugin):
 
     def teardown(self, worker: Worker):
         self.logger.info(f'Shutting down DVM at {self.worker.dvm_uri}')
-        command = ['pterm', '--dvm-uri', self.worker.dvm_uri]
-        subprocess.call(command)
+
+        # On some systems we use `pterm` to shut down the DVM, and on others we
+        # use `prte-term`, so check for both.
+        pterm_cmd = shutil.which('pterm')
+        if pterm_cmd is None:
+            # On MacOS homebrew, pterm -> prte-term
+            pterm_cmd = shutil.which('prte-term')
+        if pterm_cmd is None:
+            # if it's *still* none, then there is a serious
+            # configuration problem.
+            self.logger.critical('Neither pterm nor prte-term command found')
+        else:
+            self.logger.debug(f'DVMPluggin.teardown(), pterm: {pterm_cmd!s}')
+            command = [pterm_cmd, '--dvm-uri', self.worker.dvm_uri]
+            subprocess.call(command)
+        # Regardless if we have `pterm` or `prte-term`, we can still just
+        # kill the process directly.
         self.worker.dvm_proc.terminate()
         self.worker.dvm_proc.kill()
+
+        self.logger.info('DVM shutdown')
 
 
 class TaskPool:
