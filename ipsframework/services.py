@@ -11,6 +11,7 @@ import logging
 import logging.handlers
 from datetime import datetime
 import os
+import platform
 import queue
 import shutil
 import signal
@@ -74,7 +75,7 @@ def launch(executable: Any,
     * `logfile` - where the task output is written; if not specified,
         STDOUT used
     * `errfile` - where the task error output is written; if not specified,
-        STDOUT used
+        STDERR used
     * `task_env` - A dictionary of environment variables to set
     * `timeout` - The timeout in seconds for the task to complete.
     * `cpus_per_proc` - The number of cpus per process to use for the task.
@@ -2356,6 +2357,8 @@ class ServicesProxy:
         dask_worker_per_gpu=False,
         oversubscribe=False,
         hwthreads=False,
+        logfile=None,
+        errfile=None,
     ):
         """
         Launch all unfinished tasks in task pool *task_pool_name*.  If *block* is ``True``,
@@ -2382,6 +2385,8 @@ class ServicesProxy:
         :param hwthreads: if True, use hardware threads as the basis for
           resource allocation; if False, use physical cores as the basis for
           resource allocation
+        :param logfile: optional default file name for redirected task stdout
+        :param errfile: optional default file name for redirected task stderr
         :returns: task return value
         """
         start_time = time.time()
@@ -2391,7 +2396,8 @@ class ServicesProxy:
         retval = task_pool.submit_tasks(
                 block, use_dask, dask_nodes, dask_ppw, launch_interval,
                 use_shifter, shifter_args, dask_worker_plugin,
-                dask_worker_per_gpu, oversubscribe, hwthreads
+                dask_worker_per_gpu, oversubscribe, hwthreads,
+                logfile, errfile
         )
         elapsed_time = time.time() - start_time
         self._send_monitor_event('IPS_TASK_POOL_END',
@@ -2901,6 +2907,8 @@ class ServicesProxy:
                 dask_ppw=cores_per_instance,
                 oversubscribe=oversubscribe,
                 hwthreads=hwthreads,
+                logfile=logfile,
+                errfile=errfile,
                 # launch_interval=0.0,
                 # use_shifter=False,
                 # shifter_args=None,
@@ -3142,6 +3150,16 @@ class TaskPool:
         self.serial_pool = self.serial_pool and (nproc == 1)
         self.queued_tasks[task_name] = Task(task_name, nproc, working_dir, binary_fullpath, *args, **keywords['keywords'])
 
+    @staticmethod
+    def _launch_keywords_with_defaults(task_keywords, logfile=None, errfile=None):
+        """Return launch keywords with submission-level log defaults applied."""
+        keywords = dict(task_keywords)
+        if logfile:
+            keywords.setdefault('logfile', logfile)
+        if errfile:
+            keywords.setdefault('errfile', errfile)
+        return keywords
+
     def _process_dask_event(self, event):
         """ This will create an IPS monitor event from a Dask event
 
@@ -3178,7 +3196,9 @@ class TaskPool:
         dask_worker_plugin=None,
         dask_worker_per_gpu=False,
         oversubscribe=False,
-        hwthreads=False
+        hwthreads=False,
+        logfile=None,
+        errfile=None,
     ):
         """Launch tasks in *queued_tasks* using dask.
 
@@ -3210,6 +3230,10 @@ class TaskPool:
         :type oversubscribe: bool
         :param hwthreads: Whether to use hardware threads
         :type hwthreads: bool
+        :param logfile: Optional default file name for redirected task stdout
+        :type logfile: str
+        :param errfile: Optional default file name for redirected task stderr
+        :type errfile: str
 
         FIXME consider having n processes instead of n threads given that we're
             likely running in a HPC context.
@@ -3454,11 +3478,14 @@ class TaskPool:
             self.services.debug(f'Submitting task {task_name} to dask client with {dask_ppw} cores per worker')
             self.services.debug(f'Task {task_name} working dir: {task.working_dir}')
             self.services.debug(f'Task args: {task.args} keywords: {task.keywords}')
+            keywords = self._launch_keywords_with_defaults(task.keywords,
+                                                           logfile,
+                                                           errfile)
             task_names.append(task_name)
             binaries.append(task.binary)
             working_dirs.append(task.working_dir)
             task_args.append(task.args)
-            task_keywords.append(task.keywords)
+            task_keywords.append(keywords)
             cpus_per_procs.append(dask_ppw)
             worker_event_logfiles.append(self.worker_event_logfile)
 
@@ -3510,7 +3537,9 @@ class TaskPool:
         dask_worker_plugin=None,
         dask_worker_per_gpu=False,
         oversubscribe=False,
-        hwthreads=False
+        hwthreads=False,
+        logfile=None,
+        errfile=None,
     ):
         """Launch tasks in *queued_tasks*.  Finished tasks are handled before
         launching new ones.  If *block* is ``True``, the number of
@@ -3549,6 +3578,10 @@ class TaskPool:
         :param hwthreads: If True then use hardware threads when launching
             tasks. Default is False.
         :type hwthreads: bool
+        :param logfile: Optional default file name for redirected task stdout
+        :type logfile: str
+        :param errfile: Optional default file name for redirected task stderr
+        :type errfile: str
         :returns:
         """
         if use_dask:
@@ -3562,7 +3595,8 @@ class TaskPool:
                     return self.submit_dask_tasks(
                             block, dask_nodes, dask_ppw, use_shifter,
                             shifter_args, dask_worker_plugin,
-                            dask_worker_per_gpu, oversubscribe, hwthreads
+                            dask_worker_per_gpu, oversubscribe, hwthreads,
+                            logfile, errfile
                     )
             elif not TaskPool.dask or not TaskPool.distributed:
                 raise RuntimeError(
