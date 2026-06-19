@@ -118,6 +118,7 @@ def launch(executable: Any,
         # Do we write the Popen stdout to sys.stdout or to a file?
         subprocess_stdout = subprocess.PIPE
         close_stdout = False # is true if we need to later close the file
+        log_path = None
         try:
             log_filename = kwargs['logfile']
         except KeyError:
@@ -133,29 +134,33 @@ def launch(executable: Any,
             print(f'Task output log file: {log_path}')
 
         # Repeat the same for stderr
-        subprocess_errfile = subprocess.PIPE
+        subprocess_stderr = subprocess.STDOUT
         close_stderr = False
         try:
-            subprocess_errfile = kwargs['errfile']
+            err_filename = kwargs['errfile']
         except KeyError:
             log.info('No errfile specified, using STDOUT for task errors')
             print('No errfile specified, using STDOUT for task errors')
         else:
-            err_path = Path(subprocess_errfile)
+            err_path = Path(err_filename)
             if not err_path.is_absolute():
                 err_path = working_dir_path / err_path
-            try:
-                subprocess_errfile = open(err_path, 'w')
-            except OSError:
-                log.info(f'Could not open errfile {err_path}, '
-                         f'using STDOUT for task errors')
-                print(f'Could not open errfile {err_path}, '
-                         f'using STDOUT for task errors')
-                subprocess_errfile = subprocess.STDOUT
+            if log_path is not None and err_path.resolve(strict=False) == log_path.resolve(strict=False):
+                log.info(f'Task error log file matches output log file: {log_path}')
+                print(f'Task error log file matches output log file: {log_path}')
             else:
-                close_stderr = True
-                log.info(f'Task error log file: {err_path}')
-                print(f'Task error log file: {err_path}')
+                try:
+                    subprocess_stderr = open(err_path, 'w')
+                except OSError:
+                    log.info(f'Could not open errfile {err_path}, '
+                             f'using STDOUT for task errors')
+                    print(f'Could not open errfile {err_path}, '
+                             f'using STDOUT for task errors')
+                    subprocess_stderr = subprocess.STDOUT
+                else:
+                    close_stderr = True
+                    log.info(f'Task error log file: {err_path}')
+                    print(f'Task error log file: {err_path}')
 
         task_env = kwargs.get('task_env', {})
         new_env = os.environ.copy()
@@ -224,7 +229,7 @@ def launch(executable: Any,
             try:
                 process = subprocess.Popen(cmd_lst,
                                            stdout=subprocess_stdout,
-                                           stderr=subprocess_errfile,
+                                           stderr=subprocess_stderr,
                                            cwd=working_dir_path,
                                            text=True,
                                            preexec_fn=os.setsid, env=new_env)  # noqa: PLW1509 (TODO: look into this to potentially avoid deadlocks)
@@ -299,7 +304,7 @@ def launch(executable: Any,
                 subprocess_stdout.close()
 
             if close_stderr:
-                subprocess_errfile.close()
+                subprocess_stderr.close()
 
     elif isinstance(executable, Callable):
         # binary not a string, but is a python callable, so we call it directly
