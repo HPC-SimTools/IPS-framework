@@ -16,6 +16,8 @@ class InstanceComponent(Component):
     def step(self, timestamp: float = 0.0, **keywords):
         start = time()
 
+
+
         # ENSEMBLE_INSTANCE is a special IPS variable that contains the
         # string uniquely identifying this instance.  Each instance will have
         # the `run_ensemble()` `name` argument prepended to a unique number
@@ -23,6 +25,8 @@ class InstanceComponent(Component):
         instance_id = self.services.get_config_param('ENSEMBLE_INSTANCE')
         self.services.info(f'{instance_id}: Start of step of instance '
                            f'component.')
+
+        print(f'start of instance component for {instance_id}')
 
         # Echo the parameters we're expecting, A, B, and C
         self.services.info(f'{instance_id}: instance component parameters: '
@@ -38,6 +42,7 @@ class InstanceComponent(Component):
             writer.writerow([instance_id, sys.argv[0], run_env['hostname'],
                              run_env['pid'], run_env['core_id'], start, time()])
 
+        print(f'Wrote stats.csv for {instance_id}')
 
         self.services.info(f'{instance_id}: End of step of instance '
                            f'component.')
