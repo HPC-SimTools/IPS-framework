@@ -55,11 +55,16 @@ class EnsembleDriver(Component):
         # given set of variables.  E.g., the instance corresponding to
         # {'A' : 2, 'B' : 5.82, 'C' : 'baz'} is probably found in the
         # `INSTANCE_1` subdirectory.
+
+        # We also demonstrate that stdout and stderr output per instance can
+        # be captured in files by specifying logfile and errfile, respectively.
         mapping = self.services.run_ensemble(template, variables,
                                              run_dir=Path('.').absolute(),
                                              name='INSTANCE_',
                                              num_nodes=1,
-                                             cores_per_instance=1)
+                                             cores_per_instance=1,
+                                             logfile='stdout.txt',
+                                             errfile='stderr.txt')
         # Print each mapping of instance name to what variable values were used.
         for instance in mapping:
             self.services.info(f'{instance!s}')
