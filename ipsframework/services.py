@@ -128,7 +128,7 @@ def launch(executable: Any,
             log_path = Path(log_filename)
             if not log_path.is_absolute():
                 log_path = working_dir_path / log_path
-            subprocess_stdout = open(log_path, 'w')
+            subprocess_stdout = open(log_path, 'a')
             close_stdout = True # Welp, gotta close it now
             log.info(f'Task output log file: {log_path}')
             print(f'Task output log file: {log_path}')
@@ -150,7 +150,7 @@ def launch(executable: Any,
                 print(f'Task error log file matches output log file: {log_path}')
             else:
                 try:
-                    subprocess_stderr = open(err_path, 'w')
+                    subprocess_stderr = open(err_path, 'a')
                 except OSError:
                     log.info(f'Could not open errfile {err_path}, '
                              f'using STDOUT for task errors')
