@@ -28,6 +28,8 @@ class InstanceComponent(Component):
         self.services.info(f'{instance_id}: instance component parameters: '
                            f'A={self.A}, B={self.B}, C={self.C}')
 
+        print(f'{instance_id}: A={self.A}, B={self.B}, C={self.C}')
+
         # Save some per-component stats
         run_env = get_platform_info()
 
