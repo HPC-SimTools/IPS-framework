@@ -41,7 +41,9 @@ class EnsembleDriver(Component):
         # given set of variables.  E.g., the instance corresponding to
         # {'A' : 2, 'B' : 5.82, 'C' : 'baz'} is probably found in the
         # `INSTANCE_1` subdirectory.  We also direct the stdout and stderr
-        # for each instance to `my_logfile.txt`.
+        # for each instance to `my_logfile.txt`. I.e., by *not* specifying
+        # a filename for `errfile`, the stdout and stderr are combined into a
+        # single file for each instance.
         mapping = self.services.run_ensemble(template, variables,
                                              run_dir=Path('.').absolute(),
                                              name='INSTANCE_',
