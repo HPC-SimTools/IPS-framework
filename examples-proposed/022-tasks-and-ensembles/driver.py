@@ -48,7 +48,8 @@ class EnsembleDriver(Component):
                                              name='INSTANCE_',
                                              num_nodes=1,
                                              cores_per_instance=5,
-                                             oversubscribe=False)
+                                             oversubscribe=False,
+                                             logfile='logfile.txt')
         # Print each mapping of instance name to what variable values were used.
         for instance in mapping:
             self.services.info(f'{instance!s}')
