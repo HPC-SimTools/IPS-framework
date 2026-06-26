@@ -59,7 +59,7 @@ if __name__ == '__main__':
         sleep(args.sleep)
 
     if args.output is not None:
-        with open(f'{args.output}_rank_{rank}', 'w', newline='') as csvfile:
+        with open(f'rank_{rank}_{args.output}', 'w', newline='') as csvfile:
             fieldnames = ['id', 'hostname', 'rank', 'size', 'pid', 'n_cores', 'affinity', 's', 'start', 'end']
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
 
