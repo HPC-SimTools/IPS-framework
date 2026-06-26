@@ -60,11 +60,11 @@ if __name__ == '__main__':
 
     if args.output is not None:
         with open(args.output, 'w', newline='') as csvfile:
-            fieldnames = ['i', 'hostname', 'rank', 'size', 'pid', 'n_cores', 'affinity', 's', 'start', 'end']
+            fieldnames = ['id', 'hostname', 'rank', 'size', 'pid', 'n_cores', 'affinity', 's', 'start', 'end']
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
 
             writer.writeheader()
-            writer.writerow({'i': args.id, 'hostname': hostname,
+            writer.writerow({'id': args.id, 'hostname': hostname,
                              'rank': rank, 'size': size, 'pid': pid,
                              'n_cores': n_cores, 'affinity': str(affinity), 's': args.sleep,
                              'start': start, 'end': time()})
