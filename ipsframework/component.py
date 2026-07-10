@@ -128,7 +128,6 @@ class Component:
 
         # the topic prefix must start with '_IPS_' to be a reserved topic
         self.services.subscribe(f'_IPS_{self.__component_id.get_serialization()}', self.services._component_id_subscription_callback)
-        print('Subscribed to topic _IPS_%s' % self.__component_id.get_serialization())
 
         while True:
             msg = self.__invocation_q.get()
