@@ -25,6 +25,11 @@ MAX_RETRIES = 10
 
 _portal_logger = logging.getLogger('ipsframework.bridges.portal_bridge')
 
+EVENT_MESSAGE_TYPE = 'events'
+DATA_MESSAGE_TYPE = 'data'
+NOTEBOOK_MESSAGE_TYPE = 'notebook'
+ENSEMBLE_MESSAGE_TYPE = 'ensemble'
+
 
 def send_post(conn: Connection, stop: EventType, url: str):
     fail_count = 0
@@ -34,6 +39,7 @@ def send_post(conn: Connection, stop: EventType, url: str):
         headers={'Content-Type': 'application/json'},
     )
 
+    # TODO - try to figure out ways to send the sim_names back for events, not essential though
     while True:
         if conn.poll(0.1):
             msgs = []
@@ -45,13 +51,13 @@ def send_post(conn: Connection, stop: EventType, url: str):
                 _portal_logger.debug('HTTP event took %s seconds', time.time() - start_walltime)
             except MaxRetryError as e:
                 fail_count += 1
-                conn.send((999, f'Max retry error: {e}'))
+                conn.send((EVENT_MESSAGE_TYPE, '', 999, f'Max retry error: {e}'))
             else:
-                conn.send((resp.status, resp.data.decode()))
+                conn.send((EVENT_MESSAGE_TYPE, '', resp.status, resp.data.decode()))
                 fail_count = 0
 
             if fail_count >= MAX_RETRIES:
-                conn.send((-1, 'Too many consecutive failed connections'))
+                conn.send((EVENT_MESSAGE_TYPE, '', -1, 'Too many consecutive failed connections'))
                 break
         elif stop.is_set():
             break
@@ -86,13 +92,13 @@ def send_jupyter_notebook(conn: Connection, stop: EventType, url: str, api_key: 
                 )
             except MaxRetryError as e:
                 fail_count += 1
-                conn.send((999, f'Max retry error: {e}'))
+                conn.send((NOTEBOOK_MESSAGE_TYPE, next_val['component_id'], 999, f'Max retry error: {e}'))
             else:
-                conn.send((resp.status, resp.data.decode()))
+                conn.send((NOTEBOOK_MESSAGE_TYPE, next_val['component_id'], resp.status, resp.data.decode()))
                 fail_count = 0
 
             if fail_count >= MAX_RETRIES:
-                conn.send((-1, 'Too many consecutive failed connections'))
+                conn.send((NOTEBOOK_MESSAGE_TYPE, next_val['component_id'], -1, 'Too many consecutive failed connections'))
                 break
         elif stop.is_set():
             break
@@ -137,13 +143,13 @@ def send_jupyter_notebook_data(conn: Connection, stop: EventType, url: str, api_
                 )
             except (MaxRetryError, OSError) as e:
                 fail_count += 1
-                conn.send((999, f'Max retry error: {e}'))
+                conn.send((DATA_MESSAGE_TYPE, next_val['component_id'], 999, f'Max retry error: {e}'))
             else:
-                conn.send((resp.status, resp.data.decode()))
+                conn.send((DATA_MESSAGE_TYPE, next_val['component_id'], resp.status, resp.data.decode()))
                 fail_count = 0
 
             if fail_count >= MAX_RETRIES:
-                conn.send((-1, 'Too many consecutive failed connections'))
+                conn.send((DATA_MESSAGE_TYPE, next_val['component_id'], -1, 'Too many consecutive failed connections'))
                 break
         elif stop.is_set():
             break
@@ -183,13 +189,13 @@ def send_ensemble_variables(conn: Connection, stop: EventType, url: str, api_key
                 )
             except (MaxRetryError, OSError) as e:
                 fail_count += 1
-                conn.send((999, f'Max retry error: {e}'))
+                conn.send((ENSEMBLE_MESSAGE_TYPE, next_val['component_id'], 999, f'Max retry error: {e}'))
             else:
-                conn.send((resp.status, resp.data.decode()))
+                conn.send((ENSEMBLE_MESSAGE_TYPE, next_val['component_id'], resp.status, resp.data.decode()))
                 fail_count = 0
 
             if fail_count >= MAX_RETRIES:
-                conn.send((-1, 'Too many consecutive failed connections'))
+                conn.send((ENSEMBLE_MESSAGE_TYPE, next_val['component_id'], -1, 'Too many consecutive failed connections'))
                 break
         elif stop.is_set():
             break
@@ -249,6 +255,8 @@ class PortalBridge(Component):
         self.url_manager_jupyter_data = None
         self.url_manager_ensemble_uploads = None
 
+    ### COMPONENT FUNCTIONS (public) ###
+
     def init(self, timestamp=0.0, **keywords):
         """
         Try to connect to the portal, subscribe to *_IPS_MONITOR* events and
@@ -263,6 +271,7 @@ class PortalBridge(Component):
         except AttributeError:
             pass
 
+        # logging configuration
         if self.services.fwk.log_level == logging.DEBUG:
             log_level = logging.DEBUG
         else:
@@ -285,10 +294,28 @@ class PortalBridge(Component):
         """
         while not self.done:
             self.services.process_events()
+            self._check_url_manager_responses()
             time.sleep(0.5)
 
     def finalize(self, timestamp=0.0, **keywords):
         pass
+
+    def terminate(self, status: Literal[0, 1]):
+        """
+        Clean up services and call :py:obj:`sys_exit`.
+        """
+        if self.childProcess:
+            self.childProcess.terminate()
+        if self.url_manager_jupyter_data:
+            self.url_manager_jupyter_data.childProcess.terminate()
+        if self.url_manager_jupyter_notebook:
+            self.url_manager_jupyter_notebook.childProcess.terminate()
+        if self.url_manager_ensemble_uploads:
+            self.url_manager_ensemble_uploads.childProcess.terminate()
+
+        Component.terminate(self, status)
+
+    ### SUBSCRIPTION CHANNELS (public) ###
 
     def process_event(self, topicName, theEvent):
         """
@@ -301,25 +328,30 @@ class PortalBridge(Component):
             portal_data['sim_name'] = event_body['real_sim_name']
         except KeyError:
             portal_data['sim_name'] = sim_name
+        portal_data['component_id'] = event_body.get('component_id', '')
 
-        if portal_data['eventtype'] == 'IPS_START':
+        event_type = portal_data['eventtype']
+
+        if event_type == 'IPS_START':
             sim_root = event_body['sim_root']
             self.init_simulation(sim_name, sim_root, portal_data['portal_runid'])
 
         sim_data = self.sim_map[sim_name]
-        if portal_data['eventtype'] == 'PORTALBRIDGE_UPDATE_TIMESTAMP':
+        if event_type == 'PORTALBRIDGE_UPDATE_TIMESTAMP':
             sim_data.phys_time_stamp = portal_data['phystimestamp']
             return
         else:
             portal_data['phystimestamp'] = sim_data.phys_time_stamp
 
-        if portal_data['eventtype'] == 'PORTAL_REGISTER_NOTEBOOK':
+        ### Portal data events ###
+
+        if event_type == 'PORTAL_REGISTER_NOTEBOOK':
             with open(portal_data['data_source'], 'rb') as f:
                 portal_data['data'] = f.read()
-            self.send_jupyter_notebook(sim_data, portal_data)
+            self._send_jupyter_notebook(sim_data, portal_data)
             return
 
-        if portal_data['eventtype'] == 'PORTAL_ADD_JUPYTER_DATA':
+        if event_type == 'PORTAL_ADD_JUPYTER_DATA':
             data_source = portal_data['data_source']
             if os.path.isdir(data_source):
                 # assume that we are handling a specialized data format, and do not use compression
@@ -330,21 +362,21 @@ class PortalBridge(Component):
                     tar.add(data_source, arcname=os.path.basename(data_source))
                 portal_data['data_source'] = tarpath
 
-            self.send_notebook_data(sim_data, portal_data)
+            self._send_notebook_data(sim_data, portal_data)
             return
 
-        if portal_data['eventtype'] == 'PORTAL_UPLOAD_ENSEMBLE_PARAMS':
-            self.send_ensemble_variables(sim_data, portal_data)
+        if event_type == 'PORTAL_UPLOAD_ENSEMBLE_PARAMS':
+            self._send_ensemble_variables(sim_data, portal_data)
             return
 
         portal_data['portal_runid'] = sim_data.portal_runid
 
-        if portal_data['eventtype'] == 'IPS_SET_MONITOR_URL':
+        if event_type == 'IPS_SET_MONITOR_URL':
             sim_data.monitor_url = portal_data['vizurl']
         elif sim_data.monitor_url:
             portal_data['vizurl'] = sim_data.monitor_url
 
-        if portal_data['eventtype'] == 'IPS_START' and 'parent_portal_runid' not in portal_data:
+        if event_type == 'IPS_START' and 'parent_portal_runid' not in portal_data:
             portal_data['parent_portal_runid'] = sim_data.parent_portal_runid
         portal_data['seqnum'] = sim_data.counter
 
@@ -369,27 +401,29 @@ class PortalBridge(Component):
             except OSError:
                 pass
 
-            self.check_send_post_responses(polling_timeout)
+            self._check_send_post_responses(polling_timeout)
 
-        if portal_data['eventtype'] == 'IPS_END':
+        if event_type == 'IPS_END':
             del self.sim_map[sim_name]
 
         if len(self.sim_map) == 0:
+            self.done = True
             if self.childProcess:
                 self.childProcessStop.set()
                 self.childProcess.join()
-                self.check_send_post_responses(0.0)
-            self.done = True
+                self._check_send_post_responses(0.0)
             self.services.debug('No more simulation to monitor - exiting')
             time.sleep(1)
 
-    def check_send_post_responses(self, polling_timeout: float = 0.0):
+    ### LOCAL FUNCTIONS (private) ###
+
+    def _check_send_post_responses(self, polling_timeout: float = 0.0):
         if self.parent_conn is None:
             self.services.warning('Giving up on polling for portal responses')
             return
         while self.parent_conn.poll(timeout=polling_timeout):
             try:
-                code, msg = self.parent_conn.recv()
+                _msg_type, _component_id, code, msg = self.parent_conn.recv()
             except (EOFError, OSError):
                 break
 
@@ -418,28 +452,29 @@ class PortalBridge(Component):
                 except (TypeError, json.decoder.JSONDecodeError):
                     pass
 
-    def http_req_and_response(self, manager: UrlRequestProcessManager, event_data):
-        try:
-            manager.parent_conn.send(event_data)
-        except OSError:
-            pass
+    def _check_url_manager_responses(self):
+        """poll all data API checks"""
+        for manager in [self.url_manager_jupyter_notebook, self.url_manager_jupyter_data, self.url_manager_ensemble_uploads]:
+            if manager is None:
+                continue
+            while manager.parent_conn.poll():
+                try:
+                    msg_type, component_id, code, msg = manager.parent_conn.recv()
+                except (EOFError, OSError):
+                    break
 
-        while manager.parent_conn.poll():
-            try:
-                code, msg = manager.parent_conn.recv()
-            except (EOFError, OSError):
-                break
+                if code >= 400:
+                    self.services.error('Portal Error: %d %s', code, msg)
+                elif code == -1:
+                    # disable portal, stop trying to send more data
+                    self.portal_url = ''
+                    self.services.error('Disabling portal because: %s', msg)
+                else:
+                    self.services.debug('Portal Response: %d %s', code, msg)
+                    if msg_type == ENSEMBLE_MESSAGE_TYPE:
+                        self.services.publish(f'_IPS_{component_id}', '_IPS_PORTAL_UPLOAD_ENSEMBLE_PARAMS_SUCCESS', 'true')
 
-            if code == -1:
-                # disable portal, stop trying to send more data
-                self.portal_url = ''
-                self.services.error('Disabling portal because: %s', msg)
-            elif code >= 400:
-                self.services.error('Portal Error: %d %s', code, msg)
-            else:
-                self.services.debug('Portal Response: %d %s', code, msg)
-
-    def send_jupyter_notebook(self, sim_data: PortalSimulationData, event_data):
+    def _send_jupyter_notebook(self, sim_data: PortalSimulationData, event_data):
         if self.portal_url and self.portal_api_key:
             if not self.url_manager_jupyter_notebook:
                 self.url_manager_jupyter_notebook = UrlRequestProcessManager(
@@ -448,9 +483,12 @@ class PortalBridge(Component):
                     self.portal_api_key,
                     self.USER,
                 )
-            self.http_req_and_response(self.url_manager_jupyter_notebook, event_data)
+            try:
+                self.url_manager_jupyter_notebook.parent_conn.send(event_data)
+            except OSError:
+                self.services.error('Failed to send notebook to portal %s', event_data)
 
-    def send_notebook_data(self, sim_data: PortalSimulationData, event_data):
+    def _send_notebook_data(self, sim_data: PortalSimulationData, event_data):
         if self.portal_url and self.portal_api_key:
             if not self.url_manager_jupyter_data:
                 self.url_manager_jupyter_data = UrlRequestProcessManager(
@@ -459,9 +497,12 @@ class PortalBridge(Component):
                     self.portal_api_key,
                     self.USER,
                 )
-            self.http_req_and_response(self.url_manager_jupyter_data, event_data)
+            try:
+                self.url_manager_jupyter_data.parent_conn.send(event_data)
+            except OSError:
+                self.services.error('Failed to send notebook data to portal %s', event_data)
 
-    def send_ensemble_variables(self, sim_data: PortalSimulationData, event_data):
+    def _send_ensemble_variables(self, sim_data: PortalSimulationData, event_data):
         if self.portal_url and self.portal_api_key:
             if not self.url_manager_ensemble_uploads:
                 self.url_manager_ensemble_uploads = UrlRequestProcessManager(
@@ -470,7 +511,10 @@ class PortalBridge(Component):
                     self.portal_api_key,
                     self.USER,
                 )
-            self.http_req_and_response(self.url_manager_ensemble_uploads, event_data)
+            try:
+                self.url_manager_ensemble_uploads.parent_conn.send(event_data)
+            except OSError:
+                self.services.error('Failed to send ensemble variables to portal %s', event_data)
 
     def init_simulation(self, sim_name: str, sim_root: str, portal_runid: str):
         """
@@ -507,18 +551,3 @@ class PortalBridge(Component):
             self.first_portal_runid = sim_data.portal_runid
 
         self.sim_map[sim_name] = sim_data
-
-    def terminate(self, status: Literal[0, 1]):
-        """
-        Clean up services and call :py:obj:`sys_exit`.
-        """
-        if self.childProcess:
-            self.childProcess.terminate()
-        if self.url_manager_jupyter_data:
-            self.url_manager_jupyter_data.childProcess.terminate()
-        if self.url_manager_jupyter_notebook:
-            self.url_manager_jupyter_notebook.childProcess.terminate()
-        if self.url_manager_ensemble_uploads:
-            self.url_manager_ensemble_uploads.childProcess.terminate()
-
-        Component.terminate(self, status)

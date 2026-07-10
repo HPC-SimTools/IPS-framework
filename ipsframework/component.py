@@ -7,8 +7,10 @@ import os
 import sys
 import weakref
 from copy import copy
+from multiprocessing import Queue
 from typing import TYPE_CHECKING, Any, Dict, Literal
 
+from .componentRegistry import ComponentID
 from .messages import Message, MethodResultMessage
 
 if TYPE_CHECKING:
@@ -31,8 +33,8 @@ class Component:
         """
         Set up config values and reference to services.
         """
-        self.__component_id = None
-        self.__invocation_q = None
+        self.__component_id: ComponentID = None  # type: ignore
+        self.__invocation_q: Queue = None  # type: ignore
         self.__services: ServicesProxy = weakref.proxy(services)
         self.__config = config
         self.__start_time = 0.0
@@ -57,7 +59,7 @@ class Component:
                 setattr(result, k, copy(v))
         return result
 
-    def __initialize__(self, component_id, invocation_q, start_time=0.0):
+    def __initialize__(self, component_id: ComponentID, invocation_q: Queue, start_time: float = 0.0):
         """
         Establish connection to *invocation_q*.
         """
@@ -123,6 +125,10 @@ class Component:
         self.services.debug('Running - CompID =  %s', self.component_id.get_serialization())
 
         self.services._init_event_service()
+
+        # the topic prefix must start with '_IPS_' to be a reserved topic
+        self.services.subscribe(f'_IPS_{self.__component_id.get_serialization()}', self.services._component_id_subscription_callback)
+        print('Subscribed to topic _IPS_%s' % self.__component_id.get_serialization())
 
         while True:
             msg = self.__invocation_q.get()
