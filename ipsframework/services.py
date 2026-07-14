@@ -444,6 +444,9 @@ class ServicesProxy:
         self.task_map: dict[int, RunningTask] = {}
         self.workdir = ''
         self.full_comp_id = ''
+        """full_comp_id is a unique identifier for the component, which is used as the directory name on the filesystem."""
+        self._ips_serialized_component_id = ''
+        """_ips_serialized_component_id is used across the IPS message bus as the topic to communicate to this specific component"""
         self.logger: logging.Logger = None  # type: ignore
         self.start_time = time.time()
         self.cur_time = self.start_time
@@ -480,6 +483,9 @@ class ServicesProxy:
         self._portal_runid_event = threading.Event()
         """Thread-safe means to detect if self._portal_runid has been set"""
 
+        self._ensemble_verification_check = False
+        """If using the Portal and calling run_ensemble(), the portal can wait for this value to be set to True to verify that the ensemble parameters were set on the Portal."""
+
     def __initialize__(self, component_ref):
         """
         Initialize the service proxy object, connecting it to its associated
@@ -491,6 +497,7 @@ class ServicesProxy:
         self.component_ref = weakref.proxy(component_ref)
         conf = self.component_ref.config
         self.full_comp_id = '_'.join([conf['CLASS'], conf['SUB_CLASS'], conf['NAME'], str(self.component_ref.component_id.get_seq_num())])
+        self._ips_serialized_component_id = self.component_ref.component_id.get_serialization()
         #
         # Set up logging path to the IPS logging daemon
         #
@@ -554,6 +561,15 @@ class ServicesProxy:
         self.counter = self.counter + 1
         initialize_event_service(self)
         self.event_service = eventManager(self.component_ref)
+
+    def _component_id_subscription_callback(self, topicName: str, theEvent) -> None:
+        """
+        All components subscribe to a topic based on their component_id. This function is the callback function for that subscription.
+        """
+        event_types = list(theEvent.getHeader().keys())
+        self.debug('_component_id_subscription_callback(): component_id=%s  topic=%s  event_header=%s  event_body=%s', self._ips_serialized_component_id, topicName, theEvent.getHeader(), theEvent.getBody())
+        if '_IPS_PORTAL_UPLOAD_ENSEMBLE_PARAMS_SUCCESS' in event_types:
+            self._ensemble_verification_check = True
 
     def _get_elapsed_time(self) -> float:
         """
@@ -739,6 +755,7 @@ class ServicesProxy:
         event_data = {}
         event_data['sim_name'] = self.sim_conf['__PORTAL_SIM_NAME']
         event_data['real_sim_name'] = self.sim_name
+        event_data['component_id'] = self._ips_serialized_component_id
         event_data['portal_data'] = portal_data
         self.publish('_IPS_MONITOR', 'PORTAL_EVENT', event_data)
 
@@ -1219,7 +1236,7 @@ class ServicesProxy:
         if task_retval is None:
             if task.start_time + task.timeout < time.time():
                 self.kill_task(task_id)
-                self._send_monitor_event('IPS_TASK_END', 'task_id = %s  TIMEOUT elapsed time = %.2f S' % (str(task_id), time.time() - task.start_time))
+                self._send_monitor_event('IPS_TASK_END', 'source_func = wait_task_nonblocking, task_id = %s  TIMEOUT elapsed time = %.2f S' % (str(task_id), time.time() - task.start_time))
                 return -1
             else:
                 return None
@@ -1265,9 +1282,9 @@ class ServicesProxy:
         if task_retval is None:
             task.process.kill()
             task_retval = task.process.wait()
-            event_comment = 'task_id = %s  TIMEOUT elapsed time = %.2f S' % (str(task_id), finish_time - task.start_time)
+            event_comment = 'source_func = wait_task, task_id = %s  TIMEOUT elapsed time = %.2f S' % (str(task_id), finish_time - task.start_time)
         else:
-            event_comment = 'task_id = %s  elapsed time = %.2f S' % (str(task_id), finish_time - task.start_time)
+            event_comment = 'source_func = wait_task, task_id = %s  elapsed time = %.2f S' % (str(task_id), finish_time - task.start_time)
 
         self._send_monitor_event(
             'IPS_TASK_END',
@@ -2046,6 +2063,7 @@ class ServicesProxy:
         event_data = {}
         event_data['sim_name'] = self.sim_conf['__PORTAL_SIM_NAME']
         event_data['real_sim_name'] = self.sim_name
+        event_data['component_id'] = self._ips_serialized_component_id
 
         portal_data = {}
         portal_data['phystimestamp'] = new_time_stamp
@@ -2180,6 +2198,7 @@ class ServicesProxy:
         event_data = {}
         event_data['sim_name'] = self.sim_conf['__PORTAL_SIM_NAME']
         event_data['real_sim_name'] = self.sim_name
+        event_data['component_id'] = self._ips_serialized_component_id
 
         portal_data: dict[str, Any] = {}
         portal_data['eventtype'] = 'PORTAL_REGISTER_NOTEBOOK'
@@ -2218,6 +2237,7 @@ class ServicesProxy:
             event_data = {}
             event_data['sim_name'] = self.sim_conf['__PORTAL_SIM_NAME']
             event_data['real_sim_name'] = self.sim_name
+            event_data['component_id'] = self._ips_serialized_component_id
 
             portal_data: dict[str, Any] = {}
             portal_data['eventtype'] = 'PORTAL_ADD_JUPYTER_DATA'
@@ -2790,6 +2810,7 @@ class ServicesProxy:
             event_data = {}
             event_data['sim_name'] = self.sim_conf['__PORTAL_SIM_NAME']
             event_data['real_sim_name'] = self.sim_name
+            event_data['component_id'] = self._ips_serialized_component_id
 
             portal_data: dict[str, Any] = {}
             portal_data['eventtype'] = 'PORTAL_UPLOAD_ENSEMBLE_PARAMS'
@@ -2800,8 +2821,20 @@ class ServicesProxy:
             portal_data['username'] = self.get_config_param('USER')
             portal_data['portal_runid'] = self._portal_runid
             event_data['portal_data'] = portal_data
+
             self.publish('_IPS_MONITOR', 'PORTAL_UPLOAD_ENSEMBLE_PARAMS', event_data)
             self._send_monitor_event('IPS_PORTAL_UPLOAD_ENSEMBLE_PARAMS', f'NAME = {name}')
+            
+            # wait on a confirmation from the portal before proceeding with launching the ensembles
+            ensemble_portal_wait_time = 10.0
+            while not self._ensemble_verification_check:
+                time.sleep(1.0)
+                ensemble_portal_wait_time -= 1.0
+                if ensemble_portal_wait_time <= 0.0:
+                    self.warning('Could not confirm ensemble parameters upload, proceeding with task submission anyway')
+                    break
+                self.process_events()
+            self._ensemble_verification_check = False  # reset in case run_ensemble is called again
 
         self.info(f'Preparing to run ensembles in {run_dir}')
 
