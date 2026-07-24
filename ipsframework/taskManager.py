@@ -2,6 +2,7 @@
 # Copyright 2006-2022 UT-Battelle, LLC. See LICENSE for more information.
 # -------------------------------------------------------------------------------
 import os
+import platform
 import sys
 from collections import namedtuple
 from math import ceil
@@ -379,6 +380,7 @@ class TaskManager:
                 ppn_flag = '-npernode'
                 host_select = '-H'
                 if smp_node or mpi_binary == 'prun':
+                    binding = 'none' if platform.system() == 'Darwin' else 'core'
                     # --display MAP-DEVEL is added to show the DVM state when
                     # invoking this prun. We do this so that we can verify the
                     # resources managed by DVM for this task as displayed in
@@ -387,7 +389,7 @@ class TaskManager:
                     cmd = ' '.join([mpicmd, '--display', 'ALLOCATION,MAP-DEVEL,BINDINGS',
                                     nproc_flag, str(nproc),
                                    '--map-by', 'core',
-                                   '--bind-to', 'core'])
+                                   '--bind-to', binding])
                 else:
                     cmd = ' '.join([mpicmd, nproc_flag, str(nproc), ppn_flag, str(ppn)])
                 cmd = f'{cmd} -x PYTHONPATH'  # Propagate PYTHONPATH to compute nodes
