@@ -40,7 +40,7 @@ from rich.traceback import Traceback
 rich.traceback.install(show_locals=True)
 
 from configobj import ConfigObj
-from distributed import Client, Worker, WorkerPlugin
+from distributed import Client, SchedulerPlugin
 
 from ipsframework import ipsutil, messages
 from ipsframework._internal.definitions import IPS_EVENT_TYPE
@@ -64,6 +64,9 @@ class RunningTask(NamedTuple):
     args: list[str]
 
 
+DVM_PLUGIN_NAME = 'ips-dvm-plugin'
+
+
 def launch(executable: Any,
            task_name: str,
            working_dir: Union[str, os.PathLike],
@@ -79,13 +82,13 @@ def launch(executable: Any,
     * `task_env` - A dictionary of environment variables to set
     * `timeout` - The timeout in seconds for the task to complete.
     * `cpus_per_proc` - The number of cpus per process to use for the task.
-        This implies that the DVMPlugin has set up a DVM daemon for this node.
+        This implies that the DVMPlugin has set up a DVM daemon for this job.
     * `oversubscribe` - If `True`, then the number of processes can exceed the
         number of cores on the node.  Default is `False`.
 
-    If the worker has the attribute `dvm_uri_file`, then we are running
-    with a DVM (Distributed Virtual Machine) so the `binary` needs a
-    `prun` prepended pointing to that.
+    If the scheduler plugin has started a DVM (Distributed Virtual Machine),
+    `PMIX_SERVER_URI41` will be provided in `task_env` so that the task's
+    `prun` invocation can connect to that DVM.
 
     :param executable: The binary to launch. Either a string or a class.
     :param task_name: The name of the task.
@@ -170,18 +173,6 @@ def launch(executable: Any,
             log.debug('Removing HWLOC_XMLFILE from task environment')
             del new_env['HWLOC_XMLFILE']
 
-        # Check that the DVM environment variables are set.
-        if hasattr(worker, 'dvm_uri_file'):
-            dvm_uri_file = Path(worker.dvm_uri_file)
-            if not dvm_uri_file.exists():
-                log.error(f'DVM URI file {dvm_uri_file} does not exist')
-                print(f'DVM URI file {dvm_uri_file} does not exist')
-                # print(f'DVM URI file {dvm_uri_file} does not exist', flush=True)
-            else:
-                log.debug(f'Using DVM URI file: {dvm_uri_file}')
-                print(f'Using DVM URI file: {dvm_uri_file}')
-                # print(f'Using DVM URI file: {dvm_uri_file}', flush=True)
-
         # PMIX_SERVER_URI41 is used by prun to figure out how to talk to the DVM
         # It can be defined in `task_env` or in `os.environ`, so we look in
         # both locations to just echo its presence. The flushes are necessary
@@ -205,6 +196,10 @@ def launch(executable: Any,
                                f"{os.environ['PMIX_SERVER_URI41']}")
             # print(f'DVM environment variable PMIX_SERVER_URI41 set in os.environ '
             #       f'to {os.environ["PMIX_SERVER_URI41"]}', flush=True)
+        if 'PMIX_SERVER_URI41' in new_env:
+            log.debug(f"DVM environment variable PMIX_SERVER_URI41 set "
+                      f"in task subprocess environment to "
+                      f"{new_env['PMIX_SERVER_URI41']}")
 
         timeout = float(kwargs.get('timeout', 1.0e9))
 
@@ -397,6 +392,55 @@ def launch_mapped_task(
     task_keywords['worker_event_logfile'] = worker_event_logfile
 
     return launch(executable, task_name, working_dir, *task_args, **task_keywords)
+
+
+def _get_scheduler_dvm_uri(dask_scheduler=None):
+    """Return the scheduler DVM URI from the registered DVMPlugin."""
+    if dask_scheduler is None:
+        return None
+
+    plugin = dask_scheduler.plugins.get(DVM_PLUGIN_NAME)
+    if plugin is None:
+        return None
+
+    return getattr(plugin, 'dvm_uri', None)
+
+
+def _add_dvm_uri_to_task_env(task_keywords: dict[str, Any],
+                             dvm_uri: Optional[str]) -> dict[str, Any]:
+    """Return task keywords with the DVM URI propagated to subprocess env."""
+    keywords = dict(task_keywords)
+    if not dvm_uri:
+        return keywords
+
+    task_env = dict(keywords.get('task_env') or {})
+    task_env['PMIX_SERVER_URI41'] = dvm_uri
+    keywords['task_env'] = task_env
+    return keywords
+
+
+def _get_dask_host(services) -> Optional[str]:
+    """Return a Dask host override when the platform config requires one."""
+    dask_host = services.get_config_param('DASK_HOST', silent=True, log=False)
+    if dask_host:
+        return str(dask_host)
+
+    mpirun = services.get_config_param('MPIRUN', silent=True, log=False)
+    host = services.get_config_param('HOST', silent=True, log=False)
+    if (str(mpirun).lower() == 'eval' and
+            str(host).lower() in {'localhost', '127.0.0.1', '::1'}):
+        return 'localhost'
+
+    return None
+
+
+def _get_dask_host_args(services) -> list[str]:
+    """Return Dask CLI host arguments."""
+    dask_host = _get_dask_host(services)
+    if not dask_host:
+        return []
+
+    return ['--host', dask_host]
 
 
 class ServicesProxy:
@@ -2752,9 +2796,9 @@ class ServicesProxy:
             # This is critical for ensuring that `prun` is used to run the
             # ensemble instances.  This is because the ensemble instances rely
             # on the DVM (Dynamic Virtual Machine) to run the simulations,
-            # which was spun up in the docker worker plugin, `DVMPlugin`. The
-            # `prun` *should* use the environment variables set by the plugin
-            # to find the DVM.
+            # which was spun up in the Dask scheduler plugin, `DVMPlugin`. The
+            # DVM URI is propagated to each submitted Dask task so `prun` can
+            # find the DVM.
             platform_config['MPIRUN_VERSION'] = 'OPENMPI-DVM'
 
             # Set the budget of cores per instance. By default, we will give
@@ -2967,11 +3011,13 @@ class ServicesProxy:
         return instances
 
 
-class DVMPlugin(WorkerPlugin):
+class DVMPlugin(SchedulerPlugin):
+    name = DVM_PLUGIN_NAME
+
     def __init__(self, logger, oversubscribe=False, hwthreads=False):
         """
-        Dask worker plugin to launch and manage an OpenMPI PRTE DVM on each
-        worker node.
+        Dask scheduler plugin to launch and manage a single OpenMPI PRTE DVM
+        for the whole IPS job.
 
         :param logger: Logger object
         :param oversubscribe: Whether to allow oversubscription of nodes
@@ -2983,33 +3029,37 @@ class DVMPlugin(WorkerPlugin):
         self.logger = logger
         self.oversubscribe = oversubscribe
         self.hwthreads = hwthreads
+        self.scheduler = None
+        self.dvm_proc = None
+        self.dvm_uri = None
+        self.dvm_uri_file = None
 
-    def setup(self, worker: Worker):
+    def start(self, scheduler):
         """
-        :param worker: Dask worker
+        :param scheduler: Dask scheduler
         :param oversubscribe: Whether to allow oversubscription of nodes
             when launching the ensemble runs. Default is False.
         """
         if 'HWLOC_XMLFILE' in os.environ:
-            # Remove HWLOC_XMLFILE to avoid issues with OpenMPI on Dask workers
+            # Remove HWLOC_XMLFILE to avoid issues with OpenMPI in the DVM.
             self.logger.debug('Removing HWLOC_XMLFILE environment variable for '
-                              'Dask worker')
+                              'Dask scheduler')
             del os.environ['HWLOC_XMLFILE']
         else:
             self.logger.debug('HWLOC_XMLFILE environment variable not set '
-                              'for Dask worker')
+                              'for Dask scheduler')
 
         # Necessary to ensure the DVM "sees" all the resources to manage
         os.environ['PRTE_MCA_ras_slurm_use_entire_allocation'] = '1'
 
-        self.worker = worker
-        worker.logger = self.logger
+        self.scheduler = scheduler
+        scheduler.logger = self.logger
 
         self.logger.info('Launching DVM')
-        self.worker.dvm_uri_file = f'/tmp/dvm.uri.{os.getpid()}'
+        self.dvm_uri_file = f'/tmp/dvm.uri.{os.getpid()}'
         command = [#'srun', '--mpi=pmix_v4', '-N', os.environ['SLURM_NNODES'], '--ntasks-per-node=1',
                 'prte', #'--no-daemonize',
-                '--report-uri', self.worker.dvm_uri_file]
+                '--report-uri', self.dvm_uri_file]
 
         mapping_policy = 'core'  # by default bind to cores
         if self.hwthreads:
@@ -3026,34 +3076,45 @@ class DVMPlugin(WorkerPlugin):
 
         try:
             self.logger.debug(f'Executing command: {command!s}')
-            self.worker.dvm_proc = subprocess.Popen(command,
-                                                    stdout=subprocess.PIPE,
-                                                    stderr=subprocess.STDOUT)
+            self.dvm_proc = subprocess.Popen(command,
+                                             stdout=subprocess.PIPE,
+                                             stderr=subprocess.STDOUT)
         except Exception as e:
             print(f'Exception during setting up DVM: {e}')
             console.print(Traceback.from_exception(type(e), e, e.__traceback__))
-
-            # If there was an exception, dump any stdout/stderr we have
-            if hasattr(self.worker.dvm_proc, 'stdout'):
-                print(self.worker.dvm_proc.stdout, file=sys.stdout, flush=True)
-                print(self.worker.dvm_proc.stderr, file=sys.stderr, flush=True)
+            raise
 
         # TODO What if there was a subprocess exception?
 
-        ready = self.worker.dvm_proc.stdout.readline()
+        ready = self.dvm_proc.stdout.readline()
         self.logger.info(f'Ready Message : {ready}')
         print(f'Ready Message : {ready}', flush=True)
 
-        with open(self.worker.dvm_uri_file, 'r') as f:
-            self.worker.dvm_uri = f.readline()
-            print(f'Read DVM URI: {self.worker.dvm_uri}', flush=True)
-            self.logger.debug(f'Read DVM URI: {self.worker.dvm_uri}')
+        dvm_uri_path = Path(self.dvm_uri_file)
+        dvm_uri_deadline = time.time() + 30.0
+        while time.time() < dvm_uri_deadline:
+            if self.dvm_proc.poll() is not None:
+                output = self.dvm_proc.stdout.read()
+                raise RuntimeError(f'DVM exited before reporting URI: {output!r}')
 
-        os.environ['PMIX_SERVER_URI41'] = self.worker.dvm_uri
+            if dvm_uri_path.exists() and dvm_uri_path.stat().st_size > 0:
+                with open(dvm_uri_path, 'r') as f:
+                    self.dvm_uri = f.readline().strip()
+                if self.dvm_uri:
+                    break
+
+            time.sleep(0.1)
+        else:
+            raise RuntimeError(f'Timed out waiting for DVM URI file {dvm_uri_path}')
+
+        print(f'Read DVM URI: {self.dvm_uri}', flush=True)
+        self.logger.debug(f'Read DVM URI: {self.dvm_uri}')
+
+        os.environ['PMIX_SERVER_URI41'] = self.dvm_uri
 
 
-    def teardown(self, worker: Worker):
-        self.logger.info(f'Shutting down DVM at {self.worker.dvm_uri}')
+    def close(self):
+        self.logger.info(f'Shutting down DVM at {self.dvm_uri}')
 
         # On some systems we use `pterm` to shut down the DVM, and on others we
         # use `prte-term`, so check for both.
@@ -3065,14 +3126,15 @@ class DVMPlugin(WorkerPlugin):
             # if it's *still* none, then there is a serious
             # configuration problem.
             self.logger.critical('Neither pterm nor prte-term command found')
-        else:
-            self.logger.debug(f'DVMPluggin.teardown(), pterm: {pterm_cmd!s}')
-            command = [pterm_cmd, '--dvm-uri', self.worker.dvm_uri]
+        elif self.dvm_uri:
+            self.logger.debug(f'DVMPlugin.close(), pterm: {pterm_cmd!s}')
+            command = [pterm_cmd, '--dvm-uri', self.dvm_uri]
             subprocess.call(command)
         # Regardless if we have `pterm` or `prte-term`, we can still just
         # kill the process directly.
-        self.worker.dvm_proc.terminate()
-        self.worker.dvm_proc.kill()
+        if self.dvm_proc is not None:
+            self.dvm_proc.terminate()
+            self.dvm_proc.kill()
 
         self.logger.info('DVM shutdown')
 
@@ -3255,7 +3317,7 @@ class TaskPool:
             worker will have multiple cores, hopefully articulated via DVM
             (i.e., prun will be invoked and will coordinate with the DVM to
             allocate multiple cores to each worker thread). Note that the DVM
-            daemon will be started by the registered Dask worker plugin DVMPlugin.
+            daemon will be started by the registered Dask scheduler plugin DVMPlugin.
         :type dask_ppw: int
         :param use_shifter:  Option to launch dask scheduler and workers in shifter container
         :type use_shifter: bool
@@ -3293,6 +3355,7 @@ class TaskPool:
                 *self.dask_worker,
                 '--no-dashboard',
                 '--no-nanny',
+                *dask_host_args,
                 '--scheduler-file',
                 self.dask_scheduler_file,
                 '--nworkers',
@@ -3313,6 +3376,7 @@ class TaskPool:
             return base_args
 
         services: ServicesProxy = self.services
+        dask_host_args = _get_dask_host_args(services)
 
         # Note that we use the absolute path since at some point we may
         # be in a different directory, which means that we otherwise would
@@ -3332,6 +3396,7 @@ class TaskPool:
                         '--no-show',
                         '--idle-timeout',
                         str(TaskPool.IDLE_TIMEOUT),
+                        *dask_host_args,
                         '--scheduler-file',
                         str(self.dask_scheduler_file),
                         '--port',
@@ -3349,6 +3414,7 @@ class TaskPool:
                         '--no-show',
                         '--idle-timeout',
                         str(TaskPool.IDLE_TIMEOUT),
+                        *dask_host_args,
                         '--scheduler-file',
                         str(self.dask_scheduler_file),
                         '--port',
@@ -3366,6 +3432,7 @@ class TaskPool:
                         '--no-show',
                         '--idle-timeout',
                         str(TaskPool.IDLE_TIMEOUT),
+                        *dask_host_args,
                         '--scheduler-file',
                         str(self.dask_scheduler_file),
                         '--port',
@@ -3465,18 +3532,21 @@ class TaskPool:
 
         if dask_worker_plugin is not None:
             # TODO But what if there is more than one worker plugin?
-            # TODO And what about scheduler plugins?
             self.services.debug('Register user provided plugin')
             self.dask_client.register_plugin(dask_worker_plugin)
             self.services.debug('Done registering user provided pluging')
 
-        # Regardless of any other worker plugins, we need this plugin to setup
-        # the DVM for the workers so that OpenMPI can work properly.
+        # Regardless of any other worker plugins, we need this scheduler plugin
+        # to set up the single DVM for the whole job so that OpenMPI can work
+        # properly.
         self.services.debug('Registering DVMPlugin')
         self.dask_client.register_plugin(DVMPlugin(logger=services.logger,
                                                    oversubscribe=oversubscribe,
-                                                   hwthreads=hwthreads))
+                                                   hwthreads=hwthreads),
+                                         name=DVMPlugin.name)
         self.services.debug('Registered DVMPlugin')
+        dvm_uri = self.dask_client.run_on_scheduler(_get_scheduler_dvm_uri)
+        self.services.debug(f'DVM URI from scheduler plugin: {dvm_uri!s}')
 
         # Wait for so many workers to be online before proceeding to
         # more evenly spread the load instead of biasing the tasks by the
@@ -3519,6 +3589,7 @@ class TaskPool:
             keywords = self._launch_keywords_with_defaults(task.keywords,
                                                            logfile,
                                                            errfile)
+            keywords = _add_dvm_uri_to_task_env(keywords, dvm_uri)
             task_names.append(task_name)
             binaries.append(task.binary)
             working_dirs.append(task.working_dir)
