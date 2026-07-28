@@ -4,11 +4,11 @@ from unittest import mock
 import pytest
 
 from ipsframework.ipsExceptions import (
-    BadResourceRequestException,
-    GPUResourceRequestMismatchException,
-    InsufficientResourcesException,
-    ResourceRequestMismatchException,
-    ResourceRequestUnequalPartitioningException,
+    BadResourceRequestError,
+    GpuResourceRequestMismatchError,
+    InsufficientResourcesError,
+    ResourceRequestMismatchError,
+    ResourceRequestUnequalPartitioningError,
 )
 from ipsframework.resourceManager import ResourceManager
 
@@ -62,29 +62,41 @@ def test_allocations(tmpdir):
     # assert rm.check_core_cap(1, 16) == (False, 'insufficient')
     # assert rm.check_core_cap(4, 4) == (False, 'insufficient')
 
-    with pytest.raises(BadResourceRequestException) as excinfo:
+    with pytest.raises(BadResourceRequestError) as excinfo:
         rm.get_allocation(comp_id='comp0', nproc=12, task_id=0, whole_nodes=True, whole_socks=False)
 
-    assert str(excinfo.value) == 'component comp0 requested 3 nodes, which is more than possible by 1 nodes, for task 0.'
+    assert (
+        str(excinfo.value)
+        == 'component comp0 requested 3 nodes, which is more than possible by 1 nodes, for task 0.'
+    )
 
-    with pytest.raises(ResourceRequestUnequalPartitioningException) as excinfo:
-        rm.get_allocation(comp_id='comp0', nproc=3, task_id=0, whole_nodes=True, whole_socks=False, task_ppn=2)
+    with pytest.raises(ResourceRequestUnequalPartitioningError) as excinfo:
+        rm.get_allocation(
+            comp_id='comp0', nproc=3, task_id=0, whole_nodes=True, whole_socks=False, task_ppn=2
+        )
 
     assert (
-        str(excinfo.value) == 'component comp0 requested 3 processes with 2 processes per node, while the number of processes requested is '
+        str(excinfo.value)
+        == 'component comp0 requested 3 processes with 2 processes per node, while the number of processes requested is '
         'less than the max (8), it will result in unequal partitioning of processes across nodes'
     )
 
-    with pytest.raises(BadResourceRequestException) as excinfo:
+    with pytest.raises(BadResourceRequestError) as excinfo:
         rm.get_allocation(comp_id='comp0', nproc=12, task_id=0, whole_nodes=False, whole_socks=True)
 
-    assert str(excinfo.value) == 'component comp0 requested 3 nodes, which is more than possible by 1 nodes, for task 0.'
+    assert (
+        str(excinfo.value)
+        == 'component comp0 requested 3 nodes, which is more than possible by 1 nodes, for task 0.'
+    )
 
-    with pytest.raises(ResourceRequestMismatchException) as excinfo:
-        rm.get_allocation(comp_id='comp0', nproc=6, task_id=0, whole_nodes=False, whole_socks=False, task_ppn=2)
+    with pytest.raises(ResourceRequestMismatchError) as excinfo:
+        rm.get_allocation(
+            comp_id='comp0', nproc=6, task_id=0, whole_nodes=False, whole_socks=False, task_ppn=2
+        )
 
     assert (
-        str(excinfo.value) == 'component comp0 requested 6 processes with 2 processes per node, while the number of processes requested is '
+        str(excinfo.value)
+        == 'component comp0 requested 6 processes with 2 processes per node, while the number of processes requested is '
         'less than the max (8), the processes per node value is too low.'
     )
 
@@ -172,10 +184,13 @@ def test_allocations(tmpdir):
         assert lines[7] == 'core: 2  - task_id: 1  - owner: comp0'
         assert lines[8] == 'core: 3  - task_id: 1  - owner: comp0'
 
-    with pytest.raises(InsufficientResourcesException) as excinfo:
+    with pytest.raises(InsufficientResourcesError) as excinfo:
         rm.get_allocation(comp_id='comp0', nproc=1, task_id=3, whole_nodes=False, whole_socks=False)
 
-    assert str(excinfo.value) == 'component comp0 requested 1 nodes, which is more than available by 0 nodes, for task 3.'
+    assert (
+        str(excinfo.value)
+        == 'component comp0 requested 1 nodes, which is more than available by 0 nodes, for task 3.'
+    )
 
     rm.release_allocation(task_id=1, status=None)
 
@@ -290,27 +305,50 @@ def test_allocations(tmpdir):
         assert lines[8] == 'core: 3  - available'
 
     # test GPUs
-    with pytest.raises(GPUResourceRequestMismatchException) as excinfo:
-        rm.get_allocation(comp_id='comp0', nproc=1, task_gpp=1, task_id=0, whole_nodes=True, whole_socks=False)
+    with pytest.raises(GpuResourceRequestMismatchError) as excinfo:
+        rm.get_allocation(
+            comp_id='comp0', nproc=1, task_gpp=1, task_id=0, whole_nodes=True, whole_socks=False
+        )
 
-    assert str(excinfo.value) == 'component comp0 requested 1 processes per node with 1 GPUs per process, which is greater than the available 0 GPUS_PER_NODE'
+    assert (
+        str(excinfo.value)
+        == 'component comp0 requested 1 processes per node with 1 GPUs per process, which is greater than the available 0 GPUS_PER_NODE'
+    )
 
     # set GPUS_PER_NODE to 2
     rm = ResourceManager(fwk)
     rm.initialize(dm, tm, cm, cmd_nodes=2, cmd_ppn=4)
     rm.gpn = 2
 
-    with pytest.raises(GPUResourceRequestMismatchException) as excinfo:
-        rm.get_allocation(comp_id='comp0', nproc=1, task_gpp=4, task_id=0, whole_nodes=True, whole_socks=False)
+    with pytest.raises(GpuResourceRequestMismatchError) as excinfo:
+        rm.get_allocation(
+            comp_id='comp0', nproc=1, task_gpp=4, task_id=0, whole_nodes=True, whole_socks=False
+        )
 
-    assert str(excinfo.value) == 'component comp0 requested 1 processes per node with 4 GPUs per process, which is greater than the available 2 GPUS_PER_NODE'
+    assert (
+        str(excinfo.value)
+        == 'component comp0 requested 1 processes per node with 4 GPUs per process, which is greater than the available 2 GPUS_PER_NODE'
+    )
 
-    with pytest.raises(GPUResourceRequestMismatchException) as excinfo:
-        rm.get_allocation(comp_id='comp0', nproc=2, task_gpp=2, task_id=0, whole_nodes=True, whole_socks=False)
+    with pytest.raises(GpuResourceRequestMismatchError) as excinfo:
+        rm.get_allocation(
+            comp_id='comp0', nproc=2, task_gpp=2, task_id=0, whole_nodes=True, whole_socks=False
+        )
 
-    assert str(excinfo.value) == 'component comp0 requested 2 processes per node with 2 GPUs per process, which is greater than the available 2 GPUS_PER_NODE'
+    assert (
+        str(excinfo.value)
+        == 'component comp0 requested 2 processes per node with 2 GPUs per process, which is greater than the available 2 GPUS_PER_NODE'
+    )
 
-    rm.get_allocation(comp_id='comp0', nproc=2, task_ppn=1, task_gpp=2, task_id=0, whole_nodes=True, whole_socks=False)
+    rm.get_allocation(
+        comp_id='comp0',
+        nproc=2,
+        task_ppn=1,
+        task_gpp=2,
+        task_id=0,
+        whole_nodes=True,
+        whole_socks=False,
+    )
 
     with io.StringIO() as output:
         rm.nodes['dummy_node0'].print_sockets(output)

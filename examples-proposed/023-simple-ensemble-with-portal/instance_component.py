@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Component to be stepped in instance
 """
@@ -49,7 +48,9 @@ class InstanceComponent(Component):
         self.services.info(f'{instance_id}: Start of step of instance component.')
 
         # Echo the parameters we're expecting, A, B, and C
-        self.services.info(f'{instance_id}: instance component parameters: base_x={self.base_x}, base_y={self.base_y}, word={self.word}')
+        self.services.info(
+            f'{instance_id}: instance component parameters: base_x={self.base_x}, base_y={self.base_y}, word={self.word}'
+        )
 
         # generate some fake data and save it
         data_fname = f'generated_{timestamp}.json'
@@ -64,7 +65,17 @@ class InstanceComponent(Component):
         with open(stats_fname, 'w') as f:
             writer = csv.writer(f)
             writer.writerow(['instance', 'executable', 'hostname', 'pid', 'core', 'start', 'end'])
-            writer.writerow([instance_id, sys.argv[0], run_env['hostname'], run_env['pid'], run_env['core_id'], start, time()])
+            writer.writerow(
+                [
+                    instance_id,
+                    sys.argv[0],
+                    run_env['hostname'],
+                    run_env['pid'],
+                    run_env['core_id'],
+                    start,
+                    time(),
+                ]
+            )
 
         try:
             self.services.add_analysis_data_files([data_fname, stats_fname], timestamp)

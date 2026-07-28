@@ -1,7 +1,7 @@
 from ipsframework import Component
 
 
-class gpu_task(Component):
+class GpuTask(Component):
     # pylint: disable=no-member
     def step(self, timestamp=0.0, **keywords):
         cwd = self.services.get_working_dir()

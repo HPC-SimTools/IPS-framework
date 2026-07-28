@@ -12,17 +12,17 @@ uncertainty that arises when trying to deliver prior events. Events not pending
 processing by any listener are purged periodically as a result of a listener
 activity like processing or unregistering. For cases where the event list could
 grow unbounded in the absence of any listener activity for prolonged periods of
-time, we could define a 'limitPendingEvents' parameter to denote a bound on the
+time, we could define a 'limit_pending_events' parameter to denote a bound on the
 count of pending events exceeding which triggers an event cleanup to remove
 events that outlive a 'timeToLive' parameter.
 """
 
-from .cca_es_spec import Event, EventServiceException
+from .cca_es_spec import Event, EventServiceError
 from .debug import debug
 
 
 class TopicManager:
-    def __init__(self, limitPendingEvents=10):
+    def __init__(self, limit_pending_events=10):
         """eventList is the common listing of events posted to a topic."""
         self.eventList = []
 
@@ -43,16 +43,16 @@ class TopicManager:
         upper limit on the number of events permitted to be pending for this topic
         at any point in time. Not pressed into service yet.
         """
-        self.limitPendingEvents = limitPendingEvents
+        self.limit_pending_events = limit_pending_events
 
         debug.output('TopicManager.__init__')
-        self.printEventsAndListeners()
+        self.print_events_and_listeners()
 
     """
     Append the event to the event list.
     """
 
-    def sendEvent(self, theEvent):
+    def send_event(self, the_event):
         """
         A new event is appended to the end of the event list provided there is at
         least one registered listener. This is in accordance with the policy that
@@ -63,13 +63,13 @@ class TopicManager:
         no registered listeners.
         """
         if len(self.listenerDirectory) > 0:
-            self.eventList.append(theEvent)
-            eventList_len = len(self.eventList)
-            self.maxPendingEvents = max(eventList_len, self.maxPendingEvents)
-        debug.output('TopicManager.sendEvent')
-        self.printEventsAndListeners()
+            self.eventList.append(the_event)
+            event_list_len = len(self.eventList)
+            self.maxPendingEvents = max(event_list_len, self.maxPendingEvents)
+        debug.output('TopicManager.send_event')
+        self.print_events_and_listeners()
 
-    def registerListener(self, listenerid):
+    def register_listener(self, listenerid):
         """
         For a new listener, the event list marker is initialized to the end of the
         event list in accordance with the policy that listeners receive only those
@@ -77,10 +77,10 @@ class TopicManager:
         """
         if listenerid not in self.listenerDirectory:
             self.listenerDirectory[listenerid] = len(self.eventList)
-            debug.output('TopicManager.registerListener')
-            self.printEventsAndListeners()
+            debug.output('TopicManager.register_listener')
+            self.print_events_and_listeners()
         else:
-            raise EventServiceException('Event listener registered earlier.')
+            raise EventServiceError('Event listener registered earlier.')
 
     """
     A listener activity like unregistering or processing triggers cleanup of
@@ -88,58 +88,58 @@ class TopicManager:
     of all registered listeners.
     """
 
-    def cleanupEvents(self, listenerid):
+    def cleanup_events(self, listenerid):
         self.listenerDirectory[listenerid] = len(self.eventList)
 
         """ First determine the oldest pending event. """
-        oldestPendingEvent = min(self.listenerDirectory.values())
+        oldest_pending_event = min(self.listenerDirectory.values())
 
         """
         Reset current listeners' list markers and remove events having no
         pending listeners.
         """
-        if oldestPendingEvent > 0:
-            del self.eventList[:oldestPendingEvent]
+        if oldest_pending_event > 0:
+            del self.eventList[:oldest_pending_event]
             for listener_id in self.listenerDirectory:
-                self.listenerDirectory[listener_id] -= oldestPendingEvent
+                self.listenerDirectory[listener_id] -= oldest_pending_event
 
     """
     A listener is unregistered by first performing an event cleanup, followed by
     deletion of the listener from listenerDirectory.
     """
 
-    def unregisterListener(self, listenerid):
-        self.cleanupEvents(listenerid)
+    def unregister_listener(self, listenerid):
+        self.cleanup_events(listenerid)
         del self.listenerDirectory[listenerid]
-        debug.output('TopicManager.unregisterListener')
-        self.printEventsAndListeners()
+        debug.output('TopicManager.unregister_listener')
+        self.print_events_and_listeners()
 
     """
     Returns events posted since the last fetch for a listener.
     """
 
-    def getEventListForListener(self, listenerid):
-        eventListForListener = []
-        for theEvent in self.eventList[self.listenerDirectory[listenerid] :]:
-            eventListForListener.append(Event(theEvent.header, theEvent.body))
-        self.cleanupEvents(listenerid)
-        debug.output('TopicManager.getEventListForListener')
-        self.printEventsAndListeners()
-        return eventListForListener
+    def get_event_list_for_listener(self, listenerid):
+        event_list_for_listener = []
+        for the_event in self.eventList[self.listenerDirectory[listenerid] :]:
+            event_list_for_listener.append(Event(the_event.header, the_event.body))
+        self.cleanup_events(listenerid)
+        debug.output('TopicManager.get_event_list_for_listener')
+        self.print_events_and_listeners()
+        return event_list_for_listener
 
     """
     Print out the contents for debugging.
     """
 
-    def printEventsAndListeners(self):
+    def print_events_and_listeners(self):
         string = ':::::::::\n' + 'List of events:'
         i = 0
         for i, e in enumerate(self.eventList):
             string += '\n' + str(i) + '---' + str(e)
         string += '\n\n' + 'List of listeners:'
         debug.output(string)
-        sortedKeys = sorted(self.listenerDirectory.keys())
-        for listenerid in sortedKeys:
+        sorted_keys = sorted(self.listenerDirectory.keys())
+        for listenerid in sorted_keys:
             string = 'event = ' + str(self.listenerDirectory[listenerid])
             debug.output(string, listenerid)
         debug.output(':::::::::')
@@ -149,5 +149,5 @@ class TopicManager:
     maxPendingEvents.
     """
 
-    def getEventStats(self):
+    def get_event_stats(self):
         return self.maxPendingEvents

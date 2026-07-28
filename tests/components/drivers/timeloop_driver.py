@@ -1,7 +1,7 @@
 from ipsframework import Component
 
 
-class timeloop_driver(Component):
+class TimeloopDriver(Component):
     def init(self, timestamp=0.0, **keywords):
         self.state_file = self.services.get_config_param('CURRENT_STATE')  # pylint: disable=attribute-defined-outside-init
         self.workers = [
@@ -10,7 +10,11 @@ class timeloop_driver(Component):
             if port not in ('INIT', 'DRIVER')
         ]
 
-        mode = 'restart' if self.services.get_config_param('SIMULATION_MODE').lower() == 'restart' else 'init'
+        mode = (
+            'restart'
+            if self.services.get_config_param('SIMULATION_MODE').lower() == 'restart'
+            else 'init'
+        )
 
         if mode == 'init':
             with open(self.state_file, 'w') as f:

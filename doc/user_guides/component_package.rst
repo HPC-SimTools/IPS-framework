@@ -60,8 +60,8 @@ Or to install it in editable mode with
 
 With the components installed as a package you can reference them by
 ``MODULE`` instead of providing the full path with ``SCRIPT``. So to use
-the `hello_driver` you do ``MODULE = helloworld.hello_driver``, and
-for `hello_worker` you can do ``MODULE = helloworld.hello_worker``.
+the `hello_driver` you do ``MODULE = helloworld.HelloDriver``, and
+for `hello_worker` you can do ``MODULE = helloworld.HelloWorker``.
 
 A simple config to run this is, :download:`helloworld.config <../examples/helloworld.config>`
 

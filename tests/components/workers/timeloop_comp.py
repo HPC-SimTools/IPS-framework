@@ -2,7 +2,7 @@ from ipsframework import Component
 
 
 # pylint: disable=no-member,attribute-defined-outside-init
-class timeloop_comp(Component):
+class TimeloopComp(Component):
     def init(self, timestamp=0.0, **keywords):
         self.output_files = self.OUTPUT_FILES.split()
         self.output_files.append(self.services.get_config_param('CURRENT_STATE'))

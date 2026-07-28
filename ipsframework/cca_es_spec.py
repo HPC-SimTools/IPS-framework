@@ -14,7 +14,7 @@ from copy import deepcopy
 _proxy = None
 
 
-class EventServiceException(Exception):
+class EventServiceError(Exception):
     """
     Exception class for the event service.
     """
@@ -32,33 +32,33 @@ class PublisherEventService:
     Interface to topics for publishers.
     """
 
-    def getTopic(self, topicName):
+    def get_topic(self, topic_name):
         """ """
-        return _proxy.getTopic(topicName)
+        return _proxy.get_topic(topic_name)
 
-    def existsTopic(self, topicName):
-        return _proxy.existsTopic(topicName)
+    def exists_topic(self, topic_name):
+        return _proxy.exists_topic(topic_name)
 
 
 class SubscriberEventService:
     def __init__(self):
-        self.subscriberid = _proxy.registerSubscriber()
+        self.subscriberid = _proxy.register_subscriber()
 
-    def getSubscription(self, subscriptionName):
+    def get_subscription(self, subscription_name):
         """
         A Subscription object can be safely returned from here without screwing
         up automatic object tracking for cleaning up out-of-scope subscriptions.
         A framework/component subscriber uses this Subscription object to
         talk to the event service.
         """
-        _proxy.getSubscription(self.subscriberid, subscriptionName)
-        return Subscription(self.subscriberid, subscriptionName)
+        _proxy.get_subscription(self.subscriberid, subscription_name)
+        return Subscription(self.subscriberid, subscription_name)
 
-    def processEvents(self):
-        _proxy.processEvents(self.subscriberid)
+    def process_events(self):
+        _proxy.process_events(self.subscriberid)
 
     def __del__(self):
-        _proxy.unregisterSubscriber(self.subscriberid)
+        _proxy.unregister_subscriber(self.subscriberid)
 
 
 class Event:
@@ -66,10 +66,10 @@ class Event:
         self.header = deepcopy(header)
         self.body = deepcopy(body)
 
-    def getHeader(self):
+    def get_header(self):
         return self.header
 
-    def getBody(self):
+    def get_body(self):
         return self.body
 
     def __str__(self) -> str:
@@ -78,11 +78,11 @@ class Event:
 
 class EventListener:
     def __init__(self):
-        self.listenerid = _proxy.createListener()
+        self.listenerid = _proxy.create_listener()
 
-    def processEvent(self, topicName, theEvent):
+    def process_event(self, topic_name, the_event):
         """
-        A listener implements the processEvent method to respond to an event,
+        A listener implements the process_event method to respond to an event,
         thereby overriding the below invocation. Ideally, it should be an abstract
         method, but currently serves to check the correct operation of the
         event service.
@@ -90,32 +90,38 @@ class EventListener:
 
 
 class Topic:
-    def __init__(self, topicName):
-        self.topicName = topicName
+    def __init__(self, topic_name):
+        self.topic_name = topic_name
 
-    def getTopicName(self):
-        return self.topicName
+    def get_topic_name(self):
+        return self.topic_name
 
-    def sendEvent(self, eventName, eventBody):
-        _proxy.sendEvent(self.topicName, eventName, eventBody)
+    def send_event(self, event_name, event_body):
+        _proxy.send_event(self.topic_name, event_name, event_body)
 
 
 class Subscription:
-    def __init__(self, subscriberid, subscriptionName):
+    def __init__(self, subscriberid, subscription_name):
         self.subscriberid = subscriberid
-        self.subscriptionName = subscriptionName
+        self.subscription_name = subscription_name
 
-    def registerEventListener(self, listenerKey, theListener):
-        _proxy.registerEventListener(self.subscriberid, self.subscriptionName, listenerKey, theListener.listenerid, theListener)
+    def register_event_listener(self, listener_key, the_listener):
+        _proxy.register_event_listener(
+            self.subscriberid,
+            self.subscription_name,
+            listener_key,
+            the_listener.listenerid,
+            the_listener,
+        )
 
-    def unregisterEventListener(self, listenerKey):
-        _proxy.unregisterEventListener(self.subscriberid, self.subscriptionName, listenerKey)
+    def unregister_event_listener(self, listener_key):
+        _proxy.unregister_event_listener(self.subscriberid, self.subscription_name, listener_key)
 
-    def getSubscriptionName(self):
-        return self.subscriptionName
+    def get_subscription_name(self):
+        return self.subscription_name
 
     def __del__(self):
-        _proxy.removeSubscription(self.subscriberid, self.subscriptionName)
+        _proxy.remove_subscription(self.subscriberid, self.subscription_name)
 
 
 """ Initialize the proxy """
@@ -131,5 +137,5 @@ def initialize_event_service(service):
 
 
 # pylint: disable=wrong-import-position
-from .eventService import EventService  # noqa: E402
-from .eventServiceProxy import EventServiceCmpProxy, EventServiceFwkProxy  # noqa: E402
+from .event_service import EventService
+from .event_service_proxy import EventServiceCmpProxy, EventServiceFwkProxy

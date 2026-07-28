@@ -12,7 +12,7 @@ always pass.
 from ipsframework import Component
 
 
-class basic_serial1(Component):
+class BasicSerial1(Component):
     def init(self, timestamp=0.0, **keywords):
         self.services.log('Initing')
 
@@ -61,9 +61,12 @@ class basic_serial1(Component):
         services.call(w2, 'finalize', 99)
         services.call(w3, 'finalize', 99)
 
-    def process_event(self, topicName, theEvent):
-        print('Driver: processed ', (topicName, str(theEvent)))
+    def process_event(self, topic_name, the_event):
+        print('Driver: processed ', (topic_name, str(the_event)))
 
     def terminate(self, status):
         self.services.log('Really Calling terminate()')
         Component.terminate(self, status)
+
+
+globals()['basic_serial1'] = BasicSerial1

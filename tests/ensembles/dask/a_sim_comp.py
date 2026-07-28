@@ -1,10 +1,9 @@
-#!/usr/bin/env python3
 """Component wrapper for the ensemble example for `a_sim`."""
 
 from ipsframework import Component
 
 
-class a_sim_comp(Component):
+class ASimComp(Component):
     def __init__(self, services, config):
         super().__init__(services, config)
         print('Created %s' % (self.__class__))

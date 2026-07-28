@@ -2,14 +2,14 @@ from unittest import mock
 
 import pytest
 
-from ipsframework.ipsExceptions import InvalidResourceSettingsException
-from ipsframework.resourceHelper import getResourceList
+from ipsframework.ipsExceptions import InvalidResourceSettingsError
+from ipsframework.resourceHelper import get_resource_list
 
 # checkjob
 
 
 @mock.patch('subprocess.Popen')
-def test_resourceHelper_checkjob(subprocess_popen_mock, monkeypatch):
+def test_resource_helper_checkjob(subprocess_popen_mock, monkeypatch):
     # mock the subprocess.Popen().returncode attribute and subprocess.Popen().stdout.readlines()
     type(subprocess_popen_mock.return_value).returncode = mock.PropertyMock(return_value=0)
     readlines = mock.Mock()
@@ -35,26 +35,29 @@ def test_resourceHelper_checkjob(subprocess_popen_mock, monkeypatch):
     monkeypatch.setenv('PBS_JOBID', '1234')
 
     # get resources from mock slurm env
-    listOfNodes, cpn, spn, ppn, accurateNodes = getResourceList(services, 'host')
+    list_of_nodes, cpn, spn, ppn, accurate_nodes = get_resource_list(services, 'host')
 
-    assert len(listOfNodes) == 2
-    assert ['n27', '1'] in listOfNodes
-    assert ['n10', '4'] in listOfNodes
+    assert len(list_of_nodes) == 2
+    assert ['n27', '1'] in list_of_nodes
+    assert ['n10', '4'] in list_of_nodes
     assert cpn == 8
     assert spn == 1
     assert ppn == 4
-    assert not accurateNodes
+    assert not accurate_nodes
 
 
 # qstat
 
 
 @mock.patch('subprocess.Popen')
-def test_resourceHelper_qstat(subprocess_popen_mock, monkeypatch):
+def test_resource_helper_qstat(subprocess_popen_mock, monkeypatch):
     # mock the subprocess.Popen().returncode attribute and subprocess.Popen().stdout.readlines()
     type(subprocess_popen_mock.return_value).returncode = mock.PropertyMock(return_value=0)
     readlines = mock.Mock()
-    readlines.readlines.return_value = [' Resource_List.mppwidth = 64 ', ' Resource_List.mppnppn = 2   ']
+    readlines.readlines.return_value = [
+        ' Resource_List.mppwidth = 64 ',
+        ' Resource_List.mppnppn = 2   ',
+    ]
     type(subprocess_popen_mock.return_value).stdout = readlines
 
     # create mock services and get_platform_parameter return values
@@ -68,46 +71,53 @@ def test_resourceHelper_qstat(subprocess_popen_mock, monkeypatch):
 
     # try with missing environment variables
     with pytest.raises(KeyError) as excinfo:
-        getResourceList(services, 'host')
+        get_resource_list(services, 'host')
     assert str(excinfo.value) == "'PBS_JOBID'"
 
     # set mock return values
     monkeypatch.setenv('PBS_JOBID', '1234')
 
     # get resources from mock slurm env
-    listOfNodes, cpn, spn, ppn, accurateNodes = getResourceList(services, 'host')
+    list_of_nodes, cpn, spn, ppn, accurate_nodes = get_resource_list(services, 'host')
 
-    assert len(listOfNodes) == 0
+    assert len(list_of_nodes) == 0
     assert cpn == 8
     assert spn == 1
     assert ppn == 2
-    assert not accurateNodes
+    assert not accurate_nodes
 
     # now for HOST=stix
-    readlines.readlines.return_value = ['  exec_host = compute1+compute2 ', '  Resource_List.nodect = 2      ', '  Resource_List.nodes = 2:ppn=2 ']
+    readlines.readlines.return_value = [
+        '  exec_host = compute1+compute2 ',
+        '  Resource_List.nodect = 2      ',
+        '  Resource_List.nodes = 2:ppn=2 ',
+    ]
     monkeypatch.setenv('HOST', 'stix')
 
     # get resources from mock slurm env
-    listOfNodes, cpn, spn, ppn, accurateNodes = getResourceList(services, 'host')
+    list_of_nodes, cpn, spn, ppn, accurate_nodes = get_resource_list(services, 'host')
 
-    assert len(listOfNodes) == 2
-    assert 'compute1' in listOfNodes
-    assert 'compute2' in listOfNodes
+    assert len(list_of_nodes) == 2
+    assert 'compute1' in list_of_nodes
+    assert 'compute2' in list_of_nodes
     assert cpn == 8
     assert spn == 1
     assert ppn == 2
-    assert not accurateNodes
+    assert not accurate_nodes
 
 
 # qstat2
 
 
 @mock.patch('subprocess.Popen')
-def test_resourceHelper_qstat2(subprocess_popen_mock, monkeypatch):
+def test_resource_helper_qstat2(subprocess_popen_mock, monkeypatch):
     # mock the subprocess.Popen().returncode attribute and subprocess.Popen().stdout.readlines()
     type(subprocess_popen_mock.return_value).returncode = mock.PropertyMock(return_value=0)
     readlines = mock.Mock()
-    readlines.readlines.return_value = [' exec_host = compute1/1+compute1/0+compute2/2+compute2/0 ', ' Hold_Types = n   ']
+    readlines.readlines.return_value = [
+        ' exec_host = compute1/1+compute1/0+compute2/2+compute2/0 ',
+        ' Hold_Types = n   ',
+    ]
     type(subprocess_popen_mock.return_value).stdout = readlines
 
     # create mock services and get_platform_parameter return values
@@ -121,28 +131,28 @@ def test_resourceHelper_qstat2(subprocess_popen_mock, monkeypatch):
 
     # try with missing environment variables
     with pytest.raises(KeyError) as excinfo:
-        getResourceList(services, 'host')
+        get_resource_list(services, 'host')
     assert str(excinfo.value) == "'PBS_JOBID'"
 
     # set mock return values
     monkeypatch.setenv('PBS_JOBID', '1234')
 
     # get resources from mock slurm env
-    listOfNodes, cpn, spn, ppn, accurateNodes = getResourceList(services, 'host')
+    list_of_nodes, cpn, spn, ppn, accurate_nodes = get_resource_list(services, 'host')
 
-    assert len(listOfNodes) == 2
-    assert ('compute1', ['1', '0']) in listOfNodes
-    assert ('compute2', ['2', '0']) in listOfNodes
+    assert len(list_of_nodes) == 2
+    assert ('compute1', ['1', '0']) in list_of_nodes
+    assert ('compute2', ['2', '0']) in list_of_nodes
     assert cpn == 8
     assert spn == 1
     assert ppn == 2
-    assert accurateNodes
+    assert accurate_nodes
 
 
 # pbs_env
 
 
-def test_resourceHelper_pbs_env(monkeypatch, tmpdir):
+def test_resource_helper_pbs_env(monkeypatch, tmpdir):
     # create nodefile
     p = tmpdir.join('nodefile')
     p.write('compute0\ncompute1\n')
@@ -157,41 +167,41 @@ def test_resourceHelper_pbs_env(monkeypatch, tmpdir):
 
     # try with missing environment variables
     with pytest.raises(KeyError) as excinfo:
-        getResourceList(services, 'host')
+        get_resource_list(services, 'host')
     assert str(excinfo.value) == "'PBS_NNODES'"
 
     # PBS_NNODES
     monkeypatch.setenv('PBS_NNODES', '2')
 
-    listOfNodes, cpn, spn, ppn, accurateNodes = getResourceList(services, 'host')
+    list_of_nodes, cpn, spn, ppn, accurate_nodes = get_resource_list(services, 'host')
 
-    assert len(listOfNodes) == 2
-    assert ('dummynode0', 1) in listOfNodes
-    assert ('dummynode1', 1) in listOfNodes
+    assert len(list_of_nodes) == 2
+    assert ('dummynode0', 1) in list_of_nodes
+    assert ('dummynode1', 1) in list_of_nodes
     assert cpn == 8
     assert spn == 1
     assert ppn == 1
-    assert not accurateNodes
+    assert not accurate_nodes
 
     # PBS_NODEFILE
     monkeypatch.setenv('PBS_NODEFILE', str(p))
 
-    listOfNodes, cpn, spn, ppn, accurateNodes = getResourceList(services, 'host')
+    list_of_nodes, cpn, spn, ppn, accurate_nodes = get_resource_list(services, 'host')
 
-    assert len(listOfNodes) == 2
-    assert ('compute0', 1) in listOfNodes
-    assert ('compute1', 1) in listOfNodes
+    assert len(list_of_nodes) == 2
+    assert ('compute0', 1) in list_of_nodes
+    assert ('compute1', 1) in list_of_nodes
     assert cpn == 8
     assert spn == 1
     assert ppn == 1
-    assert accurateNodes
+    assert accurate_nodes
 
 
 # slurm_env
 
 
 @mock.patch('subprocess.check_output')
-def test_resourceHelper_slurm_env(subprocess_check_output_mock, monkeypatch):
+def test_resource_helper_slurm_env(subprocess_check_output_mock, monkeypatch):
     subprocess_check_output_mock.return_value = 'nid00658\nnid00659\n'
 
     def get_param(param, silent=True):
@@ -209,7 +219,7 @@ def test_resourceHelper_slurm_env(subprocess_check_output_mock, monkeypatch):
 
     # try with missing environment variables
     with pytest.raises(KeyError) as excinfo:
-        getResourceList(services, 'host')
+        get_resource_list(services, 'host')
     assert str(excinfo.value) == "'SLURM_NODELIST'"
 
     # set mock return values
@@ -217,73 +227,96 @@ def test_resourceHelper_slurm_env(subprocess_check_output_mock, monkeypatch):
 
     # try with missing environment variables
     with pytest.raises(KeyError) as excinfo:
-        getResourceList(services, 'host')
+        get_resource_list(services, 'host')
     assert str(excinfo.value) == "'SLURM_JOB_TASKS_PER_NODE'"
 
     monkeypatch.setenv('SLURM_TASKS_PER_NODE', '2(x2)')
 
     # get resources from mock slurm env
-    listOfNodes, cpn, spn, ppn, accurateNodes = getResourceList(services, 'host')
+    list_of_nodes, cpn, spn, ppn, accurate_nodes = get_resource_list(services, 'host')
 
-    assert len(listOfNodes) == 2
-    assert ('nid00658', 2) in listOfNodes
-    assert ('nid00659', 2) in listOfNodes
+    assert len(list_of_nodes) == 2
+    assert ('nid00658', 2) in list_of_nodes
+    assert ('nid00659', 2) in list_of_nodes
     assert cpn == 8
     assert spn == 1
     assert ppn == 2
-    assert accurateNodes
+    assert accurate_nodes
 
 
 # manual
 
 
-def test_resourceHelper_manual():
+def test_resource_helper_manual():
     def get_param(param, silent=True):
-        params = {'CORES_PER_NODE': 8, 'SOCKETS_PER_NODE': 1, 'NODES': 2, 'PROCS_PER_NODE': 2, 'TOTAL_PROCS': 0, 'NODE_DETECTION': 'manual'}
+        params = {
+            'CORES_PER_NODE': 8,
+            'SOCKETS_PER_NODE': 1,
+            'NODES': 2,
+            'PROCS_PER_NODE': 2,
+            'TOTAL_PROCS': 0,
+            'NODE_DETECTION': 'manual',
+        }
         return params[param]
 
     # create mock services and get_platform_parameter return values
     services = mock.Mock()
     services.get_platform_parameter.side_effect = get_param
 
-    listOfNodes, cpn, spn, ppn, accurateNodes = getResourceList(services, 'host')
+    list_of_nodes, cpn, spn, ppn, accurate_nodes = get_resource_list(services, 'host')
 
-    assert len(listOfNodes) == 2
-    assert ('dummynode0', 2) in listOfNodes
-    assert ('dummynode1', 2) in listOfNodes
+    assert len(list_of_nodes) == 2
+    assert ('dummynode0', 2) in list_of_nodes
+    assert ('dummynode1', 2) in list_of_nodes
     assert cpn == 8
     assert spn == 1
     assert ppn == 2
-    assert not accurateNodes
+    assert not accurate_nodes
 
 
-def test_resourceHelper_manual_InvalidException():
+def test_resource_helper_manual_invalid_exception():
     # SOCKETS_PER_NODE > CORES_PER_NODE
     def get_param(param, silent=True):
-        params = {'CORES_PER_NODE': 8, 'SOCKETS_PER_NODE': 16, 'NODES': 2, 'PROCS_PER_NODE': 2, 'TOTAL_PROCS': 0, 'NODE_DETECTION': 'manual'}
+        params = {
+            'CORES_PER_NODE': 8,
+            'SOCKETS_PER_NODE': 16,
+            'NODES': 2,
+            'PROCS_PER_NODE': 2,
+            'TOTAL_PROCS': 0,
+            'NODE_DETECTION': 'manual',
+        }
         return params[param]
 
     # create mock services and get_platform_parameter return values
     services = mock.Mock()
     services.get_platform_parameter.side_effect = get_param
 
-    with pytest.raises(InvalidResourceSettingsException) as excinfo:
-        getResourceList(services, 'host')
+    with pytest.raises(InvalidResourceSettingsError) as excinfo:
+        get_resource_list(services, 'host')
     assert (
-        str(excinfo.value) == 'Invalid resource specification in platform configuration file:  socket per node count (16) greater than core per node count (8).'
+        str(excinfo.value)
+        == 'Invalid resource specification in platform configuration file:  socket per node count (16) greater than core per node count (8).'
     )
 
     # CORES_PER_NODE % SOCKETS_PER_NODE != 0
     def get_param2(param, silent=True):
-        params = {'CORES_PER_NODE': 8, 'SOCKETS_PER_NODE': 3, 'NODES': 2, 'PROCS_PER_NODE': 2, 'TOTAL_PROCS': 0, 'NODE_DETECTION': 'manual'}
+        params = {
+            'CORES_PER_NODE': 8,
+            'SOCKETS_PER_NODE': 3,
+            'NODES': 2,
+            'PROCS_PER_NODE': 2,
+            'TOTAL_PROCS': 0,
+            'NODE_DETECTION': 'manual',
+        }
         return params[param]
 
     services.get_platform_parameter.side_effect = get_param2
 
-    with pytest.raises(InvalidResourceSettingsException) as excinfo:
-        getResourceList(services, 'host')
+    with pytest.raises(InvalidResourceSettingsError) as excinfo:
+        get_resource_list(services, 'host')
     assert (
-        str(excinfo.value) == 'Invalid resource specification in platform configuration file:  socket per node count (3) '
+        str(excinfo.value)
+        == 'Invalid resource specification in platform configuration file:  socket per node count (3) '
         'not divisible by core per node count (8).'
     )
 
@@ -291,7 +324,7 @@ def test_resourceHelper_manual_InvalidException():
 # with no detection defined
 
 
-def test_resourceHelper_no_detection(monkeypatch):
+def test_resource_helper_no_detection(monkeypatch):
     # remove SLURM_NODELIST for tests if actually running with slurm
     monkeypatch.delenv('SLURM_NODELIST', raising=False)
 
@@ -304,22 +337,29 @@ def test_resourceHelper_no_detection(monkeypatch):
     services.get_platform_parameter.side_effect = get_param
 
     with pytest.raises(KeyError) as excinfo:
-        getResourceList(services, 'host')
+        get_resource_list(services, 'host')
     assert str(excinfo.value) == "'NODES'"
 
     # fallback to manual is enough info supplied
 
     def get_param2(param, silent=True):
-        params = {'CORES_PER_NODE': 8, 'SOCKETS_PER_NODE': 1, 'NODES': 0, 'PROCS_PER_NODE': 0, 'TOTAL_PROCS': 0, 'NODE_DETECTION': ''}
+        params = {
+            'CORES_PER_NODE': 8,
+            'SOCKETS_PER_NODE': 1,
+            'NODES': 0,
+            'PROCS_PER_NODE': 0,
+            'TOTAL_PROCS': 0,
+            'NODE_DETECTION': '',
+        }
         return params[param]
 
     services.get_platform_parameter.side_effect = get_param2
 
-    listOfNodes, cpn, spn, ppn, accurateNodes = getResourceList(services, 'host')
+    list_of_nodes, cpn, spn, ppn, accurate_nodes = get_resource_list(services, 'host')
 
-    assert len(listOfNodes) == 1
-    assert ('dummynode0', 8) in listOfNodes
+    assert len(list_of_nodes) == 1
+    assert ('dummynode0', 8) in list_of_nodes
     assert cpn == 8
     assert spn == 1
     assert ppn == 8
-    assert not accurateNodes
+    assert not accurate_nodes

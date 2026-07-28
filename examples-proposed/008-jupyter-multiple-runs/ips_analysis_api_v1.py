@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 
 THIS_DIR = Path(__file__).resolve().parent
 
-ips_analysis_data_LIST_FILE = 'ips_analysis_api_data_listing.json'
+IPS_ANALYSIS_DATA_LIST_FILE = 'ips_analysis_api_data_listing.json'
 IPS_CHILD_RUNS_FILE = 'ips_analysis_api_child_runs.txt'
 
 
@@ -67,7 +67,7 @@ def _normalize_data_filepaths(base_dir: Path, data: dict[str, list[str]]) -> dic
 
 def _get_data_from_directory(directory: Path) -> dict[float, list[str]]:
     """'directory' should be an absolute path, not a relative path."""
-    with open(directory / ips_analysis_data_LIST_FILE, 'rb') as f:
+    with open(directory / IPS_ANALYSIS_DATA_LIST_FILE, 'rb') as f:
         data: dict[str, list[str]] = json.load(f)
     return _normalize_data_filepaths(directory, data)
 

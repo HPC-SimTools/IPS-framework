@@ -5,21 +5,34 @@ import os
 import sys
 from collections import namedtuple
 from math import ceil
-from typing import List
 
-from . import configurationManager, messages
-from .ipsExceptions import (
-    BadResourceRequestException,
-    BlockedMessageException,
-    GPUResourceRequestMismatchException,
-    IncompleteCallException,
-    InsufficientResourcesException,
-    ResourceRequestMismatchException,
+from . import messages
+from .ips_exceptions import (
+    BadResourceRequestError,
+    BlockedMessageError,
+    GpuResourceRequestMismatchError,
+    IncompleteCallError,
+    InsufficientResourcesError,
+    ResourceRequestMismatchError,
 )
 from .ipsutil import which
 
 TaskInit = namedtuple(
-    'TaskInit', ['nproc', 'binary', 'working_dir', 'tppn', 'tcpp', 'tgpp', 'block', 'omp', 'wnodes', 'wsocks', 'cmd_args', 'launch_cmd_extra_args']
+    'TaskInit',
+    [
+        'nproc',
+        'binary',
+        'working_dir',
+        'tppn',
+        'tcpp',
+        'tgpp',
+        'block',
+        'omp',
+        'wnodes',
+        'wsocks',
+        'cmd_args',
+        'launch_cmd_extra_args',
+    ],
 )
 
 
@@ -39,7 +52,7 @@ class TaskManager:
         self.resource_mgr = None
         self.config_mgr = None
         self.host = None
-        self.comp_registry = configurationManager.ComponentRegistry()
+        self.comp_registry = self.fwk.config_manager.ComponentRegistry()
         self.service_methods = [
             'init_call',
             'launch_task',
@@ -80,7 +93,7 @@ class TaskManager:
         Initialize references to other managers and key values from
         configuration manager.
         """
-        self.event_mgr = None  # eventManager(self)
+        self.event_mgr = None  # EventManager(self)
         self.data_mgr = data_mgr
         self.resource_mgr = resource_mgr
         self.config_mgr = config_mgr
@@ -110,7 +123,7 @@ class TaskManager:
         self.next_task_id = self.next_task_id + 1
         return retval
 
-    def printCurrTaskTable(self):
+    def print_curr_task_table(self):
         """
         Prints the task table pretty-like.
         """
@@ -143,8 +156,10 @@ class TaskManager:
         caller_id = init_call_msg.sender_id
         call_id = self.get_call_id()
         self.fwk.debug('TM:init_call(): %s %s %s %s', caller_id, callee_id, method_name, str(args))
-        invoke_msg = messages.MethodInvokeMessage(self.fwk.component_id, callee_id, call_id, method_name, *args, **keywords)
-        invocation_q = self.comp_registry.getComponentArtifact(callee_id, 'invocation_q')
+        invoke_msg = messages.MethodInvokeMessage(
+            self.fwk.component_id, callee_id, call_id, method_name, *args, **keywords
+        )
+        invocation_q = self.comp_registry.get_component_artifact(callee_id, 'invocation_q')
         invocation_q.put(invoke_msg)
         if manage_return:
             self.outstanding_calls[call_id] = (caller_id, None)
@@ -188,9 +203,9 @@ class TaskManager:
             else:
                 return response_msg.args
         if not blocking:
-            raise IncompleteCallException(call_id)
+            raise IncompleteCallError(call_id)
         else:
-            raise BlockedMessageException(wait_msg, '***call %s not finished' % call_id)
+            raise BlockedMessageError(wait_msg, '***call %s not finished' % call_id)
 
     def init_task(self, init_task_msg: messages.ServiceRequestMessage):
         r"""
@@ -198,7 +213,7 @@ class TaskManager:
         launch command using the binary and arguments provided by
         the requesting component.  Return launch command to component via
         :py:obj:`messages.ServiceResponseMessage`.  Raise exception if task
-        can not be launched at this time (:py:exc:`ipsExceptions.BadResourceRequestException`, :py:exc:`ipsExceptions.InsufficientResourcesException`).
+        can not be launched at this time (:py:exc:`ipsExceptions.BadResourceRequestError`, :py:exc:`ipsExceptions.InsufficientResourcesError`).
 
         *init_task_msg* is expected to be of type :py:obj:`messages.ServiceRequestMessage`
 
@@ -222,32 +237,39 @@ class TaskManager:
         7. \+ *cmd_args*: any arguments for the executable
         """
         caller_id = init_task_msg.sender_id
-        taskInit = init_task_msg.args[0]
+        task_init = init_task_msg.args[0]
 
         try:
             return self._init_task(
                 caller_id,
-                int(taskInit.nproc),
-                taskInit.binary,
-                taskInit.working_dir,
-                int(taskInit.tppn),
-                taskInit.tcpp,
-                taskInit.omp,
-                taskInit.tgpp,
-                taskInit.wnodes,
-                taskInit.wsocks,
-                taskInit.cmd_args,
-                taskInit.launch_cmd_extra_args,
+                int(task_init.nproc),
+                task_init.binary,
+                task_init.working_dir,
+                int(task_init.tppn),
+                task_init.tcpp,
+                task_init.omp,
+                task_init.tgpp,
+                task_init.wnodes,
+                task_init.wsocks,
+                task_init.cmd_args,
+                task_init.launch_cmd_extra_args,
             )
-        except InsufficientResourcesException as e:
-            if taskInit.block:
-                raise BlockedMessageException(init_task_msg, '***%s waiting for %d resources' % (caller_id, taskInit.nproc)) from e
+        except InsufficientResourcesError as e:
+            if task_init.block:
+                raise BlockedMessageError(
+                    init_task_msg, '***%s waiting for %d resources' % (caller_id, task_init.nproc)
+                ) from e
             else:
                 raise
-        except BadResourceRequestException as e:
-            self.fwk.error('There has been a fatal error, %s requested %d too many processors in task %d', caller_id, e.deficit, e.task_id)
+        except BadResourceRequestError as e:
+            self.fwk.error(
+                'There has been a fatal error, %s requested %d too many processors in task %d',
+                caller_id,
+                e.deficit,
+                e.task_id,
+            )
             raise
-        except ResourceRequestMismatchException as e:
+        except ResourceRequestMismatchError as e:
             self.fwk.error(
                 'There has been a fatal error, %s requested too few processors per node to launch task %d (requested: procs = %d, ppn = %d)',
                 caller_id,
@@ -256,7 +278,7 @@ class TaskManager:
                 e.ppn,
             )
             raise
-        except GPUResourceRequestMismatchException as e:
+        except GpuResourceRequestMismatchError as e:
             self.fwk.error(
                 'There has been a fatal error, %s requested too many GPUs per node to launch task %d (requested: ppn = %d, gpp = %d)',
                 caller_id,
@@ -268,14 +290,30 @@ class TaskManager:
         except Exception:
             raise
 
-    def _init_task(self, caller_id, nproc, binary, working_dir, tppn, tcpp, omp, tgpp, wnodes, wsocks, cmd_args, launch_cmd_extra_args):
+    def _init_task(
+        self,
+        caller_id,
+        nproc,
+        binary,
+        working_dir,
+        tppn,
+        tcpp,
+        omp,
+        tgpp,
+        wnodes,
+        wsocks,
+        cmd_args,
+        launch_cmd_extra_args,
+    ):
         # handle for task related things
         task_id = self.get_task_id()
 
-        allocation = self.resource_mgr.get_allocation(caller_id, nproc, task_id, wnodes, wsocks, task_ppn=tppn, task_cpp=tcpp, task_gpp=tgpp)
+        allocation = self.resource_mgr.get_allocation(
+            caller_id, nproc, task_id, wnodes, wsocks, task_ppn=tppn, task_cpp=tcpp, task_gpp=tgpp
+        )
         self.fwk.debug('RM: get_allocation() returned %s', str(allocation))
 
-        if allocation.partial_node or allocation.accurateNodes:
+        if allocation.partial_node or allocation.accurate_nodes:
             nodes = ','.join(allocation.nodelist)
         else:
             nodes = ''
@@ -288,7 +326,7 @@ class TaskManager:
             allocation.ppn,
             allocation.max_ppn,
             nodes,
-            allocation.accurateNodes,
+            allocation.accurate_nodes,
             allocation.partial_node,
             task_id,
             allocation.cpp,
@@ -314,12 +352,12 @@ class TaskManager:
         self,
         nproc: int,
         binary: str,
-        cmd_args: List[str],
+        cmd_args: list[str],
         working_dir,
         ppn: int,
         max_ppn: int,
         nodes: str,
-        accurateNodes: bool,
+        accurate_nodes: bool,
         partial_nodes: bool,
         task_id: int,
         cpp=0,
@@ -338,8 +376,8 @@ class TaskManager:
          * ppn - processes per node value to use
          * max_ppn - maximum possible ppn for this allocation
          * nodes - comma separated list of node ids
-         * accurateNodes - if ``True``, launch on nodes in *nodes*, otherwise the parallel launcher determines the process placement
-         * partial_nodes - if ``True`` and *accurateNodes* and *task_launch_cmd* == 'mpirun',
+         * accurate_nodes - if ``True``, launch on nodes in *nodes*, otherwise the parallel launcher determines the process placement
+         * partial_nodes - if ``True`` and *accurate_nodes* and *task_launch_cmd* == 'mpirun',
                a host file is created specifying the exact placement of processes on cores.
          * core_list - used for creating host file with process to core mappings
         """
@@ -384,14 +422,22 @@ class TaskManager:
                     # resources managed by DVM for this task as displayed in
                     # detailed messages sent to stdout prior to running the
                     # desired IPS task.
-                    cmd = ' '.join([mpicmd, '--display', 'ALLOCATION,MAP-DEVEL,BINDINGS', nproc_flag, str(nproc)])
+                    cmd = ' '.join(
+                        [
+                            mpicmd,
+                            '--display',
+                            'ALLOCATION,MAP-DEVEL,BINDINGS',
+                            nproc_flag,
+                            str(nproc),
+                        ]
+                    )
                 else:
                     cmd = ' '.join([mpicmd, nproc_flag, str(nproc), ppn_flag, str(ppn)])
                 cmd = f'{cmd} -x PYTHONPATH'  # Propagate PYTHONPATH to compute nodes
-                if accurateNodes:
+                if accurate_nodes:
                     cmd = f'{cmd} {host_select} {nodes}'
             elif version == 'SGI':
-                if accurateNodes:
+                if accurate_nodes:
                     core_dict = {}
                     ppn_groups = {}
                     num_cores = self.resource_mgr.cores_per_socket
@@ -448,9 +494,11 @@ class TaskManager:
                 cmd = f'{self.task_launch_cmd} {config_option}'
                 self.curr_task_table[task_id]['node_file'] = cfg_fname
                 return cmd, env_update
-            elif accurateNodes:  # Need to assign tasks to nodes explicitly
+            elif accurate_nodes:  # Need to assign tasks to nodes explicitly
                 host_select = '--host ' + nodes
-                cmd = ' '.join([self.task_launch_cmd, host_select, nproc_flag, str(nproc), ppn_flag, str(ppn)])
+                cmd = ' '.join(
+                    [self.task_launch_cmd, host_select, nproc_flag, str(nproc), ppn_flag, str(ppn)]
+                )
             else:
                 cmd = ' '.join([self.task_launch_cmd, nproc_flag, str(nproc), ppn_flag, str(ppn)])
         # ------------------------------------
@@ -464,46 +512,103 @@ class TaskManager:
             if self.host in ['hopper', 'edison']:
                 num_numanodes = self.resource_mgr.sockets_per_node
                 num_cores = self.resource_mgr.cores_per_node
-                if accurateNodes:
+                if accurate_nodes:
                     nlist_flag = '-L'
                     num_nodes = len(nodes.split(','))
-                    ppn = int(ceil(float(nproc) / num_nodes))
-                    per_numa = int(ceil(float(ppn) / num_numanodes))
+                    ppn = ceil(float(nproc) / num_nodes)
+                    per_numa = ceil(float(ppn) / num_numanodes)
                     if per_numa == num_cores / num_numanodes:
-                        cmd = ' '.join([self.task_launch_cmd, nproc_flag, str(nproc), ppn_flag, str(ppn), nlist_flag, nodes])
+                        cmd = ' '.join(
+                            [
+                                self.task_launch_cmd,
+                                nproc_flag,
+                                str(nproc),
+                                ppn_flag,
+                                str(ppn),
+                                nlist_flag,
+                                nodes,
+                            ]
+                        )
                     else:
                         if num_nodes > 1:
                             ppn = per_numa * num_numanodes
                         ppn = min(nproc, ppn)
-                        cmd = ' '.join([self.task_launch_cmd, nproc_flag, str(nproc), ppn_flag, str(ppn), by_numanode_flag, str(per_numa), nlist_flag, nodes])
+                        cmd = ' '.join(
+                            [
+                                self.task_launch_cmd,
+                                nproc_flag,
+                                str(nproc),
+                                ppn_flag,
+                                str(ppn),
+                                by_numanode_flag,
+                                str(per_numa),
+                                nlist_flag,
+                                nodes,
+                            ]
+                        )
                 else:
-                    num_nodes = int(ceil(float(nproc) / ppn))
-                    ppn = int(ceil(float(nproc) / num_nodes))
-                    per_numa = int(ceil(float(ppn) / num_numanodes))
-                    if per_numa == self.resource_mgr.cores_per_node / self.resource_mgr.sockets_per_node:
-                        cmd = ' '.join([self.task_launch_cmd, nproc_flag, str(nproc), ppn_flag, str(ppn)])
+                    num_nodes = ceil(float(nproc) / ppn)
+                    ppn = ceil(float(nproc) / num_nodes)
+                    per_numa = ceil(float(ppn) / num_numanodes)
+                    if (
+                        per_numa
+                        == self.resource_mgr.cores_per_node / self.resource_mgr.sockets_per_node
+                    ):
+                        cmd = ' '.join(
+                            [self.task_launch_cmd, nproc_flag, str(nproc), ppn_flag, str(ppn)]
+                        )
                     else:
                         if num_nodes > 1:
                             ppn = per_numa * num_numanodes
                         ppn = min(nproc, ppn)
-                        cmd = ' '.join([self.task_launch_cmd, nproc_flag, str(nproc), ppn_flag, str(ppn), by_numanode_flag, str(per_numa)])
-            elif accurateNodes:
+                        cmd = ' '.join(
+                            [
+                                self.task_launch_cmd,
+                                nproc_flag,
+                                str(nproc),
+                                ppn_flag,
+                                str(ppn),
+                                by_numanode_flag,
+                                str(per_numa),
+                            ]
+                        )
+            elif accurate_nodes:
                 nlist_flag = '-L'
-                cmd = ' '.join([self.task_launch_cmd, nproc_flag, str(nproc), ppn_flag, str(ppn), nlist_flag, nodes])
+                cmd = ' '.join(
+                    [
+                        self.task_launch_cmd,
+                        nproc_flag,
+                        str(nproc),
+                        ppn_flag,
+                        str(ppn),
+                        nlist_flag,
+                        nodes,
+                    ]
+                )
             else:
-                cmd = ' '.join([self.task_launch_cmd, nproc_flag, str(nproc), cpu_assign_flag, '%d-%d' % (max_ppn - 1, max_ppn - int(ppn)), ppn_flag, str(ppn)])
+                cmd = ' '.join(
+                    [
+                        self.task_launch_cmd,
+                        nproc_flag,
+                        str(nproc),
+                        cpu_assign_flag,
+                        '%d-%d' % (max_ppn - 1, max_ppn - int(ppn)),
+                        ppn_flag,
+                        str(ppn),
+                    ]
+                )
         # ------------------------------------
         # numactl (single process launcher)
         # ------------------------------------
         elif self.task_launch_cmd == 'numactl':
-            if accurateNodes and partial_nodes:
+            if accurate_nodes and partial_nodes:
                 proc_flag = '--physcpubind='
                 procs = ''
                 for p in core_list:
                     procs = ','.join([k.split(':')[1] for k in p[1]])
                 proc_flag += procs
             else:
-                self.fwk.warning('numactl needs accurateNodes')
+                self.fwk.warning('numactl needs accurate_nodes')
                 proc_flag = ''
             cmd = f'{self.task_launch_cmd} {proc_flag}'
         elif self.task_launch_cmd == 'srun':
@@ -511,17 +616,46 @@ class TaskManager:
             nnodes_flag = '-N'
             num_nodes = len(nodes.split(','))
             if partial_nodes:
-                cmd = ' '.join([self.task_launch_cmd, nnodes_flag, str(num_nodes), nproc_flag, str(nproc)])
+                cmd = ' '.join(
+                    [self.task_launch_cmd, nnodes_flag, str(num_nodes), nproc_flag, str(nproc)]
+                )
             else:
                 cpuptask_flag = '-c'
                 cpubind_flag = '--threads-per-core=1 --cpu-bind=cores'
                 if gpp:
                     gpuflags = f'--gpus-per-task={gpp}'
-                    cmd = ' '.join([self.task_launch_cmd, nnodes_flag, str(num_nodes), nproc_flag, str(nproc), cpuptask_flag, str(cpp), cpubind_flag, gpuflags])
+                    cmd = ' '.join(
+                        [
+                            self.task_launch_cmd,
+                            nnodes_flag,
+                            str(num_nodes),
+                            nproc_flag,
+                            str(nproc),
+                            cpuptask_flag,
+                            str(cpp),
+                            cpubind_flag,
+                            gpuflags,
+                        ]
+                    )
                 else:
-                    cmd = ' '.join([self.task_launch_cmd, nnodes_flag, str(num_nodes), nproc_flag, str(nproc), cpuptask_flag, str(cpp), cpubind_flag])
+                    cmd = ' '.join(
+                        [
+                            self.task_launch_cmd,
+                            nnodes_flag,
+                            str(num_nodes),
+                            nproc_flag,
+                            str(nproc),
+                            cpuptask_flag,
+                            str(cpp),
+                            cpubind_flag,
+                        ]
+                    )
                 if omp:
-                    env_update = {'OMP_PLACES': 'threads', 'OMP_PROC_BIND': 'spread', 'OMP_NUM_THREADS': str(cpp)}
+                    env_update = {
+                        'OMP_PLACES': 'threads',
+                        'OMP_PROC_BIND': 'spread',
+                        'OMP_NUM_THREADS': str(cpp),
+                    }
         else:
             self.fwk.error('invalid task launch command.')
             raise RuntimeError('invalid task launch command.')
@@ -550,32 +684,37 @@ class TaskManager:
         ret_dict = {}
         for task_name in task_dict:
             # handle for task related things
-            taskInit = task_dict[task_name]
+            task_init = task_dict[task_name]
 
             try:
                 ret_dict[task_name] = self._init_task(
                     caller_id,
-                    taskInit.nproc,
-                    taskInit.binary,
-                    taskInit.working_dir,
-                    taskInit.tppn,
-                    taskInit.tcpp,
-                    taskInit.omp,
-                    taskInit.tgpp,
-                    taskInit.wnodes,
-                    taskInit.wsocks,
-                    taskInit.cmd_args,
-                    taskInit.launch_cmd_extra_args,
+                    task_init.nproc,
+                    task_init.binary,
+                    task_init.working_dir,
+                    task_init.tppn,
+                    task_init.tcpp,
+                    task_init.omp,
+                    task_init.tgpp,
+                    task_init.wnodes,
+                    task_init.wsocks,
+                    task_init.cmd_args,
+                    task_init.launch_cmd_extra_args,
                 )
-            except InsufficientResourcesException:
+            except InsufficientResourcesError:
                 continue
-            except BadResourceRequestException as e:
-                self.fwk.error('There has been a fatal error, %s requested %d too many processors in task %d', caller_id, e.deficit, e.task_id)
+            except BadResourceRequestError as e:
+                self.fwk.error(
+                    'There has been a fatal error, %s requested %d too many processors in task %d',
+                    caller_id,
+                    e.deficit,
+                    e.task_id,
+                )
                 for task_id, _, _, _ in ret_dict.values():
                     self.resource_mgr.release_allocation(task_id, -1)
                     del self.curr_task_table[task_id]
                 raise
-            except ResourceRequestMismatchException as e:
+            except ResourceRequestMismatchError as e:
                 self.fwk.error(
                     'There has been a fatal error, %s requested too few processors per node to launch task %d (request: procs = %d, ppn = %d)',
                     caller_id,
@@ -587,7 +726,7 @@ class TaskManager:
                     self.resource_mgr.release_allocation(task_id, -1)
                     del self.curr_task_table[task_id]
                 raise
-            except GPUResourceRequestMismatchException as e:
+            except GpuResourceRequestMismatchError as e:
                 self.fwk.error(
                     'There has been a fatal error, %s requested too many GPUs per node to launch task %d (requested: ppn = %d, gpp = %d)',
                     caller_id,

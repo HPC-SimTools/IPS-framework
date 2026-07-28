@@ -6,8 +6,16 @@ from ipsframework.ipsutil import ensemble_instances_to_csv, group_ensemble_varia
 def test_instances_to_csv():
     with tempfile.NamedTemporaryFile() as tmp:
         variables = {
-            'a_comp': {'A': [3, 2, 4], 'B': [2.34, 5.82, 0.1], 'C': ['"the quick, brown fox"', 'baz', 'quux']},
-            'another_comp': {'D': [7, 5, 9], 'B': [0.775, 0.08, 29.2], 'F': ['xyzzy', 'plud', 'thud']},
+            'a_comp': {
+                'A': [3, 2, 4],
+                'B': [2.34, 5.82, 0.1],
+                'C': ['"the quick, brown fox"', 'baz', 'quux'],
+            },
+            'another_comp': {
+                'D': [7, 5, 9],
+                'B': [0.775, 0.08, 29.2],
+                'F': ['xyzzy', 'plud', 'thud'],
+            },
         }
         instances = group_ensemble_variables_into_instances(variables, 'this_is_my_name')
         expected_result = b'''\

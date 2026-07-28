@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """ Provides information about the runtime environment
 
 """

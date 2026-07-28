@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 # -------------------------------------------------------------------------------
 # Copyright 2006-2022 UT-Battelle, LLC. See LICENSE for more information.
 # -------------------------------------------------------------------------------
@@ -6,7 +7,7 @@ import os
 from ipsframework import Component
 
 
-class ResenbrockDriver(Component):
+class RosenbrockDriver(Component):
     def init(self, timestamp=0.0, **keywords):
         print('init from dakota test driver')
 

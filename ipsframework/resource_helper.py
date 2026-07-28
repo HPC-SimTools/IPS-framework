@@ -12,7 +12,7 @@ from math import ceil
 
 import psutil
 
-from .ipsExceptions import InvalidResourceSettingsException
+from .ips_exceptions import InvalidResourceSettingsError
 
 
 def get_qstat_jobinfo():
@@ -66,7 +66,7 @@ def get_qstat_jobinfo():
             num_procs = int(width[0].split('=')[1])
             if len(mpp_npp) > 0:
                 ppn = int(mpp_npp[0].split('=')[1])
-            num_nodes = int(ceil(float(num_procs) / float(ppn)))
+            num_nodes = ceil(float(num_procs) / float(ppn))
             return num_nodes, ppn, False, []
     else:
         raise Exception('Error in call to qstat.')
@@ -265,7 +265,7 @@ def get_pbs_info():
         node_file = os.environ['PBS_NODEFILE']
         # core_list is a misnomer, it is a list of (repeated) node names
         # where the node names are repeated for each process they can service
-        core_list_all = [line.strip() for line in open(node_file, 'r').readlines()]
+        core_list_all = [line.strip() for line in open(node_file, 'r')]
         core_list = core_list_all
         node_dict = {}
         for core in core_list:
@@ -274,10 +274,10 @@ def get_pbs_info():
                 node_dict[core] += 1
             except KeyError:
                 node_dict[core] = 1
-        listOfNodes = list(node_dict.items())
+        list_of_nodes = list(node_dict.items())
         max_p = max(node_dict.values())
         mixed_nodes = max_p != min(node_dict.values())
-        return len(listOfNodes), max_p, mixed_nodes, listOfNodes
+        return len(list_of_nodes), max_p, mixed_nodes, list_of_nodes
     except Exception:
         try:
             node_count = int(os.environ['PBS_NNODES'])
@@ -290,7 +290,7 @@ def manual_detection(services):
     """
     Use values listed in platform configuration file.
     """
-    listOfNodes = []
+    list_of_nodes = []
     num_nodes = int(services.get_platform_parameter('NODES'))
     ppn = int(services.get_platform_parameter('PROCS_PER_NODE'))
     tot_procs = int(services.get_platform_parameter('TOTAL_PROCS'))
@@ -305,86 +305,86 @@ def manual_detection(services):
         tot_procs = num_nodes * ppn
 
     for n in range(num_nodes):
-        listOfNodes.append(('dummynode%d' % n, ppn))
+        list_of_nodes.append(('dummynode%d' % n, ppn))
     if tot_procs < num_nodes * (ppn - 1):
-        n = listOfNodes[-1][0]
-        listOfNodes[-1] = (n, tot_procs % ppn)
-    return num_nodes, ppn, False, listOfNodes
+        n = list_of_nodes[-1][0]
+        list_of_nodes[-1] = (n, tot_procs % ppn)
+    return num_nodes, ppn, False, list_of_nodes
 
 
-def getResourceList(services, host, partial_nodes=False):
+def get_resource_list(services, host, partial_nodes=False):
     """
     Using the host information, the resources are detected.  Return list of
     (<node name>, <processes per node>), cores per node, sockets per node,
     processes per node, and ``True`` if the node names are accurate, ``False``
     otherwise.
     """
-    listOfNodes = []
+    list_of_nodes = []
     # get the number of nodes for that machine
     num_nodes = 1
     ppn = 1
     spn = 1
     cpn = 1
-    accurateNodes = False
+    accurate_nodes = False
     mixed_nodes = False
 
     node_detect_str = services.get_platform_parameter('NODE_DETECTION', silent=True)
     if node_detect_str == 'checkjob':
-        num_nodes, ppn, mixed_nodes, listOfNodes = get_checkjob_info()
+        num_nodes, ppn, mixed_nodes, list_of_nodes = get_checkjob_info()
         print('=======================================================')
-        print(num_nodes, ppn, mixed_nodes, listOfNodes)
-        accurateNodes = False
+        print(num_nodes, ppn, mixed_nodes, list_of_nodes)
+        accurate_nodes = False
     elif node_detect_str == 'qstat':
-        num_nodes, ppn, mixed_nodes, listOfNodes = get_qstat_jobinfo()
-        accurateNodes = False
+        num_nodes, ppn, mixed_nodes, list_of_nodes = get_qstat_jobinfo()
+        accurate_nodes = False
     elif node_detect_str == 'qstat2':
-        num_nodes, ppn, mixed_nodes, listOfNodes = get_qstat_jobinfo2()
-        accurateNodes = True
+        num_nodes, ppn, mixed_nodes, list_of_nodes = get_qstat_jobinfo2()
+        accurate_nodes = True
     elif node_detect_str == 'pbs_env':
-        num_nodes, ppn, mixed_nodes, listOfNodes = get_pbs_info()
+        num_nodes, ppn, mixed_nodes, list_of_nodes = get_pbs_info()
         if ppn == 0:
             ppn = 1
-        if not listOfNodes:
+        if not list_of_nodes:
             for n in range(num_nodes):
-                listOfNodes.append(('dummynode%d' % n, ppn))
+                list_of_nodes.append(('dummynode%d' % n, ppn))
         else:
-            accurateNodes = True
+            accurate_nodes = True
     elif node_detect_str == 'slurm_env':
-        num_nodes, ppn, mixed_nodes, listOfNodes = get_slurm_info()
-        accurateNodes = True
+        num_nodes, ppn, mixed_nodes, list_of_nodes = get_slurm_info()
+        accurate_nodes = True
     elif node_detect_str == 'manual':
-        num_nodes, ppn, mixed_nodes, listOfNodes = manual_detection(services)
-        accurateNodes = False
+        num_nodes, ppn, mixed_nodes, list_of_nodes = manual_detection(services)
+        accurate_nodes = False
     else:
         print(
             "WARNING: no node detection strategy specified in platform config file ('NODE_DETECTION'). "
             'Valid options are: checkjob, qstat, pbs_env, slurm_env, manual.  Trying all detection schemes.'
         )
         try:
-            num_nodes, ppn, mixed_nodes, listOfNodes = get_checkjob_info()
-            accurateNodes = True
+            num_nodes, ppn, mixed_nodes, list_of_nodes = get_checkjob_info()
+            accurate_nodes = True
         except Exception:
             try:
-                num_nodes, ppn, mixed_nodes, listOfNodes = get_qstat_jobinfo()
-                accurateNodes = False
+                num_nodes, ppn, mixed_nodes, list_of_nodes = get_qstat_jobinfo()
+                accurate_nodes = False
             except Exception:
                 try:
-                    num_nodes, ppn, mixed_nodes, listOfNodes = get_pbs_info()
+                    num_nodes, ppn, mixed_nodes, list_of_nodes = get_pbs_info()
                     if ppn == 0:
                         ppn = 1
-                    if not listOfNodes:
+                    if not list_of_nodes:
                         for n in range(num_nodes):
-                            listOfNodes.append(('dummynode%d' % n, ppn))
+                            list_of_nodes.append(('dummynode%d' % n, ppn))
                     else:
-                        accurateNodes = True
+                        accurate_nodes = True
                 except Exception:
                     try:
-                        num_nodes, ppn, mixed_nodes, listOfNodes = get_slurm_info()
-                        accurateNodes = True
+                        num_nodes, ppn, mixed_nodes, list_of_nodes = get_slurm_info()
+                        accurate_nodes = True
                     except Exception:
                         try:
-                            num_nodes, ppn, mixed_nodes, listOfNodes = manual_detection(services)
-                            accurateNodes = False
+                            num_nodes, ppn, mixed_nodes, list_of_nodes = manual_detection(services)
+                            accurate_nodes = False
                         except Exception:
                             print('*** NO DETECTION MECHANISM WORKS ***')
                             raise
@@ -396,16 +396,16 @@ def getResourceList(services, host, partial_nodes=False):
     elif cpn < ppn:
         ppn = cpn
         if not mixed_nodes:
-            for i, node in enumerate(listOfNodes):
+            for i, node in enumerate(list_of_nodes):
                 name = node[0]
-                listOfNodes[i] = (name, ppn)
+                list_of_nodes[i] = (name, ppn)
     if spn <= 0:
         spn = 1
     elif spn > cpn:
-        raise InvalidResourceSettingsException('spn > cpn', spn, cpn)
+        raise InvalidResourceSettingsError('spn > cpn', spn, cpn)
     elif cpn % spn != 0:
-        raise InvalidResourceSettingsException('spn not divisible by cpn', spn, cpn)
-    return listOfNodes, cpn, spn, ppn, accurateNodes
+        raise InvalidResourceSettingsError('spn not divisible by cpn', spn, cpn)
+    return list_of_nodes, cpn, spn, ppn, accurate_nodes
 
 
 def get_platform_info():
@@ -419,9 +419,7 @@ def get_platform_info():
         current running process, and available GPU devices if set; if the
         platform is supported it will also return CPU affinity
     """
-    result = {'hostname': platform.node(),
-              'cpu_count': psutil.cpu_count(),
-              'pid': os.getpid()}
+    result = {'hostname': platform.node(), 'cpu_count': psutil.cpu_count(), 'pid': os.getpid()}
 
     if 'CUDA_VISIBLE_DEVICES' in os.environ:
         result['cuda_visible_devices'] = os.environ['CUDA_VISIBLE_DEVICES']

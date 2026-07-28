@@ -1,6 +1,6 @@
 import pytest
 
-from ipsframework.componentRegistry import ComponentID
+from ipsframework.component_registry import ComponentID
 
 try:
     from pytest_cov.embed import cleanup_on_sigterm
@@ -23,7 +23,7 @@ except ImportError:
 else:
 
     def on_terminate(proc):
-        print('Process {} terminated with exit code {}'.format(proc, proc.returncode))
+        print(f'Process {proc} terminated with exit code {proc.returncode}')
 
     @pytest.fixture(autouse=True)
     def run_around_tests():
@@ -48,7 +48,9 @@ else:
 
 def pytest_addoption(parser):
     parser.addoption('--runcori', action='store_true', default=False, help='run Cori tests')
-    parser.addoption('--runperlmutter', action='store_true', default=False, help='run Perlmutter tests')
+    parser.addoption(
+        '--runperlmutter', action='store_true', default=False, help='run Perlmutter tests'
+    )
 
 
 def pytest_configure(config):

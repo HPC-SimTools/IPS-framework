@@ -1,7 +1,7 @@
 from ipsframework import Component
 
 
-class init_dataManager(Component):
+class InitDataManager(Component):
     def step(self, timestamp=0.0, **keywords):
         state_file_list = self.services.get_config_param('STATE_FILES').split(' ')
 

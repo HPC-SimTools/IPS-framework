@@ -1,6 +1,14 @@
 from ipsframework import Framework
 
-map_log_to_level = {'log': 'INFO', 'debug': 'DEBUG', 'info': 'INFO', 'warning': 'WARNING', 'error': 'ERROR', 'exception': 'ERROR', 'critical': 'CRITICAL'}
+map_log_to_level = {
+    'log': 'INFO',
+    'debug': 'DEBUG',
+    'info': 'INFO',
+    'warning': 'WARNING',
+    'error': 'ERROR',
+    'exception': 'ERROR',
+    'critical': 'CRITICAL',
+}
 
 
 def write_basic_config_and_platform_files(tmpdir, debug=False):
@@ -80,15 +88,26 @@ def test_component_logging(tmpdir):
     # DEBUG and INFO should be excluded
     for method in ['init', 'step', 'finalize']:
         for log_type in ['warning', 'error', 'exception', 'critical']:
-            assert f'{component_id} {map_log_to_level[log_type]:8} {method} msg: {log_type}\n' in lines
+            assert (
+                f'{component_id} {map_log_to_level[log_type]:8} {method} msg: {log_type}\n' in lines
+            )
         for log_type in ['log', 'debug', 'info']:
-            assert f'{component_id} {map_log_to_level[log_type]:8} {method} msg: {log_type}\n' not in lines
+            assert (
+                f'{component_id} {map_log_to_level[log_type]:8} {method} msg: {log_type}\n'
+                not in lines
+            )
 
     # check message formatting with arguments
     for log_type in ['warning', 'error', 'exception', 'critical']:
-        assert f'{component_id} {map_log_to_level[log_type]:8} step msg: {log_type} timestamp=0 test\n' in lines
+        assert (
+            f'{component_id} {map_log_to_level[log_type]:8} step msg: {log_type} timestamp=0 test\n'
+            in lines
+        )
     for log_type in ['log', 'debug', 'info']:
-        assert f'{component_id} {map_log_to_level[log_type]:8} step msg: {log_type} timestamp=0 test\n' not in lines
+        assert (
+            f'{component_id} {map_log_to_level[log_type]:8} step msg: {log_type} timestamp=0 test\n'
+            not in lines
+        )
 
     # check stdout redirect
     with open(str(tmpdir.join('test.out')), 'r') as f:
@@ -126,8 +145,13 @@ def test_component_logging_debug(tmpdir):
     # for log_level=DEBUG all logs should be included
     for method in ['init', 'step', 'finalize']:
         for log_type in ['log', 'debug', 'info', 'warning', 'error', 'exception', 'critical']:
-            assert f'{component_id} {map_log_to_level[log_type]:8} {method} msg: {log_type}\n' in lines
+            assert (
+                f'{component_id} {map_log_to_level[log_type]:8} {method} msg: {log_type}\n' in lines
+            )
 
     # check message formatting with arguments
     for log_type in ['log', 'debug', 'info', 'warning', 'error', 'exception', 'critical']:
-        assert f'{component_id} {map_log_to_level[log_type]:8} step msg: {log_type} timestamp=0 test\n' in lines
+        assert (
+            f'{component_id} {map_log_to_level[log_type]:8} step msg: {log_type} timestamp=0 test\n'
+            in lines
+        )

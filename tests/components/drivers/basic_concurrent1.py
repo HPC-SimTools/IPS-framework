@@ -10,10 +10,10 @@ always pass.
 """
 
 from ipsframework import Component
-from ipsframework.ipsExceptions import IncompleteCallException
+from ipsframework.ipsExceptions import IncompleteCallError
 
 
-class basic_concurrent1(Component):
+class BasicConcurrent1(Component):
     def init(self, timestamp=0.0, **keywords):
         self.services.log('Initing')
 
@@ -59,7 +59,7 @@ class basic_concurrent1(Component):
 
             try:
                 services.wait_call_list([w2_call_id, w3_call_id], block=False)
-            except IncompleteCallException as e:
+            except IncompleteCallError as e:
                 print(str(e))
 
             services.wait_call_list([w2_call_id, w3_call_id])
@@ -69,9 +69,12 @@ class basic_concurrent1(Component):
         services.call(w2, 'finalize', 99)
         services.call(w3, 'finalize', 99)
 
-    def process_event(self, topicName, theEvent):
-        print('Driver: processed ', (topicName, str(theEvent)))
+    def process_event(self, topic_name, the_event):
+        print('Driver: processed ', (topic_name, str(the_event)))
 
     def terminate(self, status):
         self.services.log('Really Calling terminate()')
         Component.terminate(self, status)
+
+
+globals()['basic_concurrent1'] = BasicConcurrent1

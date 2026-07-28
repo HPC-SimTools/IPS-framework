@@ -1,4 +1,4 @@
-OUTPUT_PREFIX = 
+OUTPUT_PREFIX =
 
 RUN_COMMENT = testing basic concurrent component simulation capability
 
@@ -12,10 +12,10 @@ SIM_ROOT = $PWD/$SIM_NAME                      # Where to put results from this 
 SIMULATION_MODE = NORMAL
 
 STATE_WORK_DIR = $SIM_ROOT/work/plasma_state # Where to put plasma state files as the simulation evolves
-CURRENT_STATE = 
-PRIOR_STATE = 
-NEXT_STATE = 
-CURRENT_EQDSK = 
+CURRENT_STATE =
+PRIOR_STATE =
+NEXT_STATE =
+CURRENT_EQDSK =
 USE_PORTAL=True
 
 LOG_FILE = $SIM_ROOT/$SIM_NAME.log
@@ -23,8 +23,8 @@ LOG_LEVEL = INFO                   # Possible values: DEBUG, INFO, WARNING, ERRO
 
 [PORTS]
    NAMES = DRIVER WORKER1 WORKER2 WORKER3
-   
-   [[DRIVER]]                                       # REQUIRED Port section 
+
+   [[DRIVER]]                                       # REQUIRED Port section
       IMPLEMENTATION = BASIC_SERIAL1
 
    [[WORKER1]]
@@ -41,17 +41,17 @@ LOG_LEVEL = INFO                   # Possible values: DEBUG, INFO, WARNING, ERRO
 [BASIC_SERIAL1]
     CLASS = drivers
     SUB_CLASS = testing
-    NAME = basic_serial1
+    NAME = BasicSerial1
     NPROC = 1
     BIN_PATH = $IPS_ROOT/tests/components/drivers
     INPUT_FILES = file1 sfile1 sfile2 ofile1 ofile2
-    OUTPUT_FILES = ofile1 ofile2  
+    OUTPUT_FILES = ofile1 ofile2
     SCRIPT = $BIN_PATH/basic_serial1.py
 
 [SMALL_WORKER]
     CLASS = workers
     SUB_CLASS = testing
-    NAME = small_worker
+    NAME = SmallWorker
     NPROC = 1
     BIN_PATH = $IPS_ROOT/tests/bin
     BIN = parallel_sleep
@@ -62,7 +62,7 @@ LOG_LEVEL = INFO                   # Possible values: DEBUG, INFO, WARNING, ERRO
 [MEDIUM_WORKER]
     CLASS = workers
     SUB_CLASS = testing
-    NAME = medium_worker
+    NAME = MediumWorker
     NPROC = 1
     BIN_PATH = $IPS_ROOT/tests/bin
     BIN = parallel_sleep
@@ -73,7 +73,7 @@ LOG_LEVEL = INFO                   # Possible values: DEBUG, INFO, WARNING, ERRO
 [LARGE_WORKER]
     CLASS = workers
     SUB_CLASS = testing
-    NAME = large_worker
+    NAME = LargeWorker
     NPROC = 2
     BIN_PATH = $IPS_ROOT/tests/bin
     BIN = parallel_sleep

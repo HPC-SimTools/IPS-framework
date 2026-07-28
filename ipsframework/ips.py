@@ -62,21 +62,27 @@ import os
 import socket
 import sys
 import time
-from typing import Callable, Dict, Iterable, List, Optional
+from collections.abc import Callable, Iterable
 
 from ipsframework import platformspec
 from ipsframework._version import get_versions
 from ipsframework.cca_es_spec import initialize_event_service
-from ipsframework.componentRegistry import ComponentID, ComponentRegistry
-from ipsframework.configurationManager import ConfigurationManager
-from ipsframework.dataManager import DataManager
-from ipsframework.eventService import EventService
-from ipsframework.ips_es_spec import eventManager
-from ipsframework.ipsExceptions import BlockedMessageException
-from ipsframework.ipsutil import getTimeString
-from ipsframework.messages import Message, MethodInvokeMessage, MethodResultMessage, ServiceRequestMessage, ServiceResponseMessage
-from ipsframework.resourceManager import ResourceManager
-from ipsframework.taskManager import TaskManager
+from ipsframework.component_registry import ComponentID, ComponentRegistry
+from ipsframework.configuration_manager import ConfigurationManager
+from ipsframework.data_manager import DataManager
+from ipsframework.event_service import EventService
+from ipsframework.ips_es_spec import EventManager
+from ipsframework.ips_exceptions import BlockedMessageError
+from ipsframework.ipsutil import get_time_string
+from ipsframework.messages import (
+    Message,
+    MethodInvokeMessage,
+    MethodResultMessage,
+    ServiceRequestMessage,
+    ServiceResponseMessage,
+)
+from ipsframework.resource_manager import ResourceManager
+from ipsframework.task_manager import TaskManager
 
 if sys.version_info[0] != 3 or sys.version_info[1] < 9:
     print('IPS is only compatible with Python 3.9 or higher', file=sys.stderr)
@@ -129,9 +135,9 @@ class Framework:
 
     def __init__(
         self,
-        config_file_list: List[str],
+        config_file_list: list[str],
         log_file_name: str,
-        platform_file_name: Optional[str] = None,
+        platform_file_name: str | None = None,
         debug: bool = False,
         verbose_debug: bool = False,
         cmd_nodes: int = 0,
@@ -155,10 +161,12 @@ class Framework:
         # reference to this class's component ID
         self.component_id = ComponentID(self.__class__.__name__, 'FRAMEWORK')
         # map of ports
-        self.port_map: Dict[int, str] = {}
+        self.port_map: dict[int, str] = {}
 
         current_dir = inspect.getfile(inspect.currentframe())
-        (self.platform_file_name, self.ipsShareDir) = platformspec.get_share_and_platform(platform_file_name, current_dir)
+        (self.platform_file_name, self.ipsShareDir) = platformspec.get_share_and_platform(
+            platform_file_name, current_dir
+        )
 
         # config file list
         self.config_file_list = config_file_list
@@ -170,8 +178,10 @@ class Framework:
         self.start_time = self.cur_time
         self.event_service = EventService(self)
         initialize_event_service(self.event_service)
-        self.event_manager = eventManager(self)
-        self.config_manager = ConfigurationManager(self, self.config_file_list, self.platform_file_name)
+        self.event_manager = EventManager(self)
+        self.config_manager = ConfigurationManager(
+            self, self.config_file_list, self.platform_file_name
+        )
         self.resource_manager = ResourceManager(self)
         self.data_manager = DataManager(self)
         self.task_manager = TaskManager(self)
@@ -199,9 +209,15 @@ class Framework:
         try:
             # each manager should create their own event manager if they
             # want to send and receive events
-            self.config_manager.initialize(self.data_manager, self.resource_manager, self.task_manager)
-            self.task_manager.initialize(self.data_manager, self.resource_manager, self.config_manager)
-            self.resource_manager.initialize(self.data_manager, self.task_manager, self.config_manager, cmd_nodes, cmd_ppn)
+            self.config_manager.initialize(
+                self.data_manager, self.resource_manager, self.task_manager
+            )
+            self.task_manager.initialize(
+                self.data_manager, self.resource_manager, self.config_manager
+            )
+            self.resource_manager.initialize(
+                self.data_manager, self.task_manager, self.config_manager, cmd_nodes, cmd_ppn
+            )
         except Exception:
             self.exception('Problem initializing managers')
             self.terminate_all_sims(status=Message.FAILURE)
@@ -209,7 +225,7 @@ class Framework:
         self.blocked_messages = []
         # SIMYAN: determine the sim_root for the Framework to use later
         fwk_comps = self.config_manager.get_framework_components()
-        main_fwk_comp = self.comp_registry.getEntry(fwk_comps[0])
+        main_fwk_comp = self.comp_registry.get_entry(fwk_comps[0])
         self.sim_root = os.path.abspath(main_fwk_comp.services.get_config_param('SIM_ROOT'))
 
     def get_inq(self):
@@ -219,7 +235,9 @@ class Framework:
         """
         return self.in_queue
 
-    def register_service_handler(self, service_list: Iterable[str], handler: Callable[[ServiceRequestMessage], None]):
+    def register_service_handler(
+        self, service_list: Iterable[str], handler: Callable[[ServiceRequestMessage], None]
+    ):
         """
         Register a call back method to handle a list of framework service
         invocations.
@@ -241,7 +259,7 @@ class Framework:
         method is conveyed to the caller along the appropriate queue in a
         :class:`messages.ServiceResponseMessage`.  All exceptions are passed
         on to the caller, except for the
-        :class:`ipsExceptions.BlockedMessageException`, which causes the
+        :class:`ipsExceptions.BlockedMessageError`, which causes the
         message to be blocked until the request can be satisfied.
         """
         method_name = msg.target_method
@@ -252,23 +270,31 @@ class Framework:
         except KeyError:
             self.exception('Unsupported method : %s', method_name)
             response_msg = ServiceResponseMessage(
-                self.component_id, comp_id, msg.message_id, Message.FAILURE, Exception('Unsupported method : %s' % (method_name))
+                self.component_id,
+                comp_id,
+                msg.message_id,
+                Message.FAILURE,
+                Exception('Unsupported method : %s' % (method_name)),
             )
         else:
             try:
                 ret_val = handler(msg)
-            except BlockedMessageException as e:
+            except BlockedMessageError as e:
                 if self.verbose_debug:
                     self.debug('Blocked message : %s', str(e))
                 self.blocked_messages.append(msg)
                 return
             except Exception as e:
                 # self.exception('Exception handling service message: %s - %s', str(msg.__dict__), str(e))
-                response_msg = ServiceResponseMessage(self.component_id, comp_id, msg.message_id, Message.FAILURE, e)
+                response_msg = ServiceResponseMessage(
+                    self.component_id, comp_id, msg.message_id, Message.FAILURE, e
+                )
             else:
-                response_msg = ServiceResponseMessage(self.component_id, comp_id, msg.message_id, Message.SUCCESS, ret_val)
+                response_msg = ServiceResponseMessage(
+                    self.component_id, comp_id, msg.message_id, Message.SUCCESS, ret_val
+                )
 
-        response_q = self.comp_registry.getComponentArtifact(comp_id, 'svc_response_q')
+        response_q = self.comp_registry.get_component_artifact(comp_id, 'svc_response_q')
         response_q.put(response_msg)
 
     def log(self, msg: object, *args):
@@ -324,7 +350,9 @@ class Framework:
 
         outstanding_fwk_calls = []
         for comp_id in fwk_comps:
-            msg = ServiceRequestMessage(self.component_id, self.component_id, comp_id, 'init_call', method_name, 0)
+            msg = ServiceRequestMessage(
+                self.component_id, self.component_id, comp_id, 'init_call', method_name, 0
+            )
             self.debug('Framework sending message %s ', msg.__dict__)
             call_id = self.task_manager.init_call(msg, manage_return=False)
             outstanding_fwk_calls.append(call_id)
@@ -400,7 +428,7 @@ class Framework:
         # SIMYAN: get the runspaceInit_component and invoke its init() method
         # this creates the base directory and container file for the simulation
         # and copies the conf files into both and change directory to base dir
-        main_fwk_comp = self.comp_registry.getEntry(fwk_comps[0])
+        main_fwk_comp = self.comp_registry.get_entry(fwk_comps[0])
         self.sim_root = os.path.abspath(main_fwk_comp.services.get_config_param('SIM_ROOT'))
         self._invoke_framework_comps(fwk_comps, 'init')
 
@@ -410,21 +438,26 @@ class Framework:
             for comp_id in fwk_comps:
                 msg_list = []
                 for method in ['step', 'finalize']:
-                    req_msg = ServiceRequestMessage(self.component_id, self.component_id, comp_id, 'init_call', method, 0)
+                    req_msg = ServiceRequestMessage(
+                        self.component_id, self.component_id, comp_id, 'init_call', method, 0
+                    )
                     msg_list.append((req_msg, None, str(comp_id), method, 0))
 
                 outstanding_sim_calls[str(comp_id)] = msg_list
 
             # generate a queue of invocation messages for each simulation
             #   - list will look like: [init_comp.init(), init_comp.step(), init_comp.finalize(),
-            #                           driver.init(), driver.step(), driver.finalize()]
+            #                           Driver.init(), Driver.step(), Driver.finalize()]
             # these messages will be sent on a FIFO basis, thus running the init components,
             # then the corresponding drivers.
             for sim_name, comp_list in sim_comps.items():
                 msg_list = []
                 self._send_monitor_event(sim_name, 'IPS_START', 'Starting IPS Simulation')
                 self._send_dynamic_sim_event(sim_name=sim_name, event_type='IPS_START')
-                comment = 'Nodes = %d   PPN = %d' % (self.resource_manager.num_nodes, self.resource_manager.ppn)
+                comment = 'Nodes = %d   PPN = %d' % (
+                    self.resource_manager.num_nodes,
+                    self.resource_manager.ppn,
+                )
                 self._send_monitor_event(sim_name, 'IPS_RESOURCE_ALLOC', comment)
                 # SIMYAN: ordered list of methods to call
                 methods = ['init', 'step', 'finalize']
@@ -432,7 +465,9 @@ class Framework:
                 # SIMYAN: add each method call to the msg_list
                 for comp_id in comp_list:
                     for method in methods:
-                        req_msg = ServiceRequestMessage(self.component_id, self.component_id, comp_id, 'init_call', method, 0)
+                        req_msg = ServiceRequestMessage(
+                            self.component_id, self.component_id, comp_id, 'init_call', method, 0
+                        )
                         msg_list.append((req_msg, sim_name, str(comp_id), method, 0))
                     # SIMYAN: add the msg_list to the outstanding sim calls
                     if msg_list:
@@ -449,12 +484,18 @@ class Framework:
                 msg, sim_name, comp, method, arg = msg_list.pop(0)  # noqa: PLW2901 (TODO: make sure this is intended behavior, change variable name if it is and refactor if not)
                 self.debug('Framework sending message %s ', msg.__dict__)
                 if sim_name is not None:
-                    self._send_monitor_event(sim_name=sim_name, comment=f'Target = {comp}:{method}({arg})', eventType='IPS_CALL_BEGIN')
+                    self._send_monitor_event(
+                        sim_name=sim_name,
+                        comment=f'Target = {comp}:{method}({arg})',
+                        event_type='IPS_CALL_BEGIN',
+                    )
                 call_id = self.task_manager.init_call(msg, manage_return=False)
                 self.call_queue_map[call_id] = msg_list
                 self.outstanding_calls_list[call_id] = sim_name, comp, method, arg, time.time()
         except Exception:
-            self.exception('encountered exception during fwk.run() sending first round of invocations (init of inits and fwk comps)')
+            self.exception(
+                'encountered exception during fwk.run() sending first round of invocations (init of inits and fwk comps)'
+            )
             self.terminate_all_sims(status=Message.FAILURE)
             raise
 
@@ -491,12 +532,14 @@ class Framework:
                         self.task_manager.return_call(msg)
                         continue
                     # Message is a result from a framework invocation
-                    sim_name, comp, method, arg, start_time = self.outstanding_calls_list.pop(msg.call_id)
+                    sim_name, comp, method, arg, start_time = self.outstanding_calls_list.pop(
+                        msg.call_id
+                    )
                     if sim_name is not None:
                         self._send_monitor_event(
                             sim_name=sim_name,
                             comment=f'Target = {comp}:{method}({arg})',
-                            eventType='IPS_CALL_END',
+                            event_type='IPS_CALL_END',
                             start_time=start_time,
                             end_time=time.time(),
                             target=comp,
@@ -506,7 +549,11 @@ class Framework:
                     sim_msg_list = self.call_queue_map[msg.call_id]
                     del self.call_queue_map[msg.call_id]
                     if msg.status == Message.FAILURE:
-                        self.error('received a failure message from component %s : %s', msg.sender_id, str(msg.args))
+                        self.error(
+                            'received a failure message from component %s : %s',
+                            msg.sender_id,
+                            str(msg.args),
+                        )
                         # No need to process remaining messages for this simulation
                         sim_msg_list = []
                         comment = 'Simulation Execution Error'
@@ -520,12 +567,24 @@ class Framework:
                     try:
                         next_call_msg, sim_name, comp, method, arg = sim_msg_list.pop(0)
                         if sim_name is not None:
-                            self._send_monitor_event(sim_name=sim_name, comment=f'Target = {comp}:{method}({arg})', eventType='IPS_CALL_BEGIN')
+                            self._send_monitor_event(
+                                sim_name=sim_name,
+                                comment=f'Target = {comp}:{method}({arg})',
+                                event_type='IPS_CALL_BEGIN',
+                            )
                         call_id = self.task_manager.init_call(next_call_msg, manage_return=False)
-                        self.outstanding_calls_list[call_id] = sim_name, comp, method, arg, time.time()
+                        self.outstanding_calls_list[call_id] = (
+                            sim_name,
+                            comp,
+                            method,
+                            arg,
+                            time.time(),
+                        )
                         self.call_queue_map[call_id] = sim_msg_list
                     except IndexError:
-                        sim_comps = self.config_manager.get_component_map()  # Get any new dynamic simulations
+                        sim_comps = (
+                            self.config_manager.get_component_map()
+                        )  # Get any new dynamic simulations
                         if sim_name in sim_comps:
                             self._send_monitor_event(sim_name, 'IPS_END', comment, ok)
                             self._send_dynamic_sim_event(sim_name, 'IPS_END', ok)
@@ -549,7 +608,9 @@ class Framework:
         self._send_dynamic_sim_event(sim_name=sim_name, event_type='IPS_START')
         for comp_id in comp_list:
             for method in ['init', 'step', 'finalize']:
-                req_msg = ServiceRequestMessage(self.component_id, self.component_id, comp_id, 'init_call', method, 0)
+                req_msg = ServiceRequestMessage(
+                    self.component_id, self.component_id, comp_id, 'init_call', method, 0
+                )
                 msg_list.append((req_msg, sim_name, str(comp_id), method, 0))
 
         # send off first round of invocations...
@@ -559,7 +620,18 @@ class Framework:
         self.call_queue_map[call_id] = msg_list
         self.outstanding_calls_list[call_id] = sim_name, comp, method, arg, time.time()
 
-    def _send_monitor_event(self, sim_name='', eventType='', comment='', ok=True, target=None, operation=None, start_time=None, end_time=None, call_id=0):
+    def _send_monitor_event(
+        self,
+        sim_name='',
+        event_type='',
+        comment='',
+        ok=True,
+        target=None,
+        operation=None,
+        start_time=None,
+        end_time=None,
+        call_id=0,
+    ):
         """
         Publish a monitor event to the *_IPS_MONITOR* event topic.
         Event topics that start with an underscore are reserved for use by the
@@ -570,7 +642,7 @@ class Framework:
         When a single message is published, ALL of these components will handle the published message (there is no "shared queue").
 
         :param sim_name: The name of the simulation to which this even belongs.
-        :param eventType: The type of the event.
+        :param event_type: The type of the event.
         :param comment: A string containing comment that describes the event.
         :param ok: A string containing the values 'True' or 'False', based on
             whether the event indicates normal simulation execution, or an
@@ -579,19 +651,21 @@ class Framework:
         """
         event_time = time.time()
         if self.verbose_debug:
-            self.debug('_send_monitor_event(%s - %s)', sim_name, eventType)
+            self.debug('_send_monitor_event(%s - %s)', sim_name, event_type)
         portal_data = {}
         portal_data['code'] = 'Framework'
         # eventData['portal_runid'] = self.portalRunId
-        portal_data['eventtype'] = eventType
+        portal_data['eventtype'] = event_type
         portal_data['ok'] = ok
         portal_data['comment'] = comment
-        portal_data['walltime'] = '%.2f' % (event_time - self.config_manager.sim_map[sim_name].start_time)
-        portal_data['time'] = getTimeString(time.localtime(event_time))
+        portal_data['walltime'] = '%.2f' % (
+            event_time - self.config_manager.sim_map[sim_name].start_time
+        )
+        portal_data['time'] = get_time_string(time.localtime(event_time))
 
         # portal_data['phystimestamp'] = self.timeStamp
         get_config = self.config_manager.get_config_parameter
-        if eventType == 'IPS_START':
+        if event_type == 'IPS_START':
             # The 'IPS_START' event is always the first event sent from a component, and it should always be submitted internally.
             # This event will always mark the first time a component has registered,
             # and sending this event is indicative of the first time we make a Web Portal call and the first time we write to the event log files.
@@ -642,7 +716,9 @@ class Framework:
                 portal_data['sim_runid'] = get_config(sim_name, 'RUN_ID')
             except KeyError:
                 pass
-            portal_data['startat'] = getTimeString(time.localtime(self.config_manager.sim_map[sim_name].start_time))
+            portal_data['startat'] = get_time_string(
+                time.localtime(self.config_manager.sim_map[sim_name].start_time)
+            )
             portal_data['ips_version'] = get_versions()['version']
 
             portal_data['portal_runid'] = portal_runid
@@ -651,19 +727,21 @@ class Framework:
             except KeyError:
                 pass
 
-        elif eventType == 'IPS_END':
+        elif event_type == 'IPS_END':
             # The IPS_END event is always the last event called by the framework, ONLY sent out to indicate that there are no remaining messages to handle.
             portal_data['state'] = 'Completed'
-            portal_data['stopat'] = getTimeString(time.localtime(event_time))
+            portal_data['stopat'] = get_time_string(time.localtime(event_time))
             # Zipkin json format
             portal_data['trace'] = {
                 'timestamp': int(self.config_manager.sim_map[sim_name].start_time * 1e6),
-                'duration': int((event_time - self.config_manager.sim_map[sim_name].start_time) * 1e6),
+                'duration': int(
+                    (event_time - self.config_manager.sim_map[sim_name].start_time) * 1e6
+                ),
                 'localEndpoint': {'serviceName': f'{sim_name}@{self.component_id}'},
                 'id': hashlib.md5(f'{sim_name}@{self.component_id}'.encode()).hexdigest()[:16],
                 'tags': {'total_cores': str(self.resource_manager.total_cores)},
             }
-        elif eventType == 'IPS_CALL_END':
+        elif event_type == 'IPS_CALL_END':
             # The IPS_CALL_END event is always the last event called by the framework,
             trace = {}  # Zipkin json format
             if start_time is not None and end_time is not None:
@@ -672,8 +750,12 @@ class Framework:
             if target is not None:
                 trace['localEndpoint'] = {'serviceName': target}
                 trace['name'] = operation
-                trace['id'] = hashlib.md5(f'{target}:{operation}:{call_id}'.encode()).hexdigest()[:16]
-                trace['parentId'] = hashlib.md5(f'{sim_name}@{self.component_id}'.encode()).hexdigest()[:16]
+                trace['id'] = hashlib.md5(f'{target}:{operation}:{call_id}'.encode()).hexdigest()[
+                    :16
+                ]
+                trace['parentId'] = hashlib.md5(
+                    f'{sim_name}@{self.component_id}'.encode()
+                ).hexdigest()[:16]
 
             if trace:
                 portal_data['trace'] = trace
@@ -686,7 +768,9 @@ class Framework:
         if self.verbose_debug:
             self.debug('Publishing %s', str(event_body))
         # this message will be published to any component subscribed to '_IPS_MONITOR' - this generally includes the local logger bridge and the portal bridge
-        self.event_manager.publish(topicName='_IPS_MONITOR', eventName='IPS_SIM', eventBody=event_body)
+        self.event_manager.publish(
+            topicName='_IPS_MONITOR', eventName='IPS_SIM', eventBody=event_body
+        )
 
     def _send_dynamic_sim_event(self, sim_name='', event_type='', ok=True):
         self.debug('_send_dynamic_sim_event(%s:%s)', event_type, sim_name)
@@ -695,7 +779,9 @@ class Framework:
         event_data['SIM_NAME'] = sim_name
         event_data['ok'] = ok
         self.debug('Publishing %s', str(event_data))
-        self.event_manager.publish(topicName='_IPS_DYNAMIC_SIMULATION', eventName='IPS_DYNAMIC_SIM', eventBody=event_data)
+        self.event_manager.publish(
+            topicName='_IPS_DYNAMIC_SIMULATION', eventName='IPS_DYNAMIC_SIM', eventBody=event_data
+        )
 
     # TODO mark status as a "Literal" if we move to Python >= 3.8
     def send_terminate_msg(self, sim_name: str, status=Message.SUCCESS):
@@ -713,7 +799,7 @@ class Framework:
         comp_ids = self.comp_registry.get_component_ids(sim_name)
         for comp_id in comp_ids:
             try:
-                invocation_q = self.comp_registry.getComponentArtifact(comp_id, 'invocation_q')
+                invocation_q = self.comp_registry.get_component_artifact(comp_id, 'invocation_q')
                 call_id = self.task_manager.get_call_id()
                 msg = MethodInvokeMessage(self.component_id, comp_id, call_id, 'terminate', status)
                 self.debug('Sending terminate message to %s', str(comp_id))
@@ -756,23 +842,53 @@ def main():
         print('IPS using platform file :', platform_default, file=sys.stderr)
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--version', action='version', version='%(prog)s ' + get_versions()['version'])
-    parser.add_argument('--simulation', '-i', '--config', '-j', required=True, help='IPS simulation/config file')
     parser.add_argument(
-        '--platform', '-p', dest='platform_filename', default=platform_default, required=not platform_default, help='IPS platform configuration file'
+        '--version', action='version', version='%(prog)s ' + get_versions()['version']
     )
-    parser.add_argument('--debug', '-d', default=False, action='store_true', help='Turn on debugging')
-    parser.add_argument('--verbose', '-v', dest='verbose_debug', default=False, action='store_true', help='Run IPS verbosely')
+    parser.add_argument(
+        '--simulation', '-i', '--config', '-j', required=True, help='IPS simulation/config file'
+    )
+    parser.add_argument(
+        '--platform',
+        '-p',
+        dest='platform_filename',
+        default=platform_default,
+        required=not platform_default,
+        help='IPS platform configuration file',
+    )
+    parser.add_argument(
+        '--debug', '-d', default=False, action='store_true', help='Turn on debugging'
+    )
+    parser.add_argument(
+        '--verbose',
+        '-v',
+        dest='verbose_debug',
+        default=False,
+        action='store_true',
+        help='Run IPS verbosely',
+    )
     parser.add_argument('--log', '-l', dest='log_file', default='sys.stdout', help='IPS Log file')
-    parser.add_argument('--nodes', '-n', dest='cmd_nodes', default='0', type=int, help='Computer nodes')
-    parser.add_argument('--ppn', '-o', dest='cmd_ppn', default='0', type=int, help='Computer processor per nodes')
+    parser.add_argument(
+        '--nodes', '-n', dest='cmd_nodes', default='0', type=int, help='Computer nodes'
+    )
+    parser.add_argument(
+        '--ppn', '-o', dest='cmd_ppn', default='0', type=int, help='Computer processor per nodes'
+    )
 
     options = parser.parse_args()
 
-    cfgFile_list = options.simulation.split(',')
+    cfg_file_list = options.simulation.split(',')
 
     try:
-        fwk = Framework(cfgFile_list, options.log_file, options.platform_filename, options.debug, options.verbose_debug, options.cmd_nodes, options.cmd_ppn)
+        fwk = Framework(
+            cfg_file_list,
+            options.log_file,
+            options.platform_filename,
+            options.debug,
+            options.verbose_debug,
+            options.cmd_nodes,
+            options.cmd_ppn,
+        )
         fwk.run()
     except Exception as e:
         print(e, file=sys.stderr)

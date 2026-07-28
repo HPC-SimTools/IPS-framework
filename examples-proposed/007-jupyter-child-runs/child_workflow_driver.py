@@ -25,9 +25,9 @@ class ChildWorkflowDriver(Component):
 
     def finalize(self, timestamp=0.0, **keywords):
         """Write the final state to the destination file for the parent component to read, and save the final data"""
-        OUTPUT_LOCATION = 'analysis.json'
-        with open(OUTPUT_LOCATION, 'w') as f:
+        output_location = 'analysis.json'
+        with open(output_location, 'w') as f:
             json.dump(self.cache, f)
-        self.services.add_analysis_data_files([OUTPUT_LOCATION])
+        self.services.add_analysis_data_files([output_location])
 
         self.services.info('finalize')

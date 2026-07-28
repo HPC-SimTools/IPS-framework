@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
-""" Echoes the MPI rank and size of the communicator, the hostname, the PID,
-    affinity, and the number of cores. Also sleeps for a specified amount of time.
+"""Echoes the MPI rank and size of the communicator, the hostname, the PID,
+affinity, and the number of cores. Also sleeps for a specified amount of time.
 """
+
 import argparse
 import csv
-import sys
-
-from mpi4py import MPI
-from time import sleep, time
-
 import os
 import socket
+import sys
+from time import sleep, time
+
+from mpi4py import MPI
 
 try:
     import psutil
@@ -21,14 +21,9 @@ if __name__ == '__main__':
     start = time()
 
     parser = argparse.ArgumentParser(description='MPI stats')
-    parser.add_argument('-i', '--id', type=str,
-                        default=str(os.getpid()),
-                        help='Task ID')
-    parser.add_argument('-s', '--sleep',
-                        default=5.0, type=float,
-                        help='Sleep time in seconds')
-    parser.add_argument('-o', '--output', type=str,
-                        default=None, help='Output CSV file')
+    parser.add_argument('-i', '--id', type=str, default=str(os.getpid()), help='Task ID')
+    parser.add_argument('-s', '--sleep', default=5.0, type=float, help='Sleep time in seconds')
+    parser.add_argument('-o', '--output', type=str, default=None, help='Output CSV file')
 
     args = parser.parse_args()
 
@@ -51,22 +46,44 @@ if __name__ == '__main__':
         affinity = None
         n_cores = os.cpu_count()  # fallback
 
-    print(f"Rank {rank} of {size} in task {args.id} on {hostname} "
-          f"(pid {pid}) affinity {affinity!s} n_cores {n_cores} ")
+    print(
+        f'Rank {rank} of {size} in task {args.id} on {hostname} (pid {pid}) affinity {affinity!s} n_cores {n_cores} '
+    )
 
     if args.sleep > 0:
-        print(f"Task {args.id} sleeping {args.sleep} seconds...")
+        print(f'Task {args.id} sleeping {args.sleep} seconds...')
         sleep(args.sleep)
 
     if args.output is not None:
         with open(f'rank_{rank}_{args.output}', 'w', newline='') as csvfile:
-            fieldnames = ['id', 'hostname', 'rank', 'size', 'pid', 'n_cores', 'affinity', 's', 'start', 'end']
+            fieldnames = [
+                'id',
+                'hostname',
+                'rank',
+                'size',
+                'pid',
+                'n_cores',
+                'affinity',
+                's',
+                'start',
+                'end',
+            ]
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
 
             writer.writeheader()
-            writer.writerow({'id': args.id, 'hostname': hostname,
-                             'rank': rank, 'size': size, 'pid': pid,
-                             'n_cores': n_cores, 'affinity': str(affinity), 's': args.sleep,
-                             'start': start, 'end': time()})
+            writer.writerow(
+                {
+                    'id': args.id,
+                    'hostname': hostname,
+                    'rank': rank,
+                    'size': size,
+                    'pid': pid,
+                    'n_cores': n_cores,
+                    'affinity': str(affinity),
+                    's': args.sleep,
+                    'start': start,
+                    'end': time(),
+                }
+            )
 
     sys.exit(0)

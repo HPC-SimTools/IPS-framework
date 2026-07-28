@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Example driver for the ensembles example.
 
@@ -9,12 +8,12 @@ just a driver. The driver is used here for simplicity.
 from ipsframework import Component
 
 
-class instance_driver(Component):
+class InstanceDriver(Component):
     def __init__(self, services, config):
         super().__init__(services, config)
         print('Creating instance driver')
 
-    def init(self, timeStamp=0.0):
+    def init(self, time_stamp=0.0):
         return
 
     def step(self, timestamp=0.0, **keywords):

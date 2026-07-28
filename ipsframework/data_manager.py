@@ -57,7 +57,7 @@ class DataManager:
         source_dir = msg.args[1]
         target_dir = msg.args[2]
         try:
-            ipsutil.copyFiles(source_dir, state_files, target_dir)
+            ipsutil.copy_files(source_dir, state_files, target_dir)
         except Exception:
             self.fwk.exception('Error staging plasma state files to directory %s', target_dir)
             raise
@@ -78,7 +78,7 @@ class DataManager:
         source_dir = msg.args[1]
         target_dir = msg.args[2]
         try:
-            ipsutil.copyFiles(source_dir, state_files, target_dir)
+            ipsutil.copy_files(source_dir, state_files, target_dir)
         except Exception:
             self.fwk.exception('Error updating state files from directory %s', source_dir)
             raise
@@ -114,7 +114,11 @@ class DataManager:
                 self.fwk.exception('Error opening log file %s : using stdout', log_fullpath)
 
         try:
-            retval = subprocess.call([update_state, '-input', target_state_file, '-updates', partial_state_file], stdout=merge_stdout, stderr=subprocess.STDOUT)
+            retval = subprocess.call(
+                [update_state, '-input', target_state_file, '-updates', partial_state_file],
+                stdout=merge_stdout,
+                stderr=subprocess.STDOUT,
+            )
         except Exception:
             self.fwk.exception('Error calling update_state - probably not found in $PATH')
             raise
@@ -122,8 +126,11 @@ class DataManager:
         if retval != 0:
             return retval
         try:
-            ipsutil.copyFiles(plasma_work_dir, current_plasma_state, component_work_dir)
+            ipsutil.copy_files(plasma_work_dir, current_plasma_state, component_work_dir)
         except Exception:
-            self.fwk.exception('Error refreshing local copy of current plasma state file in directory %s', component_work_dir)
+            self.fwk.exception(
+                'Error refreshing local copy of current plasma state file in directory %s',
+                component_work_dir,
+            )
             raise
         return 0

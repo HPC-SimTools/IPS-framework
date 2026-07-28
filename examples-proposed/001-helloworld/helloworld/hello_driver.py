@@ -1,7 +1,7 @@
 from ipsframework import Component
 
 
-class hello_driver(Component):
+class HelloDriver(Component):
     """
     The IPS framework will always call into helloworld.hello_driver initially, as
     this module and name (helloworld.hello_driver.hello_driver) were defined in helloworld.conf

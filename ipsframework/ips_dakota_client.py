@@ -31,16 +31,20 @@ class IPSDakotaClient:
         """
         # parse file
         try:
-            self.platform_conf = ConfigObj(self.platform_fname, interpolation='template', file_error=True)
-        except (IOError, SyntaxError):
+            self.platform_conf = ConfigObj(
+                self.platform_fname, interpolation='template', file_error=True
+            )
+        except (OSError, SyntaxError):
             raise
         """
         Master Config file
         """
         # parse file
         try:
-            self.old_master_conf = ConfigObj(self.config_file, interpolation='template', file_error=True)
-        except (IOError, SyntaxError):
+            self.old_master_conf = ConfigObj(
+                self.config_file, interpolation='template', file_error=True
+            )
+        except (OSError, SyntaxError):
             raise
         # Import environment variables into config file
         # giving precedence to config file definitions in case of duplicates
@@ -84,7 +88,15 @@ class IPSDakotaClient:
             try:
                 conn = Client(str(server_address), 'AF_UNIX')
             except Exception:
-                print('%s: %d Failed to connect to %s: %s' % (time.strftime('%b %d %Y %H:%M:%S', time.localtime()), trials, server_address, str(sys.argv)))
+                print(
+                    '%s: %d Failed to connect to %s: %s'
+                    % (
+                        time.strftime('%b %d %Y %H:%M:%S', time.localtime()),
+                        trials,
+                        server_address,
+                        str(sys.argv),
+                    )
+                )
                 sys.stdout.flush()
                 if trials == num_trials - 1:
                     raise
@@ -115,7 +127,9 @@ def main(argv=None):
     config_file = os.environ['IPS_DAKOTA_config']
 
     try:
-        ips_executer = IPSDakotaClient(config_file, log_file_name, platform_filename, debug, in_file, out_file)
+        ips_executer = IPSDakotaClient(
+            config_file, log_file_name, platform_filename, debug, in_file, out_file
+        )
         ips_executer.run()
     except Exception:
         raise

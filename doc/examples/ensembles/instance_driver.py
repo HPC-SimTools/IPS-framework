@@ -1,18 +1,17 @@
-#!/usr/bin/env python3
 """
-    Example driver for the ensembles example.
+    Example Driver for the ensembles example.
 
     Please note that run_ensemble can be run from any IPS component, not
-    just a driver. The driver is used here for simplicity.
+    just a Driver. The Driver is used here for simplicity.
 """
 from ipsframework import Component
 
 
-class instance_driver(Component):
+class InstanceDriver(Component):
 
     def __init__(self, services, config):
         super().__init__(services, config)
-        print('Creating instance driver')
+        print('Creating instance Driver')
 
     def init(self, timeStamp=0.0):
         return
@@ -22,7 +21,7 @@ class instance_driver(Component):
 
             In this example we have two components for an
             example coupled simulation.  The components are
-            'a_sim_comp' and 'another_sim_comp'.  Here, we step
+            'ASimComp' and 'AnotherSimComp'.  Here, we step
             each of those components where they echo their
             unique parameters.
         """
@@ -35,4 +34,3 @@ class instance_driver(Component):
         self.services.call(another_comp, 'step', 0.0)
 
         self.services.info('Finished stepping components')
-

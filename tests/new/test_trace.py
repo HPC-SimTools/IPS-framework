@@ -5,7 +5,9 @@ import json
 from ipsframework import Framework
 
 
-def write_basic_config_and_platform_files(tmpdir, timeout='', logfile='', errfile='', nproc=1, exe='/bin/sleep', value='', shifter=False):
+def write_basic_config_and_platform_files(
+    tmpdir, timeout='', logfile='', errfile='', nproc=1, exe='/bin/sleep', value='', shifter=False
+):
     platform_file = tmpdir.join('platform.conf')
 
     platform = """MPIRUN = eval
@@ -103,7 +105,16 @@ def test_trace_info(tmpdir):
         'trace@FRAMEWORK@Framework@0',
     ]
     names = ['init(0)', '1', 'step(0)', '1', 'step(0)', 'step(0)', 'finalize(0)', None]
-    tags = [None, {'procs_requested': '1', 'cores_allocated': '1'}, {}, {'procs_requested': '1', 'cores_allocated': '1'}, {}, None, None, {'total_cores': '2'}]
+    tags = [
+        None,
+        {'procs_requested': '1', 'cores_allocated': '1'},
+        {},
+        {'procs_requested': '1', 'cores_allocated': '1'},
+        {},
+        None,
+        None,
+        {'total_cores': '2'},
+    ]
     parents = [7, 2, 5, 4, 5, 7, 7, None]
 
     for n, trace in enumerate(traces):
@@ -116,12 +127,28 @@ def test_trace_info(tmpdir):
 
         if names[n]:
             assert trace['name'] == names[n]
-            assert trace['id'] == hashlib.md5(f'{trace["localEndpoint"]["serviceName"]}:{trace["name"]}:{call_ids[n]}'.encode()).hexdigest()[:16]
+            assert (
+                trace['id']
+                == hashlib.md5(
+                    f'{trace["localEndpoint"]["serviceName"]}:{trace["name"]}:{call_ids[n]}'.encode()
+                ).hexdigest()[:16]
+            )
         else:
-            assert trace['id'] == hashlib.md5(f'{trace["localEndpoint"]["serviceName"]}'.encode()).hexdigest()[:16]
+            assert (
+                trace['id']
+                == hashlib.md5(f'{trace["localEndpoint"]["serviceName"]}'.encode()).hexdigest()[:16]
+            )
 
         if parents[n]:
             if names[parents[n]]:
-                assert trace['parentId'] == hashlib.md5(f'{service_names[parents[n]]}:{names[parents[n]]}:{call_ids[parents[n]]}'.encode()).hexdigest()[:16]
+                assert (
+                    trace['parentId']
+                    == hashlib.md5(
+                        f'{service_names[parents[n]]}:{names[parents[n]]}:{call_ids[parents[n]]}'.encode()
+                    ).hexdigest()[:16]
+                )
             else:
-                assert trace['parentId'] == hashlib.md5(f'{service_names[parents[n]]}'.encode()).hexdigest()[:16]
+                assert (
+                    trace['parentId']
+                    == hashlib.md5(f'{service_names[parents[n]]}'.encode()).hexdigest()[:16]
+                )

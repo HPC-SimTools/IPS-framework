@@ -1,4 +1,5 @@
 import hashlib
+import importlib
 import json
 import sys
 from multiprocessing import Process, set_start_method
@@ -51,7 +52,7 @@ PORTAL_URL = http://localhost:18080
 [DRIVER]
     CLASS = DRIVER
     SUB_CLASS =
-    NAME = driver
+    NAME = Driver
     BIN_PATH =
     NPROC = 1
     INPUT_FILES =
@@ -61,7 +62,7 @@ PORTAL_URL = http://localhost:18080
 [WORKER]
     CLASS = WORKER
     SUB_CLASS =
-    NAME = simple_sleep
+    NAME = SimpleSleep
     NPROC = 1
     BIN_PATH =
     INPUT_FILES =
@@ -78,18 +79,23 @@ PORTAL_URL = http://localhost:18080
 
 def test_portal(tmpdir):
     pytest.importorskip('flask')
-    from flask import Flask, jsonify, request  # pylint: disable=import-outside-toplevel
+    flask = importlib.import_module('flask')
+    flask = flask.flask
+    jsonify = flask.jsonify
+    request = flask.request
 
     platform_file, config_file = write_basic_config_and_platform_files(tmpdir)
 
     # standup simple flask server to test send_post
     def flask_server():
-        app = Flask('IPS portal')
+        app = flask('IPS portal')
 
         @app.route('/', methods=['POST'])
         def api():
             data = request.get_json()
-            return jsonify(message='Events added to run', events=len(data), runid=42, event=data), 200
+            return jsonify(
+                message='Events added to run', events=len(data), runid=42, event=data
+            ), 200
 
         app.run(port=18080)
 
@@ -112,14 +118,18 @@ def test_portal(tmpdir):
     with open(str(tmpdir.join('ips.log')), 'r') as f:
         lines = f.readlines()
 
-    URLs = [line[57:] for line in lines if 'FWK_COMP_PortalBridge_4 INFO' in line]
-    assert len(URLs) > 0
-    assert URLs[0] == 'Run Portal URL = http://localhost:18080/42\n'
+    ur_ls = [line[57:] for line in lines if 'FWK_COMP_PortalBridge_4 INFO' in line]
+    assert len(ur_ls) > 0
+    assert ur_ls[0] == 'Run Portal URL = http://localhost:18080/42\n'
 
     # remove timestamp and common start
     lines = [
         (int(code), json.loads(data))
-        for (code, data) in [line[74:].strip().split(maxsplit=1) for line in lines if 'FWK_COMP_PortalBridge_4 DEBUG    Portal Response: ' in line]
+        for (code, data) in [
+            line[74:].strip().split(maxsplit=1)
+            for line in lines
+            if 'FWK_COMP_PortalBridge_4 DEBUG    Portal Response: ' in line
+        ]
     ]
 
     for code, _ in lines:
@@ -160,7 +170,7 @@ def test_portal(tmpdir):
     assert 'duration' in trace
     assert 'timestamp' in trace
     assert 'id' in trace
-    assert trace['id'] == hashlib.md5('portal_test@FRAMEWORK@Framework@0'.encode()).hexdigest()[:16]
+    assert trace['id'] == hashlib.md5(b'portal_test@FRAMEWORK@Framework@0').hexdigest()[:16]
     assert 'traceId' in trace
     assert trace['traceId'] == hashlib.md5(event['portal_runid'].encode()).hexdigest()
     assert 'parentId' not in trace

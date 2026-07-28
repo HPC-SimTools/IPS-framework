@@ -41,7 +41,7 @@ LOG_LEVEL = INFO                   # Possible values: DEBUG, INFO, WARNING, ERRO
 [BASIC_CONCURRENT1]
     CLASS = drivers
     SUB_CLASS = testing
-    NAME = basic_concurrent1
+    NAME = BasicConcurrent1
     NPROC = 1
     BIN_PATH = $IPS_ROOT/tests/components/drivers
     INPUT_FILES = file1 sfile1 sfile2 ofile1 ofile2
@@ -51,7 +51,7 @@ LOG_LEVEL = INFO                   # Possible values: DEBUG, INFO, WARNING, ERRO
 [SMALL_WORKER]
     CLASS = workers
     SUB_CLASS = testing
-    NAME = small_worker
+    NAME = SmallWorker
     NPROC = 1
     BIN_PATH = $IPS_ROOT/tests/bin
     BIN = parallel_sleep
@@ -62,7 +62,7 @@ LOG_LEVEL = INFO                   # Possible values: DEBUG, INFO, WARNING, ERRO
 [MEDIUM_WORKER]
     CLASS = workers
     SUB_CLASS = testing
-    NAME = medium_worker
+    NAME = MediumWorker
     NPROC = 1
     BIN_PATH = $IPS_ROOT/tests/bin
     BIN = parallel_sleep
@@ -73,7 +73,7 @@ LOG_LEVEL = INFO                   # Possible values: DEBUG, INFO, WARNING, ERRO
 [LARGE_WORKER]
     CLASS = workers
     SUB_CLASS = testing
-    NAME = large_worker
+    NAME = LargeWorker
     NPROC = 2
     BIN_PATH = $IPS_ROOT/tests/bin
     BIN = parallel_sleep
