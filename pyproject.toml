@@ -50,6 +50,16 @@ dependencies = [
     "distributed"
 ]
 
+[dependency-groups]
+dev = [
+  "codespell>=2.4.1",
+  "mypy>=1.15.0",
+  "pre-commit>=4.2.0",
+  "pytest>=9.0.3",
+  "pytest-cov>=6.1.0",
+  "ruff==0.16.0",
+]
+
 [project.optional-dependencies]
 # sphinx for making docs locally; matplotlib because some of the
 # examples generate figures.
@@ -94,7 +104,7 @@ omit = [
 ]
 
 [tool.ruff]
-line-length = 160
+line-length = 100
 format = { quote-style = 'single' }
 extend-exclude = [
     "components/*",
@@ -195,5 +205,3 @@ ignore = [
 
 [tool.codespell]
 skip = 'RUS,_version.py,versioneer.py'
-
-
