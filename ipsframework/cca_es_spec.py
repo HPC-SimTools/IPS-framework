@@ -136,6 +136,5 @@ def initialize_event_service(service):
         _proxy = EventServiceCmpProxy(service)
 
 
-# pylint: disable=wrong-import-position
 from .event_service import EventService
 from .event_service_proxy import EventServiceCmpProxy, EventServiceFwkProxy
