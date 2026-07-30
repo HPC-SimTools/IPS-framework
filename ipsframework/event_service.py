@@ -23,7 +23,7 @@ class EventService:
 
         topicDirectory is a <topic,events> map, where topic is identified by
         topic_name and events are stored in an TopicManager object. The TopicManager
-        class appears in topicManager.py and holds events posted to a topic.
+        class appears in topic_manager.py and holds events posted to a topic.
         It also maintains the list of listeners subscribed to that topic.
         The topicDirectory is a flat listing of topics. A topic hierarchy can be
         built as an adjunct structure, without sacrificing topicDirectory. The

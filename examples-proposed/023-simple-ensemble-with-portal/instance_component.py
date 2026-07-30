@@ -10,7 +10,7 @@ from time import time
 from typing import Any
 
 from ipsframework import Component
-from ipsframework.resourceHelper import get_platform_info
+from ipsframework.resource_helper import get_platform_info
 
 
 def generate_fake_data(timestamp: float, base_x: float, base_y: float, word: str) -> dict[str, Any]:

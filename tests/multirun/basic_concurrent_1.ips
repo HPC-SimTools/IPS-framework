@@ -3,7 +3,7 @@ OUTPUT_PREFIX =
 RUN_COMMENT = testing basic concurrent component simulation capability
 
 RUN_ID = test                       # Identifier for this simulation run
-TOKAMAK_ID = basic_serial2          # Identifier for tokamak simulated
+TOKAMAK_ID = basic_concurrent_1          # Identifier for tokamak simulated
 SHOT_NUMBER = 0                     # Identifier for specific case for this tokamak (not necessarily a number)
 
 SIM_NAME = ${RUN_ID}_${TOKAMAK_ID}_${SHOT_NUMBER}   # Name of current simulation
@@ -16,7 +16,7 @@ CURRENT_STATE =
 PRIOR_STATE =
 NEXT_STATE =
 CURRENT_EQDSK =
-USE_PORTAL=True
+USE_PORTAL=False
 
 LOG_FILE = $SIM_ROOT/$SIM_NAME.log
 LOG_LEVEL = INFO                   # Possible values: DEBUG, INFO, WARNING, ERROR, CRITICAL
@@ -25,7 +25,7 @@ LOG_LEVEL = INFO                   # Possible values: DEBUG, INFO, WARNING, ERRO
    NAMES = DRIVER WORKER1 WORKER2 WORKER3
 
    [[DRIVER]]                                       # REQUIRED Port section
-      IMPLEMENTATION = BASIC_SERIAL2
+      IMPLEMENTATION = BASIC_CONCURRENT1
 
    [[WORKER1]]
       IMPLEMENTATION = SMALL_WORKER
@@ -38,15 +38,15 @@ LOG_LEVEL = INFO                   # Possible values: DEBUG, INFO, WARNING, ERRO
 
 # Individual configuration sections
 
-[BASIC_SERIAL2]
+[BASIC_CONCURRENT1]
     CLASS = drivers
     SUB_CLASS = testing
-    NAME = BasicSerial2
+    NAME = BasicConcurrent1
     NPROC = 1
     BIN_PATH = $IPS_ROOT/tests/components/drivers
     INPUT_FILES = file1 sfile1 sfile2 ofile1 ofile2
     OUTPUT_FILES = ofile1 ofile2
-    SCRIPT = $BIN_PATH/basic_serial2.py
+    SCRIPT = $BIN_PATH/basic_concurrent_1.py
 
 [SMALL_WORKER]
     CLASS = workers
@@ -86,8 +86,8 @@ LOG_LEVEL = INFO                   # Possible values: DEBUG, INFO, WARNING, ERRO
 # For MODE = EXPLICIT, the frame work uses the variable VALUES (space separated list of time values)
 
 [TIME_LOOP]
-   MODE = EXPLICIT
+   MODE = REGULAR
    START = 3.5
    FINISH = 3.7
    NSTEP  = 2
-   VALUES = 3.4 3.5 3.6
+   VALUES = 3.4 3.5 3.6 3.7 3.8 3.9

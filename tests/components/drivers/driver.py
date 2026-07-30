@@ -29,6 +29,3 @@ class Driver(Component):
             if port_name in ['INIT', 'DRIVER']:
                 continue
             self.services.call(port_dict[port_name], 'finalize', 0)
-
-
-globals()['driver'] = Driver

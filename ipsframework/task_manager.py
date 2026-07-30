@@ -52,7 +52,7 @@ class TaskManager:
         self.resource_mgr = None
         self.config_mgr = None
         self.host = None
-        self.comp_registry = self.fwk.config_manager.ComponentRegistry()
+        self.comp_registry = self.fwk.config_manager.comp_registry
         self.service_methods = [
             'init_call',
             'launch_task',
@@ -155,9 +155,20 @@ class TaskManager:
         keywords = init_call_msg.keywords
         caller_id = init_call_msg.sender_id
         call_id = self.get_call_id()
-        self.fwk.debug('TM:init_call(): %s %s %s %s', caller_id, callee_id, method_name, str(args))
+        self.fwk.debug(
+            'TM:init_call(): %s %s %s %s',
+            caller_id,
+            callee_id,
+            method_name,
+            str(args),
+        )
         invoke_msg = messages.MethodInvokeMessage(
-            self.fwk.component_id, callee_id, call_id, method_name, *args, **keywords
+            self.fwk.component_id,
+            callee_id,
+            call_id,
+            method_name,
+            *args,
+            **keywords,
         )
         invocation_q = self.comp_registry.get_component_artifact(callee_id, 'invocation_q')
         invocation_q.put(invoke_msg)
@@ -257,7 +268,8 @@ class TaskManager:
         except InsufficientResourcesError as e:
             if task_init.block:
                 raise BlockedMessageError(
-                    init_task_msg, '***%s waiting for %d resources' % (caller_id, task_init.nproc)
+                    init_task_msg,
+                    '***%s waiting for %d resources' % (caller_id, task_init.nproc),
                 ) from e
             else:
                 raise
@@ -309,7 +321,14 @@ class TaskManager:
         task_id = self.get_task_id()
 
         allocation = self.resource_mgr.get_allocation(
-            caller_id, nproc, task_id, wnodes, wsocks, task_ppn=tppn, task_cpp=tcpp, task_gpp=tgpp
+            caller_id,
+            nproc,
+            task_id,
+            wnodes,
+            wsocks,
+            task_ppn=tppn,
+            task_cpp=tcpp,
+            task_gpp=tgpp,
         )
         self.fwk.debug('RM: get_allocation() returned %s', str(allocation))
 
@@ -466,7 +485,14 @@ class TaskManager:
                     env_update = {'MPI_DSM_CPULIST': ':'.join(envlets)}
                     return cmd, env_update
                 else:
-                    cmd = ' '.join([self.task_launch_cmd, str(ppn), binary, ' '.join(cmd_args)])
+                    cmd = ' '.join(
+                        [
+                            self.task_launch_cmd,
+                            str(ppn),
+                            binary,
+                            ' '.join(cmd_args),
+                        ]
+                    )
 
         # --------------------------------------
         # mpiexec (MPICH variants)
@@ -497,10 +523,25 @@ class TaskManager:
             elif accurate_nodes:  # Need to assign tasks to nodes explicitly
                 host_select = '--host ' + nodes
                 cmd = ' '.join(
-                    [self.task_launch_cmd, host_select, nproc_flag, str(nproc), ppn_flag, str(ppn)]
+                    [
+                        self.task_launch_cmd,
+                        host_select,
+                        nproc_flag,
+                        str(nproc),
+                        ppn_flag,
+                        str(ppn),
+                    ]
                 )
             else:
-                cmd = ' '.join([self.task_launch_cmd, nproc_flag, str(nproc), ppn_flag, str(ppn)])
+                cmd = ' '.join(
+                    [
+                        self.task_launch_cmd,
+                        nproc_flag,
+                        str(nproc),
+                        ppn_flag,
+                        str(ppn),
+                    ]
+                )
         # ------------------------------------
         # aprun (Cray parallel launch)
         # ------------------------------------
@@ -555,7 +596,13 @@ class TaskManager:
                         == self.resource_mgr.cores_per_node / self.resource_mgr.sockets_per_node
                     ):
                         cmd = ' '.join(
-                            [self.task_launch_cmd, nproc_flag, str(nproc), ppn_flag, str(ppn)]
+                            [
+                                self.task_launch_cmd,
+                                nproc_flag,
+                                str(nproc),
+                                ppn_flag,
+                                str(ppn),
+                            ]
                         )
                     else:
                         if num_nodes > 1:
@@ -617,7 +664,13 @@ class TaskManager:
             num_nodes = len(nodes.split(','))
             if partial_nodes:
                 cmd = ' '.join(
-                    [self.task_launch_cmd, nnodes_flag, str(num_nodes), nproc_flag, str(nproc)]
+                    [
+                        self.task_launch_cmd,
+                        nnodes_flag,
+                        str(num_nodes),
+                        nproc_flag,
+                        str(nproc),
+                    ]
                 )
             else:
                 cpuptask_flag = '-c'

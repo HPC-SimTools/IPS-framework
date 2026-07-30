@@ -75,6 +75,3 @@ class BasicConcurrent1(Component):
     def terminate(self, status):
         self.services.log('Really Calling terminate()')
         Component.terminate(self, status)
-
-
-globals()['basic_concurrent1'] = BasicConcurrent1

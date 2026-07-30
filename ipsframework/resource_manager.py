@@ -27,7 +27,7 @@ Allocation = namedtuple(
         'ppn',
         'max_ppn',
         'cpp',
-        'accurateNodes',
+        'accurate_nodes',
         'cores_allocated',
     ],
 )
@@ -54,7 +54,7 @@ class ResourceManager:
         self.TM = None
         self.CM = None
 
-        self.accurateNodes = False
+        self.accurate_nodes = False
         self.node_alloc_mode = None
 
         self.host = None
@@ -124,7 +124,7 @@ class ResourceManager:
             self.cores_per_node = int(cmd_ppn)
             self.ppn = int(cmd_ppn)
             self.sockets_per_node = 1
-            self.accurateNodes = False
+            self.accurate_nodes = False
             list_of_nodes = []
             for i in range(cmd_nodes):
                 list_of_nodes.append(('dummy_node%d' % i, cmd_ppn))
@@ -141,15 +141,15 @@ class ResourceManager:
                     self.cores_per_node,
                     self.sockets_per_node,
                     self.max_ppn,
-                    self.accurateNodes,
+                    self.accurate_nodes,
                 ) = get_resource_list(self.CM, self.host)
                 self.fwk.warning('RM: list_of_nodes = %s', str(list_of_nodes))
                 self.fwk.warning('RM: max_ppn = %d ', int(self.max_ppn))
-                if self.accurateNodes is True and not self.CM.get_platform_parameter(
+                if self.accurate_nodes is True and not self.CM.get_platform_parameter(
                     'USE_ACCURATE_NODES'
                 ):
-                    self.accurateNodes = False
-                    self.fwk.warning('RM: User set accurateNodes to False')
+                    self.accurate_nodes = False
+                    self.fwk.warning('RM: User set accurate_nodes to False')
             except Exception:
                 print("can't get resource info")
                 raise
@@ -229,7 +229,7 @@ class ResourceManager:
         print('# host:', self.host, file=self.reporting_file)
         print('# total nodes:', self.num_nodes, file=self.reporting_file)
         print('# processors per node:', self.ppn, file=self.reporting_file)
-        print('using accurate nodes:', self.accurateNodes, file=self.reporting_file)
+        print('using accurate nodes:', self.accurate_nodes, file=self.reporting_file)
         print(
             '# time (in seconds since the | available | allocated | percent allocated | processes | percent used | notes ',
             file=self.reporting_file,
@@ -324,7 +324,7 @@ class ResourceManager:
           * *nodes*: list of node names
           * *ppn*: processes per node for launching the task
           * *max_ppn*: processes that can be launched
-          * *accurateNodes*: ``True`` if *nodes* uses the actual names of the nodes, ``False`` otherwise.
+          * *accurate_nodes*: ``True`` if *nodes* uses the actual names of the nodes, ``False`` otherwise.
 
         If *whole_nodes* is ``False``:
 
@@ -334,7 +334,7 @@ class ResourceManager:
              Core names are integers from 0 to n-1 where n is the number of cores on a node.
           * *ppn*: processes per node for launching the task
           * *max_ppn*: processes that can be launched
-          * *accurateNodes*: ``True`` if *nodes* uses the actual names of the nodes, ``False`` otherwise.
+          * *accurate_nodes*: ``True`` if *nodes* uses the actual names of the nodes, ``False`` otherwise.
 
         Arguments:
 
@@ -508,7 +508,7 @@ class ResourceManager:
                     ppn=ppn,
                     max_ppn=self.max_ppn,
                     cpp=cpp,
-                    accurateNodes=self.accurateNodes,
+                    accurate_nodes=self.accurate_nodes,
                     cores_allocated=cores_allocated,
                 )
             else:
@@ -520,7 +520,7 @@ class ResourceManager:
                     ppn=ppn,
                     max_ppn=self.max_ppn,
                     cpp=None,
-                    accurateNodes=self.accurateNodes,
+                    accurate_nodes=self.accurate_nodes,
                     cores_allocated=cores_allocated,
                 )
 

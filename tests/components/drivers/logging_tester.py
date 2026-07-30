@@ -1,6 +1,14 @@
 from ipsframework import Component
 
-log_types = ['log', 'debug', 'info', 'warning', 'error', 'exception', 'critical']
+log_types = [
+    'log',
+    'debug',
+    'info',
+    'warning',
+    'error',
+    'exception',
+    'critical',
+]
 
 
 class LoggingTester(Component):
@@ -22,6 +30,3 @@ class LoggingTester(Component):
         print(f'{self.component_id}.finalize')
         for log_type in log_types:
             getattr(self.services, log_type)(f'finalize msg: {log_type}')
-
-
-globals()['logging_tester'] = LoggingTester

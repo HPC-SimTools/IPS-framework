@@ -19,7 +19,7 @@ from typing import Any
 
 import numpy as np
 
-from ipsframework.resourceHelper import get_platform_info
+from ipsframework.resource_helper import get_platform_info
 
 
 def main(instance: str, alpha: float, l: float, t_final: float, nx: int, nt: int) -> dict[str, Any]:

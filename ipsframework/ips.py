@@ -216,7 +216,11 @@ class Framework:
                 self.data_manager, self.resource_manager, self.config_manager
             )
             self.resource_manager.initialize(
-                self.data_manager, self.task_manager, self.config_manager, cmd_nodes, cmd_ppn
+                self.data_manager,
+                self.task_manager,
+                self.config_manager,
+                cmd_nodes,
+                cmd_ppn,
             )
         except Exception:
             self.exception('Problem initializing managers')
@@ -236,7 +240,9 @@ class Framework:
         return self.in_queue
 
     def register_service_handler(
-        self, service_list: Iterable[str], handler: Callable[[ServiceRequestMessage], None]
+        self,
+        service_list: Iterable[str],
+        handler: Callable[[ServiceRequestMessage], None],
     ):
         """
         Register a call back method to handle a list of framework service
@@ -264,7 +270,11 @@ class Framework:
         """
         method_name = msg.target_method
         comp_id = msg.sender_id
-        self.debug('Framework dispatching method: %s from %s', method_name, str(comp_id))
+        self.debug(
+            'Framework dispatching method: %s from %s',
+            method_name,
+            str(comp_id),
+        )
         try:
             handler = self.service_handler[method_name]
         except KeyError:
@@ -287,11 +297,19 @@ class Framework:
             except Exception as e:
                 # self.exception('Exception handling service message: %s - %s', str(msg.__dict__), str(e))
                 response_msg = ServiceResponseMessage(
-                    self.component_id, comp_id, msg.message_id, Message.FAILURE, e
+                    self.component_id,
+                    comp_id,
+                    msg.message_id,
+                    Message.FAILURE,
+                    e,
                 )
             else:
                 response_msg = ServiceResponseMessage(
-                    self.component_id, comp_id, msg.message_id, Message.SUCCESS, ret_val
+                    self.component_id,
+                    comp_id,
+                    msg.message_id,
+                    Message.SUCCESS,
+                    ret_val,
                 )
 
         response_q = self.comp_registry.get_component_artifact(comp_id, 'svc_response_q')
@@ -351,7 +369,12 @@ class Framework:
         outstanding_fwk_calls = []
         for comp_id in fwk_comps:
             msg = ServiceRequestMessage(
-                self.component_id, self.component_id, comp_id, 'init_call', method_name, 0
+                self.component_id,
+                self.component_id,
+                comp_id,
+                'init_call',
+                method_name,
+                0,
             )
             self.debug('Framework sending message %s ', msg.__dict__)
             call_id = self.task_manager.init_call(msg, manage_return=False)
@@ -379,7 +402,10 @@ class Framework:
                             raise msg.args[0]
                         outstanding_fwk_calls.remove(msg.call_id)
                 else:
-                    self.error('Framework received unexpected message : %s', str(msg.__dict__))
+                    self.error(
+                        'Framework received unexpected message : %s',
+                        str(msg.__dict__),
+                    )
 
     def run(self) -> bool:
         """
@@ -439,7 +465,12 @@ class Framework:
                 msg_list = []
                 for method in ['step', 'finalize']:
                     req_msg = ServiceRequestMessage(
-                        self.component_id, self.component_id, comp_id, 'init_call', method, 0
+                        self.component_id,
+                        self.component_id,
+                        comp_id,
+                        'init_call',
+                        method,
+                        0,
                     )
                     msg_list.append((req_msg, None, str(comp_id), method, 0))
 
@@ -466,7 +497,12 @@ class Framework:
                 for comp_id in comp_list:
                     for method in methods:
                         req_msg = ServiceRequestMessage(
-                            self.component_id, self.component_id, comp_id, 'init_call', method, 0
+                            self.component_id,
+                            self.component_id,
+                            comp_id,
+                            'init_call',
+                            method,
+                            0,
                         )
                         msg_list.append((req_msg, sim_name, str(comp_id), method, 0))
                     # SIMYAN: add the msg_list to the outstanding sim calls
@@ -491,7 +527,13 @@ class Framework:
                     )
                 call_id = self.task_manager.init_call(msg, manage_return=False)
                 self.call_queue_map[call_id] = msg_list
-                self.outstanding_calls_list[call_id] = sim_name, comp, method, arg, time.time()
+                self.outstanding_calls_list[call_id] = (
+                    sim_name,
+                    comp,
+                    method,
+                    arg,
+                    time.time(),
+                )
         except Exception:
             self.exception(
                 'encountered exception during fwk.run() sending first round of invocations (init of inits and fwk comps)'
@@ -609,7 +651,12 @@ class Framework:
         for comp_id in comp_list:
             for method in ['init', 'step', 'finalize']:
                 req_msg = ServiceRequestMessage(
-                    self.component_id, self.component_id, comp_id, 'init_call', method, 0
+                    self.component_id,
+                    self.component_id,
+                    comp_id,
+                    'init_call',
+                    method,
+                    0,
                 )
                 msg_list.append((req_msg, sim_name, str(comp_id), method, 0))
 
@@ -618,7 +665,13 @@ class Framework:
         self.debug('Framework sending message %s ', msg.__dict__)
         call_id = self.task_manager.init_call(msg, manage_return=False)
         self.call_queue_map[call_id] = msg_list
-        self.outstanding_calls_list[call_id] = sim_name, comp, method, arg, time.time()
+        self.outstanding_calls_list[call_id] = (
+            sim_name,
+            comp,
+            method,
+            arg,
+            time.time(),
+        )
 
     def _send_monitor_event(
         self,
@@ -672,7 +725,10 @@ class Framework:
             user = self.config_manager.get_platform_parameter('USER')
             host = self.config_manager.get_platform_parameter('HOST')
             d = datetime.datetime.now()
-            date_str = '%s.%03d' % (d.strftime('%Y-%m-%dT%H:%M:%S'), int(d.microsecond / 1000))
+            date_str = '%s.%03d' % (
+                d.strftime('%Y-%m-%dT%H:%M:%S'),
+                int(d.microsecond / 1000),
+            )
             portal_runid = f'{sim_name}_{host}_{user}_{date_str}'
 
             portal_data['state'] = 'Running'
@@ -769,7 +825,9 @@ class Framework:
             self.debug('Publishing %s', str(event_body))
         # this message will be published to any component subscribed to '_IPS_MONITOR' - this generally includes the local logger bridge and the portal bridge
         self.event_manager.publish(
-            topicName='_IPS_MONITOR', eventName='IPS_SIM', eventBody=event_body
+            topic_name='_IPS_MONITOR',
+            event_name='IPS_SIM',
+            event_body=event_body,
         )
 
     def _send_dynamic_sim_event(self, sim_name='', event_type='', ok=True):
@@ -780,7 +838,9 @@ class Framework:
         event_data['ok'] = ok
         self.debug('Publishing %s', str(event_data))
         self.event_manager.publish(
-            topicName='_IPS_DYNAMIC_SIMULATION', eventName='IPS_DYNAMIC_SIM', eventBody=event_data
+            topic_name='_IPS_DYNAMIC_SIMULATION',
+            event_name='IPS_DYNAMIC_SIM',
+            event_body=event_data,
         )
 
     # TODO mark status as a "Literal" if we move to Python >= 3.8
@@ -843,10 +903,17 @@ def main():
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        '--version', action='version', version='%(prog)s ' + get_versions()['version']
+        '--version',
+        action='version',
+        version='%(prog)s ' + get_versions()['version'],
     )
     parser.add_argument(
-        '--simulation', '-i', '--config', '-j', required=True, help='IPS simulation/config file'
+        '--simulation',
+        '-i',
+        '--config',
+        '-j',
+        required=True,
+        help='IPS simulation/config file',
     )
     parser.add_argument(
         '--platform',
@@ -857,7 +924,11 @@ def main():
         help='IPS platform configuration file',
     )
     parser.add_argument(
-        '--debug', '-d', default=False, action='store_true', help='Turn on debugging'
+        '--debug',
+        '-d',
+        default=False,
+        action='store_true',
+        help='Turn on debugging',
     )
     parser.add_argument(
         '--verbose',
@@ -867,12 +938,28 @@ def main():
         action='store_true',
         help='Run IPS verbosely',
     )
-    parser.add_argument('--log', '-l', dest='log_file', default='sys.stdout', help='IPS Log file')
     parser.add_argument(
-        '--nodes', '-n', dest='cmd_nodes', default='0', type=int, help='Computer nodes'
+        '--log',
+        '-l',
+        dest='log_file',
+        default='sys.stdout',
+        help='IPS Log file',
     )
     parser.add_argument(
-        '--ppn', '-o', dest='cmd_ppn', default='0', type=int, help='Computer processor per nodes'
+        '--nodes',
+        '-n',
+        dest='cmd_nodes',
+        default='0',
+        type=int,
+        help='Computer nodes',
+    )
+    parser.add_argument(
+        '--ppn',
+        '-o',
+        dest='cmd_ppn',
+        default='0',
+        type=int,
+        help='Computer processor per nodes',
     )
 
     options = parser.parse_args()

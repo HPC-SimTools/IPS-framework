@@ -13,7 +13,7 @@ from ipsframework.ipsExceptions import (
     ResourceRequestUnequalPartitioningError,
 )
 from ipsframework.messages import ServiceRequestMessage
-from ipsframework.taskManager import TaskInit
+from ipsframework.task_manager import TaskInit
 
 
 def test_build_launch_cmd_fail():
@@ -32,7 +32,7 @@ def test_build_launch_cmd_fail():
             ppn=None,
             max_ppn=None,
             nodes=None,
-            accurateNodes=None,
+            accurate_nodes=None,
             partial_nodes=None,
             task_id=None,
         )
@@ -53,7 +53,7 @@ def test_build_launch_cmd_eval():
         ppn=None,
         max_ppn=None,
         nodes=None,
-        accurateNodes=None,
+        accurate_nodes=None,
         partial_nodes=None,
         task_id=None,
     )
@@ -68,7 +68,7 @@ def test_build_launch_cmd_eval():
         ppn=None,
         max_ppn=None,
         nodes=None,
-        accurateNodes=None,
+        accurate_nodes=None,
         partial_nodes=None,
         task_id=None,
     )
@@ -96,7 +96,7 @@ def test_build_launch_cmd_mpirun():
         ppn=None,
         max_ppn=None,
         nodes=None,
-        accurateNodes=None,
+        accurate_nodes=None,
         partial_nodes=None,
         task_id=None,
     )
@@ -111,7 +111,7 @@ def test_build_launch_cmd_mpirun():
         ppn=None,
         max_ppn=None,
         nodes=None,
-        accurateNodes=None,
+        accurate_nodes=None,
         partial_nodes=None,
         task_id=None,
         launch_cmd_extra_args='-extra 1',
@@ -127,7 +127,7 @@ def test_build_launch_cmd_mpirun():
         ppn=None,
         max_ppn=None,
         nodes=None,
-        accurateNodes=None,
+        accurate_nodes=None,
         partial_nodes=None,
         task_id=None,
     )
@@ -142,7 +142,7 @@ def test_build_launch_cmd_mpirun():
         ppn=None,
         max_ppn=None,
         nodes='n1,n2',
-        accurateNodes=True,
+        accurate_nodes=True,
         partial_nodes=None,
         task_id=None,
     )
@@ -161,7 +161,7 @@ def test_build_launch_cmd_mpirun():
         ppn=4,
         max_ppn=None,
         nodes=None,
-        accurateNodes=None,
+        accurate_nodes=None,
         partial_nodes=None,
         task_id=None,
     )
@@ -176,7 +176,7 @@ def test_build_launch_cmd_mpirun():
         ppn=4,
         max_ppn=None,
         nodes='n1,n2',
-        accurateNodes=True,
+        accurate_nodes=True,
         partial_nodes=None,
         task_id=None,
         core_list=[('n1', ['0:1', '3:4']), ('n2', ['0:4'])],
@@ -203,7 +203,7 @@ def test_build_launch_cmd_mpiexec():
         ppn=None,
         max_ppn=None,
         nodes=None,
-        accurateNodes=None,
+        accurate_nodes=None,
         partial_nodes=None,
         task_id=None,
     )
@@ -218,7 +218,7 @@ def test_build_launch_cmd_mpiexec():
         ppn=None,
         max_ppn=None,
         nodes=None,
-        accurateNodes=None,
+        accurate_nodes=None,
         partial_nodes=None,
         task_id=None,
     )
@@ -236,7 +236,7 @@ def test_build_launch_cmd_mpiexec():
         ppn=None,
         max_ppn=None,
         nodes=None,
-        accurateNodes=None,
+        accurate_nodes=None,
         partial_nodes=None,
         task_id=None,
     )
@@ -251,7 +251,7 @@ def test_build_launch_cmd_mpiexec():
         ppn=None,
         max_ppn=None,
         nodes='n1,n2',
-        accurateNodes=True,
+        accurate_nodes=True,
         partial_nodes=None,
         task_id=None,
     )
@@ -275,7 +275,7 @@ def test_build_launch_cmd_aprun():
         ppn=4,
         max_ppn=4,
         nodes=None,
-        accurateNodes=None,
+        accurate_nodes=None,
         partial_nodes=None,
         task_id=None,
     )
@@ -290,7 +290,7 @@ def test_build_launch_cmd_aprun():
         ppn=4,
         max_ppn=4,
         nodes='n1,n2',
-        accurateNodes=True,
+        accurate_nodes=True,
         partial_nodes=None,
         task_id=None,
     )
@@ -307,7 +307,7 @@ def test_build_launch_cmd_aprun():
         ppn=4,
         max_ppn=4,
         nodes=None,
-        accurateNodes=None,
+        accurate_nodes=None,
         partial_nodes=None,
         task_id=None,
     )
@@ -322,7 +322,7 @@ def test_build_launch_cmd_aprun():
         ppn=4,
         max_ppn=4,
         nodes='n1,n2',
-        accurateNodes=True,
+        accurate_nodes=True,
         partial_nodes=None,
         task_id=None,
     )
@@ -345,7 +345,7 @@ def test_build_launch_cmd_numactl():
         ppn=None,
         max_ppn=None,
         nodes='n1,n2',
-        accurateNodes=None,
+        accurate_nodes=None,
         partial_nodes=None,
         task_id=None,
     )
@@ -360,7 +360,7 @@ def test_build_launch_cmd_numactl():
         ppn=None,
         max_ppn=None,
         nodes='n1,n2',
-        accurateNodes=True,
+        accurate_nodes=True,
         partial_nodes=True,
         task_id=None,
     )
@@ -384,7 +384,7 @@ def test_build_launch_cmd_srun():
         ppn=None,
         max_ppn=None,
         nodes='n1,n2',
-        accurateNodes=None,
+        accurate_nodes=None,
         partial_nodes=True,
         task_id=None,
     )
@@ -399,7 +399,7 @@ def test_build_launch_cmd_srun():
         ppn=None,
         max_ppn=None,
         nodes='n1,n2',
-        accurateNodes=None,
+        accurate_nodes=None,
         partial_nodes=True,
         task_id=None,
     )
@@ -414,7 +414,7 @@ def test_build_launch_cmd_srun():
         ppn=None,
         max_ppn=None,
         nodes='n1,n2',
-        accurateNodes=None,
+        accurate_nodes=None,
         partial_nodes=True,
         task_id=None,
         launch_cmd_extra_args='-extra 1',
@@ -430,7 +430,7 @@ def test_build_launch_cmd_srun():
         ppn=2,
         max_ppn=None,
         nodes='n1,n2',
-        accurateNodes=None,
+        accurate_nodes=None,
         partial_nodes=False,
         task_id=None,
         cpp=1,
@@ -447,7 +447,7 @@ def test_build_launch_cmd_srun():
         ppn=1,
         max_ppn=None,
         nodes='n1,n2',
-        accurateNodes=None,
+        accurate_nodes=None,
         partial_nodes=False,
         task_id=None,
         cpp=2,
@@ -467,7 +467,7 @@ def test_build_launch_cmd_srun():
         ppn=2,
         max_ppn=None,
         nodes='n1,n2',
-        accurateNodes=None,
+        accurate_nodes=None,
         partial_nodes=False,
         task_id=None,
         cpp=1,
@@ -487,7 +487,7 @@ def test_build_launch_cmd_srun():
         ppn=1,
         max_ppn=None,
         nodes='n1,n2',
-        accurateNodes=None,
+        accurate_nodes=None,
         partial_nodes=False,
         task_id=None,
         cpp=2,
@@ -509,7 +509,7 @@ def test_build_launch_cmd_srun():
         ppn=None,
         max_ppn=None,
         nodes='n1',
-        accurateNodes=None,
+        accurate_nodes=None,
         partial_nodes=False,
         task_id=None,
         cpp=1,
@@ -530,7 +530,7 @@ def test_build_launch_cmd_srun():
         ppn=None,
         max_ppn=None,
         nodes='n1',
-        accurateNodes=None,
+        accurate_nodes=None,
         partial_nodes=False,
         task_id=None,
         cpp=1,
@@ -563,7 +563,7 @@ def test_init_task_srun(tmpdir):
     rm.initialize(dm, tm, cm, cmd_nodes=2, cmd_ppn=2)
 
     tm.task_launch_cmd = 'srun'
-    rm.accurateNodes = True
+    rm.accurate_nodes = True
 
     def init_final_task(nproc, tppn, tcpt=0):
         task_id, cmd, _, cores_allocated = tm.init_task(
@@ -832,7 +832,7 @@ def test_init_task_pool_srun(tmpdir):
     rm.initialize(dm, tm, cm, cmd_nodes=2, cmd_ppn=2)
 
     tm.task_launch_cmd = 'srun'
-    rm.accurateNodes = True
+    rm.accurate_nodes = True
 
     def init_final_task_pool(nproc=1, tppn=0, number_of_tasks=1, tcpp=0, msg=None):
         if msg is None:

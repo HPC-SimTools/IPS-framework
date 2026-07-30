@@ -7,7 +7,7 @@ import sys
 from time import time
 
 from ipsframework import Component
-from ipsframework.resourceHelper import get_platform_info
+from ipsframework.resource_helper import get_platform_info
 
 
 class InstanceComponent(Component):

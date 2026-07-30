@@ -67,6 +67,3 @@ class BasicSerial1(Component):
     def terminate(self, status):
         self.services.log('Really Calling terminate()')
         Component.terminate(self, status)
-
-
-globals()['basic_serial1'] = BasicSerial1

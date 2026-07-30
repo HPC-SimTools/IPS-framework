@@ -10,7 +10,7 @@ from ipsframework.ipsExceptions import (
     ResourceRequestMismatchError,
     ResourceRequestUnequalPartitioningError,
 )
-from ipsframework.resourceManager import ResourceManager
+from ipsframework.resource_manager import ResourceManager
 
 
 def test_allocations(tmpdir):
