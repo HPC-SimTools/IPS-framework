@@ -1,9 +1,8 @@
-#!/usr/bin/env python3
 """
-    Example driver for the ensembles example.
+    Example Driver for the ensembles example.
 
     Please note that run_ensemble can be run from any IPS component, not
-    just a driver. The driver is used here for simplicity.
+    just a Driver. The Driver is used here for simplicity.
 """
 import os
 from pathlib import Path
@@ -11,11 +10,11 @@ from pathlib import Path
 from ipsframework import Component
 
 
-class ensemble_driver(Component):
+class EnsembleDriver(Component):
 
     def __init__(self, services, config):
         super().__init__(services, config)
-        print('Creating driver')
+        print('Creating Driver')
 
     def init(self, timeStamp=0.0):
         return
@@ -51,7 +50,7 @@ class ensemble_driver(Component):
         # variable values. `mapping` is a data struct that associates the
         # specific simulation to a given run directory so that the user can
         # easily find output for a specific run.  Note that "template.config"
-        # is in INPUT_FILE for the driver component so that it is copied to the run.
+        # is in INPUT_FILE for the Driver component so that it is copied to the run.
         # But, of course, you could also use a full path to the file, instead.
         mapping = self.services.run_ensemble('template.config', variables,
                                              '/tmp/IPS', name="EXAMPLE_",
@@ -62,4 +61,3 @@ class ensemble_driver(Component):
 
     def finalize(self, timeStamp=0.0):
         return
-

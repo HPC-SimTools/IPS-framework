@@ -2,8 +2,8 @@ name: ips_static_analysis
 channels:
 - conda-forge
 dependencies:
-- python=3.9
-- ruff=0.9.4
+- python=3.10
+- ruff=0.16.0
 #- flake8=5.0.4
 #- pylint=2.15.3
 #- bandit=1.7.4

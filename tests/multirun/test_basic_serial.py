@@ -14,27 +14,27 @@ def copy_config_and_replace(infile, srcdir, tmpdir):
             for line in fin:
                 if line.startswith('SIM_ROOT'):
                     fout.write(f'SIM_ROOT = {tmpdir}/$SIM_NAME\n')
-                    IPS_ROOT = os.path.abspath(os.path.join(srcdir, '..', '..'))
-                    fout.write(f'IPS_ROOT = {IPS_ROOT}\n')
+                    ips_root = os.path.abspath(os.path.join(srcdir, '..', '..'))
+                    fout.write(f'IPS_ROOT = {ips_root}\n')
                 else:
                     fout.write(line)
 
 
 @pytest.mark.skipif(not shutil.which('mpirun'), reason='requires mpirun')
-def test_basic_serial1(tmpdir, capfd):
+def test_basic_serial_1(tmpdir, capfd):
     datadir = os.path.dirname(__file__)
-    copy_config_and_replace('basic_serial1.ips', datadir, tmpdir)
+    copy_config_and_replace('basic_serial_1.ips', datadir, tmpdir)
     shutil.copy(os.path.join(datadir, 'platform.conf'), tmpdir)
 
     # setup 'input' files
     os.system(f'cd {tmpdir}; touch file1 ofile1 ofile2 sfile1 sfile2')
 
     framework = Framework(
-        config_file_list=[os.path.join(tmpdir, 'basic_serial1.ips')],
+        config_file_list=[os.path.join(tmpdir, 'basic_serial_1.ips')],
         log_file_name=os.path.join(tmpdir, 'test.log'),
         platform_file_name=os.path.join(tmpdir, 'platform.conf'),
-        debug=None,
-        verbose_debug=None,
+        debug=False,
+        verbose_debug=False,
         cmd_nodes=0,
         cmd_ppn=0,
     )
@@ -47,9 +47,9 @@ def test_basic_serial1(tmpdir, capfd):
     captured_err = captured.err.split('\n')
 
     assert captured_err[0].startswith('Starting IPS')
-    assert captured_out[0] == "Created <class 'small_worker.small_worker'>"
-    assert captured_out[1] == "Created <class 'medium_worker.medium_worker'>"
-    assert captured_out[2] == "Created <class 'large_worker.large_worker'>"
+    assert captured_out[0] == "Created <class 'small_worker.SmallWorker'>"
+    assert captured_out[1] == "Created <class 'medium_worker.MediumWorker'>"
+    assert captured_out[2] == "Created <class 'large_worker.LargeWorker'>"
     assert captured_out[3] == 'small_worker : init() called'
     assert captured_out[5] == 'medium_worker : init() called'
     assert captured_out[7] == 'large_worker : init() called'
@@ -58,13 +58,33 @@ def test_basic_serial1(tmpdir, capfd):
     assert captured_out[11] == 'Current time =  3.70'
 
     # check files copied and created
-    driver_files = [os.path.basename(f) for f in glob.glob(str(tmpdir.join('test_basic_serial1_0/work/drivers_testing_basic_serial1_*/*')))]
+    driver_files = [
+        os.path.basename(f)
+        for f in glob.glob(
+            str(tmpdir.join('test_basic_serial_1_0/work/drivers_testing_basic_serial_1_*/*'))
+        )
+    ]
     for infile in ['file1', 'ofile1', 'ofile2', 'sfile1', 'sfile2']:
         assert infile in driver_files
 
-    small_worker_files = [os.path.basename(f) for f in glob.glob(str(tmpdir.join('test_basic_serial1_0/work/workers_testing_small_worker_*/*')))]
-    medium_worker_files = [os.path.basename(f) for f in glob.glob(str(tmpdir.join('test_basic_serial1_0/work/workers_testing_medium_worker_*/*')))]
-    large_worker_files = [os.path.basename(f) for f in glob.glob(str(tmpdir.join('test_basic_serial1_0/work/workers_testing_large_worker_*/*')))]
+    small_worker_files = [
+        os.path.basename(f)
+        for f in glob.glob(
+            str(tmpdir.join('test_basic_serial_1_0/work/workers_testing_SmallWorker_*/*'))
+        )
+    ]
+    medium_worker_files = [
+        os.path.basename(f)
+        for f in glob.glob(
+            str(tmpdir.join('test_basic_serial_1_0/work/workers_testing_MediumWorker_*/*'))
+        )
+    ]
+    large_worker_files = [
+        os.path.basename(f)
+        for f in glob.glob(
+            str(tmpdir.join('test_basic_serial_1_0/work/workers_testing_LargeWorker_*/*'))
+        )
+    ]
 
     for outfile in ['my_out3.50', 'my_out3.60', 'my_out3.70']:
         assert outfile in small_worker_files
@@ -73,45 +93,65 @@ def test_basic_serial1(tmpdir, capfd):
 
     # check contents of my_out files
     for outfile in ['my_out3.50', 'my_out3.60', 'my_out3.70']:
-        for worker in ['workers_testing_small_worker_2', 'workers_testing_medium_worker_3']:
-            with open(str(tmpdir.join('test_basic_serial1_0/work').join(worker).join(outfile)), 'r') as f:
+        for worker in [
+            'workers_testing_SmallWorker_2',
+            'workers_testing_MediumWorker_3',
+        ]:
+            with open(
+                str(tmpdir.join('test_basic_serial_1_0/work').join(worker).join(outfile)),
+                'r',
+            ) as f:
                 lines = f.readlines()
             assert "results = ['Rank 0 slept for 1.0 seconds']\n" in lines
 
-        worker = 'workers_testing_large_worker_4'
-        with open(str(tmpdir.join('test_basic_serial1_0/work').join(worker).join(outfile)), 'r') as f:
+        worker = 'workers_testing_LargeWorker_4'
+        with open(
+            str(tmpdir.join('test_basic_serial_1_0/work').join(worker).join(outfile)),
+            'r',
+        ) as f:
             lines = f.readlines()
-        assert "results = ['Rank 0 slept for 1.0 seconds', 'Rank 1 slept for 1.0 seconds']\n" in lines
+        assert (
+            "results = ['Rank 0 slept for 1.0 seconds', 'Rank 1 slept for 1.0 seconds']\n" in lines
+        )
 
     # check sim log file
-    with open(str(tmpdir.join('test_basic_serial1_0').join('test_basic_serial1_0.log')), 'r') as f:
+    with open(
+        str(tmpdir.join('test_basic_serial_1_0').join('test_basic_serial_1_0.log')),
+        'r',
+    ) as f:
         lines = f.readlines()
 
     # remove timestamp
     lines = [line[24:] for line in lines]
 
-    for worker in ['small_worker_2', 'medium_worker_3', 'large_worker_4']:
+    for worker in ['SmallWorker_2', 'MediumWorker_3', 'LargeWorker_4']:
         for timestamp in ['3.50', '3.60', '3.70']:
-            assert f'workers_testing_{worker} INFO     Stepping Worker timestamp={timestamp}\n' in lines
+            assert (
+                f'workers_testing_{worker} INFO     Stepping Worker timestamp={timestamp}\n'
+                in lines
+            )
 
 
 @pytest.mark.skipif(not shutil.which('mpirun'), reason='requires mpirun')
 def test_basic_serial_multi(tmpdir, capfd):
-    # This is the same as test_basic_serial1 except that 2 simulation files are use at the same time
+    # This is the same as test_basic_serial_1 except that 2 simulation files are use at the same time
     datadir = os.path.dirname(__file__)
-    copy_config_and_replace('basic_serial1.ips', datadir, tmpdir)
-    copy_config_and_replace('basic_serial2.ips', datadir, tmpdir)
+    copy_config_and_replace('basic_serial_1.ips', datadir, tmpdir)
+    copy_config_and_replace('basic_serial_2.ips', datadir, tmpdir)
     shutil.copy(os.path.join(datadir, 'platform.conf'), tmpdir)
 
     # setup 'input' files
     os.system(f'cd {tmpdir}; touch file1 ofile1 ofile2 sfile1 sfile2')
 
     framework = Framework(
-        config_file_list=[os.path.join(tmpdir, 'basic_serial1.ips'), os.path.join(tmpdir, 'basic_serial2.ips')],
+        config_file_list=[
+            os.path.join(tmpdir, 'basic_serial_1.ips'),
+            os.path.join(tmpdir, 'basic_serial_2.ips'),
+        ],
         log_file_name=os.path.join(tmpdir, 'test.log'),
         platform_file_name=os.path.join(tmpdir, 'platform.conf'),
-        debug=None,
-        verbose_debug=None,
+        debug=False,
+        verbose_debug=False,
         cmd_nodes=0,
         cmd_ppn=0,
     )
@@ -124,18 +164,18 @@ def test_basic_serial_multi(tmpdir, capfd):
     captured = capfd.readouterr()
     captured_out = captured.out.split('\n')
 
-    assert captured_out[0] == "Created <class 'small_worker.small_worker'>"
-    assert captured_out[1] == "Created <class 'medium_worker.medium_worker'>"
-    assert captured_out[2] == "Created <class 'large_worker.large_worker'>"
-    assert captured_out[3] == "Created <class 'small_worker.small_worker'>"
-    assert captured_out[4] == "Created <class 'medium_worker.medium_worker'>"
-    assert captured_out[5] == "Created <class 'large_worker.large_worker'>"
-    assert captured_out[7] == "small_worker : init() called"
-    assert captured_out[9] == "small_worker : init() called"
-    assert captured_out[11] == "medium_worker : init() called"
-    assert captured_out[13] == "medium_worker : init() called"
-    assert captured_out[15] == "large_worker : init() called"
-    assert captured_out[17] == "large_worker : init() called"
+    assert captured_out[0] == "Created <class 'small_worker.SmallWorker'>"
+    assert captured_out[1] == "Created <class 'medium_worker.MediumWorker'>"
+    assert captured_out[2] == "Created <class 'large_worker.LargeWorker'>"
+    assert captured_out[3] == "Created <class 'small_worker.SmallWorker'>"
+    assert captured_out[4] == "Created <class 'medium_worker.MediumWorker'>"
+    assert captured_out[5] == "Created <class 'large_worker.LargeWorker'>"
+    assert captured_out[7] == "SmallWorker : init() called"
+    assert captured_out[9] == "SmallWorker : init() called"
+    assert captured_out[11] == "MediumWorker : init() called"
+    assert captured_out[13] == "MediumWorker : init() called"
+    assert captured_out[15] == "LargeWorker : init() called"
+    assert captured_out[17] == "LargeWorker : init() called"
     assert captured_out[19] == "Current time =  1.00"
     assert captured_out[20] == "Current time =  1.00"
     assert captured_out[21] == "Current time =  2.00"
@@ -146,13 +186,33 @@ def test_basic_serial_multi(tmpdir, capfd):
 
     # check files copied and created
     for no in ['1', '2']:
-        driver_files = [os.path.basename(f) for f in glob.glob(str(tmpdir.join(f'test_basic_serial{no}_0/work/drivers_testing_basic_serial*_*/*')))]
+        driver_files = [
+            os.path.basename(f)
+            for f in glob.glob(
+                str(tmpdir.join(f'test_basic_serial_{no}_0/work/drivers_testing_basic_serial*_*/*'))
+            )
+        ]
         for infile in ['file1', 'ofile1', 'ofile2', 'sfile1', 'sfile2']:
             assert infile in driver_files
 
-        small_worker_files = [os.path.basename(f) for f in glob.glob(str(tmpdir.join(f'test_basic_serial{no}_0/work/workers_testing_small_worker_*/*')))]
-        medium_worker_files = [os.path.basename(f) for f in glob.glob(str(tmpdir.join(f'test_basic_serial{no}_0/work/workers_testing_medium_worker_*/*')))]
-        large_worker_files = [os.path.basename(f) for f in glob.glob(str(tmpdir.join(f'test_basic_serial{no}_0/work/workers_testing_large_worker_*/*')))]
+        small_worker_files = [
+            os.path.basename(f)
+            for f in glob.glob(
+                str(tmpdir.join(f'test_basic_serial_{no}_0/work/workers_testing_SmallWorker_*/*'))
+            )
+        ]
+        medium_worker_files = [
+            os.path.basename(f)
+            for f in glob.glob(
+                str(tmpdir.join(f'test_basic_serial_{no}_0/work/workers_testing_MediumWorker_*/*'))
+            )
+        ]
+        large_worker_files = [
+            os.path.basename(f)
+            for f in glob.glob(
+                str(tmpdir.join(f'test_basic_serial_{no}_0/work/workers_testing_LargeWorker_*/*'))
+            )
+        ]
 
         if no == '1':
             for outfile in ['my_out3.50', 'my_out3.60', 'my_out3.70']:
@@ -167,81 +227,119 @@ def test_basic_serial_multi(tmpdir, capfd):
 
     # check contents of my_out files
     for outfile in ['my_out3.50', 'my_out3.60', 'my_out3.70']:
-        for worker in ['workers_testing_small_worker_2', 'workers_testing_medium_worker_3']:
-            with open(str(tmpdir.join('test_basic_serial1_0/work').join(worker).join(outfile)), 'r') as f:
+        for worker in [
+            'workers_testing_SmallWorker_2',
+            'workers_testing_MediumWorker_3',
+        ]:
+            with open(
+                str(tmpdir.join('test_basic_serial_1_0/work').join(worker).join(outfile)),
+                'r',
+            ) as f:
                 lines = f.readlines()
             assert "results = ['Rank 0 slept for 1.0 seconds']\n" in lines
 
-        worker = 'workers_testing_large_worker_4'
-        with open(str(tmpdir.join('test_basic_serial1_0/work').join(worker).join(outfile)), 'r') as f:
+        worker = 'workers_testing_LargeWorker_4'
+        with open(
+            str(tmpdir.join('test_basic_serial_1_0/work').join(worker).join(outfile)),
+            'r',
+        ) as f:
             lines = f.readlines()
-        assert "results = ['Rank 0 slept for 1.0 seconds', 'Rank 1 slept for 1.0 seconds']\n" in lines
+        assert (
+            "results = ['Rank 0 slept for 1.0 seconds', 'Rank 1 slept for 1.0 seconds']\n" in lines
+        )
 
     for outfile in ['my_out3.40', 'my_out3.50', 'my_out3.60']:
-        for worker in ['workers_testing_small_worker_6', 'workers_testing_medium_worker_7']:
-            with open(str(tmpdir.join('test_basic_serial2_0/work').join(worker).join(outfile)), 'r') as f:
+        for worker in [
+            'workers_testing_SmallWorker_6',
+            'workers_testing_MediumWorker_7',
+        ]:
+            with open(
+                str(tmpdir.join('test_basic_serial_2_0/work').join(worker).join(outfile)),
+                'r',
+            ) as f:
                 lines = f.readlines()
             assert "results = ['Rank 0 slept for 1.0 seconds']\n" in lines
 
-        worker = 'workers_testing_large_worker_8'
-        with open(str(tmpdir.join('test_basic_serial2_0/work').join(worker).join(outfile)), 'r') as f:
+        worker = 'workers_testing_LargeWorker_8'
+        with open(
+            str(tmpdir.join('test_basic_serial_2_0/work').join(worker).join(outfile)),
+            'r',
+        ) as f:
             lines = f.readlines()
-        assert "results = ['Rank 0 slept for 1.0 seconds', 'Rank 1 slept for 1.0 seconds']\n" in lines
+        assert (
+            "results = ['Rank 0 slept for 1.0 seconds', 'Rank 1 slept for 1.0 seconds']\n" in lines
+        )
 
-    # check basic_serial1 sim log file
-    with open(str(tmpdir.join('test_basic_serial1_0').join('test_basic_serial1_0.log')), 'r') as f:
+    # check basic_serial_1 sim log file
+    with open(
+        str(tmpdir.join('test_basic_serial_1_0').join('test_basic_serial_1_0.log')),
+        'r',
+    ) as f:
         lines = f.readlines()
 
     # remove timestamp
     lines = [line[24:] for line in lines]
 
-    for worker in ['small_worker_2', 'medium_worker_3', 'large_worker_4']:
+    for worker in ['SmallWorker_2', 'MediumWorker_3', 'LargeWorker_4']:
         for timestamp in ['3.50', '3.60', '3.70']:
-            assert f'workers_testing_{worker} INFO     Stepping Worker timestamp={timestamp}\n' in lines
+            assert (
+                f'workers_testing_{worker} INFO     Stepping Worker timestamp={timestamp}\n'
+                in lines
+            )
 
-    # check basic_serial2 sim log file
-    with open(str(tmpdir.join('test_basic_serial2_0').join('test_basic_serial2_0.log')), 'r') as f:
+    # check basic_serial_2 sim log file
+    with open(
+        str(tmpdir.join('test_basic_serial_2_0').join('test_basic_serial_2_0.log')),
+        'r',
+    ) as f:
         lines = f.readlines()
 
     # remove timestamp
     lines = [line[24:] for line in lines]
 
-    for worker in ['small_worker_6', 'medium_worker_7', 'large_worker_8']:
+    for worker in ['SmallWorker_6', 'MediumWorker_7', 'LargeWorker_8']:
         for timestamp in ['3.40', '3.50', '3.60']:
-            assert f'workers_testing_{worker} INFO     Stepping Worker timestamp={timestamp}\n' in lines
+            assert (
+                f'workers_testing_{worker} INFO     Stepping Worker timestamp={timestamp}\n'
+                in lines
+            )
 
     # check that the parent_portal_runid is correctly set
-    serial1_json_files = glob.glob(str(tmpdir.join('test_basic_serial1_0').join('simulation_log').join('*.json')))
+    serial1_json_files = glob.glob(
+        str(tmpdir.join('test_basic_serial_1_0').join('simulation_log').join('*.json'))
+    )
     assert len(serial1_json_files) == 1
     with open(serial1_json_files[0], 'r') as json_file:
         serial1_lines = json_file.readlines()
 
-    serial1_IPS_START = json.loads(serial1_lines[0])
-    assert serial1_IPS_START['parent_portal_runid'] is None
-    serial1_portal_runid = serial1_IPS_START['portal_runid']
+    serial1_ips_start = json.loads(serial1_lines[0])
+    assert serial1_ips_start['parent_portal_runid'] is None
+    serial1_portal_runid = serial1_ips_start['portal_runid']
 
-    serial2_json_files = glob.glob(str(tmpdir.join('test_basic_serial2_0').join('simulation_log').join('*.json')))
+    serial2_json_files = glob.glob(
+        str(tmpdir.join('test_basic_serial_2_0').join('simulation_log').join('*.json'))
+    )
     assert len(serial2_json_files) == 1
     with open(serial2_json_files[0], 'r') as json_file:
         serial2_lines = json_file.readlines()
 
-    serial2_IPS_START = json.loads(serial2_lines[0])
-    assert serial2_IPS_START['parent_portal_runid'] == serial1_portal_runid
-    assert serial2_IPS_START['portal_runid'] is not None
-    assert serial2_IPS_START['portal_runid'] != serial1_portal_runid
+    serial2_ips_start = json.loads(serial2_lines[0])
+    assert serial2_ips_start['parent_portal_runid'] == serial1_portal_runid
+    assert serial2_ips_start['portal_runid'] is not None
+    assert serial2_ips_start['portal_runid'] != serial1_portal_runid
 
 
 @pytest.mark.skipif(not shutil.which('mpirun'), reason='requires mpirun')
-def test_basic_concurrent1(tmpdir, capfd):
+def test_basic_concurrent_1(tmpdir, capfd):
     datadir = os.path.dirname(__file__)
-    copy_config_and_replace('basic_concurrent1.ips', datadir, tmpdir)
+    copy_config_and_replace('basic_concurrent_1.ips', datadir, tmpdir)
     shutil.copy(os.path.join(datadir, 'platform.conf'), tmpdir)
 
     # setup 'input' files
     os.system(f'cd {tmpdir}; touch file1 ofile1 ofile2 sfile1 sfile2')
 
     framework = Framework(
-        config_file_list=[os.path.join(tmpdir, 'basic_concurrent1.ips')],
+        config_file_list=[os.path.join(tmpdir, 'basic_concurrent_1.ips')],
         log_file_name=os.path.join(tmpdir, 'test.log'),
         platform_file_name=os.path.join(tmpdir, 'platform.conf'),
         debug=None,
@@ -258,12 +356,12 @@ def test_basic_concurrent1(tmpdir, capfd):
     captured_err = captured.err.split('\n')
 
     assert captured_err[0].startswith('Starting IPS')
-    assert captured_out[0] == "Created <class 'small_worker.small_worker'>"
-    assert captured_out[1] == "Created <class 'medium_worker.medium_worker'>"
-    assert captured_out[2] == "Created <class 'large_worker.large_worker'>"
-    assert captured_out[3] == 'small_worker : init() called'
-    assert captured_out[5] == 'medium_worker : init() called'
-    assert captured_out[7] == 'large_worker : init() called'
+    assert captured_out[0] == "Created <class 'small_worker.SmallWorker'>"
+    assert captured_out[1] == "Created <class 'medium_worker.MediumWorker'>"
+    assert captured_out[2] == "Created <class 'large_worker.LargeWorker'>"
+    assert captured_out[3] == 'SmallWorker : init() called'
+    assert captured_out[5] == 'MediumWorker : init() called'
+    assert captured_out[7] == 'LargeWorker : init() called'
     assert captured_out[9] == 'Current time =  3.50'
     assert captured_out[10] == 'nonblocking wait_call() invoked before call 10 finished'
     assert captured_out[11] == 'Current time =  3.60'
@@ -272,13 +370,35 @@ def test_basic_concurrent1(tmpdir, capfd):
     assert captured_out[14] == 'nonblocking wait_call() invoked before call 16 finished'
 
     # check files copied and created
-    driver_files = [os.path.basename(f) for f in glob.glob(str(tmpdir.join('test_basic_concurrent1_0/work/drivers_testing_basic_concurrent1_*/*')))]
+    driver_files = [
+        os.path.basename(f)
+        for f in glob.glob(
+            str(
+                tmpdir.join('test_basic_concurrent_1_0/work/drivers_testing_basic_concurrent_1_*/*')
+            )
+        )
+    ]
     for infile in ['file1', 'ofile1', 'ofile2', 'sfile1', 'sfile2']:
         assert infile in driver_files
 
-    small_worker_files = [os.path.basename(f) for f in glob.glob(str(tmpdir.join('test_basic_concurrent1_0/work/workers_testing_small_worker_*/*')))]
-    medium_worker_files = [os.path.basename(f) for f in glob.glob(str(tmpdir.join('test_basic_concurrent1_0/work/workers_testing_medium_worker_*/*')))]
-    large_worker_files = [os.path.basename(f) for f in glob.glob(str(tmpdir.join('test_basic_concurrent1_0/work/workers_testing_large_worker_*/*')))]
+    small_worker_files = [
+        os.path.basename(f)
+        for f in glob.glob(
+            str(tmpdir.join('test_basic_concurrent_1_0/work/workers_testing_SmallWorker_*/*'))
+        )
+    ]
+    medium_worker_files = [
+        os.path.basename(f)
+        for f in glob.glob(
+            str(tmpdir.join('test_basic_concurrent_1_0/work/workers_testing_MediumWorker_*/*'))
+        )
+    ]
+    large_worker_files = [
+        os.path.basename(f)
+        for f in glob.glob(
+            str(tmpdir.join('test_basic_concurrent_1_0/work/workers_testing_LargeWorker_*/*'))
+        )
+    ]
 
     for outfile in ['my_out3.50', 'my_out3.60', 'my_out3.70']:
         assert outfile in small_worker_files
@@ -287,23 +407,40 @@ def test_basic_concurrent1(tmpdir, capfd):
 
     # check contents of my_out files
     for outfile in ['my_out3.50', 'my_out3.60', 'my_out3.70']:
-        for worker in ['workers_testing_small_worker_2', 'workers_testing_medium_worker_3']:
-            with open(str(tmpdir.join('test_basic_concurrent1_0/work').join(worker).join(outfile)), 'r') as f:
+        for worker in [
+            'workers_testing_SmallWorker_2',
+            'workers_testing_MediumWorker_3',
+        ]:
+            with open(
+                str(tmpdir.join('test_basic_concurrent_1_0/work').join(worker).join(outfile)),
+                'r',
+            ) as f:
                 lines = f.readlines()
             assert "results = ['Rank 0 slept for 1.0 seconds']\n" in lines
 
-        worker = 'workers_testing_large_worker_4'
-        with open(str(tmpdir.join('test_basic_concurrent1_0/work').join(worker).join(outfile)), 'r') as f:
+        worker = 'workers_testing_LargeWorker_4'
+        with open(
+            str(tmpdir.join('test_basic_concurrent_1_0/work').join(worker).join(outfile)),
+            'r',
+        ) as f:
             lines = f.readlines()
-        assert "results = ['Rank 0 slept for 1.0 seconds', 'Rank 1 slept for 1.0 seconds']\n" in lines
+        assert (
+            "results = ['Rank 0 slept for 1.0 seconds', 'Rank 1 slept for 1.0 seconds']\n" in lines
+        )
 
     # check sim log file
-    with open(str(tmpdir.join('test_basic_concurrent1_0').join('test_basic_concurrent1_0.log')), 'r') as f:
+    with open(
+        str(tmpdir.join('test_basic_concurrent_1_0').join('test_basic_concurrent_1_0.log')),
+        'r',
+    ) as f:
         lines = f.readlines()
 
     # remove timestamp
     lines = [line[24:] for line in lines]
 
-    for worker in ['small_worker_2', 'medium_worker_3', 'large_worker_4']:
+    for worker in ['SmallWorker_2', 'MediumWorker_3', 'LargeWorker_4']:
         for timestamp in ['3.50', '3.60', '3.70']:
-            assert f'workers_testing_{worker} INFO     Stepping Worker timestamp={timestamp}\n' in lines
+            assert (
+                f'workers_testing_{worker} INFO     Stepping Worker timestamp={timestamp}\n'
+                in lines
+            )

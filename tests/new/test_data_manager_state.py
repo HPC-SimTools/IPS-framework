@@ -38,23 +38,23 @@ STATE_WORK_DIR = $SIM_ROOT/work/state
 [init]
     CLASS = DATA_INIT
     SUB_CLASS =
-    NAME = init_dataManager
+    NAME = InitDataManager
     BIN_PATH =
     NPROC = 1
     INPUT_FILES =
     OUTPUT_FILES =
     SCRIPT =
-    MODULE = components.drivers.init_dataManager
+    MODULE = components.drivers.init_data_manager
 [driver]
     CLASS = DATA_DRIVER
     SUB_CLASS =
-    NAME = driver_dataManager
+    NAME = DriverDataManager
     BIN_PATH =
     NPROC = 1
     INPUT_FILES =
     OUTPUT_FILES =
     SCRIPT =
-    MODULE = components.drivers.driver_dataManager
+    MODULE = components.drivers.driver_data_manager
 """
 
     with open(config_file, 'w') as f:
@@ -63,7 +63,7 @@ STATE_WORK_DIR = $SIM_ROOT/work/state
     return platform_file, config_file
 
 
-def test_dataManager_state_file(tmpdir):
+def test_data_manager_state_file(tmpdir):
     platform_file, config_file = write_basic_config_and_platform_files(tmpdir)
 
     framework = Framework(
@@ -80,16 +80,20 @@ def test_dataManager_state_file(tmpdir):
 
     # check output files exist
     for filename in ['state.dat', 'state100.dat']:
-        assert os.path.exists(str(tmpdir.join('work').join('DATA_INIT__init_dataManager_1').join(filename)))
-        assert os.path.exists(str(tmpdir.join('work').join('DATA_DRIVER__driver_dataManager_2').join(filename)))
+        assert os.path.exists(
+            str(tmpdir.join('work').join('DATA_INIT__InitDataManager_1').join(filename))
+        )
+        assert os.path.exists(
+            str(tmpdir.join('work').join('DATA_DRIVER__DriverDataManager_2').join(filename))
+        )
         assert os.path.exists(str(tmpdir.join('work').join('state').join(filename)))
 
     # check output log file
     test_map = (
-        ('DATA_INIT__init_dataManager_1', 'state.dat', 1),
-        ('DATA_INIT__init_dataManager_1', 'state100.dat', 100),
-        ('DATA_DRIVER__driver_dataManager_2', 'state.dat', 2),
-        ('DATA_DRIVER__driver_dataManager_2', 'state100.dat', 101),
+        ('DATA_INIT__InitDataManager_1', 'state.dat', 1),
+        ('DATA_INIT__InitDataManager_1', 'state100.dat', 100),
+        ('DATA_DRIVER__DriverDataManager_2', 'state.dat', 2),
+        ('DATA_DRIVER__DriverDataManager_2', 'state100.dat', 101),
         ('state', 'state.dat', 2),
         ('state', 'state100.dat', 101),
     )
@@ -99,8 +103,13 @@ def test_dataManager_state_file(tmpdir):
         assert value == result
 
     # check merge_current_state logfile
-    logfile = str(tmpdir.join('work').join('DATA_DRIVER__driver_dataManager_2').join('merge_current_state.log'))
+    logfile = str(
+        tmpdir.join('work').join('DATA_DRIVER__DriverDataManager_2').join('merge_current_state.log')
+    )
     assert os.path.exists(logfile)
     # remove tmpdir from log output
     log = open(logfile).readline().replace(str(tmpdir), '')
-    assert log == '-input /work/state/state.dat -updates /work/DATA_DRIVER__driver_dataManager_2/partial_state_file\n'
+    assert (
+        log
+        == '-input /work/state/state.dat -updates /work/DATA_DRIVER__DriverDataManager_2/partial_state_file\n'
+    )

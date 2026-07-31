@@ -3,7 +3,7 @@ from sys import stderr
 from ipsframework import Component
 
 
-class driver(Component):
+class Driver(Component):
     """Note that only one worker component is called at a time, so the workers are not called in parallel."""
 
     def step(self, timestamp=0.0, **keywords):

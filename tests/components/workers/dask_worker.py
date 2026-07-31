@@ -1,7 +1,7 @@
 from ipsframework import Component
 
 
-class dask_worker(Component):
+class DaskWorker(Component):
     # pylint: disable=no-member
     def step(self, timestamp=0.0, **keywords):
         cmd = self.EXECUTABLE
@@ -20,13 +20,25 @@ class dask_worker(Component):
             if self.ERRFILE:
                 kwargs['errfile'] = self.ERRFILE.format(i)
 
-            self.services.add_task('pool', f'task_{i}', int(self.NPROC), cwd, cmd, self.VALUE if self.VALUE else f'{i}', **kwargs)
+            self.services.add_task(
+                'pool',
+                f'task_{i}',
+                int(self.NPROC),
+                cwd,
+                cmd,
+                self.VALUE if self.VALUE else f'{i}',
+                **kwargs,
+            )
         nodes = self.services.get_config_param('NODES')
         ret_val = self.services.submit_tasks(
-            'pool', use_dask=True, use_shifter=self.SHIFTER == 'True', dask_nodes=nodes, dask_worker_per_gpu=self.GPU == 'True'
+            'pool',
+            use_dask=True,
+            use_shifter=self.SHIFTER == 'True',
+            dask_nodes=nodes,
+            dask_worker_per_gpu=self.GPU == 'True',
         )
         self.services.info('ret_val = %d', ret_val)
         exit_status = self.services.get_finished_tasks('pool')
         for i in range(total_tasks):
             task_name = f'task_{i}'
-            self.services.info('{} {}'.format(task_name, exit_status.get(task_name)))
+            self.services.info(f'{task_name} {exit_status.get(task_name)}')

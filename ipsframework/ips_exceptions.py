@@ -3,7 +3,7 @@
 # -------------------------------------------------------------------------------
 
 
-class BlockedMessageException(Exception):
+class BlockedMessageError(Exception):
     """Exception Raised by the any manager when a blocking service
     invocation is made, and the invocation result is not readily
     available.
@@ -19,21 +19,21 @@ class BlockedMessageException(Exception):
         return 'message blocked because %s' % self.reason
 
 
-class IncompleteCallException(Exception):
+class IncompleteCallError(Exception):
     """Exception Raised by the taskManager when a nonblocking wait_call()
     method is invoked  before the call has finished.
     """
 
-    def __init__(self, callID):
+    def __init__(self, call_id):
         super().__init__()
-        self.callID = callID
-        self.args = (callID,)
+        self.call_id = call_id
+        self.args = (call_id,)
 
     def __str__(self):
-        return 'nonblocking wait_call() invoked before call %s finished' % self.callID
+        return 'nonblocking wait_call() invoked before call %s finished' % self.call_id
 
 
-class InsufficientResourcesException(Exception):
+class InsufficientResourcesError(Exception):
     """Exception Raised by the resource manager when not enough resources
     are available to satisfy an allocate() call
     """
@@ -60,7 +60,7 @@ class InsufficientResourcesException(Exception):
         )
 
 
-class ResourceRequestMismatchException(Exception):
+class ResourceRequestMismatchError(Exception):
     """Exception raised by the resource manager when it is possible to launch
     the requested number of processes, but not on the requested number of
     processes per node.
@@ -79,12 +79,13 @@ class ResourceRequestMismatchException(Exception):
     def __str__(self):
         s = (
             'component %s requested %d processes with %d processes per node, while the number of processes requested '
-            'is less than the max (%d), the processes per node value is too low.' % (self.caller_id, self.nproc, self.ppn, self.max_procs)
+            'is less than the max (%d), the processes per node value is too low.'
+            % (self.caller_id, self.nproc, self.ppn, self.max_procs)
         )
         return s
 
 
-class GPUResourceRequestMismatchException(Exception):
+class GpuResourceRequestMismatchError(Exception):
     """Exception raised by the resource manager when it is possible to launch
     the requested number of GPUs per task
     """
@@ -99,16 +100,19 @@ class GPUResourceRequestMismatchException(Exception):
         self.args = (caller_id, tid, ppn, gpp, max_gpp)
 
     def __str__(self):
-        s = 'component %s requested %d processes per node with %d GPUs per process, which is greater than the available %d GPUS_PER_NODE' % (
-            self.caller_id,
-            self.ppn,
-            self.gpp,
-            self.max_gpp,
+        s = (
+            'component %s requested %d processes per node with %d GPUs per process, which is greater than the available %d GPUS_PER_NODE'
+            % (
+                self.caller_id,
+                self.ppn,
+                self.gpp,
+                self.max_gpp,
+            )
         )
         return s
 
 
-class ResourceRequestUnequalPartitioningException(Exception):
+class ResourceRequestUnequalPartitioningError(Exception):
     """Exception raised by the resource manager when it is possible to
     launch the requested number of processes, but the requested number
     of processes and processes per node will result in unequal
@@ -128,12 +132,13 @@ class ResourceRequestUnequalPartitioningException(Exception):
     def __str__(self):
         s = (
             'component %s requested %d processes with %d processes per node, while the number of processes requested is less than the max (%d), '
-            'it will result in unequal partitioning of processes across nodes' % (self.caller_id, self.nproc, self.ppn, self.max_procs)
+            'it will result in unequal partitioning of processes across nodes'
+            % (self.caller_id, self.nproc, self.ppn, self.max_procs)
         )
         return s
 
 
-class InvalidResourceSettingsException(Exception):
+class InvalidResourceSettingsError(Exception):
     """
     Exception raised by the resource helper to indicate inconsistent resource settings.
     """
@@ -147,14 +152,22 @@ class InvalidResourceSettingsException(Exception):
     def __str__(self):
         preamble = 'Invalid resource specification in platform configuration file: '
         if self.type == 'spn > cpn':
-            return '%s socket per node count (%d) greater than core per node count (%d).' % (preamble, self.spn, self.cpn)
+            return '%s socket per node count (%d) greater than core per node count (%d).' % (
+                preamble,
+                self.spn,
+                self.cpn,
+            )
         elif self.type == 'spn not divisible by cpn':
-            return '%s socket per node count (%d) not divisible by core per node count (%d).' % (preamble, self.spn, self.cpn)
+            return '%s socket per node count (%d) not divisible by core per node count (%d).' % (
+                preamble,
+                self.spn,
+                self.cpn,
+            )
         else:
             return '%s unknown error' % (preamble)
 
 
-class BadResourceRequestException(Exception):
+class BadResourceRequestError(Exception):
     """Exception raised by the resource manager when a component requests
     a quantity of resources that can never be satisfied during a
     get_allocation() call

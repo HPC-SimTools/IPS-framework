@@ -1,14 +1,24 @@
 """IPS Framework"""
 
 from .component import Component
-from .configurationManager import ConfigurationManager
-from .dataManager import DataManager
+from .configuration_manager import ConfigurationManager
+from .data_manager import DataManager
 from .ips import Framework
-from .resourceManager import ResourceManager
+from .resource_manager import ResourceManager
 from .services import ServicesProxy, Task, TaskPool
-from .taskManager import TaskManager
+from .task_manager import TaskManager
 
-__all__ = ['Component', 'ConfigurationManager', 'DataManager', 'Framework', 'ResourceManager', 'ServicesProxy', 'Task', 'TaskManager', 'TaskPool']
+__all__ = [
+    'Component',
+    'ConfigurationManager',
+    'DataManager',
+    'Framework',
+    'ResourceManager',
+    'ServicesProxy',
+    'Task',
+    'TaskManager',
+    'TaskPool',
+]
 
 from . import _version
 

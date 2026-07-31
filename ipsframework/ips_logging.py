@@ -15,7 +15,7 @@ import sys
 import time
 
 
-class myLogRecordStreamHandler(socketserver.StreamRequestHandler):
+class MyLogRecordStreamHandler(socketserver.StreamRequestHandler):
     def __init__(self, request, client_address, server, handler):
         self.handler = handler
         super().__init__(request, client_address, server)
@@ -34,14 +34,14 @@ class myLogRecordStreamHandler(socketserver.StreamRequestHandler):
             chunk = self.connection.recv(slen)
             while len(chunk) < slen:
                 chunk = chunk + self.connection.recv(slen - len(chunk))
-            obj = self.unPickle(chunk)
+            obj = self.un_pickle(chunk)
             record = logging.makeLogRecord(obj)
-            self.handleLogRecord(record)
+            self.handle_log_record(record)
 
-    def unPickle(self, data):
+    def un_pickle(self, data):
         return pickle.loads(data)
 
-    def handleLogRecord(self, record):
+    def handle_log_record(self, record):
         name = record.name
         logger = logging.getLogger(name)
         # Need to make sure we only have one handler, since the handler on the
@@ -61,14 +61,14 @@ class LogRecordSocketReceiver(socketserver.ThreadingUnixStreamServer):
 
     allow_reuse_address = True
 
-    def __init__(self, log_pipe, handler=myLogRecordStreamHandler):
+    def __init__(self, log_pipe, handler=MyLogRecordStreamHandler):
         super().__init__(log_pipe, handler)
 
     def get_file_no(self):
         return self.socket.fileno()
 
 
-class ipsLogger:
+class IpsLogger:
     def __init__(self, dynamic_sim_queue=None):
         self.log_map = {}
         self.server_map = {}
@@ -86,12 +86,16 @@ class ipsLogger:
             try:
                 os.makedirs(directory, exist_ok=True)
             except OSError as oserr:
-                print('Error creating directory %s : %s-%s' % (directory, oserr.errno, oserr.strerror), file=sys.stderr)
+                print(
+                    'Error creating directory %s : %s-%s'
+                    % (directory, oserr.errno, oserr.strerror),
+                    file=sys.stderr,
+                )
                 sys.exit(1)
             log_handler = logging.FileHandler(log_file, mode='w')
 
         log_handler.setFormatter(self.formatter)
-        partial_handler = functools.partial(myLogRecordStreamHandler, handler=log_handler)
+        partial_handler = functools.partial(MyLogRecordStreamHandler, handler=log_handler)
         recvr = LogRecordSocketReceiver(log_pipe_name, handler=partial_handler)
         fileno = recvr.get_file_no()
         self.log_map[fileno] = (recvr, log_handler, log_pipe_name)
@@ -117,7 +121,9 @@ class ipsLogger:
                 pass
             else:
                 tokens = msg.split()
-                if tokens[0] == 'CREATE_SIM':  # Expecting Message: 'CREATE_SIM  log_pipe_name  log_file
+                if (
+                    tokens[0] == 'CREATE_SIM'
+                ):  # Expecting Message: 'CREATE_SIM  log_pipe_name  log_file
                     self.add_sim_log(tokens[1], tokens[2])
                 elif tokens[0] == 'END_SIM':  # Expecting Message 'END_SIM log_pipe_name'
                     log_pipe_name = tokens[1]

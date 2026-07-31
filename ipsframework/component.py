@@ -8,9 +8,9 @@ import sys
 import weakref
 from copy import copy
 from multiprocessing import Queue
-from typing import TYPE_CHECKING, Any, Dict, Literal
+from typing import TYPE_CHECKING, Any, Literal
 
-from .componentRegistry import ComponentID
+from .component_registry import ComponentID
 from .messages import Message, MethodResultMessage
 
 if TYPE_CHECKING:
@@ -29,7 +29,7 @@ class Component:
     :type config: dict
     """
 
-    def __init__(self, services, config: Dict[str, Any]):
+    def __init__(self, services, config: dict[str, Any]):
         """
         Set up config values and reference to services.
         """
@@ -59,7 +59,9 @@ class Component:
                 setattr(result, k, copy(v))
         return result
 
-    def __initialize__(self, component_id: ComponentID, invocation_q: Queue, start_time: float = 0.0):
+    def __initialize__(
+        self, component_id: ComponentID, invocation_q: Queue, start_time: float = 0.0
+    ):
         """
         Establish connection to *invocation_q*.
         """
@@ -127,7 +129,10 @@ class Component:
         self.services._init_event_service()
 
         # the topic prefix must start with '_IPS_' to be a reserved topic
-        self.services.subscribe(f'_IPS_{self.__component_id.get_serialization()}', self.services._component_id_subscription_callback)
+        self.services.subscribe(
+            f'_IPS_{self.__component_id.get_serialization()}',
+            self.services._component_id_subscription_callback,
+        )
 
         while True:
             msg = self.__invocation_q.get()
@@ -141,15 +146,21 @@ class Component:
             if keywords:
                 formatted_args += [' %s=' % k + str(v) for (k, v) in keywords.items()]
 
-            self.services.debug('Calling method ' + self.method_name + '(' + ' ,'.join(formatted_args) + ')')
+            self.services.debug(
+                'Calling method ' + self.method_name + '(' + ' ,'.join(formatted_args) + ')'
+            )
             try:
                 method = getattr(self, self.method_name)
                 retval = method(*self.args, **keywords)
             except Exception as e:
                 self.services.exception('Uncaught Exception in component method.')
-                response_msg = MethodResultMessage(self.component_id, sender_id, self.call_id, Message.FAILURE, e)
+                response_msg = MethodResultMessage(
+                    self.component_id, sender_id, self.call_id, Message.FAILURE, e
+                )
             else:
-                response_msg = MethodResultMessage(self.component_id, sender_id, self.call_id, Message.SUCCESS, retval)
+                response_msg = MethodResultMessage(
+                    self.component_id, sender_id, self.call_id, Message.SUCCESS, retval
+                )
             self.services.fwk_in_q.put(response_msg)
 
     @property

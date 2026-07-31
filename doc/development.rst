@@ -104,29 +104,29 @@ and the output will look like
    ipsframework/__init__.py                   11      0   100%
    ipsframework/cca_es_spec.py                62     10    84%
    ipsframework/component.py                 105     19    82%
-   ipsframework/componentRegistry.py         105     25    76%
-   ipsframework/configurationManager.py      510    103    80%
+   ipsframework/component_registry.py         105     25    76%
+   ipsframework/configuration_manager.py      510    103    80%
    ipsframework/convert_log_function.py       29      1    97%
-   ipsframework/dataManager.py                72     15    79%
+   ipsframework/data_manager.py                72     15    79%
    ipsframework/debug.py                       3      0   100%
-   ipsframework/eventService.py              137     53    61%
-   ipsframework/eventServiceProxy.py         118     49    58%
+   ipsframework/event_service.py              137     53    61%
+   ipsframework/event_service_proxy.py         118     49    58%
    ipsframework/ips.py                       360     51    86%
-   ipsframework/ipsExceptions.py              61      2    97%
-   ipsframework/ipsLogging.py                 92      8    91%
+   ipsframework/ips_exceptions.py              61      2    97%
+   ipsframework/ips_logging.py                 92      8    91%
    ipsframework/ips_es_spec.py                43      7    84%
    ipsframework/ipsutil.py                    73     26    64%
    ipsframework/messages.py                   58      0   100%
    ipsframework/node_structure.py            193     31    84%
    ipsframework/platformspec.py               18      4    78%
-   ipsframework/portalBridge.py              205     36    82%
-   ipsframework/resourceHelper.py            304     59    81%
-   ipsframework/resourceManager.py           340     69    80%
-   ipsframework/runspaceInitComponent.py      88     31    65%
-   ipsframework/sendPost.py                   41      2    95%
+   ipsframework/portal_bridge.py              205     36    82%
+   ipsframework/resource_helper.py            304     59    81%
+   ipsframework/resource_manager.py           340     69    80%
+   ipsframework/runspace_init_component.py      88     31    65%
+   ipsframework/send_post.py                   41      2    95%
    ipsframework/services.py                 1200    234    80%
-   ipsframework/taskManager.py               322     74    77%
-   ipsframework/topicManager.py               59      5    92%
+   ipsframework/task_manager.py               322     74    77%
+   ipsframework/topic_manager.py               59      5    92%
    -----------------------------------------------------------
    TOTAL                                    4609    914    80%
 

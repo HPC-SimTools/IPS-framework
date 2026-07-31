@@ -1,14 +1,14 @@
-#!/usr/bin/env python3
 """
-    Simple ensemble driver that just dispatches an IPS ensemble.
+Simple ensemble driver that just dispatches an IPS ensemble.
 """
+
 from pathlib import Path
 
 from ipsframework import Component
 
 
 class EnsembleDriver(Component):
-    """ Kicks off a simple ensemble """
+    """Kicks off a simple ensemble"""
 
     def step(self, timestamp=0.0):
         # Specifies different sets of variable values for concurrent ensemble
@@ -34,11 +34,12 @@ class EnsembleDriver(Component):
         # be defined in a special template IPS configuration file, in this case,
         # `template.conf`.
         variables = {
-                'instance_component': {
-                        'A': [3, 2, 4],
-                        'B': [2.34, 5.82, 0.1],
-                        'C': ['bar', 'baz', 'quux']}}
-
+            'instance_component': {
+                'A': [3, 2, 4],
+                'B': [2.34, 5.82, 0.1],
+                'C': ['bar', 'baz', 'quux'],
+            }
+        }
         # This is the IPS configuration file for the instances that looks like
         # a regular configuration file except there are slots for the 'A', 'B',
         # and 'C' for variable substitution.  'TEMPLATE' is specified in the
@@ -58,13 +59,16 @@ class EnsembleDriver(Component):
 
         # We also demonstrate that stdout and stderr output per instance can
         # be captured in files by specifying logfile and errfile, respectively.
-        mapping = self.services.run_ensemble(template, variables,
-                                             run_dir=Path('.').absolute(),
-                                             name='INSTANCE_',
-                                             num_nodes=1,
-                                             cores_per_instance=1,
-                                             logfile='logfile.txt',
-                                             errfile='errfile.txt')
+        mapping = self.services.run_ensemble(
+            template,
+            variables,
+            run_dir=Path('.').absolute(),
+            name='INSTANCE_',
+            num_nodes=1,
+            cores_per_instance=1,
+            logfile='logfile.txt',
+            errfile='errfile.txt',
+        )
         # Print each mapping of instance name to what variable values were used.
         for instance in mapping:
             self.services.info(f'{instance!s}')

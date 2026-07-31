@@ -49,7 +49,7 @@ These API have been deprecated for a long time and have been removed, you should
 +--------------------------------------------------------------------+----------------------------------+-----------------------------------------------------------------------------+
 | class                                                              | removed API                      | new API                                                                     |
 +====================================================================+==================================+=============================================================================+
-|:py:class:`~ipsframework.configurationManager.ConfigurationManager` | ``getPort()``                    | :py:meth:`~ipsframework.configurationManager.ConfigurationManager.get_port` |
+|:py:class:`~ipsframework.configuration_manager.ConfigurationManager` | ``getPort()``                    | :py:meth:`~ipsframework.configuration_manager.ConfigurationManager.get_port` |
 +--------------------------------------------------------------------+----------------------------------+-----------------------------------------------------------------------------+
 |:py:class:`~ipsframework.services.ServicesProxy`                    | ``getGlobalConfigParameter()``   | :py:meth:`~ipsframework.services.ServicesProxy.get_config_param`            |
 +--------------------------------------------------------------------+----------------------------------+-----------------------------------------------------------------------------+

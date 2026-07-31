@@ -6,31 +6,34 @@ from ipsframework import Framework, TaskPool
 
 
 def copy_config_and_replace(infile, outfile, tmpdir, worker='hello_worker.py', portal=False):
-    with open(infile, 'r') as fin:
-        with open(outfile, 'w') as fout:
-            for line in fin:
-                if 'hello_driver.py' in line or 'hello_worker.py' in line:
-                    fout.write(line.replace('${BIN_PATH}', str(tmpdir)).replace('hello_worker.py', worker))
-                elif 'BIN_PATH' in line:
-                    fout.write(line.replace('${IPS_ROOT}/tests/helloworld', ''))
-                elif line.startswith('SIM_ROOT'):
-                    fout.write(f'SIM_ROOT = {tmpdir}\n')
-                elif line.startswith('LOG_FILE'):
-                    fout.write(line.replace('LOG_FILE = ', f'LOG_FILE = {tmpdir}/'))
-                elif line.startswith('USE_PORTAL'):
-                    if portal:
-                        fout.write('USE_PORTAL = True\n')
-                        fout.write(f'USER_W3_DIR = {tmpdir}/www\n')
-                        fout.write('PORTAL_URL = http://localhost:8080\n')
-                    else:
-                        fout.write(line)
+    with open(infile, 'r') as fin, open(outfile, 'w') as fout:
+        for line in fin:
+            if 'hello_driver.py' in line or 'hello_worker.py' in line:
+                fout.write(
+                    line.replace('${BIN_PATH}', str(tmpdir)).replace('hello_worker.py', worker)
+                )
+            elif 'BIN_PATH' in line:
+                fout.write(line.replace('${IPS_ROOT}/tests/helloworld', ''))
+            elif line.startswith('SIM_ROOT'):
+                fout.write(f'SIM_ROOT = {tmpdir}\n')
+            elif line.startswith('LOG_FILE'):
+                fout.write(line.replace('LOG_FILE = ', f'LOG_FILE = {tmpdir}/'))
+            elif line.startswith('USE_PORTAL'):
+                if portal:
+                    fout.write('USE_PORTAL = True\n')
+                    fout.write(f'USER_W3_DIR = {tmpdir}/www\n')
+                    fout.write('PORTAL_URL = http://localhost:8080\n')
                 else:
                     fout.write(line)
+            else:
+                fout.write(line)
 
 
 def test_helloworld(tmpdir, capfd):
     data_dir = os.path.dirname(__file__)
-    copy_config_and_replace(os.path.join(data_dir, 'hello_world.ips'), tmpdir.join('hello_world.ips'), tmpdir)
+    copy_config_and_replace(
+        os.path.join(data_dir, 'hello_world.ips'), tmpdir.join('hello_world.ips'), tmpdir
+    )
     shutil.copy(os.path.join(data_dir, 'platform.conf'), tmpdir)
     shutil.copy(os.path.join(data_dir, 'hello_driver.py'), tmpdir)
     shutil.copy(os.path.join(data_dir, 'hello_worker.py'), tmpdir)
@@ -49,7 +52,7 @@ def test_helloworld(tmpdir, capfd):
 
     fwk_components = framework.config_manager.get_framework_components()
     assert len(fwk_components) == 1
-    assert 'Hello_world_1_FWK@runspaceInitComponent@3' in fwk_components
+    assert 'Hello_world_1_FWK@RunspaceInitComponent@3' in fwk_components
 
     component_map = framework.config_manager.get_component_map()
 
@@ -85,7 +88,12 @@ def test_helloworld(tmpdir, capfd):
 
 def test_helloworld_launch_task(tmpdir, capfd):
     data_dir = os.path.dirname(__file__)
-    copy_config_and_replace(os.path.join(data_dir, 'hello_world.ips'), tmpdir.join('hello_world.ips'), tmpdir, worker='hello_worker_launch_task.py')
+    copy_config_and_replace(
+        os.path.join(data_dir, 'hello_world.ips'),
+        tmpdir.join('hello_world.ips'),
+        tmpdir,
+        worker='hello_worker_launch_task.py',
+    )
     shutil.copy(os.path.join(data_dir, 'platform.conf'), tmpdir)
     shutil.copy(os.path.join(data_dir, 'hello_driver.py'), tmpdir)
     shutil.copy(os.path.join(data_dir, 'hello_worker_launch_task.py'), tmpdir)
@@ -104,7 +112,7 @@ def test_helloworld_launch_task(tmpdir, capfd):
 
     fwk_components = framework.config_manager.get_framework_components()
     assert len(fwk_components) == 1
-    assert 'Hello_world_1_FWK@runspaceInitComponent@3' in fwk_components
+    assert 'Hello_world_1_FWK@RunspaceInitComponent@3' in fwk_components
 
     component_map = framework.config_manager.get_component_map()
 
@@ -149,7 +157,12 @@ def test_helloworld_launch_task(tmpdir, capfd):
 
 def test_helloworld_task_pool(tmpdir, capfd):
     data_dir = os.path.dirname(__file__)
-    copy_config_and_replace(os.path.join(data_dir, 'hello_world.ips'), tmpdir.join('hello_world.ips'), tmpdir, worker='hello_worker_task_pool.py')
+    copy_config_and_replace(
+        os.path.join(data_dir, 'hello_world.ips'),
+        tmpdir.join('hello_world.ips'),
+        tmpdir,
+        worker='hello_worker_task_pool.py',
+    )
     shutil.copy(os.path.join(data_dir, 'platform.conf'), tmpdir)
     shutil.copy(os.path.join(data_dir, 'hello_driver.py'), tmpdir)
     shutil.copy(os.path.join(data_dir, 'hello_worker_task_pool.py'), tmpdir)
@@ -220,7 +233,12 @@ def test_helloworld_task_pool_dask(tmpdir, capfd):
     assert TaskPool.dask is not None
 
     data_dir = os.path.dirname(__file__)
-    copy_config_and_replace(os.path.join(data_dir, 'hello_world.ips'), tmpdir.join('hello_world.ips'), tmpdir, worker='hello_worker_task_pool_dask.py')
+    copy_config_and_replace(
+        os.path.join(data_dir, 'hello_world.ips'),
+        tmpdir.join('hello_world.ips'),
+        tmpdir,
+        worker='hello_worker_task_pool_dask.py',
+    )
     shutil.copy(os.path.join(data_dir, 'platform.conf'), tmpdir)
     shutil.copy(os.path.join(data_dir, 'hello_driver.py'), tmpdir)
     shutil.copy(os.path.join(data_dir, 'hello_worker_task_pool_dask.py'), tmpdir)
@@ -255,7 +273,7 @@ def test_helloworld_task_pool_dask(tmpdir, capfd):
     assert 'ret_val =  9' in captured_out
 
     for duration in ('0.2', '0.4', '0.6'):
-        for task in ['myFun', 'myMethod']:
+        for task in ['my_fun', 'myMethod']:
             assert f'{task}({duration})' in captured_out
 
     exit_status = json.loads(captured_out[-3].replace("'", '"'))

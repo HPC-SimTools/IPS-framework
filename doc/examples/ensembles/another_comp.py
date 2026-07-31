@@ -1,10 +1,9 @@
-#!/usr/bin/env python3
 """ Component wrapper for the ensemble example for `another_sim`. """
 from ipsframework import Component
-from ipsframework.resourceHelper import get_platform_info
+from ipsframework.resource_helper import get_platform_info
 
 
-class another_comp(Component):
+class AnotherComp(Component):
     def __init__(self, services, config):
         super().__init__(services, config)
         print('Created %s' % (self.__class__))

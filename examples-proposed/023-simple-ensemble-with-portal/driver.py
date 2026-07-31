@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Simple ensemble driver that just dispatches an IPS ensemble.
 """
@@ -12,10 +11,10 @@ class EnsembleDriver(Component):
     """Kicks off a simple ensemble"""
 
     def init(self, timestamp=0.0):
-        NOTEBOOK_TEMPLATE = 'notebook.ipynb'
-        self.services.stage_input_files([NOTEBOOK_TEMPLATE])
+        notebook_template = 'notebook.ipynb'
+        self.services.stage_input_files([notebook_template])
         try:
-            self.services.initialize_jupyter_notebook(NOTEBOOK_TEMPLATE)
+            self.services.initialize_jupyter_notebook(notebook_template)
         except Exception:
             print('did not add notebook to portal')
 
@@ -42,7 +41,13 @@ class EnsembleDriver(Component):
         # should be identical. Note that placeholders for these variables must
         # be defined in a special template IPS configuration file, in this case,
         # `template.conf`.
-        variables = {'instance_component': {'base_x': [3, 2, 4], 'base_y': [2.34, 5.82, 0.1], 'word': ['bar', 'baz', 'quux']}}
+        variables = {
+            'instance_component': {
+                'base_x': [3, 2, 4],
+                'base_y': [2.34, 5.82, 0.1],
+                'word': ['bar', 'baz', 'quux'],
+            }
+        }
 
         # This is the IPS configuration file for the instances that looks like
         # a regular configuration file except there are slots for the 'base_x', 'base_y',
@@ -62,7 +67,14 @@ class EnsembleDriver(Component):
         # `my_simple_ensemble1` subdirectory.
         #
         # The "name" parameter must be unique for each ensemble within a run, and will be used as an identifier on the Portal.
-        mapping = self.services.run_ensemble(template, variables, run_dir=Path('.').absolute(), name='my_simple_ensemble', num_nodes=1, cores_per_instance=1)
+        mapping = self.services.run_ensemble(
+            template,
+            variables,
+            run_dir=Path('.').absolute(),
+            name='my_simple_ensemble',
+            num_nodes=1,
+            cores_per_instance=1,
+        )
         # Print each mapping of instance name to what variable values were used.
         for instance in mapping:
             self.services.info(f'{instance!s}')

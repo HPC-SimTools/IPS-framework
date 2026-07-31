@@ -45,8 +45,10 @@ class Driver(Component):
         """
         # parse file
         try:
-            self.old_master_conf = ConfigObj(self.config_file, interpolation='template', file_error=True)
-        except (IOError, SyntaxError):
+            self.old_master_conf = ConfigObj(
+                self.config_file, interpolation='template', file_error=True
+            )
+        except (OSError, SyntaxError):
             raise
         self.sim_root = services.get_config_param('SIM_ROOT')
         self.sim_name = services.get_config_param('SIM_NAME')
@@ -55,11 +57,17 @@ class Driver(Component):
 
         sim_config_files = []
         idx = 0
-        print('%s  About to Create Listener %s' % (time.strftime('%b %d %Y %H:%M:%S', time.localtime()), str(self.socket_address)))
+        print(
+            '%s  About to Create Listener %s'
+            % (time.strftime('%b %d %Y %H:%M:%S', time.localtime()), str(self.socket_address))
+        )
         sys.stdout.flush()
         listener = Listener(str(self.socket_address), 'AF_UNIX')
         self.services.warning('Created listener %s', str(self.socket_address))
-        print('%s  Created Listener %s' % (time.strftime('%b %d %Y %H:%M:%S', time.localtime()), str(self.socket_address)))
+        print(
+            '%s  Created Listener %s'
+            % (time.strftime('%b %d %Y %H:%M:%S', time.localtime()), str(self.socket_address))
+        )
         sys.stdout.flush()
         sim_cache = {}
         sock_fileno = listener._listener._socket.fileno()
@@ -103,7 +111,12 @@ class Driver(Component):
             try:
                 msg = conn.recv()
             except Exception as inst:
-                print('%s EXCEPTION in conn.recv(): failed connections = ' % (time.strftime('%b %d %Y %H:%M:%S', time.localtime())), type(inst), str(inst))
+                print(
+                    '%s EXCEPTION in conn.recv(): failed connections = '
+                    % (time.strftime('%b %d %Y %H:%M:%S', time.localtime())),
+                    type(inst),
+                    str(inst),
+                )
                 if failed_connections > 5:
                     raise
                 else:
@@ -129,7 +142,9 @@ class Driver(Component):
             file_name = os.path.join(self.sim_root, 'simulation_%s.conf' % (instance_id))
 
             self.old_master_conf.filename = file_name
-            self.old_master_conf['SIM_ROOT'] = os.path.join(self.sim_root, 'simulation_%s' % (instance_id))
+            self.old_master_conf['SIM_ROOT'] = os.path.join(
+                self.sim_root, 'simulation_%s' % (instance_id)
+            )
             self.old_master_conf['SIM_NAME'] = self.sim_name + '_%s' % (instance_id)
             self.old_master_conf['LOG_FILE'] = self.sim_logfile + '_%s' % (instance_id)
             self.old_master_conf['OUT_REDIRECT'] = 'TRUE'
@@ -141,10 +156,15 @@ class Driver(Component):
             try:
                 os.makedirs(self.old_master_conf['SIM_ROOT'], exist_ok=True)
             except OSError as oserr:
-                print('Error creating Simulation directory %s : %d %s' % (self.old_master_conf['SIM_ROOT'], oserr.errno, oserr.strerror))
+                print(
+                    'Error creating Simulation directory %s : %d %s'
+                    % (self.old_master_conf['SIM_ROOT'], oserr.errno, oserr.strerror)
+                )
                 raise
             if first_sim:
-                summary_file = open(os.path.join(self.sim_root, 'SIMULATION_LIST.%s' % (dakota_runid)), 'a', 1)
+                summary_file = open(
+                    os.path.join(self.sim_root, 'SIMULATION_LIST.%s' % (dakota_runid)), 'a', 1
+                )
 
             param_file = os.path.join(self.old_master_conf['SIM_ROOT'], 'parameters.conf')
             param_string = ''
@@ -179,8 +199,10 @@ class Driver(Component):
         # Driver finalize - nothing to be done
         pass
 
-    def process_event(self, topicName, theEvent):
-        event_body = theEvent.getBody()
+    def process_event(self, topic_name, the_event):
+        event_body = the_event.get_body()
         self.events_received.append(event_body)
         self.services.debug('In Component: Just received %s', str(event_body))
-        self.services.debug('In Component: There are %d events in self.events_received', len(self.events_received))
+        self.services.debug(
+            'In Component: There are %d events in self.events_received', len(self.events_received)
+        )

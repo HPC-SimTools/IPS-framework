@@ -1,6 +1,14 @@
 from ipsframework import Framework
 
-map_log_to_level = {'log': 'INFO', 'debug': 'DEBUG', 'info': 'INFO', 'warning': 'WARNING', 'error': 'ERROR', 'exception': 'ERROR', 'critical': 'CRITICAL'}
+map_log_to_level = {
+    'log': 'INFO',
+    'debug': 'DEBUG',
+    'info': 'INFO',
+    'warning': 'WARNING',
+    'error': 'ERROR',
+    'exception': 'ERROR',
+    'critical': 'CRITICAL',
+}
 
 
 def write_basic_config_and_platform_files(tmpdir, debug=False):
@@ -37,7 +45,7 @@ OUT_REDIRECT_FNAME = {tmpdir!s}/$SIM_NAME.out
 [LOGGING_DRIVER]
     CLASS = LOGGING
     SUB_CLASS =
-    NAME = logging_tester
+    NAME = LoggingTester
     BIN_PATH =
     NPROC = 1
     INPUT_FILES =
@@ -74,29 +82,40 @@ def test_component_logging(tmpdir):
     # remove timestamp
     lines = [line[24:] for line in lines]
 
-    component_id = 'LOGGING__logging_tester_1'
+    component_id = 'LOGGING__loggingTester_1'
 
     # for log_level=WARNING only WARNING, ERROR and CRITICAL logs should be included
     # DEBUG and INFO should be excluded
     for method in ['init', 'step', 'finalize']:
         for log_type in ['warning', 'error', 'exception', 'critical']:
-            assert f'{component_id} {map_log_to_level[log_type]:8} {method} msg: {log_type}\n' in lines
+            assert (
+                f'{component_id} {map_log_to_level[log_type]:8} {method} msg: {log_type}\n' in lines
+            )
         for log_type in ['log', 'debug', 'info']:
-            assert f'{component_id} {map_log_to_level[log_type]:8} {method} msg: {log_type}\n' not in lines
+            assert (
+                f'{component_id} {map_log_to_level[log_type]:8} {method} msg: {log_type}\n'
+                not in lines
+            )
 
     # check message formatting with arguments
     for log_type in ['warning', 'error', 'exception', 'critical']:
-        assert f'{component_id} {map_log_to_level[log_type]:8} step msg: {log_type} timestamp=0 test\n' in lines
+        assert (
+            f'{component_id} {map_log_to_level[log_type]:8} step msg: {log_type} timestamp=0 test\n'
+            in lines
+        )
     for log_type in ['log', 'debug', 'info']:
-        assert f'{component_id} {map_log_to_level[log_type]:8} step msg: {log_type} timestamp=0 test\n' not in lines
+        assert (
+            f'{component_id} {map_log_to_level[log_type]:8} step msg: {log_type} timestamp=0 test\n'
+            not in lines
+        )
 
     # check stdout redirect
     with open(str(tmpdir.join('test.out')), 'r') as f:
         lines = f.readlines()
 
-    assert lines[0] == 'test@logging_tester@1.init\n'
-    assert lines[1] == 'test@logging_tester@1.step\n'
-    assert lines[2] == 'test@logging_tester@1.finalize\n'
+    assert lines[0] == 'test@LoggingTester@1.init\n'
+    assert lines[1] == 'test@LoggingTester@1.step\n'
+    assert lines[2] == 'test@LoggingTester@1.finalize\n'
 
 
 def test_component_logging_debug(tmpdir):
@@ -121,13 +140,34 @@ def test_component_logging_debug(tmpdir):
     # remove timestamp
     lines = [line[24:] for line in lines]
 
-    component_id = 'LOGGING__logging_tester_1'
+    component_id = 'LOGGING__LoggingTester_1'
 
     # for log_level=DEBUG all logs should be included
     for method in ['init', 'step', 'finalize']:
-        for log_type in ['log', 'debug', 'info', 'warning', 'error', 'exception', 'critical']:
-            assert f'{component_id} {map_log_to_level[log_type]:8} {method} msg: {log_type}\n' in lines
+        for log_type in [
+            'log',
+            'debug',
+            'info',
+            'warning',
+            'error',
+            'exception',
+            'critical',
+        ]:
+            assert (
+                f'{component_id} {map_log_to_level[log_type]:8} {method} msg: {log_type}\n' in lines
+            )
 
     # check message formatting with arguments
-    for log_type in ['log', 'debug', 'info', 'warning', 'error', 'exception', 'critical']:
-        assert f'{component_id} {map_log_to_level[log_type]:8} step msg: {log_type} timestamp=0 test\n' in lines
+    for log_type in [
+        'log',
+        'debug',
+        'info',
+        'warning',
+        'error',
+        'exception',
+        'critical',
+    ]:
+        assert (
+            f'{component_id} {map_log_to_level[log_type]:8} step msg: {log_type} timestamp=0 test\n'
+            in lines
+        )

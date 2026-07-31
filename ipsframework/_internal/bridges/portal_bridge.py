@@ -8,11 +8,12 @@ import logging.config
 import os
 import tarfile
 import time
+from collections.abc import Callable
 from multiprocessing import Event, Pipe, Process
 from multiprocessing.connection import Connection
 from multiprocessing.synchronize import Event as EventType
 from pathlib import Path
-from typing import Any, Callable, Literal, Union
+from typing import Any, Literal
 
 from urllib3 import PoolManager
 from urllib3.exceptions import MaxRetryError
@@ -66,7 +67,9 @@ def send_post(conn: Connection, stop: EventType, url: str):
 def send_jupyter_notebook(conn: Connection, stop: EventType, url: str, api_key: str, username: str):
     fail_count = 0
 
-    http = PoolManager(retries=Urllib3Retry(total=MAX_RETRIES, backoff_factor=1, respect_retry_after_header=True))
+    http = PoolManager(
+        retries=Urllib3Retry(total=MAX_RETRIES, backoff_factor=1, respect_retry_after_header=True)
+    )
 
     while True:
         if conn.poll(0.1):
@@ -92,22 +95,42 @@ def send_jupyter_notebook(conn: Connection, stop: EventType, url: str, api_key: 
                 )
             except MaxRetryError as e:
                 fail_count += 1
-                conn.send((NOTEBOOK_MESSAGE_TYPE, next_val['component_id'], 999, f'Max retry error: {e}'))
+                conn.send(
+                    (NOTEBOOK_MESSAGE_TYPE, next_val['component_id'], 999, f'Max retry error: {e}')
+                )
             else:
-                conn.send((NOTEBOOK_MESSAGE_TYPE, next_val['component_id'], resp.status, resp.data.decode()))
+                conn.send(
+                    (
+                        NOTEBOOK_MESSAGE_TYPE,
+                        next_val['component_id'],
+                        resp.status,
+                        resp.data.decode(),
+                    )
+                )
                 fail_count = 0
 
             if fail_count >= MAX_RETRIES:
-                conn.send((NOTEBOOK_MESSAGE_TYPE, next_val['component_id'], -1, 'Too many consecutive failed connections'))
+                conn.send(
+                    (
+                        NOTEBOOK_MESSAGE_TYPE,
+                        next_val['component_id'],
+                        -1,
+                        'Too many consecutive failed connections',
+                    )
+                )
                 break
         elif stop.is_set():
             break
 
 
-def send_jupyter_notebook_data(conn: Connection, stop: EventType, url: str, api_key: str, username: str):
+def send_jupyter_notebook_data(
+    conn: Connection, stop: EventType, url: str, api_key: str, username: str
+):
     fail_count = 0
 
-    http = PoolManager(retries=Urllib3Retry(total=MAX_RETRIES, backoff_factor=1, respect_retry_after_header=True))
+    http = PoolManager(
+        retries=Urllib3Retry(total=MAX_RETRIES, backoff_factor=1, respect_retry_after_header=True)
+    )
 
     while True:
         if conn.poll(0.1):
@@ -143,22 +166,37 @@ def send_jupyter_notebook_data(conn: Connection, stop: EventType, url: str, api_
                 )
             except (MaxRetryError, OSError) as e:
                 fail_count += 1
-                conn.send((DATA_MESSAGE_TYPE, next_val['component_id'], 999, f'Max retry error: {e}'))
+                conn.send(
+                    (DATA_MESSAGE_TYPE, next_val['component_id'], 999, f'Max retry error: {e}')
+                )
             else:
-                conn.send((DATA_MESSAGE_TYPE, next_val['component_id'], resp.status, resp.data.decode()))
+                conn.send(
+                    (DATA_MESSAGE_TYPE, next_val['component_id'], resp.status, resp.data.decode())
+                )
                 fail_count = 0
 
             if fail_count >= MAX_RETRIES:
-                conn.send((DATA_MESSAGE_TYPE, next_val['component_id'], -1, 'Too many consecutive failed connections'))
+                conn.send(
+                    (
+                        DATA_MESSAGE_TYPE,
+                        next_val['component_id'],
+                        -1,
+                        'Too many consecutive failed connections',
+                    )
+                )
                 break
         elif stop.is_set():
             break
 
 
-def send_ensemble_variables(conn: Connection, stop: EventType, url: str, api_key: str, username: str):
+def send_ensemble_variables(
+    conn: Connection, stop: EventType, url: str, api_key: str, username: str
+):
     fail_count = 0
 
-    http = PoolManager(retries=Urllib3Retry(total=MAX_RETRIES, backoff_factor=1, respect_retry_after_header=True))
+    http = PoolManager(
+        retries=Urllib3Retry(total=MAX_RETRIES, backoff_factor=1, respect_retry_after_header=True)
+    )
 
     while True:
         if conn.poll(0.1):
@@ -189,13 +227,29 @@ def send_ensemble_variables(conn: Connection, stop: EventType, url: str, api_key
                 )
             except (MaxRetryError, OSError) as e:
                 fail_count += 1
-                conn.send((ENSEMBLE_MESSAGE_TYPE, next_val['component_id'], 999, f'Max retry error: {e}'))
+                conn.send(
+                    (ENSEMBLE_MESSAGE_TYPE, next_val['component_id'], 999, f'Max retry error: {e}')
+                )
             else:
-                conn.send((ENSEMBLE_MESSAGE_TYPE, next_val['component_id'], resp.status, resp.data.decode()))
+                conn.send(
+                    (
+                        ENSEMBLE_MESSAGE_TYPE,
+                        next_val['component_id'],
+                        resp.status,
+                        resp.data.decode(),
+                    )
+                )
                 fail_count = 0
 
             if fail_count >= MAX_RETRIES:
-                conn.send((ENSEMBLE_MESSAGE_TYPE, next_val['component_id'], -1, 'Too many consecutive failed connections'))
+                conn.send(
+                    (
+                        ENSEMBLE_MESSAGE_TYPE,
+                        next_val['component_id'],
+                        -1,
+                        'Too many consecutive failed connections',
+                    )
+                )
                 break
         elif stop.is_set():
             break
@@ -210,7 +264,9 @@ class UrlRequestProcessManager:
         """
         self.parent_conn, self.child_conn = Pipe()
         self.childProcessStop = Event()
-        self.childProcess = Process(target=target, args=(self.child_conn, self.childProcessStop, *args))
+        self.childProcess = Process(
+            target=target, args=(self.child_conn, self.childProcessStop, *args)
+        )
         self.childProcess.start()
 
 
@@ -221,9 +277,9 @@ class PortalSimulationData:
 
     def __init__(self):
         self.counter = 0
-        self.portal_runid: Union[str, None] = None
+        self.portal_runid: str | None = None
         """Locally determined portal runid, also sent to the portal."""
-        self.parent_portal_runid: Union[str, None] = None
+        self.parent_portal_runid: str | None = None
         """Parent portal runid, derived from locally determined portal runid. Should explicitly be None (not empty string) if not set."""
         self.sim_name = ''
         self.sim_root = ''
@@ -317,11 +373,11 @@ class PortalBridge(Component):
 
     ### SUBSCRIPTION CHANNELS (public) ###
 
-    def process_event(self, topicName, theEvent):
+    def process_event(self, topic_name, the_event):
         """
-        Process a single event *theEvent* on topic *topicName*.
+        Process a single event *the_event* on topic *topic_name*.
         """
-        event_body = theEvent.getBody()
+        event_body = the_event.get_body()
         sim_name = event_body['sim_name']
         portal_data = event_body['portal_data']
         try:
@@ -381,7 +437,9 @@ class PortalBridge(Component):
         portal_data['seqnum'] = sim_data.counter
 
         if 'trace' in portal_data:
-            portal_data['trace']['traceId'] = hashlib.md5(sim_data.portal_runid.encode()).hexdigest()
+            portal_data['trace']['traceId'] = hashlib.md5(
+                sim_data.portal_runid.encode()
+            ).hexdigest()
 
         if self.portal_url:
             polling_timeout = 0.0
@@ -454,7 +512,11 @@ class PortalBridge(Component):
 
     def _check_url_manager_responses(self):
         """poll all data API checks"""
-        for manager in [self.url_manager_jupyter_notebook, self.url_manager_jupyter_data, self.url_manager_ensemble_uploads]:
+        for manager in [
+            self.url_manager_jupyter_notebook,
+            self.url_manager_jupyter_data,
+            self.url_manager_ensemble_uploads,
+        ]:
             if manager is None:
                 continue
             while manager.parent_conn.poll():
@@ -472,7 +534,11 @@ class PortalBridge(Component):
                 else:
                     self.services.debug('Portal Response: %d %s', code, msg)
                     if msg_type == ENSEMBLE_MESSAGE_TYPE:
-                        self.services.publish(f'_IPS_{component_id}', '_IPS_PORTAL_UPLOAD_ENSEMBLE_PARAMS_SUCCESS', 'true')
+                        self.services.publish(
+                            f'_IPS_{component_id}',
+                            '_IPS_PORTAL_UPLOAD_ENSEMBLE_PARAMS_SUCCESS',
+                            'true',
+                        )
 
     def _send_jupyter_notebook(self, sim_data: PortalSimulationData, event_data):
         if self.portal_url and self.portal_api_key:
@@ -540,7 +606,9 @@ class PortalBridge(Component):
 
         sim_data.portal_runid = portal_runid
         try:
-            self.services.set_config_param('PORTAL_RUNID', sim_data.portal_runid, target_sim_name=sim_name)
+            self.services.set_config_param(
+                'PORTAL_RUNID', sim_data.portal_runid, target_sim_name=sim_name
+            )
         except Exception:
             self.services.error('Simulation %s is not accessible', sim_name)
             return

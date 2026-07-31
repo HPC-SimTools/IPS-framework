@@ -10,7 +10,17 @@ import ipsframework
 from ipsframework import Framework
 
 
-def write_basic_config_and_platform_files(tmpdir, timeout='', logfile='', errfile='', nproc=1, exe='/bin/sleep', value='', shifter=False, gpus=0):
+def write_basic_config_and_platform_files(
+    tmpdir,
+    timeout='',
+    logfile='',
+    errfile='',
+    nproc=1,
+    exe='/bin/sleep',
+    value='',
+    shifter=False,
+    gpus=0,
+):
     platform_file = tmpdir.join('platform.conf')
 
     platform = f"""MPIRUN = eval
@@ -44,7 +54,7 @@ SIMULATION_MODE = NORMAL
 [DRIVER]
     CLASS = DRIVER
     SUB_CLASS =
-    NAME = driver
+    NAME = Driver
     BIN_PATH =
     NPROC = 1
     INPUT_FILES =
@@ -54,7 +64,7 @@ SIMULATION_MODE = NORMAL
 [DASK]
     CLASS = DASK
     SUB_CLASS =
-    NAME = dask_worker
+    NAME = DaskWorker
     BIN_PATH =
     EXECUTABLE = {exe}
     VALUE = {value}
@@ -118,18 +128,26 @@ def test_dask(tmpdir):
     assert eventtypes.count('IPS_LAUNCH_DASK_TASK') == 4
     assert eventtypes.count('IPS_TASK_END') == 5
 
-    launch_dask_comments = [e.get('comment') for e in lines if e.get('eventtype') == 'IPS_LAUNCH_DASK_TASK']
+    launch_dask_comments = [
+        e.get('comment') for e in lines if e.get('eventtype') == 'IPS_LAUNCH_DASK_TASK'
+    ]
     for task in range(4):
         assert f'task_name = task_{task}, Target = /bin/sleep 1' in launch_dask_comments
 
-    task_end_comments = [e.get('comment')[:-4] for e in lines if e.get('eventtype') == 'IPS_TASK_END']
+    task_end_comments = [
+        e.get('comment')[:-4] for e in lines if e.get('eventtype') == 'IPS_TASK_END'
+    ]
     for task in range(4):
         assert f'task_name = task_{task}, elapsed time = 1' in task_end_comments
 
 
-@pytest.mark.skipif(shutil.which('shifter') is not None, reason="This tests only works if shifter doesn't exist")
+@pytest.mark.skipif(
+    shutil.which('shifter') is not None, reason="This tests only works if shifter doesn't exist"
+)
 def test_dask_shifter_fail(tmpdir):
-    platform_file, config_file = write_basic_config_and_platform_files(tmpdir, value=1, shifter=True)
+    platform_file, config_file = write_basic_config_and_platform_files(
+        tmpdir, value=1, shifter=True
+    )
 
     framework = Framework(
         config_file_list=[str(config_file)],
@@ -150,7 +168,10 @@ def test_dask_shifter_fail(tmpdir):
     # remove timestamp
     lines = [line[24:] for line in lines]
 
-    assert 'DASK__dask_worker_2 ERROR    Requested to run dask within shifter but shifter not available\n' in lines
+    assert (
+        'DASK__dask_worker_2 ERROR    Requested to run dask within shifter but shifter not available\n'
+        in lines
+    )
 
     # check simulation_log, make sure it includes events from dask tasks
     json_files = glob.glob(str(tmpdir.join('simulation_log').join('*.json')))
@@ -169,12 +190,14 @@ def test_dask_fake_shifter(tmpdir, monkeypatch):
     shifter.write('#!/bin/bash\necho Running $@ in shifter >> shifter.log\n$@\n')
     shifter.chmod(448)  # 700
 
-    old_PATH = os.environ['PATH']
+    old_path = os.environ['PATH']
     monkeypatch.setenv('PATH', str(tmpdir), prepend=os.pathsep)
     # need to reimport to get fake shifter
     importlib.reload(ipsframework.services)
 
-    platform_file, config_file = write_basic_config_and_platform_files(tmpdir, value=1, shifter=True)
+    platform_file, config_file = write_basic_config_and_platform_files(
+        tmpdir, value=1, shifter=True
+    )
 
     framework = Framework(
         config_file_list=[str(config_file)],
@@ -188,7 +211,7 @@ def test_dask_fake_shifter(tmpdir, monkeypatch):
 
     framework.run()
 
-    monkeypatch.setenv('PATH', old_PATH)
+    monkeypatch.setenv('PATH', old_path)
     # need to reimport to remove fake shifter
     importlib.reload(ipsframework.services)
 
@@ -219,11 +242,15 @@ def test_dask_fake_shifter(tmpdir, monkeypatch):
     assert eventtypes.count('IPS_LAUNCH_DASK_TASK') == 4
     assert eventtypes.count('IPS_TASK_END') == 5
 
-    launch_dask_comments = [e.get('comment') for e in lines if e.get('eventtype') == 'IPS_LAUNCH_DASK_TASK']
+    launch_dask_comments = [
+        e.get('comment') for e in lines if e.get('eventtype') == 'IPS_LAUNCH_DASK_TASK'
+    ]
     for task in range(4):
         assert f'task_name = task_{task}, Target = /bin/sleep 1' in launch_dask_comments
 
-    task_end_comments = [e.get('comment')[:-4] for e in lines if e.get('eventtype') == 'IPS_TASK_END']
+    task_end_comments = [
+        e.get('comment')[:-4] for e in lines if e.get('eventtype') == 'IPS_TASK_END'
+    ]
     for task in range(4):
         assert f'task_name = task_{task}, elapsed time = 1' in task_end_comments
 
@@ -279,7 +306,9 @@ def test_dask_timeout(tmpdir):
     assert eventtypes.count('IPS_LAUNCH_DASK_TASK') == 4
     assert eventtypes.count('IPS_TASK_END') == 5
 
-    launch_dask_comments = [e.get('comment') for e in lines if e.get('eventtype') == 'IPS_LAUNCH_DASK_TASK']
+    launch_dask_comments = [
+        e.get('comment') for e in lines if e.get('eventtype') == 'IPS_LAUNCH_DASK_TASK'
+    ]
     for task in range(4):
         assert f'task_name = task_{task}, Target = /bin/sleep 100' in launch_dask_comments
 
@@ -321,7 +350,10 @@ def test_dask_nproc(tmpdir):
         assert log.format(f'task_{i} 0') in lines
 
     # check for warning message that dask isn't being used
-    assert 'DASK__dask_worker_2 WARNING  Requested use_dask but cannot because multiple processors requested\n' in lines
+    assert (
+        'DASK__dask_worker_2 WARNING  Requested use_dask but cannot because multiple processors requested\n'
+        in lines
+    )
 
 
 def test_dask_logfile(tmpdir):
@@ -329,7 +361,9 @@ def test_dask_logfile(tmpdir):
     exe.write('#!/bin/bash\necho Running $1\n>&2 echo ERROR $1\n')
     exe.chmod(448)  # 700
 
-    platform_file, config_file = write_basic_config_and_platform_files(tmpdir, exe=str(exe), logfile='task_{}.log')
+    platform_file, config_file = write_basic_config_and_platform_files(
+        tmpdir, exe=str(exe), logfile='task_{}.log'
+    )
 
     framework = Framework(
         config_file_list=[str(config_file)],
@@ -373,7 +407,9 @@ def test_dask_logfile_errfile(tmpdir):
     exe = tmpdir.join('stdouterr_write.sh')
     exe.write('#!/bin/bash\necho Running $1\n>&2 echo ERROR $1\n')
     exe.chmod(448)  # 700
-    platform_file, config_file = write_basic_config_and_platform_files(tmpdir, exe=str(exe), logfile='task_{}.log', errfile='task_{}.err')
+    platform_file, config_file = write_basic_config_and_platform_files(
+        tmpdir, exe=str(exe), logfile='task_{}.log', errfile='task_{}.err'
+    )
 
     framework = Framework(
         config_file_list=[str(config_file)],
@@ -425,10 +461,14 @@ def test_dask_shifter_on_cori(tmpdir):
     #SBATCH --image=continuumio/anaconda3:2020.11
     """
     exe = tmpdir.join('shifter_env.sh')
-    exe.write('#!/bin/bash\necho Running $1\necho SHIFTER_RUNTIME=$SHIFTER_RUNTIME\necho SHIFTER_IMAGEREQUEST=$SHIFTER_IMAGEREQUEST\n')
+    exe.write(
+        '#!/bin/bash\necho Running $1\necho SHIFTER_RUNTIME=$SHIFTER_RUNTIME\necho SHIFTER_IMAGEREQUEST=$SHIFTER_IMAGEREQUEST\n'
+    )
     exe.chmod(448)  # 700
 
-    platform_file, config_file = write_basic_config_and_platform_files(tmpdir, exe=str(exe), logfile='task_{}.log', shifter=True)
+    platform_file, config_file = write_basic_config_and_platform_files(
+        tmpdir, exe=str(exe), logfile='task_{}.log', shifter=True
+    )
 
     framework = Framework(
         config_file_list=[str(config_file)],
@@ -502,7 +542,7 @@ def test_dask_with_1_gpu(tmpdir):
     json_files = glob.glob(str(tmpdir.join('simulation_log').join('*.json')))
     assert len(json_files) == 1
     with open(json_files[0], 'r') as json_file:
-        comments = [json.loads(line)['comment'].split(', ', maxsplit=5)[2:] for line in json_file.readlines()]
+        comments = [json.loads(line)['comment'].split(', ', maxsplit=5)[2:] for line in json_file]
 
     assert comments[10][0] == 'nproc = 1 '
     assert comments[10][1].startswith('Target = ')
@@ -543,7 +583,7 @@ def test_dask_with_2_gpus(tmpdir):
     json_files = glob.glob(str(tmpdir.join('simulation_log').join('*.json')))
     assert len(json_files) == 1
     with open(json_files[0], 'r') as json_file:
-        comments = [json.loads(line)['comment'].split(', ', maxsplit=5)[2:] for line in json_file.readlines()]
+        comments = [json.loads(line)['comment'].split(', ', maxsplit=5)[2:] for line in json_file]
 
     assert comments[10][0] == 'nproc = 2 '
     assert comments[10][1].startswith('Target = ')

@@ -113,14 +113,14 @@ As you can see in the example component, almost everything is specified in the c
 Drivers access components by their port names (as specified in the configuration file).  To add a new component to the driver you will either need to add a new port name or use an existing port name.   ``ips/components/drivers/dbb/generic_driver.py`` is a good all-purpose driver that most components should be able to use.  If you are using an existing port name, then the code should just work.  It is recommended to go through the driver code to make sure the component is being used in the expected manner.  To add a new port name, you will need to add code to *generic_driver.step()*:
 
 * get a reference to the port (*self.services.get_port(<name of port>)*)
-* call "init" on that component (*self.services.call(comp_ref, "init")*) 
+* call "init" on that component (*self.services.call(comp_ref, "init")*)
 * call "step" on that component (*self.services.call(comp_ref, "step")*)
 * call "finalize" on that component (*self.services.call(comp_ref, "finalize")*)
 
 The following sections of the configuration file may need to be modified.  If you are not adding the component to an existing simulation, you can copy a configuration file from the examples directory and modify it.
 
 1. *Plasma State (Shared Files) Section*
-   
+
    You will need to modify this section to include any additional files needed by your component::
 
       # Where to put plasma state files as the simulation evolves
@@ -146,9 +146,9 @@ The following sections of the configuration file may need to be modified.  If yo
 
      [PORTS]
          NAMES = INIT DRIVER MONITOR EPA NB
-        [[DRIVER]]                               
+        [[DRIVER]]
              IMPLEMENTATION = EPA_IC_FP_NB_DRIVER
-         [[INIT]]                                      
+         [[INIT]]
              IMPLEMENTATION = minimal_state_init
          [[RF_IC]]
              IMPLEMENTATION = model_RF_IC
@@ -178,8 +178,8 @@ The following sections of the configuration file may need to be modified.  If yo
 
       # Time loop specification (two modes for now) EXPLICIT | REGULAR
       # For MODE = REGULAR, the framework uses the variables START, FINISH, and NSTEP
-      # For MODE = EXPLICIT, the framework uses the variable VALUES (space separated 
-      # list of time values) 
+      # For MODE = EXPLICIT, the framework uses the variable VALUES (space separated
+      # list of time values)
       [TIME_LOOP]
           MODE = EXPLICIT
           VALUES = 75.000 75.025 75.050 75.075 75.100 75.125
@@ -205,7 +205,7 @@ This section contains some useful tips on testing, debugging and documenting you
   * If this is a time stepping simulation, a small number of steps is useful because it will lead to shorter running times, allowing you to submit the job to a debug or other faster turnaround queue.
 
 * Debugging:
-  
+
   * Add logging messages (*services.info()*, *services.warning()*, etc.) to make sure your component does what you think it does.
   * Remove other components from the simulation to figure out which one or which interaction is causing the problem
   * Take many checkpoints around the problem to narrow in on the problem.
@@ -245,19 +245,19 @@ The framework will invoke the methods of the *INIT* and *DRIVER* components over
 * ``init_comp.finalize()`` - cleanup and confirmation of initialization
 * ``driver.init()`` - any initialization work (typically empty)
 * ``driver.step()`` - the bulk of the simulation
-  
+
   * get references to the ports
   * call *init* on each port
   * get the time loop
   * implement logic of time stepping
   * during each time step:
 
-    * perform pre-step logic that may stage data or determine which components need to run or what parameters are given to each component    
+    * perform pre-step logic that may stage data or determine which components need to run or what parameters are given to each component
     * call *step* on each port (as appropriate)
     * manage global plasma state at the end of each step
     * checkpoint components (frequency of checkpoints is controlled by framework)
 
-  * call *finalize* on each component  
+  * call *finalize* on each component
 
 * ``driver.finalize()`` - any clean up activities (typically empty)
 
@@ -282,7 +282,7 @@ The IPS framework contains a set of managers that perform services for the compo
 Component Invocation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Component invocation in the IPS means one component is calling another component's function.  This API provides a mechanism to invoke methods on components through the framework.  There are blocking and non-blocking versions, where the non-blocking versions require a second function to check the status of the call.  Note that the *wait_call* has an optional argument (*block*) that changes when and what it returns. 
+Component invocation in the IPS means one component is calling another component's function.  This API provides a mechanism to invoke methods on components through the framework.  There are blocking and non-blocking versions, where the non-blocking versions require a second function to check the status of the call.  Note that the *wait_call* has an optional argument (*block*) that changes when and what it returns.
 
 .. automethod:: ipsframework.services.ServicesProxy.call
    :noindex:
@@ -524,7 +524,7 @@ If you try to launch a task with too many GPUs per node, *e.g.*:
 
     self.services.launch_task(8, cwd, "gpu-per-task", task_gpp=1)
 
-then it will raise an :class:`~ipsframework.ipsExceptions.GPUResourceRequestMismatchException`.
+then it will raise an :class:`~ipsframework.ips_exceptions.GPUResourceRequestMismatchException`.
 
 .. automethod:: ipsframework.services.ServicesProxy.launch_task
    :noindex:
@@ -632,7 +632,7 @@ Logging
 The following logging methods can be used to write logging messages to the simulation log file.  It is *strongly* recommended that these methods are used as opposed to print statements.  The logging capability adds a timestamp and identifies the component that generated the message.  The syntax for logging is a simple string or formatted string::
 
     self.services.info('beginning step')
-    self.services.warning('unable to open log file %s for task %d, will use stdout instead', 
+    self.services.warning('unable to open log file %s for task %d, will use stdout instead',
      	 		  logfile, task_id)
 
 There is no need to include information about the component in the message as the IPS logging interface includes a time stamp and information about what component sent the message::

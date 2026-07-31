@@ -14,7 +14,7 @@ binary executables, you can run python functions and class methods.
 
 An example showing this is the following, where we are adding an
 executable (in this case :download:`sleep <../examples/dask/sleep>`),
-a function that sleeps (``myFun``) and a method that sleeps
+a function that sleeps (``my_fun``) and a method that sleeps
 (``myMethod``) respectively to a task pool and submitting the task
 pool with ``self.services.submit_tasks('pool', use_dask=True)``.
 
@@ -41,7 +41,7 @@ executing:
 
   ...
   ret_val = 3
-  myFun(0.5)
+  my_fun(0.5)
   myMethod(0.5)
   /bin/sleep 0.5
   exit_status =  {'binary': 0, 'method': 0, 'function': 0}

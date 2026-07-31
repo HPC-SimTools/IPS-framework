@@ -9,8 +9,7 @@ from ipsframework import Framework
 def write_basic_config_and_platform_files(tmpdir):
     test_component = tmpdir.join('test_component.py')
 
-    driver = """#!/usr/bin/env python3
-from ipsframework.component import Component
+    driver = """from ipsframework.component import Component
 class test_driver(Component):
     def __init__(self, services, config):
         super().__init__(services, config)
@@ -47,7 +46,7 @@ SIMULATION_MODE = NORMAL
 [test_driver]
     CLASS = driver
     SUB_CLASS =
-    NAME = test_driver
+    NAME = TestDriver
     NPROC = 1
     BIN_PATH =
     INPUT_DIR =
@@ -94,12 +93,12 @@ def test_framework_simple(tmpdir, capfd):
     # check all registered service handlers
     service_handlers = sorted(framework.service_handler.keys())
     assert service_handlers == [
-        'createListener',
+        'create_listener',
         'create_simulation',
-        'existsTopic',
+        'exists_topic',
         'finish_task',
-        'getSubscription',
-        'getTopic',
+        'get_subscription',
+        'get_topic',
         'get_allocation',
         'get_config_parameter',
         'get_port',
@@ -109,16 +108,16 @@ def test_framework_simple(tmpdir, capfd):
         'init_task_pool',
         'launch_task',
         'merge_current_plasma_state',
-        'processEvents',
-        'registerEventListener',
-        'registerSubscriber',
+        'process_events',
+        'register_event_listener',
+        'register_subscriber',
         'release_allocation',
-        'removeSubscription',
-        'sendEvent',
+        'remove_subscription',
+        'send_event',
         'set_config_parameter',
         'stage_state',
-        'unregisterEventListener',
-        'unregisterSubscriber',
+        'unregister_event_listener',
+        'unregister_subscriber',
         'update_state',
         'wait_call',
     ]

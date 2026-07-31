@@ -6,7 +6,7 @@ import os
 from ipsframework import Component
 
 
-class medium_worker(Component):
+class MediumWorker(Component):
     def __init__(self, services, config):
         super().__init__(services, config)
         print('Created %s' % (self.__class__))
@@ -22,15 +22,21 @@ class medium_worker(Component):
         sleep_time = 1
         self.services.log('Stepping Worker timestamp=%s', timestamp)
         cwd = self.services.get_working_dir()
-        pid = self.services.launch_task(int(self.NPROC), cwd, os.path.join(self.BIN_PATH, self.BIN), str(sleep_time), logfile='my_out' + timestamp)
+        pid = self.services.launch_task(
+            int(self.NPROC),
+            cwd,
+            os.path.join(self.BIN_PATH, self.BIN),
+            str(sleep_time),
+            logfile='my_out' + timestamp,
+        )
         retval = self.services.wait_task(pid)
         return retval
 
     def finalize(self, timestamp=0.0, **keywords):
         self.services.log('Finalizing Worker')
 
-    def process_event(self, topicName, theEvent):
-        print('Worker: processed ', (topicName, str(theEvent)))
+    def process_event(self, topic_name, the_event):
+        print('Worker: processed ', (topic_name, str(the_event)))
 
     def terminate(self, status):
         self.services.log('Really Calling terminate()')

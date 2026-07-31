@@ -6,7 +6,7 @@ import time
 from ipsframework import Component
 
 
-class simple_sleep(Component):
+class SimpleSleep(Component):
     def step(self, timestamp=0.0, **keywords):
         time.sleep(1)
         self.services.wait_task(self.services.launch_task(1, '/tmp', '/bin/sleep', 1))
