@@ -11,8 +11,8 @@ jobs:
         shell: bash -l {0}
 
     steps:
-      - uses: actions/checkout@v3
-      - uses: conda-incubator/setup-miniconda@v3
+      - uses: actions/checkout@v7
+      - uses: conda-incubator/setup-miniconda@v4
         with:
           miniforge-variant: Miniforge3
           miniforge-version: latest
@@ -20,10 +20,6 @@ jobs:
           channel-priority: true
           auto-update-conda: true
           environment-file: .github/workflows/conda_env/environment_static_analysis.yml
-      #- name: flake8
-      #run: flake8
-      #- name: pylint
-      #run: pylint ipsframework tests
       #- name: bandit
       #run: bandit -lll ipsframework/*.py
       - name: ruff-lint
@@ -61,8 +57,8 @@ jobs:
             conda_env: "macos"
 
     steps:
-      - uses: actions/checkout@v3
-      - uses: conda-incubator/setup-miniconda@v3
+      - uses: actions/checkout@v7
+      - uses: conda-incubator/setup-miniconda@v4
         with:
           miniforge-variant: Miniforge3
           miniforge-version: latest
@@ -82,7 +78,7 @@ jobs:
         # TODO: remove when tests are fixed
         continue-on-error: true
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         if: ${{ github.ref == 'refs/heads/main' }}
 
   tests-wsl:
@@ -93,7 +89,7 @@ jobs:
         shell: wsl-bash {0}
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v7
       - run: wsl --set-default-version 1
         shell: cmd
       - uses: Vampire/setup-wsl@v1

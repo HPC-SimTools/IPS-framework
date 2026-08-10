@@ -1,9 +1,9 @@
 name: ips_test_minimal
 channels:
-- conda-forge
+  - conda-forge
 dependencies:
-- pytest-cov<4
-- pytest-timeout
-- psutil
-- coverage!=6.3
-- dask<=2022.10.0
+  - pytest-cov<4
+  - pytest-timeout
+  - psutil
+  - coverage!=6.3
+  - dask

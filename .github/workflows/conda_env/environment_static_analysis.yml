@@ -1,14 +1,11 @@
 name: ips_static_analysis
 channels:
-- conda-forge
+  - conda-forge
 dependencies:
-- python=3.10
-- ruff=0.16.0
-#- flake8=5.0.4
-#- pylint=2.15.3
-#- bandit=1.7.4
-#- codespell=2.2.1
-- dask=2022.10.0
-- pytest
-- flask=2.2.2
-- configobj
+  - python=3.12
+  - ruff=0.16.0
+  #- codespell=2.2.1
+  - dask=2022.10.0
+  - pytest
+  - flask=2.2.2
+  - configobj
