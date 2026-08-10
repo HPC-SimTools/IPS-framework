@@ -5,7 +5,7 @@ dependencies:
   - python=3.12
   - ruff=0.16.0
   #- codespell=2.2.1
-  - dask=2022.10.0
+  - dask
   - pytest
   - flask=2.2.2
   - configobj
