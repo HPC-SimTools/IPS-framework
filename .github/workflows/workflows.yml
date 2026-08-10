@@ -104,8 +104,7 @@ jobs:
         run: |
           python -m venv .venv
           source .venv/bin/activate
-      - name: Install IPS (in develop mode)
-        run: python -m pip install --group dev -e .
+          python -m pip install --group dev -e .
       - name: testing running IPS (--help)
         run: ips.py --help
       - name: testing showing IPS version (--version)
