@@ -202,7 +202,7 @@ ignore = [
   'PLR2004', # allow "magic numbers"
   'PLR0911', # allow "too many return statements"
   'PLR0912', # allow "too many branches",
-  'PLR0913', # allow "too many arguments in function defintion"
+  'PLR0913', # allow "too many arguments in function definition"
   'PLR0915', # allow "too many statements"
 ]
 
@@ -233,4 +233,4 @@ ignore = [
 ]
 
 [tool.codespell]
-skip = 'RUS,_version.py,versioneer.py'
+skip = 'RUS,CITATION,_version.py,versioneer.py'

@@ -82,7 +82,7 @@ LOG_LEVEL = INFO                   # Possible values: DEBUG, INFO, WARNING, ERRO
     SCRIPT = $IPS_ROOT/tests/components/workers/large_worker.py
 
 # Time loop specification (two modes for now) EXPLICIT | REGULAR
-# For MODE = REGULAR, the framework uses the variables START, FINIS, and NSTEP
+# For MODE = REGULAR, the framework uses the variables START, FINISH, and NSTEP
 # For MODE = EXPLICIT, the frame work uses the variable VALUES (space separated list of time values)
 
 [TIME_LOOP]
