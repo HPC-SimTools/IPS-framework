@@ -41,6 +41,7 @@ requires-python = ">=3.11"
 dependencies = [
   "urllib3",
   "configobj",
+  "psutil",
   "rich",      # for advanced output formatting/logging
   # CHECK DASK VERSIONS ON NERSC PERLMUTTER - this is what matters
   "dask",
@@ -56,6 +57,7 @@ dev = [
   "pre-commit>=4.2.0",
   "pytest>=9.0.3",
   "pytest-cov>=6.1.0",
+  "pytest-timeout>=2.4.0",
   "ruff==0.16.0",
 ]
 
