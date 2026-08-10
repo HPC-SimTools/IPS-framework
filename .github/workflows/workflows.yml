@@ -92,14 +92,19 @@ jobs:
       - uses: actions/checkout@v7
       - uses: Vampire/setup-wsl@v7
         with:
-          additional-packages: python-is-python3
+          additional-packages:
+            python-is-python3
             python3-pip
-            python3-pytest-cov
-            python3-pytest-timeout
-            python3-psutil
             python3-flask
+            # python3-pytest-cov
+            # python3-pytest-timeout
+            # python3-psutil
+      - name: setup VENV for IPS
+        run: |
+          python -m venv .venv
+          source .venv/bin/activate
       - name: Install IPS (in develop mode)
-        run: python -m pip install -e .
+        run: python -m pip install --group dev -e .
       - name: testing running IPS (--help)
         run: ips.py --help
       - name: testing showing IPS version (--version)
