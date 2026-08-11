@@ -93,10 +93,16 @@ jobs:
           source .venv/bin/activate
           python -m pip install --group dev -e .
       - name: testing running IPS (--help)
-        run: ips.py --help
+        run: |
+          source .venv/bin/activate
+          ips.py --help
       - name: testing showing IPS version (--version)
-        run: ips.py --version
+        run: |
+          source .venv/bin/activate
+          ips.py --version
       - name: Test with pytest
-        run: python -m pytest --cov --timeout=60
+        run: |
+          source .venv/bin/activate
+          python -m pytest --cov --timeout=60
         # TODO: remove when tests are fixed
         continue-on-error: true
