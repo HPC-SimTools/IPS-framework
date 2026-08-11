@@ -4,7 +4,7 @@ from unittest import mock
 import pytest
 
 from ipsframework import ResourceManager, TaskManager
-from ipsframework.ipsExceptions import (
+from ipsframework.ips_exceptions import (
     BadResourceRequestError,
     BlockedMessageError,
     GpuResourceRequestMismatchError,

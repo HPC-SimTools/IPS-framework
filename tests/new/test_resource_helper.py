@@ -2,7 +2,7 @@ from unittest import mock
 
 import pytest
 
-from ipsframework.ipsExceptions import InvalidResourceSettingsError
+from ipsframework.ips_exceptions import InvalidResourceSettingsError
 from ipsframework.resource_helper import get_resource_list
 
 # checkjob

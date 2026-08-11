@@ -3,7 +3,7 @@ from unittest import mock
 
 import pytest
 
-from ipsframework.ipsExceptions import (
+from ipsframework.ips_exceptions import (
     BadResourceRequestError,
     GpuResourceRequestMismatchError,
     InsufficientResourcesError,
