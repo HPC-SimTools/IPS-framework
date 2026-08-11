@@ -53,6 +53,7 @@ dependencies = [
 [dependency-groups]
 dev = [
   "codespell>=2.4.1",
+  "flask",
   "mypy>=1.15.0",
   "pre-commit>=4.2.0",
   "pytest>=9.0.3",
