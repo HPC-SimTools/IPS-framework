@@ -43,7 +43,7 @@ from ipsframework.ips_es_spec import EventManager
 from ipsframework.task_manager import TaskInit
 
 pretty.install()
-console = Console()
+console = Console(stderr=True)
 rich.traceback.install(show_locals=True)
 
 if TYPE_CHECKING:
@@ -67,7 +67,7 @@ def launch(executable: Any, task_name: str, working_dir: str | os.PathLike, *arg
 
     Valid kwargs:
     * `logfile` - where the task output is written; if not specified,
-        STDOUT used
+        STDERR used
     * `errfile` - where the task error output is written; if not specified,
         STDERR used
     * `task_env` - A dictionary of environment variables to set
@@ -96,9 +96,6 @@ def launch(executable: Any, task_name: str, working_dir: str | os.PathLike, *arg
     log.info(
         f'Launching task {task_name} with id {task_key!s} and worker {worker.name!s} in {working_dir}'
     )
-    print(
-        f'Launching task {task_name} with id {task_key!s} and worker {worker.name!s} in {working_dir}'
-    )
 
     start_time = time.time()
     working_dir_path = Path(working_dir)
@@ -115,8 +112,7 @@ def launch(executable: Any, task_name: str, working_dir: str | os.PathLike, *arg
         try:
             log_filename = kwargs['logfile']
         except KeyError:
-            log.info('No logfile specified, using stdout for task output')
-            print('No logfile specified, using stdout for task output')
+            log.info('No logfile specified, using stderr for task output')
         else:
             log_path = Path(log_filename)
             if not log_path.is_absolute():
@@ -124,7 +120,6 @@ def launch(executable: Any, task_name: str, working_dir: str | os.PathLike, *arg
             subprocess_stdout = open(log_path, 'a')
             close_stdout = True  # Welp, gotta close it now
             log.info(f'Task output log file: {log_path}')
-            print(f'Task output log file: {log_path}')
 
         # Repeat the same for stderr
         subprocess_stderr = subprocess.STDOUT
@@ -133,7 +128,6 @@ def launch(executable: Any, task_name: str, working_dir: str | os.PathLike, *arg
             err_filename = kwargs['errfile']
         except KeyError:
             log.info('No errfile specified, using STDOUT for task errors')
-            print('No errfile specified, using STDOUT for task errors')
         else:
             err_path = Path(err_filename)
             if not err_path.is_absolute():
@@ -142,18 +136,15 @@ def launch(executable: Any, task_name: str, working_dir: str | os.PathLike, *arg
                 strict=False
             ):
                 log.info(f'Task error log file matches output log file: {log_path}')
-                print(f'Task error log file matches output log file: {log_path}')
             else:
                 try:
                     subprocess_stderr = open(err_path, 'a')
                 except OSError:
                     log.info(f'Could not open errfile {err_path}, using STDOUT for task errors')
-                    print(f'Could not open errfile {err_path}, using STDOUT for task errors')
                     subprocess_stderr = subprocess.STDOUT
                 else:
                     close_stderr = True
                     log.info(f'Task error log file: {err_path}')
-                    print(f'Task error log file: {err_path}')
 
         task_env = kwargs.get('task_env', {})
         new_env = os.environ.copy()
@@ -168,43 +159,27 @@ def launch(executable: Any, task_name: str, working_dir: str | os.PathLike, *arg
             dvm_uri_file = Path(worker.dvm_uri_file)
             if not dvm_uri_file.exists():
                 log.error(f'DVM URI file {dvm_uri_file} does not exist')
-                print(f'DVM URI file {dvm_uri_file} does not exist')
-                # print(f'DVM URI file {dvm_uri_file} does not exist', flush=True)
             else:
                 log.debug(f'Using DVM URI file: {dvm_uri_file}')
-                print(f'Using DVM URI file: {dvm_uri_file}')
-                # print(f'Using DVM URI file: {dvm_uri_file}', flush=True)
 
         # PMIX_SERVER_URI41 is used by prun to figure out how to talk to the DVM
         # It can be defined in `task_env` or in `os.environ`, so we look in
-        # both locations to just echo its presence. The flushes are necessary
-        # in some HPC environments to ensure the output appears in the logs.
+        # both locations to just echo its presence.
         if task_env is not None and task_env != {}:
             if 'PMIX_SERVER_URI41' in task_env:
                 log.debug(
                     f'DVM environment variable PMIX_SERVER_URI41 set in task_env to {task_env["PMIX_SERVER_URI41"]}'
                 )
-                print(
-                    f'DVM environment variable PMIX_SERVER_URI41 set in task_env to {task_env["PMIX_SERVER_URI41"]}'
-                )
-                # print(f'DVM environment variable PMIX_SERVER_URI41 set in task_'
-                #       f'env to {task_env["PMIX_SERVER_URI41"]}', flush=True)
         if 'PMIX_SERVER_URI41' in os.environ:
             log.debug(
                 f'DVM environment variable PMIX_SERVER_URI41 set in os.environ to {os.environ["PMIX_SERVER_URI41"]}'
             )
-            print(
-                f'DVM environment variable PMIX_SERVER_URI41 set in os.environ to {os.environ["PMIX_SERVER_URI41"]}'
-            )
-            # print(f'DVM environment variable PMIX_SERVER_URI41 set in os.environ '
-            #       f'to {os.environ["PMIX_SERVER_URI41"]}', flush=True)
 
         timeout = float(kwargs.get('timeout', 1.0e9))
 
         cmd = f'{executable} {" ".join(map(str, args))}'
 
         log.debug(f'Launching task {task_name} with command: {cmd}')
-        print(f'Launching task {task_name} with command: {cmd}')
 
         worker.log_event(
             'ips',
@@ -241,7 +216,6 @@ def launch(executable: Any, task_name: str, working_dir: str | os.PathLike, *arg
                     },
                 )
                 log.error(f'Failed to launch task {task_name} with command {cmd}: {e}')
-                print(f'Failed to launch task {task_name} with command {cmd}: {e}')
                 raise
 
             try:
@@ -273,7 +247,6 @@ def launch(executable: Any, task_name: str, working_dir: str | os.PathLike, *arg
                 )
                 process.kill()
                 log.error(f'Task {task_name} with command {cmd} timed out after {timeout}s')
-                print(f'Task {task_name} with command {cmd} timed out after {timeout}s')
                 ret_val = -1
             except Exception as e:
                 worker.log_event(
@@ -286,12 +259,11 @@ def launch(executable: Any, task_name: str, working_dir: str | os.PathLike, *arg
                     },
                 )
                 log.error(f'Task {task_name} with command {cmd} failed with {e!s}')
-                print(f'Task {task_name} with command {cmd} failed with {e!s}')
         finally:
             if 'logfile' not in kwargs:
-                print(process.stdout.read() if process and process.stdout else '')
+                print(process.stdout.read() if process and process.stdout else '', file=sys.stderr)
             if 'errfile' not in kwargs:
-                print(process.stderr.read() if process and process.stderr else '')
+                print(process.stderr.read() if process and process.stderr else '', file=sys.stderr)
 
             if close_stdout:
                 subprocess_stdout.close()
@@ -345,7 +317,6 @@ def launch(executable: Any, task_name: str, working_dir: str | os.PathLike, *arg
                 },
             )
             log.error(f'Task {task_name} with callable {executable!s} failed with {e!s}')
-            print(f'Task {task_name} with callable {executable!s} failed with {e!s}')
         finally:
             os.chdir(str(original_dir))
     else:
@@ -354,7 +325,6 @@ def launch(executable: Any, task_name: str, working_dir: str | os.PathLike, *arg
         )
 
     log.info(f'Task {task_name} finished with return value: {ret_val}')
-    print(f'Task {task_name} finished with return value: {ret_val}')
 
     return task_name, ret_val
 
@@ -3300,23 +3270,21 @@ class DVMPlugin(WorkerPlugin):
                 command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
             )
         except Exception as e:
-            print(f'Exception during setting up DVM: {e}')
+            print(f'Exception during setting up DVM: {e}', file=sys.stderr)
             console.print(Traceback.from_exception(type(e), e, e.__traceback__))
 
             # If there was an exception, dump any stdout/stderr we have
             if hasattr(self.worker.dvm_proc, 'stdout'):
-                print(self.worker.dvm_proc.stdout, file=sys.stdout, flush=True)
+                print(self.worker.dvm_proc.stdout, file=sys.stderr, flush=True)
                 print(self.worker.dvm_proc.stderr, file=sys.stderr, flush=True)
 
         # TODO What if there was a subprocess exception?
 
         ready = self.worker.dvm_proc.stdout.readline()
         self.logger.info(f'Ready Message : {ready}')
-        print(f'Ready Message : {ready}', flush=True)
 
         with open(self.worker.dvm_uri_file, 'r') as f:
             self.worker.dvm_uri = f.readline()
-            print(f'Read DVM URI: {self.worker.dvm_uri}', flush=True)
             self.logger.debug(f'Read DVM URI: {self.worker.dvm_uri}')
 
         os.environ['PMIX_SERVER_URI41'] = self.worker.dvm_uri
@@ -3381,6 +3349,7 @@ class TaskPool:
         self.dask_sched_popen = None
         self.dask_workers_tid = None
         self.futures = None
+        self.dask_results = None
         self.dask_scheduler_file = None
         self.dask_client = None
         self.worker_event_logfile = None
@@ -3492,6 +3461,9 @@ class TaskPool:
             # this, _send_monitor_event() will fail because it doesn't expect
             # this argument.
             del message['worker']
+
+        # return_value isn't part of _send_monitor_event()'s API either.
+        message.pop('return_value', None)
 
         self.services._send_monitor_event(**message)
 
@@ -3693,9 +3665,6 @@ class TaskPool:
                 self.services.debug(
                     f'Using {dask_ppw} processes per Dask worker via dask_ppw argument'
                 )
-                print(
-                    f'Using {dask_ppw} processes per Dask worker via dask_ppw argument', flush=True
-                )
                 nthreads = cores_per_node // dask_ppw
             else:
                 nthreads = cores_per_node
@@ -3707,12 +3676,9 @@ class TaskPool:
         nthreads = 1 if nthreads is None or nthreads == 0 else nthreads
 
         self.services.debug(f'Number of threads: {nthreads}')
-        print(f'(submit_dask_tasks: Number of threads: {nthreads})', flush=True)
 
         if dask_ppw is not None:
             self.services.debug(f'Using {dask_ppw} processes per Dask worker via dask_ppw argument')
-            # FIXME Redundant print since debug() appears to be ignored.
-            print(f'Using {dask_ppw} processes per Dask worker via dask_ppw argument', flush=True)
         else:
             dask_ppw = int(services.get_config_param('PROCS_PER_NODE'))
             self.services.debug(
@@ -3830,6 +3796,8 @@ class TaskPool:
         self.active_tasks = self.queued_tasks
         self.queued_tasks = {}
 
+        nsubmitted = len(self.futures)
+
         if block:
             self.services.debug('submit_dask_tasks: blocking tasks to await results')
             # Await all the futures to finish, thereby blocking until they
@@ -3838,8 +3806,10 @@ class TaskPool:
             self.services.debug(f'submit_dask_tasks: have {len(result)} results, block released')
             # TODO check actual result values for problems
 
-            # Set this to empty list so that get_dask_finished_tasks_status
+            # Stash the results so get_dask_finished_tasks_status() can
+            # report them later, and set futures to empty list so it
             # doesn't try to gather() needlessly again.
+            self.dask_results = result
             self.futures = []
 
             # Since we're done with Dask, let's shut it down
@@ -3847,7 +3817,7 @@ class TaskPool:
         else:
             self.services.debug('submit_dask_tasks: not blocking tasks')
 
-        return len(self.futures)
+        return nsubmitted
 
     def submit_tasks(
         self,
@@ -4057,6 +4027,14 @@ class TaskPool:
         """
         result = None
 
+        if self.dask_results is not None:
+            # submit_dask_tasks was called with block = True, so the
+            # results were already gathered (and Dask already shut down)
+            # before this was called.
+            result = self.dask_results
+            self.dask_results = None
+            return dict(result)
+
         if self.dask_client is None:
             # FIXME How does this happen and is it ok when it does?
             self.services.warning('No dask client in call to finished tasks status')
@@ -4112,7 +4090,7 @@ class TaskPool:
         :return: dict mapping task name to exit status
         :rtype: dict
         """
-        if self.dask_pool:
+        if self.dask_pool or self.dask_results is not None:
             return self.get_dask_finished_tasks_status()
 
         if len(self.active_tasks) + len(self.finished_tasks) == 0:

@@ -5,6 +5,8 @@
 Node structures for RM are implemented here for convenience.
 """
 
+import sys
+
 # local version
 
 
@@ -74,11 +76,11 @@ class Node:
 
         else:
             for sock in self.sockets:
-                print('    socket:', sock.name)
-                print('    availablilty:', sock.avail_cores)
-                print('    task ids:', sock.task_ids)
-                print('    owners:', sock.owners)
-                print('    cores:', sock.total_cores)
+                print('    socket:', sock.name, file=sys.stderr)
+                print('    availablilty:', sock.avail_cores, file=sys.stderr)
+                print('    task ids:', sock.task_ids, file=sys.stderr)
+                print('    owners:', sock.owners, file=sys.stderr)
+                print('    cores:', sock.total_cores, file=sys.stderr)
                 sock.print_cores()
 
     def allocate(self, whole_nodes, whole_sockets, tid, o, procs):
@@ -209,12 +211,12 @@ class Socket:
                     print(' - owner:', c.owner, file=fname)
         else:
             for c in self.cores:
-                print('      core:', c.name, end=' ')
+                print('      core:', c.name, end=' ', file=sys.stderr)
                 if c.is_available:
-                    print(' - available')
+                    print(' - available', file=sys.stderr)
                 else:
-                    print(' - task_id:', c.task_id, end=' ')
-                    print(' - owner:', c.owner)
+                    print(' - task_id:', c.task_id, end=' ', file=sys.stderr)
+                    print(' - owner:', c.owner, file=sys.stderr)
 
     def allocate(self, whole, tid, o, num_procs):
         """
@@ -266,7 +268,7 @@ class Socket:
                 self.available.append(c.name)
                 count += 1
         if count != k:
-            print('<<<error>>>')
+            print('<<<error>>>', file=sys.stderr)
         # set avail_cores
         self.avail_cores += k
         return count
@@ -297,7 +299,7 @@ class Core:
             self.owner = o
             return self.name
         else:
-            print('trying to allocate core that is not available')
+            print('trying to allocate core that is not available', file=sys.stderr)
             raise RuntimeError('trying to allocate core that is not available')
 
     def release(self) -> None:
@@ -305,7 +307,7 @@ class Core:
         Mark core as available.
         """
         if self.is_available:
-            print('warning: trying to release core when not in use')
+            print('warning: trying to release core when not in use', file=sys.stderr)
         else:
             self.is_available = True
             self.task_id = -1

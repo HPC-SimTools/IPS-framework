@@ -118,7 +118,7 @@ def test_portal(tmpdir):
     with open(str(tmpdir.join('ips.log')), 'r') as f:
         lines = f.readlines()
 
-    ur_ls = [line[57:] for line in lines if 'FWK_COMP_PortalBridge_4 INFO' in line]
+    ur_ls = [line[57:] for line in lines if 'FWK_COMP_PortalBridge_5 INFO' in line]
     assert len(ur_ls) > 0
     assert ur_ls[0] == 'Run Portal URL = http://localhost:18080/42\n'
 
@@ -128,7 +128,7 @@ def test_portal(tmpdir):
         for (code, data) in [
             line[74:].strip().split(maxsplit=1)
             for line in lines
-            if 'FWK_COMP_PortalBridge_4 DEBUG    Portal Response: ' in line
+            if 'FWK_COMP_PortalBridge_5 DEBUG    Portal Response: ' in line
         ]
     ]
 
@@ -197,11 +197,11 @@ def test_portal_no_server(tmpdir):
         lines = f.readlines()
 
     # remove timestamp and common start
-    lines = [line[57:] for line in lines if 'FWK_COMP_PortalBridge_4 ERROR' in line]
+    lines = [line[57:] for line in lines if 'FWK_COMP_PortalBridge_5 ERROR' in line]
 
     assert len(lines) == 4
     # should fail 3 time then disable the portal
     for n in range(3):
-        assert lines[n].startswith('Portal Error: 999 HTTPConnectionPool')
+        assert lines[n].startswith('Portal Error: 999 Max retry error: HTTPConnectionPool')
 
     assert lines[-1] == 'Disabling portal because: Too many consecutive failed connections\n'

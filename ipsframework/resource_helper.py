@@ -8,6 +8,7 @@ of the IPS.
 import os
 import platform
 import subprocess
+import sys
 from math import ceil
 
 import psutil
@@ -149,7 +150,7 @@ def get_checkjob_info():
             if line.strip() != '':
                 data_lines.append(line.strip())
     except Exception as e:
-        print(e)
+        print(e, file=sys.stderr)
         raise e
         # return nodes, procs
     # parse output to get allocated nodes data
@@ -170,10 +171,10 @@ def get_checkjob_info():
                 for i in pairs:
                     ndata.append(i.split(':'))
             # parse allocated nodes data [nid:nprocs]...
-            for m, _ in ndata:
+            for m, _p in ndata:
                 nodes.append(m)
         except Exception as e:
-            print('problem parsing - small format')
+            print('problem parsing - small format', file=sys.stderr)
             raise e
     elif data_lines[0].find('*') > -1:
         # large node number format
@@ -196,14 +197,20 @@ def get_checkjob_info():
                     nodes.append(r)
             ndata = [(n, p) for n in nodes]
         except Exception as e:
-            print('problem parsing - large format')
+            print('problem parsing - large format', file=sys.stderr)
             raise e
     else:
         # TODO: make this into a real exception type
         raise Exception('could not parse resource data')
     if abs(len(nodes) * int(p) - tot_procs) > 1:
-        print('len(nodes) = %d  p = %d  tot_procs = %d' % (len(nodes), int(p), tot_procs))
-        print('something wrong with parsing - node count*cores does not match task count')
+        print(
+            'len(nodes) = %d  p = %d  tot_procs = %d' % (len(nodes), int(p), tot_procs),
+            file=sys.stderr,
+        )
+        print(
+            'something wrong with parsing - node count*cores does not match task count',
+            file=sys.stderr,
+        )
         raise Exception('something wrong with parsing - node count*cores does not match task count')
     return nodes, int(p), mixed_nodes, ndata
 
@@ -243,7 +250,7 @@ def get_slurm_info():
         cmd = 'scontrol show hostname %s' % nodelist
         sys_nodes = subprocess.check_output(cmd.split(), encoding='UTF-8').strip().split('\n')
         nodes.extend([(k, ppn) for k in sys_nodes])
-        print('IPS SLURM_NODES = ', nodes)
+        print('IPS SLURM_NODES = ', nodes, file=sys.stderr)
     except Exception:
         raise
 
@@ -331,8 +338,8 @@ def get_resource_list(services, host, partial_nodes=False):
     node_detect_str = services.get_platform_parameter('NODE_DETECTION', silent=True)
     if node_detect_str == 'checkjob':
         num_nodes, ppn, mixed_nodes, list_of_nodes = get_checkjob_info()
-        print('=======================================================')
-        print(num_nodes, ppn, mixed_nodes, list_of_nodes)
+        print('=======================================================', file=sys.stderr)
+        print(num_nodes, ppn, mixed_nodes, list_of_nodes, file=sys.stderr)
         accurate_nodes = False
     elif node_detect_str == 'qstat':
         num_nodes, ppn, mixed_nodes, list_of_nodes = get_qstat_jobinfo()
@@ -358,7 +365,8 @@ def get_resource_list(services, host, partial_nodes=False):
     else:
         print(
             "WARNING: no node detection strategy specified in platform config file ('NODE_DETECTION'). "
-            'Valid options are: checkjob, qstat, pbs_env, slurm_env, manual.  Trying all detection schemes.'
+            'Valid options are: checkjob, qstat, pbs_env, slurm_env, manual.  Trying all detection schemes.',
+            file=sys.stderr,
         )
         try:
             num_nodes, ppn, mixed_nodes, list_of_nodes = get_checkjob_info()
@@ -386,7 +394,7 @@ def get_resource_list(services, host, partial_nodes=False):
                             num_nodes, ppn, mixed_nodes, list_of_nodes = manual_detection(services)
                             accurate_nodes = False
                         except Exception:
-                            print('*** NO DETECTION MECHANISM WORKS ***')
+                            print('*** NO DETECTION MECHANISM WORKS ***', file=sys.stderr)
                             raise
     # detect topology
     cpn = int(services.get_platform_parameter('CORES_PER_NODE'))

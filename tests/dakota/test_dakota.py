@@ -58,7 +58,7 @@ def test_dakota(tmpdir):
     # Check PARENT CHILD relationship
     # Get parent PORTAL_RUNID
     json_files = glob.glob(
-        str(tmpdir.join('DAKOTA_Gaussian_TEST_1').join('simulation_log').join('*.json'))
+        str(tmpdir.join('DAKOTA_Gaussian_TEST_1').join('simulation_log').join('*.jsonl'))
     )
     assert len(json_files) == 1
 
@@ -81,7 +81,7 @@ def test_dakota(tmpdir):
             tmpdir.join('DAKOTA_Gaussian_TEST_1')
             .join('simulation_*_0000')
             .join('simulation_log')
-            .join('*.json')
+            .join('*.jsonl')
         )
     )
     assert len(json_files) == 1

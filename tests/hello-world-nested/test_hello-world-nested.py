@@ -115,7 +115,7 @@ def test_hello_world_nested(tmpdir, capfd):
 
     # check the simulation log json
     json_files = glob.glob(
-        str(tmpdir.join('hello_example_SUPER').join('simulation_log').join('*.json'))
+        str(tmpdir.join('hello_example_SUPER').join('simulation_log').join('*.jsonl'))
     )
     assert len(json_files) == 1
     with open(json_files[0], 'r') as json_file:

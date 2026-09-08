@@ -108,7 +108,7 @@ def test_dask(tmpdir):
     # remove timestamp
     lines = [line[24:] for line in lines]
 
-    log = 'DASK__dask_worker_2 INFO     {}\n'
+    log = 'DASK__DaskWorker_2 INFO     {}\n'
     assert log.format('cmd = /bin/sleep') in lines
     assert log.format('ret_val = 4') in lines
 
@@ -117,7 +117,7 @@ def test_dask(tmpdir):
         assert log.format(f'task_{i} 0') in lines
 
     # check simulation_log, make sure it includes events from dask tasks
-    json_files = glob.glob(str(tmpdir.join('simulation_log').join('*.json')))
+    json_files = glob.glob(str(tmpdir.join('simulation_log').join('*.jsonl')))
     assert len(json_files) == 1
     with open(json_files[0], 'r') as json_file:
         lines = json_file.readlines()
@@ -126,16 +126,19 @@ def test_dask(tmpdir):
 
     eventtypes = [e.get('eventtype') for e in lines]
     assert eventtypes.count('IPS_LAUNCH_DASK_TASK') == 4
-    assert eventtypes.count('IPS_TASK_END') == 5
+    assert eventtypes.count('IPS_DASK_TASK_END') == 4
 
     launch_dask_comments = [
         e.get('comment') for e in lines if e.get('eventtype') == 'IPS_LAUNCH_DASK_TASK'
     ]
     for task in range(4):
-        assert f'task_name = task_{task}, Target = /bin/sleep 1' in launch_dask_comments
+        assert (
+            f'task_name = task_{task}, Task key = task_{task}, Target = /bin/sleep 1'
+            in launch_dask_comments
+        )
 
     task_end_comments = [
-        e.get('comment')[:-4] for e in lines if e.get('eventtype') == 'IPS_TASK_END'
+        e.get('comment')[:-4] for e in lines if e.get('eventtype') == 'IPS_DASK_TASK_END'
     ]
     for task in range(4):
         assert f'task_name = task_{task}, elapsed time = 1' in task_end_comments
@@ -169,12 +172,12 @@ def test_dask_shifter_fail(tmpdir):
     lines = [line[24:] for line in lines]
 
     assert (
-        'DASK__dask_worker_2 ERROR    Requested to run dask within shifter but shifter not available\n'
+        'DASK__DaskWorker_2 ERROR    Requested to run dask within shifter but shifter not available\n'
         in lines
     )
 
     # check simulation_log, make sure it includes events from dask tasks
-    json_files = glob.glob(str(tmpdir.join('simulation_log').join('*.json')))
+    json_files = glob.glob(str(tmpdir.join('simulation_log').join('*.jsonl')))
     assert len(json_files) == 1
     with open(json_files[0], 'r') as json_file:
         lines = json_file.readlines()
@@ -222,7 +225,7 @@ def test_dask_fake_shifter(tmpdir, monkeypatch):
     # remove timestamp
     lines = [line[24:] for line in lines]
 
-    log = 'DASK__dask_worker_2 INFO     {}\n'
+    log = 'DASK__DaskWorker_2 INFO     {}\n'
     assert log.format('cmd = /bin/sleep') in lines
     assert log.format('ret_val = 4') in lines
 
@@ -231,7 +234,7 @@ def test_dask_fake_shifter(tmpdir, monkeypatch):
         assert log.format(f'task_{i} 0') in lines
 
     # check simulation_log, make sure it includes events from dask tasks
-    json_files = glob.glob(str(tmpdir.join('simulation_log').join('*.json')))
+    json_files = glob.glob(str(tmpdir.join('simulation_log').join('*.jsonl')))
     assert len(json_files) == 1
     with open(json_files[0], 'r') as json_file:
         lines = json_file.readlines()
@@ -240,28 +243,31 @@ def test_dask_fake_shifter(tmpdir, monkeypatch):
 
     eventtypes = [e.get('eventtype') for e in lines]
     assert eventtypes.count('IPS_LAUNCH_DASK_TASK') == 4
-    assert eventtypes.count('IPS_TASK_END') == 5
+    assert eventtypes.count('IPS_DASK_TASK_END') == 4
 
     launch_dask_comments = [
         e.get('comment') for e in lines if e.get('eventtype') == 'IPS_LAUNCH_DASK_TASK'
     ]
     for task in range(4):
-        assert f'task_name = task_{task}, Target = /bin/sleep 1' in launch_dask_comments
+        assert (
+            f'task_name = task_{task}, Task key = task_{task}, Target = /bin/sleep 1'
+            in launch_dask_comments
+        )
 
     task_end_comments = [
-        e.get('comment')[:-4] for e in lines if e.get('eventtype') == 'IPS_TASK_END'
+        e.get('comment')[:-4] for e in lines if e.get('eventtype') == 'IPS_DASK_TASK_END'
     ]
     for task in range(4):
         assert f'task_name = task_{task}, elapsed time = 1' in task_end_comments
 
     # check shifter.log file
-    with open(str(tmpdir.join('/work/DASK__dask_worker_2').join('shifter.log')), 'r') as f:
+    with open(str(tmpdir.join('/work/DASK__DaskWorker_2').join('shifter.log')), 'r') as f:
         lines = sorted(f.readlines())
 
-    assert lines[0].startswith('Running dask scheduler --no-dashboard --scheduler-file')
+    assert ' scheduler --no-dashboard --no-jupyter --no-show --idle-timeout' in lines[0]
     assert lines[0].endswith('--port 0 in shifter\n')
-    assert lines[1].startswith('Running dask worker --scheduler-file')
-    assert lines[1].endswith('--nworkers 1 --nthreads 2 --no-dashboard in shifter\n')
+    assert ' worker --no-dashboard --no-nanny --scheduler-file' in lines[1]
+    assert lines[1].endswith('--nworkers 1 --nthreads 2 in shifter\n')
 
 
 def test_dask_timeout(tmpdir):
@@ -286,7 +292,7 @@ def test_dask_timeout(tmpdir):
     # remove timestamp
     lines = [line[24:] for line in lines]
 
-    log = 'DASK__dask_worker_2 INFO     {}\n'
+    log = 'DASK__DaskWorker_2 INFO     {}\n'
     assert log.format('cmd = /bin/sleep') in lines
     assert log.format('ret_val = 4') in lines
 
@@ -295,7 +301,7 @@ def test_dask_timeout(tmpdir):
         assert log.format(f'task_{i} -1') in lines
 
     # check simulation_log, make sure it includes events from dask tasks
-    json_files = glob.glob(str(tmpdir.join('simulation_log').join('*.json')))
+    json_files = glob.glob(str(tmpdir.join('simulation_log').join('*.jsonl')))
     assert len(json_files) == 1
     with open(json_files[0], 'r') as json_file:
         lines = json_file.readlines()
@@ -304,15 +310,20 @@ def test_dask_timeout(tmpdir):
 
     eventtypes = [e.get('eventtype') for e in lines]
     assert eventtypes.count('IPS_LAUNCH_DASK_TASK') == 4
-    assert eventtypes.count('IPS_TASK_END') == 5
+    assert eventtypes.count('IPS_DASK_TASK_END') == 4
 
     launch_dask_comments = [
         e.get('comment') for e in lines if e.get('eventtype') == 'IPS_LAUNCH_DASK_TASK'
     ]
     for task in range(4):
-        assert f'task_name = task_{task}, Target = /bin/sleep 100' in launch_dask_comments
+        assert (
+            f'task_name = task_{task}, Task key = task_{task}, Target = /bin/sleep 100'
+            in launch_dask_comments
+        )
 
-    task_end_comments = [e.get('comment') for e in lines if e.get('eventtype') == 'IPS_TASK_END']
+    task_end_comments = [
+        e.get('comment') for e in lines if e.get('eventtype') == 'IPS_DASK_TASK_END'
+    ]
     for task in range(4):
         assert f'task_name = task_{task}, timed-out after 1.0s' in task_end_comments
 
@@ -341,7 +352,7 @@ def test_dask_nproc(tmpdir):
     # remove timestamp
     lines = [line[24:] for line in lines]
 
-    log = 'DASK__dask_worker_2 INFO     {}\n'
+    log = 'DASK__DaskWorker_2 INFO     {}\n'
     assert log.format('cmd = /bin/sleep') in lines
     assert log.format('ret_val = 4') in lines
 
@@ -351,7 +362,7 @@ def test_dask_nproc(tmpdir):
 
     # check for warning message that dask isn't being used
     assert (
-        'DASK__dask_worker_2 WARNING  Requested use_dask but cannot because multiple processors requested\n'
+        'DASK__DaskWorker_2 WARNING  Requested use_dask but cannot because multiple processors requested\n'
         in lines
     )
 
@@ -384,7 +395,7 @@ def test_dask_logfile(tmpdir):
     # remove timestamp
     lines = [line[24:] for line in lines]
 
-    log = 'DASK__dask_worker_2 INFO     {}\n'
+    log = 'DASK__DaskWorker_2 INFO     {}\n'
     assert log.format(f'cmd = {exe}') in lines
     assert log.format('ret_val = 4') in lines
 
@@ -393,7 +404,7 @@ def test_dask_logfile(tmpdir):
         assert log.format(f'task_{i} 0') in lines
 
     # check that the process output log files are created
-    work_dir = tmpdir.join('work').join('DASK__dask_worker_2')
+    work_dir = tmpdir.join('work').join('DASK__DaskWorker_2')
     for i in range(4):
         log_file = work_dir.join(f'task_{i}.log')
         assert log_file.exists()
@@ -430,7 +441,7 @@ def test_dask_logfile_errfile(tmpdir):
     # remove timestamp
     lines = [line[24:] for line in lines]
 
-    log = 'DASK__dask_worker_2 INFO     {}\n'
+    log = 'DASK__DaskWorker_2 INFO     {}\n'
     assert log.format(f'cmd = {exe}') in lines
     assert log.format('ret_val = 4') in lines
 
@@ -439,7 +450,7 @@ def test_dask_logfile_errfile(tmpdir):
         assert log.format(f'task_{i} 0') in lines
 
     # check that the process output log files are created
-    work_dir = tmpdir.join('work').join('DASK__dask_worker_2')
+    work_dir = tmpdir.join('work').join('DASK__DaskWorker_2')
     for i in range(4):
         log_file = work_dir.join(f'task_{i}.log')
         assert log_file.exists()
@@ -489,7 +500,7 @@ def test_dask_shifter_on_cori(tmpdir):
     # remove timestamp
     lines = [line[24:] for line in lines]
 
-    log = 'DASK__dask_worker_2 INFO     {}\n'
+    log = 'DASK__DaskWorker_2 INFO     {}\n'
     assert log.format(f'cmd = {exe}') in lines
     assert log.format('ret_val = 4') in lines
 
@@ -498,7 +509,7 @@ def test_dask_shifter_on_cori(tmpdir):
         assert log.format(f'task_{i} 0') in lines
 
     # check that the process output log files are created
-    work_dir = tmpdir.join('work').join('DASK__dask_worker_2')
+    work_dir = tmpdir.join('work').join('DASK__DaskWorker_2')
     for i in range(4):
         log_file = work_dir.join(f'task_{i}.log')
         assert log_file.exists()
@@ -531,7 +542,7 @@ def test_dask_with_1_gpu(tmpdir):
     # remove timestamp
     lines = [line[24:] for line in lines]
 
-    log = 'DASK__dask_worker_2 INFO     {}\n'
+    log = 'DASK__DaskWorker_2 INFO     {}\n'
     assert log.format('ret_val = 4') in lines
 
     # task successful and return 0
@@ -539,15 +550,15 @@ def test_dask_with_1_gpu(tmpdir):
         assert log.format(f'task_{i} 0') in lines
 
     # check simulation_log
-    json_files = glob.glob(str(tmpdir.join('simulation_log').join('*.json')))
+    json_files = glob.glob(str(tmpdir.join('simulation_log').join('*.jsonl')))
     assert len(json_files) == 1
     with open(json_files[0], 'r') as json_file:
         comments = [json.loads(line)['comment'].split(', ', maxsplit=5)[2:] for line in json_file]
 
     assert comments[10][0] == 'nproc = 1 '
     assert comments[10][1].startswith('Target = ')
-    assert 'dask-worker --scheduler-file' in comments[10][1]
-    assert comments[10][1].endswith('s 1 --nthreads 2 --no-dashboard')
+    assert 'dask worker --no-dashboard --no-nanny --scheduler-file' in comments[10][1]
+    assert comments[10][1].endswith('--nworkers 1 --nthreads 2')
 
 
 def test_dask_with_2_gpus(tmpdir):
@@ -572,7 +583,7 @@ def test_dask_with_2_gpus(tmpdir):
     # remove timestamp
     lines = [line[24:] for line in lines]
 
-    log = 'DASK__dask_worker_2 INFO     {}\n'
+    log = 'DASK__DaskWorker_2 INFO     {}\n'
     assert log.format('ret_val = 4') in lines
 
     # task successful and return 0
@@ -580,12 +591,12 @@ def test_dask_with_2_gpus(tmpdir):
         assert log.format(f'task_{i} 0') in lines
 
     # check simulation_log
-    json_files = glob.glob(str(tmpdir.join('simulation_log').join('*.json')))
+    json_files = glob.glob(str(tmpdir.join('simulation_log').join('*.jsonl')))
     assert len(json_files) == 1
     with open(json_files[0], 'r') as json_file:
         comments = [json.loads(line)['comment'].split(', ', maxsplit=5)[2:] for line in json_file]
 
     assert comments[10][0] == 'nproc = 2 '
     assert comments[10][1].startswith('Target = ')
-    assert 'dask-worker --scheduler-file' in comments[10][1]
-    assert comments[10][1].endswith('s 1 --nthreads 1 --no-dashboard')
+    assert 'dask worker --no-dashboard --no-nanny --scheduler-file' in comments[10][1]
+    assert comments[10][1].endswith('--nworkers 1 --nthreads 1')

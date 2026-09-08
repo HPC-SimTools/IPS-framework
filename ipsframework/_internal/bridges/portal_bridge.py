@@ -21,7 +21,7 @@ from urllib3.util import Retry as Urllib3Retry
 
 from ipsframework import Component
 
-MAX_RETRIES = 10
+MAX_RETRIES = 3
 
 
 _portal_logger = logging.getLogger('ipsframework.bridges.portal_bridge')
@@ -36,7 +36,9 @@ def send_post(conn: Connection, stop: EventType, url: str):
     fail_count = 0
 
     http = PoolManager(
-        retries=Urllib3Retry(total=MAX_RETRIES, backoff_factor=1, respect_retry_after_header=True),
+        retries=Urllib3Retry(
+            total=MAX_RETRIES, backoff_factor=0.25, respect_retry_after_header=True
+        ),
         headers={'Content-Type': 'application/json'},
     )
 
@@ -68,7 +70,9 @@ def send_jupyter_notebook(conn: Connection, stop: EventType, url: str, api_key: 
     fail_count = 0
 
     http = PoolManager(
-        retries=Urllib3Retry(total=MAX_RETRIES, backoff_factor=1, respect_retry_after_header=True)
+        retries=Urllib3Retry(
+            total=MAX_RETRIES, backoff_factor=0.25, respect_retry_after_header=True
+        )
     )
 
     while True:
@@ -129,7 +133,9 @@ def send_jupyter_notebook_data(
     fail_count = 0
 
     http = PoolManager(
-        retries=Urllib3Retry(total=MAX_RETRIES, backoff_factor=1, respect_retry_after_header=True)
+        retries=Urllib3Retry(
+            total=MAX_RETRIES, backoff_factor=0.25, respect_retry_after_header=True
+        )
     )
 
     while True:
@@ -195,7 +201,9 @@ def send_ensemble_variables(
     fail_count = 0
 
     http = PoolManager(
-        retries=Urllib3Retry(total=MAX_RETRIES, backoff_factor=1, respect_retry_after_header=True)
+        retries=Urllib3Retry(
+            total=MAX_RETRIES, backoff_factor=0.25, respect_retry_after_header=True
+        )
     )
 
     while True:
