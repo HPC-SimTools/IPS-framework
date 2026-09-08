@@ -30,6 +30,6 @@ source /global/common/software/atom/ips-portal/credentials/ips-portal-developmen
 
 # The 2>&1 binds stderr to stdout so that both are captured in the tee log file.  The
 # `tee` command allows you to see the output on the terminal as well as save it.
-ips.py --simulation=perlmutter.conf --platform=perlmutter.conf \
+ips.py --simulation=ensemble.conf --platform=perlmutter.conf \
     2>&1 | tee ${SLURM_JOBID}_ips.log
 

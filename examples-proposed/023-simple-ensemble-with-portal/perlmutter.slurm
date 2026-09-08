@@ -7,7 +7,7 @@
 # change the "conda activate" line below accordingly if you do so.
 #
 #SBATCH --account=atom # REPLACE WITH YOUR PROJECT ID
-#SBATCH --job-name=example_022
+#SBATCH --job-name=example_023
 #SBATCH --constraint=cpu
 #SBATCH --nodes=1
 #SBATCH --time=5
