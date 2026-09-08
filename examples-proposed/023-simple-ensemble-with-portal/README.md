@@ -1,6 +1,9 @@
 # Simple ensemble example 
 
-This shows how to run an ensemble for three instances and how to save ensemble instances to an IPS Portal instance.
+This shows how to run an ensemble for three instances and how to save ensemble 
+instances to an IPS Portal instance.  It also demonstrates using a Jupyter
+notebook to read aggregate statistics from all the ensembles as found in
+`./input_dir/notebook.ipynb`.
 
 Note that there will be Dask related errors and warnings at the end that can be
 ignored.  These are due to Dask not having a clean shutdown.
@@ -15,6 +18,9 @@ ignored.  These are due to Dask not having a clean shutdown.
 * `ensemble.conf` -- top-level configuration file
 * `platform.conf` -- platform configuration file
 * `template.conf` -- ensemble instance configuration file
+
+* `input_dir/notebook.ipynb` -- example notebook to read all ensemble 
+  instance data for analytics
 
 
 ## Instructions
