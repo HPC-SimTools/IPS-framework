@@ -38,7 +38,7 @@ SIMULATION_MODE = NORMAL
 [DRIVER]
     CLASS = OPENMP
     SUB_CLASS =
-    NAME = gpu_task
+    NAME = GpuTask
     BIN_PATH =
     EXE = {tmpdir!s}/gpu_test.sh
     NPROC = 1
@@ -78,21 +78,31 @@ def test_srun_gpu_on_perlmutter(tmpdir):
     json_files = glob.glob(str(tmpdir.join('simulation_log').join('*.json')))
     assert len(json_files) == 1
     with open(json_files[0], 'r') as json_file:
-        comments = [json.loads(line)['comment'].split(', ', maxsplit=4)[3:] for line in json_file.readlines()]
+        comments = [json.loads(line)['comment'].split(', ', maxsplit=4)[3:] for line in json_file]
 
-    assert comments[5][0].startswith('Target = srun -N 1 -n 1 -c 64 --threads-per-core=1 --cpu-bind=cores --gpus-per-task=1')
+    assert comments[5][0].startswith(
+        'Target = srun -N 1 -n 1 -c 64 --threads-per-core=1 --cpu-bind=cores --gpus-per-task=1'
+    )
     assert comments[5][0].endswith('gpu_test.sh 1_1')
 
-    assert comments[7][0].startswith('Target = srun -N 1 -n 1 -c 64 --threads-per-core=1 --cpu-bind=cores --gpus-per-task=2')
+    assert comments[7][0].startswith(
+        'Target = srun -N 1 -n 1 -c 64 --threads-per-core=1 --cpu-bind=cores --gpus-per-task=2'
+    )
     assert comments[7][0].endswith('gpu_test.sh 1_2')
 
-    assert comments[9][0].startswith('Target = srun -N 1 -n 1 -c 64 --threads-per-core=1 --cpu-bind=cores --gpus-per-task=4')
+    assert comments[9][0].startswith(
+        'Target = srun -N 1 -n 1 -c 64 --threads-per-core=1 --cpu-bind=cores --gpus-per-task=4'
+    )
     assert comments[9][0].endswith('gpu_test.sh 1_4')
 
-    assert comments[11][0].startswith('Target = srun -N 1 -n 2 -c 32 --threads-per-core=1 --cpu-bind=cores --gpus-per-task=2')
+    assert comments[11][0].startswith(
+        'Target = srun -N 1 -n 2 -c 32 --threads-per-core=1 --cpu-bind=cores --gpus-per-task=2'
+    )
     assert comments[11][0].endswith('gpu_test.sh 2_2')
 
-    assert comments[13][0].startswith('Target = srun -N 1 -n 4 -c 16 --threads-per-core=1 --cpu-bind=cores --gpus-per-task=1')
+    assert comments[13][0].startswith(
+        'Target = srun -N 1 -n 4 -c 16 --threads-per-core=1 --cpu-bind=cores --gpus-per-task=1'
+    )
     assert comments[13][0].endswith('gpu_test.sh 4_1')
 
     # check that the process output log files are created

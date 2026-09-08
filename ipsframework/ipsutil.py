@@ -9,7 +9,7 @@ import os
 import shutil
 import sys
 import time
-from typing import Iterable, Optional, Union
+from collections.abc import Iterable
 
 try:
     import Pyro4
@@ -17,7 +17,7 @@ except ImportError:
     pass
 
 
-def which(program, alt_paths: Optional[list[str]] = None):
+def which(program, alt_paths: list[str] | None = None):
     def is_exe(fpath):
         return os.path.exists(fpath) and os.access(fpath, os.X_OK)
 
@@ -39,7 +39,13 @@ def which(program, alt_paths: Optional[list[str]] = None):
                     return exe_file
 
 
-def copyFiles(src_dir: str, src_file_list: Union[str, Iterable[str]], target_dir: str, prefix='', keep_old: bool = False):
+def copy_files(
+    src_dir: str,
+    src_file_list: str | Iterable[str],
+    target_dir: str,
+    prefix='',
+    keep_old: bool = False,
+):
     """
     Copy files in *src_file_list* from *src_dir* to *target_dir* with an
     optional prefix.  If *keep_old* is ``True``, existing files in
@@ -51,7 +57,7 @@ def copyFiles(src_dir: str, src_file_list: Union[str, Iterable[str]], target_dir
     use_data_server = os.getenv('USE_DATA_SERVER', 'DATA_SERVER_NOT_USED')
     if use_data_server != 'DATA_SERVER_NOT_USED':
         data_server = Pyro4.Proxy('PYRONAME:DataServer')
-        data_server.copyFiles(src_dir, src_file_list, target_dir, prefix, keep_old)
+        data_server.copy_files(src_dir, src_file_list, target_dir, prefix, keep_old)
         return
 
     try:
@@ -102,20 +108,20 @@ def copyFiles(src_dir: str, src_file_list: Union[str, Iterable[str]], target_dir
             raise
 
 
-def getTimeString(timeArg: Optional[time.struct_time] = None):
+def get_time_string(time_arg: time.struct_time | None = None):
     """
-    Return a string representation of *timeArg*. *timeArg* is expected
+    Return a string representation of *time_arg*. *time_arg* is expected
     to be an appropriate object to be processed by :py:meth:`time.strftime`.
-    If *timeArg* is ``None``, current time is used.
+    If *time_arg* is ``None``, current time is used.
     """
-    if timeArg is None:
+    if time_arg is None:
         arg = time.localtime()
     else:
-        arg = timeArg
+        arg = time_arg
     return time.strftime('%Y-%m-%d|%H:%M:%S%Z', arg)
 
 
-def params_from_csv(infile: Union[str, os.PathLike]) -> dict[str, dict[str, list[str]]]:
+def params_from_csv(infile: str | os.PathLike) -> dict[str, dict[str, list[str]]]:
     """
     Read a CSV file and return a dictionary of parameters suitable for
     passing to services.run_ensemble()
@@ -135,7 +141,7 @@ def params_from_csv(infile: Union[str, os.PathLike]) -> dict[str, dict[str, list
 
     The returned structure will look like this:
 
-    .. code-block:: python    
+    .. code-block:: python
 
         variables = {'a_comp': {'A': [3, 2, 4],
                                 'B': [2.34, 5.82, 0.1],
@@ -188,12 +194,12 @@ def group_ensemble_variables_into_instances(variables: dict[str, dict[str, list[
 
     .. code-block:: python
 
-        [['prefix_0', [['a_sim_comp', {'A': 3, 'B': 2.34, 'C': 'bar'}],
-                            ['another_sim_comp', {'D': 7, 'B': 0.775, 'F': 'xyzzy'}]]],
-            ['prefix_1', [['a_sim_comp', {'A': 2, 'B': 5.82, 'C': 'baz'}],
-                            ['another_sim_comp', {'D': 5, 'B': 0.08, 'F': 'plud'}]]],
-            ['prefix_2', [['a_sim_comp', {'A': 4, 'B': 0.1, 'C': 'quux'}],
-                            ['another_sim_comp', {'D': 9, 'B': 29.2, 'F': 'thud'}]]]]
+        [['prefix_0', [['ASimComp', {'A': 3, 'B': 2.34, 'C': 'bar'}],
+                            ['AnotherSimComp', {'D': 7, 'B': 0.775, 'F': 'xyzzy'}]]],
+            ['prefix_1', [['ASimComp', {'A': 2, 'B': 5.82, 'C': 'baz'}],
+                            ['AnotherSimComp', {'D': 5, 'B': 0.08, 'F': 'plud'}]]],
+            ['prefix_2', [['ASimComp', {'A': 4, 'B': 0.1, 'C': 'quux'}],
+                            ['AnotherSimComp', {'D': 9, 'B': 29.2, 'F': 'thud'}]]]]
 
     prefix_n corresponds to a specific ensemble instance and will
     be used for a unique subdir name.  That, in turn, references a
@@ -206,19 +212,34 @@ def group_ensemble_variables_into_instances(variables: dict[str, dict[str, list[
     # convert the list of variable values into corresponding dicts
     # mapping the variables to specific values.  Sorta like a
     # column-wise to row-wise transposition.
-    transposed = {key: [dict(zip(inner.keys(), values)) for values in zip(*inner.values())] for key, inner in variables.items()}
+    transposed = {
+        key: [
+            dict(zip(inner.keys(), values, strict=False))
+            for values in zip(*inner.values(), strict=False)
+        ]
+        for key, inner in variables.items()
+    }
 
     # Build the final structure where each instance is named
     # {prefix}_n
     result = [
-        (f'{name}{i}', [(sim_name, sim_data) for sim_name, sim_data_list in transposed.items() for sim_data in [sim_data_list[i]]])
+        (
+            f'{name}{i}',
+            [
+                (sim_name, sim_data)
+                for sim_name, sim_data_list in transposed.items()
+                for sim_data in [sim_data_list[i]]
+            ],
+        )
         for i in range(len(next(iter(transposed.values()))))
     ]
 
     return result
 
 
-def ensemble_instances_to_csv(instances: list[tuple[str, list[tuple[str, dict[str, object]]]]], path: Union[str, os.PathLike]) -> None:
+def ensemble_instances_to_csv(
+    instances: list[tuple[str, list[tuple[str, dict[str, object]]]]], path: str | os.PathLike
+) -> None:
     """
     Take in a structure of variables suitable for passing to services.run_ensemble(), and write a CSV file from it.
 
@@ -252,12 +273,24 @@ def ensemble_instances_to_csv(instances: list[tuple[str, list[tuple[str, dict[st
         # header row
         writer.writerow(
             functools.reduce(
-                operator.iconcat, [[f'{instance[0]}:{component}' for component in list(instance[1].keys())] for instance in instances[0][1]], ['sim_name']
+                operator.iconcat,
+                [
+                    [f'{instance[0]}:{component}' for component in list(instance[1].keys())]
+                    for instance in instances[0][1]
+                ],
+                ['sim_name'],
             )
         )
         # data rows
         writer.writerows(
-            [functools.reduce(operator.iconcat, [list(component[1].values()) for component in instance[1]], [instance[0]]) for instance in instances]
+            [
+                functools.reduce(
+                    operator.iconcat,
+                    [list(component[1].values()) for component in instance[1]],
+                    [instance[0]],
+                )
+                for instance in instances
+            ]
         )
 
 

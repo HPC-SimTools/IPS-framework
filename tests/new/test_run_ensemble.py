@@ -1,5 +1,6 @@
 import logging
 import os
+from importlib import import_module
 
 from ipsframework import ServicesProxy, TaskPool
 from ipsframework import services as services_module
@@ -113,7 +114,9 @@ def test_task_pool_submit_tasks_passes_logfile_and_errfile_to_dask(monkeypatch):
     monkeypatch.setattr(TaskPool, 'distributed', object())
     monkeypatch.setattr(task_pool, 'submit_dask_tasks', record_submit_dask_tasks)
 
-    assert task_pool.submit_tasks(use_dask=True, logfile='instance.out', errfile='instance.err') == 1
+    assert (
+        task_pool.submit_tasks(use_dask=True, logfile='instance.out', errfile='instance.err') == 1
+    )
     assert submitted_args[0][-2:] == ('instance.out', 'instance.err')
 
 
@@ -183,9 +186,12 @@ def test_launch_mapped_task_passes_logfile_and_errfile_to_launch(monkeypatch):
 def test_launch_writes_stderr_to_logfile_when_errfile_is_omitted(tmpdir, monkeypatch):
     script = write_stdout_stderr_script(tmpdir)
 
-    import dask.distributed
+    dask_distributed = import_module('dask.distributed')
 
-    monkeypatch.setattr(dask.distributed, 'get_worker', lambda: DummyDaskWorker())
+    def get_worker():
+        return DummyDaskWorker()
+
+    monkeypatch.setattr(dask_distributed, 'get_worker', get_worker)
 
     assert services_module.launch(
         str(script),
@@ -203,9 +209,12 @@ def test_launch_writes_stderr_to_logfile_when_errfile_is_omitted(tmpdir, monkeyp
 def test_launch_writes_stderr_to_logfile_when_errfile_matches_logfile(tmpdir, monkeypatch):
     script = write_stdout_stderr_script(tmpdir)
 
-    import dask.distributed
+    dask_distributed = import_module('dask.distributed')
 
-    monkeypatch.setattr(dask.distributed, 'get_worker', lambda: DummyDaskWorker())
+    def get_worker():
+        return DummyDaskWorker()
+
+    monkeypatch.setattr(dask_distributed, 'get_worker', get_worker)
 
     assert services_module.launch(
         str(script),

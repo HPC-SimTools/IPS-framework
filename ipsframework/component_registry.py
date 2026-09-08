@@ -12,7 +12,7 @@ class SingletonMeta(type):
 
     def __call__(cls, *args, **kwargs):
         if cls not in cls.__instances:
-            cls.__instances[cls] = super(SingletonMeta, cls).__call__(*args, **kwargs)
+            cls.__instances[cls] = super().__call__(*args, **kwargs)
         return cls.__instances[cls]
 
 
@@ -65,6 +65,9 @@ class ComponentID:
 
     def __eq__(self, other):
         return str(self) == str(other)
+
+    def __hash__(self):
+        return hash(str(self))
 
     def get_instance_name(self):
         """
@@ -121,10 +124,16 @@ class ComponentRegistry(metaclass=SingletonMeta):
         """
         Return all of the component ids associated with sim *sim_name*
         """
-        ids = [ComponentID.deserialize(i) for i in self.registry if ComponentID.deserialize(i).get_sim_name() == sim_name]
+        ids = [
+            ComponentID.deserialize(i)
+            for i in self.registry
+            if ComponentID.deserialize(i).get_sim_name() == sim_name
+        ]
         return ids
 
-    def addEntry(self, component_id, svc_response_q, invocation_q, component_ref, services, config):
+    def add_entry(
+        self, component_id, svc_response_q, invocation_q, component_ref, services, config
+    ):
         """
         Create a component registry entry for *component_id* and its
         associated queues, component ref, services and configuration
@@ -135,20 +144,24 @@ class ComponentRegistry(metaclass=SingletonMeta):
         try:
             self.registry[key] = value
         except KeyError as e:
-            print('Error creating component registry entry for ', key, ' : ', str(e), file=sys.stderr)
+            print(
+                'Error creating component registry entry for ', key, ' : ', str(e), file=sys.stderr
+            )
             raise e
 
-    def removeEntry(self, component_id):
+    def remove_entry(self, component_id):
         key = component_id.get_serialization()
         try:
             del self.registry[key]
         except KeyError as e:
-            print('Error removing component registry entry for ', key, ' : ', str(e), file=sys.stderr)
+            print(
+                'Error removing component registry entry for ', key, ' : ', str(e), file=sys.stderr
+            )
             raise
 
     # SIMYAN: this was added to provide an easy way to use the component
     # registry to get a registry entry
-    def getEntry(self, component_id):
+    def get_entry(self, component_id):
         """
         Return a registry entry.
         """
@@ -160,7 +173,7 @@ class ComponentRegistry(metaclass=SingletonMeta):
             raise
         return entry
 
-    def getComponentArtifact(self, component_id, artifact):
+    def get_component_artifact(self, component_id, artifact):
         """
         Return value of *artifact* in *component_id*'s registry entry.
         """
@@ -178,7 +191,7 @@ class ComponentRegistry(metaclass=SingletonMeta):
             raise
         return value
 
-    def setComponentArtifact(self, component_id, artifact, value):
+    def set_component_artifact(self, component_id, artifact, value):
         """
         Set the value of *artifact* in *component_id*'s registry entry to
         *value*.

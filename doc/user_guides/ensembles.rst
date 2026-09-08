@@ -322,8 +322,8 @@ The ensemble execution creates something like the following directory structure:
     │ │   ├── transport_comp.py
     │ │   └── instance_driver.py
     │ └── work
-    │     ├── driver__instance_driver_1
-    │     ├── FWK_COMP_runspaceInitComponent_4
+    │     ├── driver__InstanceDriver_1
+    │     ├── FWK_COMP_RunspaceInitComponent_4
     │     ├── workers__physics_comp_2
     │     │   └── output.csv
     │     └── workers__transport_comp_3

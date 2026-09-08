@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Example driver for the ensembles example.
 
@@ -11,12 +10,12 @@ from pathlib import Path
 from ipsframework import Component
 
 
-class ensemble_driver(Component):
+class EnsembleDriver(Component):
     def __init__(self, services, config):
         super().__init__(services, config)
         print('Creating driver')
 
-    def init(self, timeStamp=0.0):
+    def init(self, time_stamp=0.0):
         return
 
     def step(self, timestamp=0.0, **keywords):
@@ -58,7 +57,11 @@ class ensemble_driver(Component):
         # for variable substitutions.
         variables = {
             'a_sim_comp': {'A': [3, 2, 4], 'B': [2.34, 5.82, 0.1], 'C': ['bar', 'baz', 'quux']},
-            'another_sim_comp': {'D': [7, 5, 9], 'B': [0.775, 0.080, 29.2], 'F': ['xyzzy', 'plud', 'thud']},
+            'another_sim_comp': {
+                'D': [7, 5, 9],
+                'B': [0.775, 0.080, 29.2],
+                'F': ['xyzzy', 'plud', 'thud'],
+            },
         }
 
         # Spins up N tasks, in this case three, each with a different set of
@@ -74,5 +77,5 @@ class ensemble_driver(Component):
 
         self.services.info(f'Mapping of dirs to parameters: {mapping!s}')
 
-    def finalize(self, timeStamp=0.0):
+    def finalize(self, time_stamp=0.0):
         return

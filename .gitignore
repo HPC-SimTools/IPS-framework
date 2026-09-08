@@ -11,6 +11,7 @@ www/
 log
 resource_usage
 work/
+ENSEMBLES
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

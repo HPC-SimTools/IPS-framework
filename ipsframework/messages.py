@@ -4,7 +4,7 @@
 
 from typing import Literal
 
-from ipsframework.componentRegistry import ComponentID
+from ipsframework.component_registry import ComponentID
 
 
 class Message:
@@ -27,7 +27,9 @@ class Message:
     def get_message_id(self):
         if self.message_id is None:
             delim = self.delimiter
-            self.message_id = delim.join([self.identifier, str(self.sender_id), str(self.receiver_id), str(self.counter)])
+            self.message_id = delim.join(
+                [self.identifier, str(self.sender_id), str(self.receiver_id), str(self.counter)]
+            )
             self.__class__.counter += 1
         return self.message_id
 
@@ -48,7 +50,15 @@ class ServiceRequestMessage(Message):
     delimiter = '|'
     identifier = 'REQUEST'
 
-    def __init__(self, sender_id: ComponentID, receiver_id: ComponentID, target_comp_id: ComponentID, target_method: str, *args, **keywords):
+    def __init__(
+        self,
+        sender_id: ComponentID,
+        receiver_id: ComponentID,
+        target_comp_id: ComponentID,
+        target_method: str,
+        *args,
+        **keywords,
+    ):
         super().__init__(sender_id, receiver_id)
         self.target_comp_id = target_comp_id
         self.target_method = target_method
@@ -73,7 +83,14 @@ class ServiceResponseMessage(Message):
     delimiter = '|'
     identifier = 'RESPONSE'
 
-    def __init__(self, sender_id: ComponentID, receiver_id: ComponentID, request_msg_id: str, status: Literal[0, 1], *args):
+    def __init__(
+        self,
+        sender_id: ComponentID,
+        receiver_id: ComponentID,
+        request_msg_id: str,
+        status: Literal[0, 1],
+        *args,
+    ):
         super().__init__(sender_id, receiver_id)
         self.request_msg_id = request_msg_id
         self.status = status
@@ -102,7 +119,15 @@ class MethodInvokeMessage(Message):
     delimiter = '|'
     identifier = 'INVOKE'
 
-    def __init__(self, sender_id: ComponentID, receiver_id: ComponentID, call_id: int, target_method: str, *args, **keywords):
+    def __init__(
+        self,
+        sender_id: ComponentID,
+        receiver_id: ComponentID,
+        call_id: int,
+        target_method: str,
+        *args,
+        **keywords,
+    ):
         super().__init__(sender_id, receiver_id)
         self.call_id = call_id
         self.target_method = target_method
@@ -126,7 +151,14 @@ class MethodResultMessage(Message):
     delimiter = '|'
     identifier = 'RESULT'
 
-    def __init__(self, sender_id: ComponentID, receiver_id: ComponentID, call_id: int, status: Literal[0, 1], *args):
+    def __init__(
+        self,
+        sender_id: ComponentID,
+        receiver_id: ComponentID,
+        call_id: int,
+        status: Literal[0, 1],
+        *args,
+    ):
         super().__init__(sender_id, receiver_id)
         self.call_id = call_id
         self.args = args

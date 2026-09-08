@@ -1,13 +1,13 @@
 name: ips_test
 channels:
-- conda-forge
+  - conda-forge
 dependencies:
-- pytest-cov<4
-- pytest-timeout
-- psutil
-- mpi4py
-- openmpi
-- dask=2022.10.0
-- dakota
-- coverage!=6.3
-- flask=2.2.2
+  - pytest-cov<4
+  - pytest-timeout
+  - psutil
+  - mpi4py
+  - openmpi
+  - dask
+  - dakota
+  - coverage!=6.3
+  - flask=2.2.2

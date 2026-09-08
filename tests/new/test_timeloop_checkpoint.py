@@ -22,20 +22,20 @@ SCRATCH =
 
     config_file = tmpdir.join('ips_restart.config') if restart else tmpdir.join('ips.config')
 
-    SIMULATION_MODE = 'RESTART' if restart else 'NORMAL'
+    simulation_mode = 'RESTART' if restart else 'NORMAL'
 
     sim_log = 'sim_restart.log' if restart else 'sim.log'
 
-    START = 162.5 if restart else 100
-    FINISH = 200 if restart else 150
-    NSTEP = 3 if restart else 4
+    start = 162.5 if restart else 100
+    finish = 200 if restart else 150
+    nstep = 3 if restart else 4
 
     config = f"""RUN_COMMENT = testing
 SIM_NAME = test
 LOG_FILE = {tmpdir!s}/{sim_log}
 LOG_LEVEL = INFO
 SIM_ROOT = {tmpdir!s}
-SIMULATION_MODE = {SIMULATION_MODE}
+simulation_mode = {simulation_mode}
 CURRENT_STATE = ${{SIM_NAME}}_ps.dat
 STATE_FILES = $CURRENT_STATE
 STATE_WORK_DIR = $SIM_ROOT/work/state
@@ -52,7 +52,7 @@ RESTART_TIME = LATEST
 [TIMELOOP_DRIVER]
     CLASS = TIMELOOP
     SUB_CLASS =
-    NAME = timeloop_driver
+    NAME = TimeloopDriver
     BIN_PATH =
     NPROC = 1
     INPUT_FILES =
@@ -62,7 +62,7 @@ RESTART_TIME = LATEST
 [TIMELOOP_COMP]
     CLASS = TIMELOOP_COMP
     SUB_CLASS =
-    NAME = timeloop_comp
+    NAME = TimeloopComp
     BIN_PATH =
     NPROC = 1
     INPUT_FILES =
@@ -73,7 +73,7 @@ RESTART_TIME = LATEST
 [TIMELOOP_COMP2]
     CLASS = TIMELOOP_COMP2
     SUB_CLASS =
-    NAME = timeloop_comp
+    NAME = TimeloopComp
     BIN_PATH =
     NPROC = 1
     INPUT_FILES =
@@ -83,9 +83,9 @@ RESTART_TIME = LATEST
     MODULE = components.workers.timeloop_comp
 [TIME_LOOP]
     MODE = REGULAR
-    START = {START}
-    FINISH = {FINISH}
-    NSTEP = {NSTEP}
+    start = {start}
+    finish = {finish}
+    nstep = {nstep}
 [CHECKPOINT]
    MODE = ALL
    NUM_CHECKPOINT = 2
@@ -122,7 +122,11 @@ def test_timeloop_checkpoint_restart(tmpdir):
     for time in ['100.0', '112.5', '125.0', '137.5', '150.0']:
         assert f'TIMELOOP_COMP__timeloop_comp_2 INFO     step({time})\n' in lines
         assert f'TIMELOOP_COMP2__timeloop_comp_3 INFO     step({time})\n' in lines
-        for comp in ['TIMELOOP__timeloop_driver_1', 'TIMELOOP_COMP__timeloop_comp_2', 'TIMELOOP_COMP2__timeloop_comp_3']:
+        for comp in [
+            'TIMELOOP__timeloop_driver_1',
+            'TIMELOOP_COMP__timeloop_comp_2',
+            'TIMELOOP_COMP2__timeloop_comp_3',
+        ]:
             assert f'{comp} INFO     checkpoint({time})\n' in lines
 
     # check output files
@@ -182,7 +186,7 @@ def test_timeloop_checkpoint_restart(tmpdir):
         assert results_dir.join('TIMELOOP_COMP2__timeloop_comp_3').join(f'w2_1_{time}.dat').exists()
         assert results_dir.join('TIMELOOP_COMP2__timeloop_comp_3').join(f'w2_2_{time}.dat').exists()
 
-    # Now do SIMULATION_MODE=RESTART
+    # Now do simulation_mode=RESTART
 
     platform_file, restart_config_file = write_basic_config_and_platform_files(tmpdir, restart=True)
 
@@ -208,7 +212,11 @@ def test_timeloop_checkpoint_restart(tmpdir):
     for time in ['162.5', '175.0', '187.5', '200.0']:
         assert f'TIMELOOP_COMP__timeloop_comp_8 INFO     step({time})\n' in lines
         assert f'TIMELOOP_COMP2__timeloop_comp_9 INFO     step({time})\n' in lines
-        for comp in ['TIMELOOP__timeloop_driver_7', 'TIMELOOP_COMP__timeloop_comp_8', 'TIMELOOP_COMP2__timeloop_comp_9']:
+        for comp in [
+            'TIMELOOP__timeloop_driver_7',
+            'TIMELOOP_COMP__timeloop_comp_8',
+            'TIMELOOP_COMP2__timeloop_comp_9',
+        ]:
             assert f'{comp} INFO     checkpoint({time})\n' in lines
 
     # check output files
@@ -264,14 +272,21 @@ def test_timeloop_checkpoint_restart(tmpdir):
     assert work_files.join('TIMELOOP_COMP__timeloop_comp_8').join('test_ps.dat').exists()
     assert len(work_files.join('TIMELOOP_COMP__timeloop_comp_8').join('w1_1.dat').readlines()) == 11
     assert len(work_files.join('TIMELOOP_COMP__timeloop_comp_8').join('w1_2.dat').readlines()) == 5
-    assert len(work_files.join('TIMELOOP_COMP__timeloop_comp_8').join('test_ps.dat').readlines()) == 32
+    assert (
+        len(work_files.join('TIMELOOP_COMP__timeloop_comp_8').join('test_ps.dat').readlines()) == 32
+    )
 
     assert work_files.join('TIMELOOP_COMP2__timeloop_comp_9').join('w2_1.dat').exists()
     assert work_files.join('TIMELOOP_COMP2__timeloop_comp_9').join('w2_2.dat').exists()
     assert work_files.join('TIMELOOP_COMP2__timeloop_comp_9').join('test_ps.dat').exists()
-    assert len(work_files.join('TIMELOOP_COMP2__timeloop_comp_9').join('w2_1.dat').readlines()) == 11
+    assert (
+        len(work_files.join('TIMELOOP_COMP2__timeloop_comp_9').join('w2_1.dat').readlines()) == 11
+    )
     assert len(work_files.join('TIMELOOP_COMP2__timeloop_comp_9').join('w2_2.dat').readlines()) == 5
-    assert len(work_files.join('TIMELOOP_COMP2__timeloop_comp_9').join('test_ps.dat').readlines()) == 33
+    assert (
+        len(work_files.join('TIMELOOP_COMP2__timeloop_comp_9').join('test_ps.dat').readlines())
+        == 33
+    )
 
     # check output from services.stage_output_files
 
@@ -285,35 +300,39 @@ def test_timeloop_checkpoint_restart(tmpdir):
         assert results_dir.join('TIMELOOP_COMP2__timeloop_comp_9').join(f'w2_2_{time}.dat').exists()
 
 
-def test_TIME_LOOP():
-    sim_conf = {'TIME_LOOP': {'MODE': 'REGULAR', 'START': '0', 'FINISH': '10', 'NSTEP': '10'}}
-    servicesProxy = ServicesProxy(None, None, None, sim_conf, None)
-    tl = servicesProxy.get_time_loop()
+def test_time_loop():
+    sim_conf = {'TIME_LOOP': {'MODE': 'REGULAR', 'start': '0', 'finish': '10', 'nstep': '10'}}
+    services_proxy = ServicesProxy(None, None, None, sim_conf, None)
+    tl = services_proxy.get_time_loop()
     assert tl == list(range(11))
 
-    sim_conf = {'TIME_LOOP': {'MODE': 'REGULAR', 'START': '0 + 20 / 2', 'FINISH': '13 - 1', 'NSTEP': '2'}}
-    servicesProxy = ServicesProxy(None, None, None, sim_conf, None)
-    tl = servicesProxy.get_time_loop()
+    sim_conf = {
+        'TIME_LOOP': {'MODE': 'REGULAR', 'start': '0 + 20 / 2', 'finish': '13 - 1', 'nstep': '2'}
+    }
+    services_proxy = ServicesProxy(None, None, None, sim_conf, None)
+    tl = services_proxy.get_time_loop()
     assert tl == [10, 11, 12]
 
-    sim_conf = {'TIME_LOOP': {'MODE': 'REGULAR', 'START': '10 * 2', 'FINISH': '10 ** 2', 'NSTEP': '2'}}
-    servicesProxy = ServicesProxy(None, None, None, sim_conf, None)
-    tl = servicesProxy.get_time_loop()
+    sim_conf = {
+        'TIME_LOOP': {'MODE': 'REGULAR', 'start': '10 * 2', 'finish': '10 ** 2', 'nstep': '2'}
+    }
+    services_proxy = ServicesProxy(None, None, None, sim_conf, None)
+    tl = services_proxy.get_time_loop()
     assert tl == [20, 60, 100]
 
-    sim_conf = {'TIME_LOOP': {'MODE': 'REGULAR', 'START': '1e2', 'FINISH': '5e1', 'NSTEP': '2'}}
-    servicesProxy = ServicesProxy(None, None, None, sim_conf, None)
-    tl = servicesProxy.get_time_loop()
+    sim_conf = {'TIME_LOOP': {'MODE': 'REGULAR', 'start': '1e2', 'finish': '5e1', 'nstep': '2'}}
+    services_proxy = ServicesProxy(None, None, None, sim_conf, None)
+    tl = services_proxy.get_time_loop()
     assert tl == [100, 75, 50]
 
     sim_conf = {'TIME_LOOP': {'MODE': 'EXPLICIT', 'VALUES': '7 13 -42 1000'}}
-    servicesProxy = ServicesProxy(None, None, None, sim_conf, None)
-    tl = servicesProxy.get_time_loop()
+    services_proxy = ServicesProxy(None, None, None, sim_conf, None)
+    tl = services_proxy.get_time_loop()
     assert tl == [7, 13, -42, 1000]
 
-    sim_conf = {'TIME_LOOP': {'MODE': 'REGULAR', 'START': '1p2', 'FINISH': '10', 'NSTEP': '2'}}
-    servicesProxy = ServicesProxy(None, None, None, sim_conf, None)
-    servicesProxy.error = MagicMock(name='error')
+    sim_conf = {'TIME_LOOP': {'MODE': 'REGULAR', 'start': '1p2', 'finish': '10', 'nstep': '2'}}
+    services_proxy = ServicesProxy(None, None, None, sim_conf, None)
+    services_proxy.error = MagicMock(name='error')
     with pytest.raises(ValueError) as excinfo:
-        servicesProxy.get_time_loop()
-    assert str(excinfo.value) == 'Invalid TIME_LOOP value of START = 1p2'
+        services_proxy.get_time_loop()
+    assert str(excinfo.value) == 'Invalid TIME_LOOP value of start = 1p2'

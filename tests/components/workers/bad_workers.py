@@ -5,14 +5,14 @@ def func(x):
     return x + 1
 
 
-class bad_task_worker(Component):
+class BadTaskWorker(Component):
     def step(self, timestamp=0.0, **keywords):
         cwd = self.services.get_working_dir()
         pid = self.services.launch_task(1, cwd, 42)
         self.services.wait_task(pid)
 
 
-class bad_task_pool_worker1(Component):
+class BadTaskPoolWorker1(Component):
     def step(self, timestamp=0.0, **keywords):
         cwd = self.services.get_working_dir()
         self.services.create_task_pool('pool')
@@ -21,7 +21,7 @@ class bad_task_pool_worker1(Component):
         self.services.get_finished_tasks('pool')
 
 
-class bad_task_pool_worker2(Component):
+class BadTaskPoolWorker2(Component):
     def step(self, timestamp=0.0, **keywords):
         cwd = self.services.get_working_dir()
         self.services.create_task_pool('pool')
@@ -30,11 +30,11 @@ class bad_task_pool_worker2(Component):
         self.services.get_finished_tasks('pool')
 
 
-class exception_worker(Component):
+class ExceptionWorker(Component):
     def step(self, timestamp=0.0, **keywords):
         raise RuntimeError('Runtime error')
 
 
-class assign_protected_attribute(Component):
+class AssignProtectedAttribute(Component):
     def step(self, timestamp=0.0, **keywords):
         self.args = 0

@@ -1,9 +1,8 @@
-#!/usr/bin/env python3
 """ Component wrapper for the ensemble example for `a_sim`. """
 from ipsframework import Component
-from ipsframework.resourceHelper import get_platform_info
+from ipsframework.resource_helper import get_platform_info
 
-class a_comp(Component):
+class AComp(Component):
     def __init__(self, services, config):
         super().__init__(services, config)
         print('Created %s' % (self.__class__))
@@ -17,4 +16,3 @@ class a_comp(Component):
 
         run_env = get_platform_info()
         self.services.info(run_env)
-

@@ -1,14 +1,15 @@
-#!/usr/bin/env python3
 """
-    Simple ensemble driver that just dispatches an IPS ensemble.
+Simple ensemble driver that just dispatches an IPS ensemble.
 """
+
 from pathlib import Path
 
 from ipsframework import Component
 from ipsframework.ipsutil import params_from_csv
 
+
 class EnsembleDriver(Component):
-    """ Kicks off an ensemble using variables from a CSV file. """
+    """Kicks off an ensemble using variables from a CSV file."""
 
     def step(self, timestamp=0.0):
         # Read in the variable combinations from a CSV file.  The CSV file
@@ -44,12 +45,15 @@ class EnsembleDriver(Component):
         # for each instance to `my_logfile.txt`. I.e., by *not* specifying
         # a filename for `errfile`, the stdout and stderr are combined into a
         # single file for each instance.
-        mapping = self.services.run_ensemble(template, variables,
-                                             run_dir=Path('.').absolute(),
-                                             name='INSTANCE_',
-                                             num_nodes=1,
-                                             cores_per_instance=1,
-                                             logfile='my_logfile.txt')
+        mapping = self.services.run_ensemble(
+            template,
+            variables,
+            run_dir=Path('.').absolute(),
+            name='INSTANCE_',
+            num_nodes=1,
+            cores_per_instance=1,
+            logfile='my_logfile.txt',
+        )
         # Print each mapping of instance name to what variable values were used.
         for instance in mapping:
             self.services.info(f'{instance!s}')

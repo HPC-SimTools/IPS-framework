@@ -8,10 +8,10 @@ import copy
 from time import asctime, sleep
 
 
-def myFun(*args):
-    print(f"{asctime()} : Running myFUN {args}")
+def my_fun(*args):
+    print(f"{asctime()} : Running my_fun {args}")
     sleep(int(args[0]))
-    print(f"{asctime()} : Finished myFUN {args}")
+    print(f"{asctime()} : Finished my_fun {args}")
     return 0
 
 
@@ -46,10 +46,10 @@ class HelloWorker(Component):
                                    logfile=f"task_{i}.log",
                                    task_env=task_env)
             self.services.add_task('pool', 'method_'+str(i), 1,
-                                   cwd, copy.copy(self).myMethod, str(duration[i]),
+                                   cwd, copy.copy(self).my_method, str(duration[i]),
                                    task_env=task_env)
             self.services.add_task('pool', 'function_' + str(i), 1,
-                                   cwd, myFun, str(duration[i]),
+                                   cwd, my_fun, str(duration[i]),
                                    task_env=task_env)
 
         ret_val = self.services.submit_tasks('pool', use_dask=True, dask_nodes=1, dask_ppw=10)
@@ -79,10 +79,10 @@ class HelloWorker(Component):
 
         return
 
-    def myMethod(self, *args):
-        print(f"{asctime()} : Running myMethod {args} self.BIN_PATH = {self.BIN_PATH}")
+    def my_method(self, *args):
+        print(f"{asctime()} : Running my_method {args} self.BIN_PATH = {self.BIN_PATH}")
         sleep(int(args[0]))
-        print(f"{asctime()} : Finished myMethod {args} self.BIN_PATH = {self.BIN_PATH}")
+        print(f"{asctime()} : Finished my_method {args} self.BIN_PATH = {self.BIN_PATH}")
         return 0
 
     def finalize(self, timeStamp=0.0):

@@ -11,22 +11,25 @@ from ipsframework import ips_dakota_dynamic
 
 
 def copy_config_and_replace(infile, outfile, tmpdir):
-    with open(infile, 'r') as fin:
-        with open(outfile, 'w') as fout:
-            for line in fin:
-                if 'SCRIPT' in line:
-                    fout.write(line.replace('$PWD', str(tmpdir)))
-                elif line.startswith('SIM_ROOT'):
-                    fout.write(f'SIM_ROOT = {tmpdir}/$SIM_NAME\n')
-                else:
-                    fout.write(line)
+    with open(infile, 'r') as fin, open(outfile, 'w') as fout:
+        for line in fin:
+            if 'SCRIPT' in line:
+                fout.write(line.replace('$PWD', str(tmpdir)))
+            elif line.startswith('SIM_ROOT'):
+                fout.write(f'SIM_ROOT = {tmpdir}/$SIM_NAME\n')
+            else:
+                fout.write(line)
 
 
 @pytest.mark.skipif(shutil.which('dakota') is None, reason='Requires dakota to run this test')
 @pytest.mark.timeout(200)
 def test_dakota(tmpdir):
     data_dir = os.path.dirname(__file__)
-    copy_config_and_replace(os.path.join(data_dir, 'dakota_test_Gaussian.ips'), tmpdir.join('dakota_test_Gaussian.ips'), tmpdir)
+    copy_config_and_replace(
+        os.path.join(data_dir, 'dakota_test_Gaussian.ips'),
+        tmpdir.join('dakota_test_Gaussian.ips'),
+        tmpdir,
+    )
     shutil.copy(os.path.join(data_dir, 'workstation.conf'), tmpdir)
     shutil.copy(os.path.join(data_dir, 'dakota_test_Gaussian.in'), tmpdir)
     shutil.copy(os.path.join(data_dir, 'dakota_test_Gaussian.py'), tmpdir)
@@ -48,13 +51,15 @@ def test_dakota(tmpdir):
     with open(log_file, 'r') as f:
         lines = f.readlines()
 
-    X = lines[-13].split()[1]
+    x = lines[-13].split()[1]
 
-    assert float(X) == pytest.approx(0.5, rel=1e-4)
+    assert float(x) == pytest.approx(0.5, rel=1e-4)
 
     # Check PARENT CHILD relationship
     # Get parent PORTAL_RUNID
-    json_files = glob.glob(str(tmpdir.join('DAKOTA_Gaussian_TEST_1').join('simulation_log').join('*.json')))
+    json_files = glob.glob(
+        str(tmpdir.join('DAKOTA_Gaussian_TEST_1').join('simulation_log').join('*.json'))
+    )
     assert len(json_files) == 1
 
     with open(json_files[0], 'r') as json_file:
@@ -71,7 +76,14 @@ def test_dakota(tmpdir):
     assert user == 'user'
 
     # Check child run
-    json_files = glob.glob(str(tmpdir.join('DAKOTA_Gaussian_TEST_1').join('simulation_*_0000').join('simulation_log').join('*.json')))
+    json_files = glob.glob(
+        str(
+            tmpdir.join('DAKOTA_Gaussian_TEST_1')
+            .join('simulation_*_0000')
+            .join('simulation_log')
+            .join('*.json')
+        )
+    )
     assert len(json_files) == 1
     with open(json_files[0], 'r') as json_file:
         lines = json_file.readlines()
@@ -92,43 +104,43 @@ def test_dakota(tmpdir):
 
 
 @mock.patch('ipsframework.ips_dakota_dynamic.DakotaDynamic')
-def test_dakota_main(MockDakotaDynamic):
+def test_dakota_main(mock_dakota_dynamic):
     # override sys.argv for testing
     sys.argv = ['ips_dakota_dynamic.py']
     ret = ips_dakota_dynamic.main()
     assert ret == 1
-    MockDakotaDynamic.assert_not_called()
+    mock_dakota_dynamic.assert_not_called()
 
-    MockDakotaDynamic.reset_mock()
+    mock_dakota_dynamic.reset_mock()
     ret = ips_dakota_dynamic.main(['ips_dakota_dynamic.py'])
     assert ret == 1
-    MockDakotaDynamic.assert_not_called()
+    mock_dakota_dynamic.assert_not_called()
 
-    MockDakotaDynamic.reset_mock()
+    mock_dakota_dynamic.reset_mock()
     sys.argv = ['ips_dakota_dynamic.py', '--somethingelse']
     ret = ips_dakota_dynamic.main()
     assert ret == 1
-    MockDakotaDynamic.assert_not_called()
+    mock_dakota_dynamic.assert_not_called()
 
-    MockDakotaDynamic.reset_mock()
+    mock_dakota_dynamic.reset_mock()
     sys.argv = ['ips_dakota_dynamic.py', '--dakotaconfig=dakota.cfg']
     ret = ips_dakota_dynamic.main()
     assert ret == 1
-    MockDakotaDynamic.assert_not_called()
+    mock_dakota_dynamic.assert_not_called()
 
-    MockDakotaDynamic.reset_mock()
+    mock_dakota_dynamic.reset_mock()
     sys.argv = ['ips_dakota_dynamic.py', '--simulation=sim.cfg']
     ret = ips_dakota_dynamic.main()
     assert ret == 1
-    MockDakotaDynamic.assert_not_called()
+    mock_dakota_dynamic.assert_not_called()
 
-    MockDakotaDynamic.reset_mock()
+    mock_dakota_dynamic.reset_mock()
     sys.argv = ['ips_dakota_dynamic.py', '--simulation=sim.cfg', '--dakotaconfig=dakota.cfg']
     ret = ips_dakota_dynamic.main()
     assert ret == 0
-    MockDakotaDynamic.assert_called_with('dakota.cfg', None, None, False, 'sim.cfg', None)
+    mock_dakota_dynamic.assert_called_with('dakota.cfg', None, None, False, 'sim.cfg', None)
 
-    MockDakotaDynamic.reset_mock()
+    mock_dakota_dynamic.reset_mock()
     sys.argv = [
         'ips_dakota_dynamic.py',
         '--simulation=sim.cfg',
@@ -140,4 +152,6 @@ def test_dakota_main(MockDakotaDynamic):
     ]
     ret = ips_dakota_dynamic.main()
     assert ret == 0
-    MockDakotaDynamic.assert_called_with('dakota.cfg', 'out.log', 'computer.conf', True, 'sim.cfg', 'dakota.rst')
+    mock_dakota_dynamic.assert_called_with(
+        'dakota.cfg', 'out.log', 'computer.conf', True, 'sim.cfg', 'dakota.rst'
+    )

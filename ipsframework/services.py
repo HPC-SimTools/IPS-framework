@@ -6,15 +6,11 @@
 import functools
 import glob
 import hashlib
-import json
 import logging
 import logging.handlers
-from datetime import datetime
 import os
-import platform
 import queue
 import shutil
-import signal
 import socket
 import subprocess
 import sys
@@ -23,31 +19,32 @@ import time
 import traceback
 import uuid
 import weakref
+from collections.abc import Callable, Iterable
 from copy import deepcopy
+from datetime import datetime
 from multiprocessing import Queue
-from operator import iadd, itemgetter
+from operator import iadd
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Callable, Iterable, NamedTuple, Optional, Union
-
-from rich import pretty
-pretty.install()
-
-from rich.console import Console
-console = Console()
+from typing import TYPE_CHECKING, Any, NamedTuple
 
 import rich.traceback
-from rich.traceback import Traceback
-rich.traceback.install(show_locals=True)
-
 from configobj import ConfigObj
-from distributed import Client, SchedulerPlugin
+from dask.distributed import get_worker
+from distributed import Client, Worker, WorkerPlugin
+from rich import pretty
+from rich.console import Console
+from rich.traceback import Traceback
 
 from ipsframework import ipsutil, messages
 from ipsframework._internal.definitions import IPS_EVENT_TYPE
 from ipsframework.cca_es_spec import initialize_event_service
-from ipsframework.componentRegistry import ComponentID
-from ipsframework.ips_es_spec import eventManager
-from ipsframework.taskManager import TaskInit
+from ipsframework.component_registry import ComponentID
+from ipsframework.ips_es_spec import EventManager
+from ipsframework.task_manager import TaskInit
+
+pretty.install()
+console = Console()
+rich.traceback.install(show_locals=True)
 
 if TYPE_CHECKING:
     from ipsframework.component import Component
@@ -64,14 +61,8 @@ class RunningTask(NamedTuple):
     args: list[str]
 
 
-DVM_PLUGIN_NAME = 'ips-dvm-plugin'
-
-
-def launch(executable: Any,
-           task_name: str,
-           working_dir: Union[str, os.PathLike],
-           *args, **kwargs):
-    """ This is used by :meth:`TaskPool.submit_dask_tasks` as the
+def launch(executable: Any, task_name: str, working_dir: str | os.PathLike, *args, **kwargs):
+    """This is used by :meth:`TaskPool.submit_dask_tasks` as the
     input to :meth:`dask.distributed.Client.submit`.
 
     Valid kwargs:
@@ -82,22 +73,19 @@ def launch(executable: Any,
     * `task_env` - A dictionary of environment variables to set
     * `timeout` - The timeout in seconds for the task to complete.
     * `cpus_per_proc` - The number of cpus per process to use for the task.
-        This implies that the DVMPlugin has set up a DVM daemon for this job.
+        This implies that the DVMPlugin has set up a DVM daemon for this node.
     * `oversubscribe` - If `True`, then the number of processes can exceed the
         number of cores on the node.  Default is `False`.
 
-    If the scheduler plugin has started a DVM (Distributed Virtual Machine),
-    `PMIX_SERVER_URI41` will be provided in `task_env` so that the task's
-    `prun` invocation can connect to that DVM.
+    If the worker has the attribute `dvm_uri_file`, then we are running
+    with a DVM (Distributed Virtual Machine) so the `binary` needs a
+    `prun` prepended pointing to that.
 
     :param executable: The binary to launch. Either a string or a class.
     :param task_name: The name of the task.
     :param working_dir: The working directory in which to run this task
     :returns: The task name and the return value from running the binary.
     """
-    import logging
-    from dask.distributed import get_worker  # pylint: disable=import-outside-toplevel
-
     worker = get_worker()
     task_key = worker.get_current_task()
 
@@ -105,10 +93,12 @@ def launch(executable: Any,
     # access the root logger for forward_logging() to work.
     log = logging.getLogger()
 
-    log.info(f'Launching task {task_name} with id {task_key!s} and '
-             f'worker {worker.name!s} in {working_dir}')
-    print(f'Launching task {task_name} with id {task_key!s} and '
-             f'worker {worker.name!s} in {working_dir}')
+    log.info(
+        f'Launching task {task_name} with id {task_key!s} and worker {worker.name!s} in {working_dir}'
+    )
+    print(
+        f'Launching task {task_name} with id {task_key!s} and worker {worker.name!s} in {working_dir}'
+    )
 
     start_time = time.time()
     working_dir_path = Path(working_dir)
@@ -120,7 +110,7 @@ def launch(executable: Any,
 
         # Do we write the Popen stdout to sys.stdout or to a file?
         subprocess_stdout = subprocess.PIPE
-        close_stdout = False # is true if we need to later close the file
+        close_stdout = False  # is true if we need to later close the file
         log_path = None
         try:
             log_filename = kwargs['logfile']
@@ -132,7 +122,7 @@ def launch(executable: Any,
             if not log_path.is_absolute():
                 log_path = working_dir_path / log_path
             subprocess_stdout = open(log_path, 'a')
-            close_stdout = True # Welp, gotta close it now
+            close_stdout = True  # Welp, gotta close it now
             log.info(f'Task output log file: {log_path}')
             print(f'Task output log file: {log_path}')
 
@@ -148,17 +138,17 @@ def launch(executable: Any,
             err_path = Path(err_filename)
             if not err_path.is_absolute():
                 err_path = working_dir_path / err_path
-            if log_path is not None and err_path.resolve(strict=False) == log_path.resolve(strict=False):
+            if log_path is not None and err_path.resolve(strict=False) == log_path.resolve(
+                strict=False
+            ):
                 log.info(f'Task error log file matches output log file: {log_path}')
                 print(f'Task error log file matches output log file: {log_path}')
             else:
                 try:
                     subprocess_stderr = open(err_path, 'a')
                 except OSError:
-                    log.info(f'Could not open errfile {err_path}, '
-                             f'using STDOUT for task errors')
-                    print(f'Could not open errfile {err_path}, '
-                             f'using STDOUT for task errors')
+                    log.info(f'Could not open errfile {err_path}, using STDOUT for task errors')
+                    print(f'Could not open errfile {err_path}, using STDOUT for task errors')
                     subprocess_stderr = subprocess.STDOUT
                 else:
                     close_stderr = True
@@ -173,33 +163,41 @@ def launch(executable: Any,
             log.debug('Removing HWLOC_XMLFILE from task environment')
             del new_env['HWLOC_XMLFILE']
 
+        # Check that the DVM environment variables are set.
+        if hasattr(worker, 'dvm_uri_file'):
+            dvm_uri_file = Path(worker.dvm_uri_file)
+            if not dvm_uri_file.exists():
+                log.error(f'DVM URI file {dvm_uri_file} does not exist')
+                print(f'DVM URI file {dvm_uri_file} does not exist')
+                # print(f'DVM URI file {dvm_uri_file} does not exist', flush=True)
+            else:
+                log.debug(f'Using DVM URI file: {dvm_uri_file}')
+                print(f'Using DVM URI file: {dvm_uri_file}')
+                # print(f'Using DVM URI file: {dvm_uri_file}', flush=True)
+
         # PMIX_SERVER_URI41 is used by prun to figure out how to talk to the DVM
         # It can be defined in `task_env` or in `os.environ`, so we look in
         # both locations to just echo its presence. The flushes are necessary
         # in some HPC environments to ensure the output appears in the logs.
         if task_env is not None and task_env != {}:
             if 'PMIX_SERVER_URI41' in task_env:
-                log.debug(f"DVM environment variable PMIX_SERVER_URI41 "
-                                   f"set in task_env to "
-                                   f"{task_env['PMIX_SERVER_URI41']}")
-                print(f"DVM environment variable PMIX_SERVER_URI41 "
-                                   f"set in task_env to "
-                                   f"{task_env['PMIX_SERVER_URI41']}")
+                log.debug(
+                    f'DVM environment variable PMIX_SERVER_URI41 set in task_env to {task_env["PMIX_SERVER_URI41"]}'
+                )
+                print(
+                    f'DVM environment variable PMIX_SERVER_URI41 set in task_env to {task_env["PMIX_SERVER_URI41"]}'
+                )
                 # print(f'DVM environment variable PMIX_SERVER_URI41 set in task_'
                 #       f'env to {task_env["PMIX_SERVER_URI41"]}', flush=True)
         if 'PMIX_SERVER_URI41' in os.environ:
-            log.debug(f"DVM environment variable PMIX_SERVER_URI41 set "
-                               f"in os.environ to "
-                               f"{os.environ['PMIX_SERVER_URI41']}")
-            print(f"DVM environment variable PMIX_SERVER_URI41 set "
-                               f"in os.environ to "
-                               f"{os.environ['PMIX_SERVER_URI41']}")
+            log.debug(
+                f'DVM environment variable PMIX_SERVER_URI41 set in os.environ to {os.environ["PMIX_SERVER_URI41"]}'
+            )
+            print(
+                f'DVM environment variable PMIX_SERVER_URI41 set in os.environ to {os.environ["PMIX_SERVER_URI41"]}'
+            )
             # print(f'DVM environment variable PMIX_SERVER_URI41 set in os.environ '
             #       f'to {os.environ["PMIX_SERVER_URI41"]}', flush=True)
-        if 'PMIX_SERVER_URI41' in new_env:
-            log.debug(f"DVM environment variable PMIX_SERVER_URI41 set "
-                      f"in task subprocess environment to "
-                      f"{new_env['PMIX_SERVER_URI41']}")
 
         timeout = float(kwargs.get('timeout', 1.0e9))
 
@@ -208,85 +206,85 @@ def launch(executable: Any,
         log.debug(f'Launching task {task_name} with command: {cmd}')
         print(f'Launching task {task_name} with command: {cmd}')
 
-        worker.log_event('ips',
-                         {
-                                 'eventType' : 'IPS_LAUNCH_DASK_TASK',
-                                 'event_time': start_time,
-                                 'state'     : 'Running',
-                                 'comment'   : f'task_name = {task_name}, '
-                                               f'Task key = {task_key!s}, '
-                                               f'Target = {cmd}'
-                                 })
+        worker.log_event(
+            'ips',
+            {
+                'event_type': 'IPS_LAUNCH_DASK_TASK',
+                'event_time': start_time,
+                'state': 'Running',
+                'comment': f'task_name = {task_name}, Task key = {task_key!s}, Target = {cmd}',
+            },
+        )
 
         cmd_lst = cmd.split()
         process = None
         try:
             try:
-                process = subprocess.Popen(cmd_lst,
-                                           stdout=subprocess_stdout,
-                                           stderr=subprocess_stderr,
-                                           cwd=working_dir_path,
-                                           text=True,
-                                           preexec_fn=os.setsid, env=new_env)  # noqa: PLW1509 (TODO: look into this to potentially avoid deadlocks)
+                process = subprocess.Popen(
+                    cmd_lst,
+                    stdout=subprocess_stdout,
+                    stderr=subprocess_stderr,
+                    cwd=working_dir_path,
+                    text=True,
+                    preexec_fn=os.setsid,  # noqa: PLW1509  # TODO - FIX THIS, it is deprecated (https://github.com/python/cpython/issues/82616) (https://docs.astral.sh/ruff/rules/subprocess-popen-preexec-fn/)
+                    env=new_env,
+                )
             except Exception as e:
-                worker.log_event('ips',
-                                 {
-                                         'eventType' : 'IPS_DASK_TASK_END',
-                                         'event_time': time.time(),
-                                         'state'     : 'Failed',
-                                         'comment'   : f'task_name = {task_name} '
-                                                       f'Exception when calling '
-                                                       f'{executable!s}: {e!s}',
-                                         'operation' : ' '.join(map(str, args)),
-                                 })
-                log.error(f'Failed to launch task {task_name} with '
-                          f'command {cmd}: {e}')
-                print(f'Failed to launch task {task_name} with '
-                          f'command {cmd}: {e}')
+                worker.log_event(
+                    'ips',
+                    {
+                        'event_type': 'IPS_DASK_TASK_END',
+                        'event_time': time.time(),
+                        'state': 'Failed',
+                        'comment': f'task_name = {task_name} Exception when calling {executable!s}: {e!s}',
+                        'operation': ' '.join(map(str, args)),
+                    },
+                )
+                log.error(f'Failed to launch task {task_name} with command {cmd}: {e}')
+                print(f'Failed to launch task {task_name} with command {cmd}: {e}')
                 raise
 
             try:
                 ret_val = process.wait(timeout)
                 finish_time = time.time()
-                worker.log_event('ips',
-                                 {
-                                         'eventType'   : 'IPS_DASK_TASK_END',
-                                         'event_time'  : finish_time,
-                                         'state'       : 'Succeeded',
-                                         'comment'     : f'task_name = '
-                                                         f'{task_name},'
-                                                         f' elapsed time = '
-                                                         f'{finish_time - start_time:.2f}s',
-                                         'start_time'  : start_time,
-                                         'elapsed_time': finish_time - start_time,
-                                         'target'      : executable,
-                                         'operation'   : ' '.join(map(str, args)),
-                                 })
+                worker.log_event(
+                    'ips',
+                    {
+                        'event_type': 'IPS_DASK_TASK_END',
+                        'event_time': finish_time,
+                        'state': 'Succeeded',
+                        'comment': f'task_name = {task_name}, elapsed time = {finish_time - start_time:.2f}s',
+                        'start_time': start_time,
+                        'elapsed_time': finish_time - start_time,
+                        'target': executable,
+                        'operation': ' '.join(map(str, args)),
+                    },
+                )
 
             except subprocess.TimeoutExpired:
-                worker.log_event('ips',
-                                 {
-                                         'eventType' : 'IPS_DASK_TASK_END',
-                                         'event_time': time.time(),
-                                         'state'     : 'Timed out',
-                                         'comment'   : f'task_name = {task_name}, '
-                                                       f'timed-out after '
-                                                       f'{timeout}s'})
+                worker.log_event(
+                    'ips',
+                    {
+                        'event_type': 'IPS_DASK_TASK_END',
+                        'event_time': time.time(),
+                        'state': 'Timed out',
+                        'comment': f'task_name = {task_name}, timed-out after {timeout}s',
+                    },
+                )
                 process.kill()
-                log.error(f'Task {task_name} with command {cmd} timed out '
-                          f'after {timeout}s')
-                print(f'Task {task_name} with command {cmd} timed out '
-                          f'after {timeout}s')
+                log.error(f'Task {task_name} with command {cmd} timed out after {timeout}s')
+                print(f'Task {task_name} with command {cmd} timed out after {timeout}s')
                 ret_val = -1
             except Exception as e:
-                worker.log_event('ips',
-                                 {
-                                         'eventType' : 'IPS_DASK_TASK_END',
-                                         'event_time': time.time(),
-                                         'state'     : 'Failed',
-                                         'comment'   : f'task_name = {task_name} '
-                                                       f'Exception when calling '
-                                                       f'{executable!s}: {e!s}'})
+                worker.log_event(
+                    'ips',
+                    {
+                        'event_type': 'IPS_DASK_TASK_END',
+                        'event_time': time.time(),
+                        'state': 'Failed',
+                        'comment': f'task_name = {task_name} Exception when calling {executable!s}: {e!s}',
+                    },
+                )
                 log.error(f'Task {task_name} with command {cmd} failed with {e!s}')
                 print(f'Task {task_name} with command {cmd} failed with {e!s}')
         finally:
@@ -304,15 +302,15 @@ def launch(executable: Any,
     elif isinstance(executable, Callable):
         # binary not a string, but is a python callable, so we call it directly
         # with the given *args
-        worker.log_event('ips',
-                         {
-                                 'eventType' : 'IPS_LAUNCH_DASK_TASK',
-                                 'event_time': time.time(),
-                                 'state'     : 'Running',
-                                 'comment'   : f'task_name = {task_name}, '
-                                               f'Target = {executable.__name__}('
-                                               f'{",".join(map(str, args))})',
-                         })
+        worker.log_event(
+            'ips',
+            {
+                'event_type': 'IPS_LAUNCH_DASK_TASK',
+                'event_time': time.time(),
+                'state': 'Running',
+                'comment': f'task_name = {task_name}, Target = {executable.__name__}({",".join(map(str, args))})',
+            },
+        )
 
         try:
             original_dir = Path.cwd()
@@ -322,38 +320,38 @@ def launch(executable: Any,
 
             finish_time = time.time()
 
-            worker.log_event('ips',
-                             {
-                                     'eventType'   : 'IPS_DASK_TASK_END',
-                                     'event_time'  : finish_time,
-                                     'state'       : 'Succeeded',
-                                     'comment'     : f'task_name = {task_name}, '
-                                                     f'elapsed time = '
-                                                     f'{finish_time - start_time:.2f}s',
-                                     'start_time'  : start_time,
-                                     'elapsed_time': finish_time - start_time,
-                                     'target'      : executable.__name__,
-                                     'return_value': ret_val,
-                                     'operation'   : f'({",".join(map(str, args))})',
-                             })
+            worker.log_event(
+                'ips',
+                {
+                    'event_type': 'IPS_DASK_TASK_END',
+                    'event_time': finish_time,
+                    'state': 'Succeeded',
+                    'comment': f'task_name = {task_name}, elapsed time = {finish_time - start_time:.2f}s',
+                    'start_time': start_time,
+                    'elapsed_time': finish_time - start_time,
+                    'target': executable.__name__,
+                    'return_value': ret_val,
+                    'operation': f'({",".join(map(str, args))})',
+                },
+            )
         except Exception as e:
-            worker.log_event('ips',
-                             {
-                                     'eventType' : 'IPS_DASK_TASK_END',
-                                     'event_time': time.time(),
-                                     'state'     : 'Failed',
-                                     'comment'   : f'task_name = {task_name} '
-                                                   f'Exception when calling '
-                                                   f'{executable!s}: {e!s}'})
-            log.error(f'Task {task_name} with callable {executable!s} failed '
-                      f'with {e!s}')
-            print(f'Task {task_name} with callable {executable!s} failed '
-                      f'with {e!s}')
+            worker.log_event(
+                'ips',
+                {
+                    'event_type': 'IPS_DASK_TASK_END',
+                    'event_time': time.time(),
+                    'state': 'Failed',
+                    'comment': f'task_name = {task_name} Exception when calling {executable!s}: {e!s}',
+                },
+            )
+            log.error(f'Task {task_name} with callable {executable!s} failed with {e!s}')
+            print(f'Task {task_name} with callable {executable!s} failed with {e!s}')
         finally:
             os.chdir(str(original_dir))
     else:
-        raise RuntimeError(f'Binary argument {executable!s} is not a string or '
-                           f'callable, cannot launch task {task_name}')
+        raise RuntimeError(
+            f'Binary argument {executable!s} is not a string or callable, cannot launch task {task_name}'
+        )
 
     log.info(f'Task {task_name} finished with return value: {ret_val}')
     print(f'Task {task_name} finished with return value: {ret_val}')
@@ -362,14 +360,15 @@ def launch(executable: Any,
 
 
 def launch_mapped_task(
-        executable: Any,
-        task_name: str,
-        working_dir: Union[str, os.PathLike],
-        task_args: Iterable[Any],
-        task_keywords: dict[str, Any],
-        cpus_per_proc: int,
-        worker_event_logfile: Optional[str]):
-    """ Adapt task-specific launch arguments for :meth:`Client.map`.
+    executable: Any,
+    task_name: str,
+    working_dir: str | os.PathLike,
+    task_args: Iterable[Any],
+    task_keywords: dict[str, Any],
+    cpus_per_proc: int,
+    worker_event_logfile: str | None,
+):
+    """Adapt task-specific launch arguments for :meth:`Client.map`.
 
     This is a wrapper for `launch()` because we need to ensure `cpus_per_proc`
     and `worker_event_logfile` get stuffed into the expected `task_args` and
@@ -392,55 +391,6 @@ def launch_mapped_task(
     task_keywords['worker_event_logfile'] = worker_event_logfile
 
     return launch(executable, task_name, working_dir, *task_args, **task_keywords)
-
-
-def _get_scheduler_dvm_uri(dask_scheduler=None):
-    """Return the scheduler DVM URI from the registered DVMPlugin."""
-    if dask_scheduler is None:
-        return None
-
-    plugin = dask_scheduler.plugins.get(DVM_PLUGIN_NAME)
-    if plugin is None:
-        return None
-
-    return getattr(plugin, 'dvm_uri', None)
-
-
-def _add_dvm_uri_to_task_env(task_keywords: dict[str, Any],
-                             dvm_uri: Optional[str]) -> dict[str, Any]:
-    """Return task keywords with the DVM URI propagated to subprocess env."""
-    keywords = dict(task_keywords)
-    if not dvm_uri:
-        return keywords
-
-    task_env = dict(keywords.get('task_env') or {})
-    task_env['PMIX_SERVER_URI41'] = dvm_uri
-    keywords['task_env'] = task_env
-    return keywords
-
-
-def _get_dask_host(services) -> Optional[str]:
-    """Return a Dask host override when the platform config requires one."""
-    dask_host = services.get_config_param('DASK_HOST', silent=True, log=False)
-    if dask_host:
-        return str(dask_host)
-
-    mpirun = services.get_config_param('MPIRUN', silent=True, log=False)
-    host = services.get_config_param('HOST', silent=True, log=False)
-    if (str(mpirun).lower() == 'eval' and
-            str(host).lower() in {'localhost', '127.0.0.1', '::1'}):
-        return 'localhost'
-
-    return None
-
-
-def _get_dask_host_args(services) -> list[str]:
-    """Return Dask CLI host arguments."""
-    dask_host = _get_dask_host(services)
-    if not dask_host:
-        return []
-
-    return ['--host', dask_host]
 
 
 class ServicesProxy:
@@ -475,7 +425,14 @@ class ServicesProxy:
 
     """
 
-    def __init__(self, fwk, fwk_in_q: Queue, svc_response_q: Queue, sim_conf: dict[str, Any], log_pipe_name: str):
+    def __init__(
+        self,
+        fwk,
+        fwk_in_q: Queue,
+        svc_response_q: Queue,
+        sim_conf: dict[str, Any],
+        log_pipe_name: str,
+    ):
         self.pid = 0
         self.fwk = fwk
         self.fwk_in_q = fwk_in_q
@@ -515,7 +472,7 @@ class ServicesProxy:
         self.shared_nodes = False
         self._portal_runid = -1
         """This is the id we use on the portal to track this specific run. This will get set when receiving the IPS_START event from the portal.
-        
+
         - Non-negative integer = successfully initialized
         - -1 = portal not yet contacted
         - -2 = portal initialization failed
@@ -540,12 +497,19 @@ class ServicesProxy:
 
         self.component_ref = weakref.proxy(component_ref)
         conf = self.component_ref.config
-        self.full_comp_id = '_'.join([conf['CLASS'], conf['SUB_CLASS'], conf['NAME'], str(self.component_ref.component_id.get_seq_num())])
+        self.full_comp_id = '_'.join(
+            [
+                conf['CLASS'],
+                conf['SUB_CLASS'],
+                conf['NAME'],
+                str(self.component_ref.component_id.get_seq_num()),
+            ]
+        )
         self._ips_serialized_component_id = self.component_ref.component_id.get_serialization()
         #
         # Set up logging path to the IPS logging daemon
         #
-        socketHandler = logging.handlers.SocketHandler(self.log_pipe_name, None)
+        socket_handler = logging.handlers.SocketHandler(self.log_pipe_name, None)
         self.logger = logging.getLogger(self.full_comp_id)
         log_level = 'WARNING'
         try:
@@ -560,8 +524,12 @@ class ServicesProxy:
         except AttributeError:
             raise
         self.logger.setLevel(real_log_level)
-        self.logger.addHandler(socketHandler)
-        self.debug('__initialize__(): %s  %s ', str(self.component_ref), str(self.component_ref.component_id))
+        self.logger.addHandler(socket_handler)
+        self.debug(
+            '__initialize__(): %s  %s ',
+            str(self.component_ref),
+            str(self.component_ref.component_id),
+        )
         self.sim_name = self.component_ref.component_id.get_sim_name()
         # ------------------
         # set shared_nodes
@@ -594,24 +562,32 @@ class ServicesProxy:
         if self.sim_conf['SIMULATION_MODE'] == 'RESTART':
             if self.sim_conf['RESTART_TIME'] == 'LATEST':
                 chkpts = glob.glob(os.path.join(self.sim_conf['RESTART_ROOT'], 'restart', '*'))
-                base_dir = sorted(chkpts, key=lambda d: float(os.path.basename(d)))[-1]
+                base_dir = sorted(chkpts, key=lambda d: float(os.path.basename(d)))[-1]  # noqa: FURB192  # TODO check this
                 self.sim_conf['RESTART_TIME'] = os.path.basename(base_dir)
 
     def _init_event_service(self) -> None:
         """
         Initialize connection to the central framework event service
         """
-        self.debug('_init_event_service(): self.counter = %d - %s', self.counter, str(self.component_ref))
+        self.debug(
+            '_init_event_service(): self.counter = %d - %s', self.counter, str(self.component_ref)
+        )
         self.counter = self.counter + 1
         initialize_event_service(self)
-        self.event_service = eventManager(self.component_ref)
+        self.event_service = EventManager(self.component_ref)
 
-    def _component_id_subscription_callback(self, topicName: str, theEvent) -> None:
+    def _component_id_subscription_callback(self, topic_name: str, the_event) -> None:
         """
         All components subscribe to a topic based on their component_id. This function is the callback function for that subscription.
         """
-        event_types = list(theEvent.getHeader().keys())
-        self.debug('_component_id_subscription_callback(): component_id=%s  topic=%s  event_header=%s  event_body=%s', self._ips_serialized_component_id, topicName, theEvent.getHeader(), theEvent.getBody())
+        event_types = list(the_event.get_header().keys())
+        self.debug(
+            '_component_id_subscription_callback(): component_id=%s  topic=%s  event_header=%s  event_body=%s',
+            self._ips_serialized_component_id,
+            topic_name,
+            the_event.get_header(),
+            the_event.get_body(),
+        )
         if '_IPS_PORTAL_UPLOAD_ENSEMBLE_PARAMS_SUCCESS' in event_types:
             self._ensemble_verification_check = True
 
@@ -643,9 +619,7 @@ class ServicesProxy:
                 response = self.svc_response_q.get(block, timeout)
                 response_list.append(response)
             except queue.Empty:
-                if not block:
-                    finish = True
-                elif len(response_list) > 0:
+                if not block or len(response_list) > 0:
                     finish = True
         return response_list
 
@@ -703,7 +677,14 @@ class ServicesProxy:
         :return: message id
         """
         self.debug('_invoke_service(): %s  %s', method_name, str(args[0:]))
-        new_msg = messages.ServiceRequestMessage(self.component_ref.component_id, self.fwk.component_id, component_id, method_name, *args, **keywords)
+        new_msg = messages.ServiceRequestMessage(
+            self.component_ref.component_id,
+            self.fwk.component_id,
+            component_id,
+            method_name,
+            *args,
+            **keywords,
+        )
         msg_id = new_msg.get_message_id()
         self.incomplete_calls[msg_id] = new_msg
         self.fwk_in_q.put(new_msg)
@@ -740,36 +721,43 @@ class ServicesProxy:
 
     def _send_monitor_event(
         self,
-        eventType: IPS_EVENT_TYPE = '',
+        event_type: IPS_EVENT_TYPE = '',
         comment: str = '',
         ok: bool = True,
         state: str = 'Running',
-        event_time: Optional[float] = None,
-        elapsed_time: Optional[float] = None,
-        start_time: Optional[float] = None,
-        end_time: Optional[float] = None,
-        target: Optional[str] = None,
-        operation: Optional[str] = None,
-        procs_requested: Optional[int] = None,
-        cores_allocated: Optional[int] = None,
+        event_time: float | None = None,
+        elapsed_time: float | None = None,
+        start_time: float | None = None,
+        end_time: float | None = None,
+        target: str | None = None,
+        operation: str | None = None,
+        procs_requested: int | None = None,
+        cores_allocated: int | None = None,
         call_id: int = 0,
     ) -> None:
         """
         Construct and send an event populated with the component's
-        information, *eventType*, *comment*, *ok*, *state*, and a wall time
+        information, *event_type*, *comment*, *ok*, *state*, and a wall time
         stamp, to the portal bridge to pass on to the web portal.
         """
         portal_data = {}
-        portal_data['code'] = f'{self.component_ref.CLASS}_{self.component_ref.SUB_CLASS}_{self.component_ref.NAME}'
-        portal_data['eventtype'] = eventType
+        portal_data['code'] = (
+            f'{self.component_ref.CLASS}_{self.component_ref.SUB_CLASS}_{self.component_ref.NAME}'
+        )
+        portal_data['eventtype'] = event_type
         portal_data['ok'] = ok
         if event_time is None:
             event_time = time.time()
         portal_data['walltime'] = '%.2f' % (event_time - self.component_ref.start_time)
-        portal_data['time'] = ipsutil.getTimeString(time.localtime(event_time))
+        portal_data['time'] = ipsutil.get_time_string(time.localtime(event_time))
 
         trace = {}  # Zipkin json format
-        if start_time is not None and (elapsed_time is not None or end_time is not None) and target is not None and operation is not None:
+        if (
+            start_time is not None
+            and (elapsed_time is not None or end_time is not None)
+            and target is not None
+            and operation is not None
+        ):
             trace['timestamp'] = int(start_time * 1e6)  # convert to microsecond
             if elapsed_time is not None:
                 trace['duration'] = int(elapsed_time * 1e6)
@@ -777,7 +765,9 @@ class ServicesProxy:
                 trace['duration'] = int((end_time - start_time) * 1e6)  # convert to microsecond
             trace['localEndpoint'] = {'serviceName': target}
             trace['name'] = operation
-            formatted_args = ['%.3f' % (x) if isinstance(x, float) else str(x) for x in self.component_ref.args]
+            formatted_args = [
+                '%.3f' % (x) if isinstance(x, float) else str(x) for x in self.component_ref.args
+            ]
             trace['id'] = hashlib.md5(f'{target}:{operation}:{call_id}'.encode()).hexdigest()[:16]
             trace['parentId'] = hashlib.md5(
                 f'{self.component_ref.component_id}:{self.component_ref.method_name}({" ,".join(formatted_args)}):{self.component_ref.call_id}'.encode()
@@ -809,7 +799,7 @@ class ServicesProxy:
         :type port_name: str
 
         :return: Return a reference to the component implementing port *port_name*.
-        :rtype: :class:`ipsframework.componentRegistry.ComponentID`
+        :rtype: :class:`ipsframework.component_registry.ComponentID`
         """
         msg_id = self._invoke_service(self.fwk.component_id, 'get_port', port_name)
         response = self._get_service_response(msg_id, True)
@@ -826,12 +816,14 @@ class ServicesProxy:
             except Exception:
                 pass
 
-    def call_nonblocking(self, component_id: ComponentID, method_name: str, *args, **keywords) -> int:
+    def call_nonblocking(
+        self, component_id: ComponentID, method_name: str, *args, **keywords
+    ) -> int:
         r"""Invoke method *method_name* on component *component_id* with
         optional arguments *\*args*. Will not wait until finished.
 
         :param component_id: Component ID of requested component
-        :type component_id: :class:`~ipsframework.componentRegistry.ComponentID`
+        :type component_id: :class:`~ipsframework.component_registry.ComponentID`
 
         :param method_name: component method to call, e.g. ``init`` or ``step``
         :type method_name: str
@@ -843,7 +835,10 @@ class ServicesProxy:
         formatted_args = ['%.3f' % (x) if isinstance(x, float) else str(x) for x in args]
         if keywords:
             formatted_args += ['%s=' % k + str(v) for (k, v) in keywords.items()]
-        self._send_monitor_event('IPS_CALL_BEGIN', 'Target = ' + target + ':' + method_name + '(' + ' ,'.join(formatted_args) + ')')
+        self._send_monitor_event(
+            'IPS_CALL_BEGIN',
+            'Target = ' + target + ':' + method_name + '(' + ' ,'.join(formatted_args) + ')',
+        )
         msg_id = self._invoke_service(component_id, 'init_call', method_name, *args, **keywords)
         call_id = self._get_service_response(msg_id, True)
         self.call_targets[call_id] = (target, method_name, args, time.time())
@@ -855,7 +850,7 @@ class ServicesProxy:
         finished. Return result from invoking the method.
 
         :param component_id: Component ID of requested component
-        :type component_id: :class:`~ipsframework.componentRegistry.ComponentID`
+        :type component_id: :class:`~ipsframework.component_registry.ComponentID`
 
         :param method_name: component method to call, e.g. ``init`` or ``step``
         :type method_name: str
@@ -870,7 +865,7 @@ class ServicesProxy:
     def wait_call(self, call_id: int, block: bool = True):
         """If *block* is ``True``, return when the call has completed with
         the return code from the call.  If *block* is ``False``, raise
-        :exc:`~ipsframework.ipsExceptions.IncompleteCallException` if
+        :exc:`~ipsframework.ips_exceptions.IncompleteCallError` if
         the call has not completed, and the return value is it has.
 
         :param call_id: call ID
@@ -920,7 +915,7 @@ class ServicesProxy:
         """Check the status of each of the call in *call_id_list*.  If
         *block* is ``True``, return when *all* calls are finished.  If
         *block* is ``False``, raise
-        :exc:`~ipsframework.ipsExceptions.IncompleteCallException` if
+        :exc:`~ipsframework.ips_exceptions.IncompleteCallError` if
         *any* of the calls have not completed, otherwise return.  The
         return value is a dictionary of *call_ids* and return values.
 
@@ -981,10 +976,10 @@ class ServicesProxy:
 
         Return *task_id* if successful.  May raise exceptions related to
         opening the logfile, being unable to obtain enough resources to launch
-        the task (:exc:`~ipsframework.ipsExceptions.InsufficientResourcesException`), bad
+        the task (:exc:`~ipsframework.ips_exceptions.InsufficientResourcesError`), bad
         task launch request
-        (:exc:`~ipsframework.ipsExceptions.ResourceRequestMismatchException`,
-        :exc:`~ipsframework.ipsExceptions.BadResourceRequestException`) or problems
+        (:exc:`~ipsframework.ips_exceptions.ResourceRequestMismatchError`,
+        :exc:`~ipsframework.ips_exceptions.BadResourceRequestError`) or problems
         executing the command. These exceptions may be used to retry launching
         the task as appropriate.
 
@@ -1004,8 +999,13 @@ class ServicesProxy:
 
         """
         if not isinstance(binary, str):
-            self.error('Error in launch_task: task binary of wrong type, expected str but found %s', type(binary).__name__)
-            raise ValueError(f'task binary of wrong type, expected str but found {type(binary).__name__}')
+            self.error(
+                'Error in launch_task: task binary of wrong type, expected str but found %s',
+                type(binary).__name__,
+            )
+            raise ValueError(
+                f'task binary of wrong type, expected str but found {type(binary).__name__}'
+            )
 
         args = tuple(str(a) for a in args)
         tokens = binary.split()
@@ -1064,7 +1064,9 @@ class ServicesProxy:
                     launch_cmd_extra_args,
                 ),
             )
-            (task_id, command, env_update, cores_allocated) = self._get_service_response(msg_id, block=True)
+            (task_id, command, env_update, cores_allocated) = self._get_service_response(
+                msg_id, block=True
+            )
             self.debug(f'init_task(): task_id = {task_id}')
             self.debug(f'command = {command}')
             self.debug(f'env_update = {env_update}')
@@ -1073,7 +1075,18 @@ class ServicesProxy:
             self.error(f'Error setting up task for command "{command}": {e}')
             raise
 
-        task_id = self._launch_task(nproc, working_dir, task_id, command, cores_allocated, env_update, tag, keywords, binary, args)
+        task_id = self._launch_task(
+            nproc,
+            working_dir,
+            task_id,
+            command,
+            cores_allocated,
+            env_update,
+            tag,
+            keywords,
+            binary,
+            args,
+        )
 
         self.debug(f'Returned task_id = {task_id} for launching "{command}"')
 
@@ -1095,7 +1108,17 @@ class ServicesProxy:
         return task_id
 
     def _launch_task(
-        self, nproc: int, working_dir: str, task_id, command, cores_allocated, env_update, tag, keywords, binary: str, args: Union[list[str], tuple[str, ...]]
+        self,
+        nproc: int,
+        working_dir: str,
+        task_id,
+        command,
+        cores_allocated,
+        env_update,
+        tag,
+        keywords,
+        binary: str,
+        args: list[str] | tuple[str, ...],
     ):
         log_filename = keywords.get('logfile')
         timeout = keywords.get('timeout', 1.0e9)
@@ -1128,16 +1151,22 @@ class ServicesProxy:
             if env_update:
                 new_env = os.environ.copy()
                 new_env.update(env_update)
-                process = subprocess.Popen(cmd_lst, stdout=task_stdout, stderr=task_stderr, cwd=working_dir, env=new_env)
+                process = subprocess.Popen(
+                    cmd_lst, stdout=task_stdout, stderr=task_stderr, cwd=working_dir, env=new_env
+                )
             else:
-                process = subprocess.Popen(cmd_lst, stdout=task_stdout, stderr=task_stderr, cwd=working_dir)
+                process = subprocess.Popen(
+                    cmd_lst, stdout=task_stdout, stderr=task_stderr, cwd=working_dir
+                )
         except Exception:
             self.exception('Error executing command : %s', command)
             raise
 
         # FIXME: process Monitoring Command : ps --no-headers -o pid,state pid1  pid2 pid3 ...
 
-        self.task_map[task_id] = RunningTask(process, time.time(), timeout, nproc, cores_allocated, command, binary, args)
+        self.task_map[task_id] = RunningTask(
+            process, time.time(), timeout, nproc, cores_allocated, command, binary, args
+        )
         return task_id  # process.pid
 
     def launch_task_pool(self, task_pool_name: str, launch_interval: float = 0.0) -> dict[str, Any]:
@@ -1166,7 +1195,9 @@ class ServicesProxy:
                     task_name,
                     type(task.binary).__name__,
                 )
-                raise ValueError(f'task {task_name} binary of wrong type, expected str but found {type(task.binary).__name__}')
+                raise ValueError(
+                    f'task {task_name} binary of wrong type, expected str but found {type(task.binary).__name__}'
+                )
             task_ppn = task.keywords.get('task_ppn', self.ppn)
             wnodes = task.keywords.get('whole_nodes', not self.shared_nodes)
             wsocks = task.keywords.get('whole_sockets', not self.shared_nodes)
@@ -1175,7 +1206,18 @@ class ServicesProxy:
             omp = task.keywords.get('omp', False)
             launch_cmd_extra_args = task.keywords.get('launch_cmd_extra_args')
             submit_dict[task_name] = TaskInit(
-                task.nproc, task.binary, task.working_dir, task_ppn, task_cpp, task_gpp, False, omp, wnodes, wsocks, task.args, launch_cmd_extra_args
+                task.nproc,
+                task.binary,
+                task.working_dir,
+                task_ppn,
+                task_cpp,
+                task_gpp,
+                False,
+                omp,
+                wnodes,
+                wsocks,
+                task.args,
+                launch_cmd_extra_args,
             )
 
         try:
@@ -1194,7 +1236,16 @@ class ServicesProxy:
             tag = task.keywords.get('tag', 'None')
 
             active_tasks[task_name] = self._launch_task(
-                task.nproc, task.working_dir, task_id, command, cores_allocated, env_update, tag, task.keywords, task.binary, task.args
+                task.nproc,
+                task.working_dir,
+                task_id,
+                command,
+                cores_allocated,
+                env_update,
+                tag,
+                task.keywords,
+                task.binary,
+                task.args,
             )
 
             if env_update:
@@ -1241,7 +1292,9 @@ class ServicesProxy:
 
         del self.task_map[task_id]
         try:
-            msg_id = self._invoke_service(self.fwk.component_id, 'finish_task', task_id, task_retval)
+            msg_id = self._invoke_service(
+                self.fwk.component_id, 'finish_task', task_id, task_retval
+            )
             self._get_service_response(msg_id, block=True)
         except Exception:
             self.exception('Error finalizing task  %s', task_id)
@@ -1258,7 +1311,7 @@ class ServicesProxy:
             except Exception:
                 raise
 
-    def wait_task_nonblocking(self, task_id: int) -> Union[int, None]:
+    def wait_task_nonblocking(self, task_id: int) -> int | None:
         """Check the status of task *task_id*.  If it has finished, the
         return value is populated with the actual value, otherwise
         ``None`` is returned.  A *KeyError* exception may be raised if
@@ -1280,7 +1333,11 @@ class ServicesProxy:
         if task_retval is None:
             if task.start_time + task.timeout < time.time():
                 self.kill_task(task_id)
-                self._send_monitor_event('IPS_TASK_END', 'source_func = wait_task_nonblocking, task_id = %s  TIMEOUT elapsed time = %.2f S' % (str(task_id), time.time() - task.start_time))
+                self._send_monitor_event(
+                    'IPS_TASK_END',
+                    'source_func = wait_task_nonblocking, task_id = %s  TIMEOUT elapsed time = %.2f S'
+                    % (str(task_id), time.time() - task.start_time),
+                )
                 return -1
             else:
                 return None
@@ -1326,9 +1383,15 @@ class ServicesProxy:
         if task_retval is None:
             task.process.kill()
             task_retval = task.process.wait()
-            event_comment = 'source_func = wait_task, task_id = %s  TIMEOUT elapsed time = %.2f S' % (str(task_id), finish_time - task.start_time)
+            event_comment = (
+                'source_func = wait_task, task_id = %s  TIMEOUT elapsed time = %.2f S'
+                % (str(task_id), finish_time - task.start_time)
+            )
         else:
-            event_comment = 'source_func = wait_task, task_id = %s  elapsed time = %.2f S' % (str(task_id), finish_time - task.start_time)
+            event_comment = 'source_func = wait_task, task_id = %s  elapsed time = %.2f S' % (
+                str(task_id),
+                finish_time - task.start_time,
+            )
 
         self._send_monitor_event(
             'IPS_TASK_END',
@@ -1345,7 +1408,9 @@ class ServicesProxy:
 
         del self.task_map[task_id]
         try:
-            msg_id = self._invoke_service(self.fwk.component_id, 'finish_task', task_id, task_retval)
+            msg_id = self._invoke_service(
+                self.fwk.component_id, 'finish_task', task_id, task_retval
+            )
             self._get_service_response(msg_id, block=True)
         except Exception:
             self.exception('Error finalizing task  %s', task_id)
@@ -1442,11 +1507,11 @@ class ServicesProxy:
                 return None
         return val
 
-    def set_config_param(self, param: str, value: Any, target_sim_name: Optional[str] = None) -> Any:
+    def set_config_param(self, param: str, value: Any, target_sim_name: str | None = None) -> Any:
         """Set configuration parameter *param* to *value*.  Raise exceptions
         if the parameter cannot be changed or if there are problems
         setting the value. This tell the framework to call
-        :meth:`ipsframework.configurationManager.ConfigurationManager.set_config_parameter`
+        :meth:`ipsframework.configuration_manager.ConfigurationManager.set_config_parameter`
         to change the parameter.
 
         :param param: The parameter requested from simulation config
@@ -1464,7 +1529,9 @@ class ServicesProxy:
         if param in self.sim_conf:
             raise Exception('Cannot dynamically alter simulation configuration parameter ' + param)
         try:
-            msg_id = self._invoke_service(self.fwk.component_id, 'set_config_parameter', param, value, sim_name)
+            msg_id = self._invoke_service(
+                self.fwk.component_id, 'set_config_parameter', param, value, sim_name
+            )
             retval = self._get_service_response(msg_id, block=True)
         except Exception:
             self.exception('Error setting value of configuration parameter %s', param)
@@ -1491,7 +1558,9 @@ class ServicesProxy:
             for entry in ['FINISH', 'START', 'NSTEP']:
                 if not safe(time_conf[entry]):
                     self.error('Invalid TIME_LOOP value of %s = %s', entry, time_conf[entry])
-                    raise ValueError('Invalid TIME_LOOP value of %s = %s' % (entry, time_conf[entry]))
+                    raise ValueError(
+                        'Invalid TIME_LOOP value of %s = %s' % (entry, time_conf[entry])
+                    )
             finish = float(eval(time_conf['FINISH']))
             start = float(eval(time_conf['START']))
             nstep = int(eval(time_conf['NSTEP']))
@@ -1503,13 +1572,13 @@ class ServicesProxy:
         self.time_loop = tlist
         return tlist
 
-    def checkpoint_components(self, comp_id_list, time_stamp, Force=False, Protect=False):
+    def checkpoint_components(self, comp_id_list, time_stamp, force=False, protect=False):
         """
         Selectively checkpoint components in *comp_id_list* based on the
-        configuration section *CHECKPOINT*.  If *Force* is ``True``, the
+        configuration section *CHECKPOINT*.  If *force* is ``True``, the
         checkpoint will be taken even if the conditions for taking the
-        checkpoint are not met.  If *Protect* is ``True``, then the data from
-        the checkpoint is protected from clean up.  *Force* and *Protect* are
+        checkpoint are not met.  If *protect* is ``True``, then the data from
+        the checkpoint is protected from clean up.  *force* and *protect* are
         optional and default to ``False``.
 
         The *CHECKPOINT_MODE* option controls determines if the components
@@ -1519,7 +1588,7 @@ class ServicesProxy:
 
         ALL:
             Checkpint every time the call is made (equivalent to always setting
-            Force =True)
+            force =True)
         WALLTIME_REGULAR:
             checkpoints are saved upon invocation of the service call
             ``checkpoint_components()``, when a time interval greater than, or
@@ -1564,38 +1633,46 @@ class ServicesProxy:
         based on their creation time. Possible values of NUM_CHECKPOINT are:
 
         * NUM_CHECKPOINT = n, with n > 0  --> Keep the most recent n checkpoints
-        * NUM_CHECKPOINT = 0  --> No checkpoints are made/kept (except when *Force* = ``True``)
+        * NUM_CHECKPOINT = 0  --> No checkpoints are made/kept (except when *force* = ``True``)
         * NUM_CHECKPOINT < 0 --> Keep ALL checkpoints
 
         Checkpoints are saved in the directory ``${SIM_ROOT}/restart``
         """
 
         elapsed_time = self._get_elapsed_time()
-        if Force:
-            return self._dispatch_checkpoint(time_stamp, comp_id_list, Protect)
+        if force:
+            return self._dispatch_checkpoint(time_stamp, comp_id_list, protect)
         try:
             chkpt_conf = self.sim_conf['CHECKPOINT']
             mode = chkpt_conf['MODE']
             num_chkpt = int(chkpt_conf['NUM_CHECKPOINT'])
         except KeyError:
-            self.error('Missing CHECKPOINT config section, or one of the required parameters: MODE, NUM_CHECKPOINT')
+            self.error(
+                'Missing CHECKPOINT config section, or one of the required parameters: MODE, NUM_CHECKPOINT'
+            )
             self.exception('Error accessing CHECKPOINT section in config file')
             raise
 
         if num_chkpt == 0:
             return None
 
-        if mode not in ['ALL', 'WALLTIME_REGULAR', 'WALLTIME_EXPLICIT', 'PHYSTIME_REGULAR', 'PHYSTIME_EXPLICIT']:
+        if mode not in [
+            'ALL',
+            'WALLTIME_REGULAR',
+            'WALLTIME_EXPLICIT',
+            'PHYSTIME_REGULAR',
+            'PHYSTIME_EXPLICIT',
+        ]:
             self.error('Invalid MODE = %s in checkpoint configuration', mode)
             raise Exception('Invalid MODE = %s in checkpoint configuration' % (mode))
 
         if mode == 'ALL':
-            return self._dispatch_checkpoint(time_stamp, comp_id_list, Protect)
+            return self._dispatch_checkpoint(time_stamp, comp_id_list, protect)
 
         if mode == 'WALLTIME_REGULAR':
             interval = float(chkpt_conf['WALLTIME_INTERVAL'])
             if self.cur_time - self.last_ckpt_walltime >= interval:
-                return self._dispatch_checkpoint(time_stamp, comp_id_list, Protect)
+                return self._dispatch_checkpoint(time_stamp, comp_id_list, protect)
             else:
                 return None
         elif mode == 'WALLTIME_EXPLICIT':
@@ -1607,7 +1684,7 @@ class ServicesProxy:
             wt_values = [float(t) for t in wt_values]
             for t in wt_values:
                 if elapsed_time >= t > self.last_ckpt_walltime - self.start_time:
-                    return self._dispatch_checkpoint(time_stamp, comp_id_list, Protect)
+                    return self._dispatch_checkpoint(time_stamp, comp_id_list, protect)
             return None
         elif mode == 'PHYSTIME_REGULAR':
             pt_interval = float(chkpt_conf['PHYSTIME_INTERVAL'])
@@ -1616,7 +1693,7 @@ class ServicesProxy:
             if self.last_ckpt_phystime is None:
                 self.last_ckpt_phystime = pt_start
             if pt_current - self.last_ckpt_phystime >= pt_interval:
-                return self._dispatch_checkpoint(time_stamp, comp_id_list, Protect)
+                return self._dispatch_checkpoint(time_stamp, comp_id_list, protect)
             else:
                 return None
         elif mode == 'PHYSTIME_EXPLICIT':
@@ -1628,21 +1705,25 @@ class ServicesProxy:
             pt_current = float(time_stamp)
             for pt in pt_values:
                 if pt_current >= pt > self.last_ckpt_phystime:
-                    return self._dispatch_checkpoint(time_stamp, comp_id_list, Protect)
+                    return self._dispatch_checkpoint(time_stamp, comp_id_list, protect)
             return None
         return None
 
-    def _dispatch_checkpoint(self, time_stamp, comp_id_list, Protect):
+    def _dispatch_checkpoint(self, time_stamp, comp_id_list, protect):
         """
         Invoke *checkpoint* method on each component in *comp_id_list* labeled
-        with time *time_stamp*.  If *Protect* is ``True``, or this checkpoint
+        with time *time_stamp*.  If *protect* is ``True``, or this checkpoint
         is designated as a protected checkpoint by the simulation
         configuration parameters, steps are taken to ensure it remains in the
         restart directory.  Unprotected checkpoints are purged as necessary.
         """
         self.last_ckpt_walltime = self.cur_time
         self.last_ckpt_phystime = float(time_stamp)
-        self.debug('Checkpointing components after %.3f sec with physics time = %.3f', self.last_ckpt_walltime - self.start_time, self.last_ckpt_phystime)
+        self.debug(
+            'Checkpointing components after %.3f sec with physics time = %.3f',
+            self.last_ckpt_walltime - self.start_time,
+            self.last_ckpt_phystime,
+        )
         self._send_monitor_event('IPS_CHECKPOINT_START', 'Components = ' + str(comp_id_list))
         call_id_list = []
         for comp_id in comp_id_list:
@@ -1661,21 +1742,29 @@ class ServicesProxy:
             return ret_dict
 
         base_dir = os.path.join(sim_root, 'restart')
-        timeStamp_str = '%0.3f' % (float(time_stamp))
-        self.new_chkpts.append(timeStamp_str)
+        time_stamp_str = '%0.3f' % (float(time_stamp))
+        self.new_chkpts.append(time_stamp_str)
         try:
             protect_freq = chkpt_conf['PROTECT_FREQUENCY']
         except KeyError:
             pass
         else:
-            if Protect or (self.chkpt_counter % int(protect_freq) == 0):
-                self.protected_chkpts.append(timeStamp_str)
+            if protect or (self.chkpt_counter % int(protect_freq) == 0):
+                self.protected_chkpts.append(time_stamp_str)
 
         if os.path.isdir(base_dir):
-            all_chkpts = [os.path.basename(f) for f in glob.glob(os.path.join(base_dir, '*')) if os.path.isdir(f)]
+            all_chkpts = [
+                os.path.basename(f)
+                for f in glob.glob(os.path.join(base_dir, '*'))
+                if os.path.isdir(f)
+            ]
             prior_runs_chkpts_dirs = [chkpt for chkpt in all_chkpts if chkpt not in self.new_chkpts]
             purge_candidates = sorted(prior_runs_chkpts_dirs, key=float)
-            purge_candidates += [chkpt for chkpt in self.new_chkpts if (chkpt in all_chkpts and chkpt not in self.protected_chkpts)]
+            purge_candidates += [
+                chkpt
+                for chkpt in self.new_chkpts
+                if (chkpt in all_chkpts and chkpt not in self.protected_chkpts)
+            ]
             while len(purge_candidates) > num_chkpt:
                 obsolete_chkpt = purge_candidates.pop(0)
                 chkpt_dir = os.path.join(base_dir, obsolete_chkpt)
@@ -1707,14 +1796,14 @@ class ServicesProxy:
         return self.workdir
 
     # DM stageInput
-    def stage_input_files(self, input_file_list: Union[str, Iterable[str]]) -> None:
+    def stage_input_files(self, input_file_list: str | Iterable[str]) -> None:
         """
         Copy component input files to the component working directory
         (as obtained via a call to :py:meth:`ServicesProxy.get_working_dir`). Input files
         are assumed to be originally located in the directory variable
         *INPUT_DIR* in the component configuration section.
 
-        File are copied using :func:`ipsframework.ipsutil.copyFiles`.
+        File are copied using :func:`ipsframework.ipsutil.copy_files`.
 
         :param input_file_list: input files can space separated string or iterable of strings
         :type input_file_list: str or Iterable of str
@@ -1722,8 +1811,8 @@ class ServicesProxy:
         start_time = time.time()
         workdir = self.get_working_dir()
         old_conf = self.component_ref.config
-        inputDir = old_conf['INPUT_DIR']
-        ipsutil.copyFiles(inputDir, input_file_list, workdir)
+        input_dir = old_conf['INPUT_DIR']
+        ipsutil.copy_files(input_dir, input_file_list, workdir)
 
         # Copy input files into a central place in the output tree
         simroot = self.sim_conf['SIM_ROOT']
@@ -1734,9 +1823,13 @@ class ServicesProxy:
 
         targetdir = os.path.join(simroot, 'simulation_setup', self.full_comp_id)
         try:
-            ipsutil.copyFiles(inputDir, input_file_list, targetdir, outprefix)
+            ipsutil.copy_files(input_dir, input_file_list, targetdir, outprefix)
         except Exception as e:
-            self._send_monitor_event('IPS_STAGE_INPUTS', 'Files = ' + str(input_file_list) + ' Exception raised : ' + str(e), ok=False)
+            self._send_monitor_event(
+                'IPS_STAGE_INPUTS',
+                'Files = ' + str(input_file_list) + ' Exception raised : ' + str(e),
+                ok=False,
+            )
             self.exception('Error in stage_input_files')
             raise e
         for _, old_conf, _, _ in self.sub_flows.values():
@@ -1748,15 +1841,20 @@ class ServicesProxy:
                 input_target_dir = os.path.join(os.getcwd(), c)
                 os.makedirs(input_target_dir, exist_ok=True)
                 try:
-                    ipsutil.copyFiles(input_dir, input_files, input_target_dir)
+                    ipsutil.copy_files(input_dir, input_files, input_target_dir)
                 except Exception as e:
-                    self._send_monitor_event('IPS_STAGE_INPUTS', 'Files = ' + str(input_files) + ' Exception raised : ' + str(e), ok=False)
+                    self._send_monitor_event(
+                        'IPS_STAGE_INPUTS',
+                        'Files = ' + str(input_files) + ' Exception raised : ' + str(e),
+                        ok=False,
+                    )
                     self.exception('Error in stage_input_files')
                     raise e
         elapsed_time = time.time() - start_time
         self._send_monitor_event(
-            eventType='IPS_STAGE_INPUTS',
-            comment='Elapsed time = %.3f Path = %s Files = %s' % (elapsed_time, os.path.abspath(inputDir), str(input_file_list)),
+            event_type='IPS_STAGE_INPUTS',
+            comment='Elapsed time = %.3f Path = %s Files = %s'
+            % (elapsed_time, os.path.abspath(input_dir), str(input_file_list)),
             start_time=start_time,
             elapsed_time=elapsed_time,
             target='stage_input_files',
@@ -1785,13 +1883,26 @@ class ServicesProxy:
         for sim_name, (sub_conf_new, _, _, driver_comp) in subflow_dict.items():
             driver = sub_conf_new[sub_conf_new['PORTS']['DRIVER']['IMPLEMENTATION']]
             output_dir = os.path.join(
-                sub_conf_new['SIM_ROOT'], 'work', '_'.join([driver['CLASS'], driver['SUB_CLASS'], driver['NAME'], str(driver_comp.get_seq_num())])
+                sub_conf_new['SIM_ROOT'],
+                'work',
+                '_'.join(
+                    [
+                        driver['CLASS'],
+                        driver['SUB_CLASS'],
+                        driver['NAME'],
+                        str(driver_comp.get_seq_num()),
+                    ]
+                ),
             )
             output_files = driver['OUTPUT_FILES']
             try:
-                ipsutil.copyFiles(output_dir, output_files, self.get_working_dir(), keep_old=False)
+                ipsutil.copy_files(output_dir, output_files, self.get_working_dir(), keep_old=False)
             except Exception as e:
-                self._send_monitor_event('IPS_STAGE_SUBFLOW_OUTPUTS', 'Files = ' + str(output_files) + ' Exception raised : ' + str(e), ok=False)
+                self._send_monitor_event(
+                    'IPS_STAGE_SUBFLOW_OUTPUTS',
+                    'Files = ' + str(output_files) + ' Exception raised : ' + str(e),
+                    ok=False,
+                )
                 self.exception('Error in stage_subflow_output_files() for subflow %s' % sim_name)
                 raise
             else:
@@ -1801,18 +1912,24 @@ class ServicesProxy:
                     return_dict[sim_name] = output_files
         return return_dict
 
-    def stage_output_files(self, timeStamp: float, file_list: Union[str, list[str]], keep_old_files: bool = True, save_plasma_state: bool = True) -> None:
+    def stage_output_files(
+        self,
+        time_stamp: float,
+        file_list: str | list[str],
+        keep_old_files: bool = True,
+        save_plasma_state: bool = True,
+    ) -> None:
         """
         Copy associated component output files (from the working directory)
         to the component simulation results directory. Output files
         are prefixed with the configuration parameter *OUTPUT_PREFIX*.
         The simulation results directory has the format::
 
-            ${SIM_ROOT}/simulation_results/<timeStamp>/components/$CLASS_${SUB_CLASS}_$NAME_${SEQ_NUM}
+            ${SIM_ROOT}/simulation_results/<time_stamp>/components/$CLASS_${SUB_CLASS}_$NAME_${SEQ_NUM}
 
         Additionally, plasma state files are archived for debugging purposes::
 
-            ${SIM_ROOT}/history/plasma_state/<file_name>_$CLASS_${SUB_CLASS}_$NAME_<timeStamp>
+            ${SIM_ROOT}/history/plasma_state/<file_name>_$CLASS_${SUB_CLASS}_$NAME_<time_stamp>
 
         Copying errors are not fatal (exception raised).
         """
@@ -1826,14 +1943,20 @@ class ServicesProxy:
             outprefix = ''
         out_root = 'simulation_results'
 
-        output_dir = os.path.join(sim_root, out_root, str(timeStamp), 'components', self.full_comp_id)
+        output_dir = os.path.join(
+            sim_root, out_root, str(time_stamp), 'components', self.full_comp_id
+        )
         if isinstance(file_list, str):
             file_list = file_list.split()
         all_files = functools.reduce(iadd, [glob.glob(f) for f in file_list], [])
         try:
-            ipsutil.copyFiles(workdir, all_files, output_dir, outprefix, keep_old=keep_old_files)
+            ipsutil.copy_files(workdir, all_files, output_dir, outprefix, keep_old=keep_old_files)
         except Exception as e:
-            self._send_monitor_event('IPS_STAGE_OUTPUTS', 'Files = ' + str(file_list) + ' Exception raised : ' + str(e), ok=False)
+            self._send_monitor_event(
+                'IPS_STAGE_OUTPUTS',
+                'Files = ' + str(file_list) + ' Exception raised : ' + str(e),
+                ok=False,
+            )
             self.exception('Error in stage_output_files()')
             raise
 
@@ -1846,7 +1969,11 @@ class ServicesProxy:
         try:
             os.makedirs(plasma_dir, exist_ok=True)
         except OSError as e:
-            self._send_monitor_event('IPS_STAGE_OUTPUTS', 'Files = ' + str(file_list) + ' Exception raised : ' + e.strerror, ok=False)
+            self._send_monitor_event(
+                'IPS_STAGE_OUTPUTS',
+                'Files = ' + str(file_list) + ' Exception raised : ' + e.strerror,
+                ok=False,
+            )
             self.exception('Error creating directory %s : %d-%s', plasma_dir, e.errno, e.strerror)
             raise
 
@@ -1866,24 +1993,32 @@ class ServicesProxy:
                 continue
             tokens = f.split('.')
             if len(tokens) == 1:
-                newName = '_'.join([outprefix + f, self.full_comp_id, str(timeStamp)])
+                new_name = '_'.join([outprefix + f, self.full_comp_id, str(time_stamp)])
             else:
                 name = '.'.join(tokens[:-1])
                 ext = tokens[-1]
-                newName = '_'.join([outprefix + name, self.full_comp_id, str(timeStamp)]) + '.' + ext
-            target_name = os.path.join(plasma_dir, newName)
+                new_name = (
+                    '_'.join([outprefix + name, self.full_comp_id, str(time_stamp)]) + '.' + ext
+                )
+            target_name = os.path.join(plasma_dir, new_name)
             if os.path.isfile(target_name):
                 for i in range(1000):
-                    newName = target_name + '.' + str(i)
-                    if os.path.isfile(newName):
+                    new_name = target_name + '.' + str(i)
+                    if os.path.isfile(new_name):
                         continue
-                    target_name = newName
+                    target_name = new_name
                     break
             try:
                 shutil.copy(f, target_name)
-            except (IOError, os.error) as why:
-                self.exception('Error copying file: %s from %s to %s - %s', f, workdir, target_name, str(why))
-                self._send_monitor_event('IPS_STAGE_OUTPUTS', 'Files = ' + str(file_list) + ' Exception raised : ' + str(why), ok=False)
+            except OSError as why:
+                self.exception(
+                    'Error copying file: %s from %s to %s - %s', f, workdir, target_name, str(why)
+                )
+                self._send_monitor_event(
+                    'IPS_STAGE_OUTPUTS',
+                    'Files = ' + str(file_list) + ' Exception raised : ' + str(why),
+                    ok=False,
+                )
                 raise
 
         # Store symlinks to component output files in a single top-level directory
@@ -1901,12 +2036,12 @@ class ServicesProxy:
             real_file = os.path.join(output_dir, outprefix + f)
             tokens = f.rsplit('.', 1)
             if len(tokens) == 1:
-                newName = '_'.join([f, str(timeStamp)])
+                new_name = '_'.join([f, str(time_stamp)])
             else:
                 name = tokens[0]
                 ext = tokens[1]
-                newName = '_'.join([name, str(timeStamp)]) + '.' + ext
-            sym_link = os.path.join(symlink_dir, newName)
+                new_name = '_'.join([name, str(time_stamp)]) + '.' + ext
+            sym_link = os.path.join(symlink_dir, new_name)
             if os.path.isfile(sym_link):
                 os.remove(sym_link)
             # We need to use relative path for the symlinks
@@ -1932,7 +2067,7 @@ class ServicesProxy:
             operation=str(file_list),
         )
 
-    def save_restart_files(self, timeStamp: float, file_list: Union[str, list[str]]) -> None:
+    def save_restart_files(self, time_stamp: float, file_list: str | list[str]) -> None:
         """
         Copy files needed for component restart to the restart directory::
 
@@ -1951,26 +2086,34 @@ class ServicesProxy:
             return
         conf = self.component_ref.config
         base_dir = os.path.join(sim_root, 'restart')
-        timeStamp_str = '%0.3f' % (float(timeStamp))
-        self.new_chkpts.append(timeStamp_str)
+        time_stamp_str = '%0.3f' % (float(time_stamp))
+        self.new_chkpts.append(time_stamp_str)
 
-        targetdir = os.path.join(base_dir, timeStamp_str, '_'.join([conf['CLASS'], conf['SUB_CLASS'], conf['NAME']]))
+        targetdir = os.path.join(
+            base_dir, time_stamp_str, '_'.join([conf['CLASS'], conf['SUB_CLASS'], conf['NAME']])
+        )
         self.debug('Checkpointing: Copying %s to dir %s', str(file_list), targetdir)
 
         try:
-            ipsutil.copyFiles(workdir, file_list, targetdir)
+            ipsutil.copy_files(workdir, file_list, targetdir)
         except Exception as e:
-            self._send_monitor_event('IPS_STAGE_RESTART', 'Files = ' + str(file_list) + ' Exception raised : ' + str(e), ok=False)
+            self._send_monitor_event(
+                'IPS_STAGE_RESTART',
+                'Files = ' + str(file_list) + ' Exception raised : ' + str(e),
+                ok=False,
+            )
             self.exception('Error in stage_restart_files()')
             raise
 
         self._send_monitor_event('IPS_SAVE_RESTART', 'Files = ' + str(file_list))
 
-    def get_restart_files(self, restart_root: str, timeStamp: float, file_list: Union[str, list[str]]) -> None:
+    def get_restart_files(
+        self, restart_root: str, time_stamp: float, file_list: str | list[str]
+    ) -> None:
         """
         Copy files needed for component restart from the restart directory::
 
-            <restart_root>/restart/<timeStamp>/components/$CLASS_${SUB_CLASS}_$NAME_${SEQ_NUM}
+            <restart_root>/restart/<time_stamp>/components/$CLASS_${SUB_CLASS}_$NAME_${SEQ_NUM}
 
         to the component's work directory.
 
@@ -1979,19 +2122,25 @@ class ServicesProxy:
         work_dir = self.get_working_dir()
 
         conf = self.component_ref.config
-        base_dir = os.path.join(restart_root, 'restart', '%.3f' % (float(timeStamp)))
-        source_dir = os.path.join(base_dir, '_'.join([conf['CLASS'], conf['SUB_CLASS'], conf['NAME']]))
+        base_dir = os.path.join(restart_root, 'restart', '%.3f' % (float(time_stamp)))
+        source_dir = os.path.join(
+            base_dir, '_'.join([conf['CLASS'], conf['SUB_CLASS'], conf['NAME']])
+        )
 
         try:
-            ipsutil.copyFiles(source_dir, file_list, work_dir)
+            ipsutil.copy_files(source_dir, file_list, work_dir)
         except Exception as e:
-            self._send_monitor_event('IPS_GET_RESTART', 'Files = ' + str(file_list) + ' Exception raised : ' + str(e), ok=False)
+            self._send_monitor_event(
+                'IPS_GET_RESTART',
+                'Files = ' + str(file_list) + ' Exception raised : ' + str(e),
+                ok=False,
+            )
             self.exception('Error in get_restart_files()')
             raise
 
         self._send_monitor_event('IPS_GET_RESTART', 'Files = ' + str(file_list))
 
-    def stage_state(self, state_files: Optional[list[str]] = None) -> None:
+    def stage_state(self, state_files: list[str] | None = None) -> None:
         """
         Copy current state to work directory.
         """
@@ -2009,7 +2158,9 @@ class ServicesProxy:
         workdir = self.get_working_dir()
 
         try:
-            msg_id = self._invoke_service(self.fwk.component_id, 'stage_state', files, state_dir, workdir)
+            msg_id = self._invoke_service(
+                self.fwk.component_id, 'stage_state', files, state_dir, workdir
+            )
             self._get_service_response(msg_id, block=True)
         except Exception as e:
             self._send_monitor_event('IPS_STAGE_STATE', ' Exception raised : ' + str(e), ok=False)
@@ -2025,7 +2176,7 @@ class ServicesProxy:
             operation=str(files),
         )
 
-    def update_state(self, state_files: Optional[list[str]] = None) -> None:
+    def update_state(self, state_files: list[str] | None = None) -> None:
         """
         Copy local (updated) state to global state.  If no  state
         files are specified, component configuration specification is used.
@@ -2045,7 +2196,9 @@ class ServicesProxy:
         state_dir = self.get_config_param('STATE_WORK_DIR')
         workdir = self.get_working_dir()
         try:
-            msg_id = self._invoke_service(self.fwk.component_id, 'update_state', files, workdir, state_dir)
+            msg_id = self._invoke_service(
+                self.fwk.component_id, 'update_state', files, workdir, state_dir
+            )
             self._get_service_response(msg_id, block=True)
         except Exception as e:
             print('Error updating state files', str(e), file=sys.stderr)
@@ -2062,7 +2215,12 @@ class ServicesProxy:
             operation=str(files),
         )
 
-    def merge_current_state(self, partial_state_file: str, logfile: Optional[str] = None, merge_binary: Optional[str] = None) -> None:
+    def merge_current_state(
+        self,
+        partial_state_file: str,
+        logfile: str | None = None,
+        merge_binary: str | None = None,
+    ) -> None:
         """
         Merge partial plasma state with global state.  Partial plasma state
         contains only the values that the component contributes to the
@@ -2085,20 +2243,38 @@ class ServicesProxy:
             self.error('Missing executable %s in PATH', bin_name)
             raise FileNotFoundError('Missing executable file %s in PATH' % bin_name)
         try:
-            msg_id = self._invoke_service(self.fwk.component_id, 'merge_current_plasma_state', update_file, source_plasma_file, logfile, full_path_binary)
+            msg_id = self._invoke_service(
+                self.fwk.component_id,
+                'merge_current_plasma_state',
+                update_file,
+                source_plasma_file,
+                logfile,
+                full_path_binary,
+            )
             ret_val = self._get_service_response(msg_id, block=True)
         except Exception as e:
             print('Error merging state files', str(e), file=sys.stderr)
-            self._send_monitor_event('IPS_MERGE_PLASMA_STATE', ' Exception raised : ' + str(e), ok=False)
+            self._send_monitor_event(
+                'IPS_MERGE_PLASMA_STATE', ' Exception raised : ' + str(e), ok=False
+            )
             self.exception('Error merging plasma state file ' + partial_state_file)
             raise
         if ret_val == 0:
             self._send_monitor_event('IPS_MERGE_PLASMA_STATE', 'Success')
             return
         else:
-            self._send_monitor_event('IPS_MERGE_PLASMA_STATE', ' Error in call to update_state() : ', ok=False)
-            self.error('Error merging update %s into current plasma state file %s', partial_state_file, current_plasma_state)
-            raise Exception('Error merging update %s into current plasma state file %s' % (partial_state_file, current_plasma_state))
+            self._send_monitor_event(
+                'IPS_MERGE_PLASMA_STATE', ' Error in call to update_state() : ', ok=False
+            )
+            self.error(
+                'Error merging update %s into current plasma state file %s',
+                partial_state_file,
+                current_plasma_state,
+            )
+            raise Exception(
+                'Error merging update %s into current plasma state file %s'
+                % (partial_state_file, current_plasma_state)
+            )
 
     def update_time_stamp(self, new_time_stamp=-1) -> None:
         """
@@ -2116,20 +2292,20 @@ class ServicesProxy:
         self.publish('_IPS_MONITOR', 'PORTALBRIDGE_UPDATE_TIMESTAMP', event_data)
         self._send_monitor_event('IPS_UPDATE_TIME_STAMP', 'Timestamp = ' + str(new_time_stamp))
 
-    def setMonitorURL(self, url: str = '') -> None:
+    def set_monitor_url(self, url: str = '') -> None:
         """
         Send event to portal setting the URL where the monitor component will
         put data.
         """
         self.monitor_url = url
-        self._send_monitor_event(eventType='IPS_SET_MONITOR_URL', comment='SUCCESS')
+        self._send_monitor_event(event_type='IPS_SET_MONITOR_URL', comment='SUCCESS')
 
     def _should_use_portal(self) -> bool:
         """Return True if we want to use the portal, False if not"""
         use_portal_config = self.get_config_param('USE_PORTAL', silent=True)
 
         if isinstance(use_portal_config, str):
-             return use_portal_config.strip().lower() == 'true'
+            return use_portal_config.strip().lower() == 'true'
         elif use_portal_config is None:
             return False
         else:
@@ -2161,14 +2337,18 @@ class ServicesProxy:
 
         # next, check to see if the portal URL was even initialized, fall back if not
         if not self.get_config_param('PORTAL_URL', silent=True):
-            self.warning('_get_jupyter_runid: PORTAL_URL was not defined, disabling Jupyter workflow')
+            self.warning(
+                '_get_jupyter_runid: PORTAL_URL was not defined, disabling Jupyter workflow'
+            )
             self._portal_runid = -2
             self._portal_runid_event.set()
             return
-        
+
         # next, check to see if the user remembered to define an API key (adding data requires a runid)
         if not self.get_config_param('_IPS_PORTAL_API_KEY', silent=True):
-            self.warning('_get_jupyter_runid: PORTAL_API_KEY was not defined, disabling Jupyter workflow')
+            self.warning(
+                '_get_jupyter_runid: PORTAL_API_KEY was not defined, disabling Jupyter workflow'
+            )
             self._portal_runid = -2
             self._portal_runid_event.set()
             return
@@ -2200,17 +2380,22 @@ class ServicesProxy:
             except Exception:
                 attempts += 1
                 if attempts >= max_attempts:
-                    self.warning('_get_jupyter_runid: Unable to get RUNID directly from remote portal, disabling Jupyter workflow')
+                    self.warning(
+                        '_get_jupyter_runid: Unable to get RUNID directly from remote portal, disabling Jupyter workflow'
+                    )
                     self._portal_runid = -2
                     self._portal_runid_event.set()
-                    self.warning('took this amount of time to reach max attempts: %d', time.time() - base_time)
+                    self.warning(
+                        'took this amount of time to reach max attempts: %d',
+                        time.time() - base_time,
+                    )
                     return
                 self._portal_runid_event.wait(1.0)
 
     def initialize_jupyter_notebook(
         self,
         source_notebook_path: str,
-        dest_notebook_name: Optional[str] = None,
+        dest_notebook_name: str | None = None,
     ) -> None:
         """If the IPS Portal is available, this function loads a notebook from source_notebook_path, adds a cell to load the data, and then saves the concatenated notebook to the Portal.
 
@@ -2224,7 +2409,7 @@ class ServicesProxy:
         # have we initialized a runid yet? if not, block this function call until we can establish or not establish one
         if not self._portal_runid_event.is_set():
             self._establish_portal_runid()
-        
+
         # now check to see if we have a valid runid
         if self._portal_runid < 0:
             return
@@ -2246,7 +2431,11 @@ class ServicesProxy:
 
         portal_data: dict[str, Any] = {}
         portal_data['eventtype'] = 'PORTAL_REGISTER_NOTEBOOK'
-        portal_data['data_source'] = os.path.join(os.getcwd(), source_notebook_path) if not os.path.isabs(source_notebook_path) else source_notebook_path
+        portal_data['data_source'] = (
+            os.path.join(os.getcwd(), source_notebook_path)
+            if not os.path.isabs(source_notebook_path)
+            else source_notebook_path
+        )
         portal_data['username'] = self.get_config_param('USER')
         portal_data['filename'] = dest_notebook_name
         portal_data['portal_runid'] = self._portal_runid
@@ -2254,7 +2443,9 @@ class ServicesProxy:
         self.publish('_IPS_MONITOR', 'PORTAL_REGISTER_NOTEBOOK', event_data)
         self._send_monitor_event('IPS_PORTAL_REGISTER_NOTEBOOK', f'FILENAME = {dest_notebook_name}')
 
-    def add_analysis_data_files(self, current_data_file_paths: list[str], timestamp: float = 0.0, replace: bool = False) -> None:
+    def add_analysis_data_files(
+        self, current_data_file_paths: list[str], timestamp: float = 0.0, replace: bool = False
+    ) -> None:
         """If the IPS Portal is available, saves data files to IPS Portal. Files are indexed via specific timestamps.
 
         If a connection to the IPS Portal cannot be verified for this run, this function does nothing.
@@ -2285,7 +2476,9 @@ class ServicesProxy:
 
             portal_data: dict[str, Any] = {}
             portal_data['eventtype'] = 'PORTAL_ADD_JUPYTER_DATA'
-            portal_data['data_source'] = os.path.join(os.getcwd(), source) if not os.path.isabs(source) else source
+            portal_data['data_source'] = (
+                os.path.join(os.getcwd(), source) if not os.path.isabs(source) else source
+            )
             portal_data['username'] = self.get_config_param('USER')
             portal_data['filename'] = filename
             portal_data['tag'] = timestamp
@@ -2293,44 +2486,47 @@ class ServicesProxy:
             portal_data['portal_runid'] = self._portal_runid
             event_data['portal_data'] = portal_data
             self.publish('_IPS_MONITOR', 'PORTAL_ADD_JUPYTER_DATA', event_data)
-            self._send_monitor_event('IPS_PORTAL_ADD_JUPYTER_DATA', f'SOURCE = {source} TIMESTAMP = {timestamp} REPLACE = {replace}')
+            self._send_monitor_event(
+                'IPS_PORTAL_ADD_JUPYTER_DATA',
+                f'SOURCE = {source} TIMESTAMP = {timestamp} REPLACE = {replace}',
+            )
 
-    def publish(self, topicName: str, eventName: str, eventBody: Any) -> None:
+    def publish(self, topic_name: str, event_name: str, event_body: Any) -> None:
         """
-        Publish event consisting of *eventName* and *eventBody* to topic *topicName* to the IPS event service.
+        Publish event consisting of *event_name* and *event_body* to topic *topic_name* to the IPS event service.
 
         Publishing an event multiple components are subscribed to will cause each component to handle the message simultaneously.
 
-        :param topicName: the name of the topic to publish on, top-level namespace
-        :param eventName: event associated with the topic 
-        :param eventBody: data to send
+        :param topic_name: the name of the topic to publish on, top-level namespace
+        :param event_name: event associated with the topic
+        :param event_body: data to send
         """
-        if not topicName.startswith('_IPS'):
-            topicName = self.sim_name + '_' + topicName
-        self.event_service.publish(topicName, eventName, eventBody)
+        if not topic_name.startswith('_IPS'):
+            topic_name = self.sim_name + '_' + topic_name
+        self.event_service.publish(topic_name, event_name, event_body)
 
-    def subscribe(self, topicName: str, callback: Callable) -> None:
+    def subscribe(self, topic_name: str, callback: Callable) -> None:
         """
-        Subscribe to topic *topicName* on the IPS event service and register *callback* as the method to be invoked when an event is published to that topic.
+        Subscribe to topic *topic_name* on the IPS event service and register *callback* as the method to be invoked when an event is published to that topic.
 
         Multiple components can subscribe to the same topic name; if this is the case, each component will handle the message separately when the topic is published to.
-        
-        :param topicName: the name of the topic to subscribe to, top-level namespace
+
+        :param topic_name: the name of the topic to subscribe to, top-level namespace
         :param callback: the function which will be called on receiving a message
         """
-        if not topicName.startswith('_IPS'):
-            topicName = self.sim_name + '_' + topicName
-        self.event_service.subscribe(topicName, callback)
+        if not topic_name.startswith('_IPS'):
+            topic_name = self.sim_name + '_' + topic_name
+        self.event_service.subscribe(topic_name, callback)
 
-    def unsubscribe(self, topicName: str) -> None:
+    def unsubscribe(self, topic_name: str) -> None:
         """
-        Remove subscription to topic *topicName*.
+        Remove subscription to topic *topic_name*.
 
-        :param topicName: the name of the topic to unsubscribe from
+        :param topic_name: the name of the topic to unsubscribe from
         """
-        if not topicName.startswith('_IPS'):
-            topicName = self.sim_name + '_' + topicName
-        self.event_service.unsubscribe(topicName)
+        if not topic_name.startswith('_IPS'):
+            topic_name = self.sim_name + '_' + topic_name
+        self.event_service.unsubscribe(topic_name)
 
     def process_events(self) -> None:
         """
@@ -2342,13 +2538,18 @@ class ServicesProxy:
         self,
         event_type: IPS_EVENT_TYPE = 'COMPONENT_EVENT',
         event_comment: str = '',
-        event_time: Optional[float] = None,
-        elapsed_time: Optional[float] = None,
+        event_time: float | None = None,
+        elapsed_time: float | None = None,
     ):
         """
         Send event to web portal.
         """
-        return self._send_monitor_event(eventType=event_type, comment=event_comment, event_time=event_time, elapsed_time=elapsed_time)
+        return self._send_monitor_event(
+            event_type=event_type,
+            comment=event_comment,
+            event_time=event_time,
+            elapsed_time=elapsed_time,
+        )
 
     def log(self, msg, *args):
         """
@@ -2400,7 +2601,16 @@ class ServicesProxy:
             raise Exception('Error: Duplicate task pool name %s' % (task_pool_name))
         self.task_pools[task_pool_name] = TaskPool(task_pool_name, self)
 
-    def add_task(self, task_pool_name: str, task_name: str, nproc: int, working_dir: str, binary: str, *args, **keywords):
+    def add_task(
+        self,
+        task_pool_name: str,
+        task_name: str,
+        nproc: int,
+        working_dir: str,
+        binary: str,
+        *args,
+        **keywords,
+    ):
         """
         Add task *task_name* to task pool *task_pool_name*.  Remaining arguments are the same as
         in :py:meth:`ServicesProxy.launch_task`.
@@ -2459,20 +2669,29 @@ class ServicesProxy:
         :returns: task return value
         """
         start_time = time.time()
-        self._send_monitor_event('IPS_TASK_POOL_BEGIN',
-                                 'task_pool = %s ' % task_pool_name)
+        self._send_monitor_event('IPS_TASK_POOL_BEGIN', 'task_pool = %s ' % task_pool_name)
         task_pool: TaskPool = self.task_pools[task_pool_name]
         retval = task_pool.submit_tasks(
-                block, use_dask, dask_nodes, dask_ppw, launch_interval,
-                use_shifter, shifter_args, dask_worker_plugin,
-                dask_worker_per_gpu, oversubscribe, hwthreads,
-                logfile, errfile
+            block,
+            use_dask,
+            dask_nodes,
+            dask_ppw,
+            launch_interval,
+            use_shifter,
+            shifter_args,
+            dask_worker_plugin,
+            dask_worker_per_gpu,
+            oversubscribe,
+            hwthreads,
+            logfile,
+            errfile,
         )
         elapsed_time = time.time() - start_time
-        self._send_monitor_event('IPS_TASK_POOL_END',
-                                 'task_pool = %s  elapsed time = %.2f S' % (
-                                         task_pool_name, elapsed_time),
-                                 elapsed_time=elapsed_time)
+        self._send_monitor_event(
+            'IPS_TASK_POOL_END',
+            'task_pool = %s  elapsed time = %.2f S' % (task_pool_name, elapsed_time),
+            elapsed_time=elapsed_time,
+        )
         return retval
 
     def get_finished_tasks(self, task_pool_name: str):
@@ -2490,7 +2709,9 @@ class ServicesProxy:
         task_pool.terminate_tasks()
         del self.task_pools[task_pool_name]
 
-    def create_sub_workflow(self, sub_name, config_file, override: Optional[dict[str, Any]] = None, input_dir=None):
+    def create_sub_workflow(
+        self, sub_name, config_file, override: dict[str, Any] | None = None, input_dir=None
+    ):
         """Create sub-workflow
 
         :param sub_name: name of sub-workflow
@@ -2575,7 +2796,9 @@ class ServicesProxy:
         sub_conf_new.filename = os.path.basename(config_file)
         sub_conf_new.write()
         try:  # FIXME, if you're going to catch an exception, you should handle it
-            (sim_name, init_comp, driver_comp) = self._create_simulation(os.path.abspath(sub_conf_new.filename), {}, sub_workflow=True)
+            (sim_name, init_comp, driver_comp) = self._create_simulation(
+                os.path.abspath(sub_conf_new.filename), {}, sub_workflow=True
+            )
         except Exception:
             raise
 
@@ -2595,7 +2818,9 @@ class ServicesProxy:
         :returns: tuple of simulation name, init component, driver component
         """
         try:
-            msg_id = self._invoke_service(self.fwk.component_id, 'create_simulation', config_file, override, sub_workflow)
+            msg_id = self._invoke_service(
+                self.fwk.component_id, 'create_simulation', config_file, override, sub_workflow
+            )
             self.debug('create_simulation() msg_id = %s', msg_id)
             (sim_name, init_comp, driver_comp) = self._get_service_response(msg_id, block=True)
             self.debug('Created simulation %s', sim_name)
@@ -2606,16 +2831,16 @@ class ServicesProxy:
 
     def run_ensemble(
         self,
-        template: Union[str, os.PathLike],
+        template: str | os.PathLike,
         variables: dict[str, dict[str, list[str]]],
-        run_dir: Union[str, os.PathLike],
+        run_dir: str | os.PathLike,
         name: str,
-        num_nodes: int = None,
-        cores_per_instance: Optional[int] = None,
+        num_nodes: int | None = None,
+        cores_per_instance: int | None = None,
         oversubscribe: bool = False,
         hwthreads: bool = False,
-        logfile: Union[str, os.PathLike] = None,
-        errfile: Union[str, os.PathLike] = None,
+        logfile: str | os.PathLike | None = None,
+        errfile: str | os.PathLike | None = None,
     ):
         """Run ensemble of simulations given the template and variables.
 
@@ -2623,19 +2848,19 @@ class ServicesProxy:
 
         .. code-block:: python
 
-                variables = {'a_sim_comp': {'A': [3, 2, 4],
+                variables = {'ASimComp': {'A': [3, 2, 4],
                                             'B': [2.34, 5.82, 0.1],
                                             'C': ['bar', 'baz', 'quux']},
-                            'another_sim_comp': {'D': [7, 5, 9],
+                            'AnotherSimComp': {'D': [7, 5, 9],
                                                  'B': [0.775, 0.080, 29.2],
                                                  'F': ['xyzzy', 'plud', 'thud']}}
 
         That is, the keys are the simulation names and the values are dicts
         mapping parameter to a set of values.  Ensembles will be spun
         up for each simulation for each combination of parameters.  E.g.,
-        `a_sim_comp` will be run three times with the parameters of A, B, and C
+        `ASimComp` will be run three times with the parameters of A, B, and C
         being set to 3, 2.34, 'bar' for one of the simulation instances,
-        respectively.  another_sim_comp behaves similarly with its
+        respectively.  AnotherSimComp behaves similarly with its
         respective parameters.
 
         The ensembles will run under `run_dir` within a subdirectory
@@ -2680,11 +2905,7 @@ class ServicesProxy:
 
         self.debug(f'run_ensemble() use portal = {use_portal!s}')
 
-        def create_driver_config_file(template,
-                                      working_dir,
-                                      variables,
-                                      name,
-                                      use_portal):
+        def create_driver_config_file(template, working_dir, variables, name, use_portal):
             """Create an IPS config file for an ensemble instance
 
             :param template: ConfigObj from which to derive the config file
@@ -2706,11 +2927,14 @@ class ServicesProxy:
             template['_IPS_PORTAL_ENSEMBLE_ID'] = portal_ensemble_id
             template['SIM_NAME'] = name
 
-            if 'SIM_ROOT' in template and \
-                    template['SIM_ROOT'] is not None and \
-                    template['SIM_ROOT'].strip() != '':
-                self.info(f'SIM_ROOT in template config assigned a value, '
-                          f'{template["SIM_ROOT"]}, that will be ignored')
+            if (
+                'SIM_ROOT' in template
+                and template['SIM_ROOT'] is not None
+                and template['SIM_ROOT'].strip() != ''
+            ):
+                self.info(
+                    f'SIM_ROOT in template config assigned a value, {template["SIM_ROOT"]}, that will be ignored'
+                )
 
             # Ensure that the instance gets a unique directory for its work
             # by setting SIM_ROOT to the prefix path.
@@ -2718,10 +2942,11 @@ class ServicesProxy:
 
             # Handle portal configuration, note that PORTAL_API_KEY should be
             # an environment variable and will be passed in later.
-            self.debug(f'use_portal inside create_driver_config_file: '
-                       f'{use_portal}, with type {type(use_portal)}')
+            self.debug(
+                f'use_portal inside create_driver_config_file: {use_portal}, with type {type(use_portal)}'
+            )
             if use_portal:
-                self.debug(f'USE_PORTAL is True, so emitting PORTAL variables.')
+                self.debug('USE_PORTAL is True, so emitting PORTAL variables.')
                 # WARNING: portal_runid is set asynchronously by the Portal
                 # Bridge, wait for it to be set currently, the value we use
                 # in the config file is the value the Bridge component itself
@@ -2732,19 +2957,18 @@ class ServicesProxy:
                 portal_runid = None
                 while portal_runid is None:
                     self.debug('Attempting to get portal run ID')
-                    portal_runid = self.get_config_param('PORTAL_RUNID',
-                                                         silent=True)
+                    portal_runid = self.get_config_param('PORTAL_RUNID', silent=True)
                 self.debug(f'Using portal run ID: {portal_runid}')
 
-                portal_url = self.get_config_param('PORTAL_URL',
-                                                   silent=True)
+                portal_url = self.get_config_param('PORTAL_URL', silent=True)
 
                 template['PORTAL_URL'] = portal_url
                 template['USE_PORTAL'] = 'True'
                 template['PARENT_PORTAL_RUNID'] = portal_runid
             else:
-                self.debug('USE_PORTAL is False, so propagating that to '
-                           'ensemble instance config file.')
+                self.debug(
+                    'USE_PORTAL is False, so propagating that to ensemble instance config file.'
+                )
                 template['USE_PORTAL'] = 'False'
 
             # We need to plug in the variables, so we need to find the section
@@ -2796,9 +3020,9 @@ class ServicesProxy:
             # This is critical for ensuring that `prun` is used to run the
             # ensemble instances.  This is because the ensemble instances rely
             # on the DVM (Dynamic Virtual Machine) to run the simulations,
-            # which was spun up in the Dask scheduler plugin, `DVMPlugin`. The
-            # DVM URI is propagated to each submitted Dask task so `prun` can
-            # find the DVM.
+            # which was spun up in the docker worker plugin, `DVMPlugin`. The
+            # `prun` *should* use the environment variables set by the plugin
+            # to find the DVM.
             platform_config['MPIRUN_VERSION'] = 'OPENMPI-DVM'
 
             # Set the budget of cores per instance. By default, we will give
@@ -2847,7 +3071,7 @@ class ServicesProxy:
             # have we initialized a runid yet? if not, block this function call until we can establish or not establish one
             if not self._portal_runid_event.is_set():
                 self._establish_portal_runid()
-            
+
             # now check to see if we have a valid runid
             if self._portal_runid < 0:
                 return
@@ -2868,14 +3092,16 @@ class ServicesProxy:
 
             self.publish('_IPS_MONITOR', 'PORTAL_UPLOAD_ENSEMBLE_PARAMS', event_data)
             self._send_monitor_event('IPS_PORTAL_UPLOAD_ENSEMBLE_PARAMS', f'NAME = {name}')
-            
+
             # wait on a confirmation from the portal before proceeding with launching the ensembles
             ensemble_portal_wait_time = 10.0
             while not self._ensemble_verification_check:
                 time.sleep(1.0)
                 ensemble_portal_wait_time -= 1.0
                 if ensemble_portal_wait_time <= 0.0:
-                    self.warning('Could not confirm ensemble parameters upload, proceeding with task submission anyway')
+                    self.warning(
+                        'Could not confirm ensemble parameters upload, proceeding with task submission anyway'
+                    )
                     break
                 self.process_events()
             self._ensemble_verification_check = False  # reset in case run_ensemble is called again
@@ -2890,7 +3116,6 @@ class ServicesProxy:
         elif num_nodes is None:
             num_nodes = 1
         self.info(f'run_ensemble() num_nodes = {num_nodes}')
-
 
         # Ensure that we create a unique task pool name for this using the
         # instance prefix `name`
@@ -2909,7 +3134,7 @@ class ServicesProxy:
         # Let's first "flatten" the hierarchical variables dict into a list
         # of lists of dicts, where the top-level of which contains the ensemble
         # instance name and associated parameters.
-        self.debug(f'Grouping variables into instances')
+        self.debug('Grouping variables into instances')
         instances = ipsutil.group_ensemble_variables_into_instances(variables, name)
 
         # save the variables on both disk and to the IPS Portal
@@ -2943,34 +3168,35 @@ class ServicesProxy:
             # instance, particularly because part of the error checking is to
             # ensure that all the variables have been assigned.  The first
             # instance element contains the ensemble instance name.
-            simulation_filename = create_driver_config_file(deepcopy(template_config),
-                                                            working_dir,
-                                                            instance[1],
-                                                            instance[0],
-                                                            use_portal)
-            self.debug(f'Simulation config file for instance {instance[0]} is '
-                       f'{simulation_filename}')
+            simulation_filename = create_driver_config_file(
+                deepcopy(template_config), working_dir, instance[1], instance[0], use_portal
+            )
+            self.debug(
+                f'Simulation config file for instance {instance[0]} is {simulation_filename}'
+            )
 
             # Create the bespoke platform config file for this instance
-            platform_filename = create_platform_config_file(instance[0],
-                                                            working_dir,
-                                                            cores_per_instance)
-            self.debug(f'Platform config file for instance {instance[0]} is '
-                       f'{platform_filename}')
+            platform_filename = create_platform_config_file(
+                instance[0], working_dir, cores_per_instance
+            )
+            self.debug(f'Platform config file for instance {instance[0]} is {platform_filename}')
 
             # Submit a task to run the simulation instance, which is another
             # IPS run pointed to that config file.
-            args = [f'--simulation={simulation_filename}', f'--log={log_file}', f'--platform={platform_filename!s}']
+            args = [
+                f'--simulation={simulation_filename}',
+                f'--log={log_file}',
+                f'--platform={platform_filename!s}',
+            ]
 
-            kwargs = {} # optionally add logfile and errfile
+            kwargs = {}  # optionally add logfile and errfile
             if logfile:
                 kwargs['logfile'] = logfile
             if errfile:
                 kwargs['errfile'] = errfile
 
-
             if self.fwk.logger.getEffectiveLevel() == logging.DEBUG:
-                self.debug(f'Setting subordinate instances logger to debug')
+                self.debug('Setting subordinate instances logger to debug')
                 # If we're in debug mode, then also pass the debug flag.
                 # May as well pass in the --verbose, too.
                 args.insert(1, '--debug')
@@ -2983,7 +3209,7 @@ class ServicesProxy:
             self.logger.debug(f'Submitting {len(instances)} ensemble tasks')
             num_submitted = self.submit_tasks(
                 task_pool_name,
-                    block=True,
+                block=True,
                 use_dask=True,
                 dask_nodes=num_nodes,
                 dask_ppw=cores_per_instance,
@@ -3011,13 +3237,11 @@ class ServicesProxy:
         return instances
 
 
-class DVMPlugin(SchedulerPlugin):
-    name = DVM_PLUGIN_NAME
-
+class DVMPlugin(WorkerPlugin):
     def __init__(self, logger, oversubscribe=False, hwthreads=False):
         """
-        Dask scheduler plugin to launch and manage a single OpenMPI PRTE DVM
-        for the whole IPS job.
+        Dask worker plugin to launch and manage an OpenMPI PRTE DVM on each
+        worker node.
 
         :param logger: Logger object
         :param oversubscribe: Whether to allow oversubscription of nodes
@@ -3029,37 +3253,33 @@ class DVMPlugin(SchedulerPlugin):
         self.logger = logger
         self.oversubscribe = oversubscribe
         self.hwthreads = hwthreads
-        self.scheduler = None
-        self.dvm_proc = None
-        self.dvm_uri = None
-        self.dvm_uri_file = None
 
-    def start(self, scheduler):
+    def setup(self, worker: Worker):
         """
-        :param scheduler: Dask scheduler
+        :param worker: Dask worker
         :param oversubscribe: Whether to allow oversubscription of nodes
             when launching the ensemble runs. Default is False.
         """
         if 'HWLOC_XMLFILE' in os.environ:
-            # Remove HWLOC_XMLFILE to avoid issues with OpenMPI in the DVM.
-            self.logger.debug('Removing HWLOC_XMLFILE environment variable for '
-                              'Dask scheduler')
+            # Remove HWLOC_XMLFILE to avoid issues with OpenMPI on Dask workers
+            self.logger.debug('Removing HWLOC_XMLFILE environment variable for Dask worker')
             del os.environ['HWLOC_XMLFILE']
         else:
-            self.logger.debug('HWLOC_XMLFILE environment variable not set '
-                              'for Dask scheduler')
+            self.logger.debug('HWLOC_XMLFILE environment variable not set for Dask worker')
 
         # Necessary to ensure the DVM "sees" all the resources to manage
         os.environ['PRTE_MCA_ras_slurm_use_entire_allocation'] = '1'
 
-        self.scheduler = scheduler
-        scheduler.logger = self.logger
+        self.worker = worker
+        worker.logger = self.logger
 
         self.logger.info('Launching DVM')
-        self.dvm_uri_file = f'/tmp/dvm.uri.{os.getpid()}'
-        command = [#'srun', '--mpi=pmix_v4', '-N', os.environ['SLURM_NNODES'], '--ntasks-per-node=1',
-                'prte', #'--no-daemonize',
-                '--report-uri', self.dvm_uri_file]
+        self.worker.dvm_uri_file = f'/tmp/dvm.uri.{os.getpid()}'
+        command = [  #'srun', '--mpi=pmix_v4', '-N', os.environ['SLURM_NNODES'], '--ntasks-per-node=1',
+            'prte',  #'--no-daemonize',
+            '--report-uri',
+            self.worker.dvm_uri_file,
+        ]
 
         mapping_policy = 'core'  # by default bind to cores
         if self.hwthreads:
@@ -3076,45 +3296,33 @@ class DVMPlugin(SchedulerPlugin):
 
         try:
             self.logger.debug(f'Executing command: {command!s}')
-            self.dvm_proc = subprocess.Popen(command,
-                                             stdout=subprocess.PIPE,
-                                             stderr=subprocess.STDOUT)
+            self.worker.dvm_proc = subprocess.Popen(
+                command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+            )
         except Exception as e:
             print(f'Exception during setting up DVM: {e}')
             console.print(Traceback.from_exception(type(e), e, e.__traceback__))
-            raise
+
+            # If there was an exception, dump any stdout/stderr we have
+            if hasattr(self.worker.dvm_proc, 'stdout'):
+                print(self.worker.dvm_proc.stdout, file=sys.stdout, flush=True)
+                print(self.worker.dvm_proc.stderr, file=sys.stderr, flush=True)
 
         # TODO What if there was a subprocess exception?
 
-        ready = self.dvm_proc.stdout.readline()
+        ready = self.worker.dvm_proc.stdout.readline()
         self.logger.info(f'Ready Message : {ready}')
         print(f'Ready Message : {ready}', flush=True)
 
-        dvm_uri_path = Path(self.dvm_uri_file)
-        dvm_uri_deadline = time.time() + 30.0
-        while time.time() < dvm_uri_deadline:
-            if self.dvm_proc.poll() is not None:
-                output = self.dvm_proc.stdout.read()
-                raise RuntimeError(f'DVM exited before reporting URI: {output!r}')
+        with open(self.worker.dvm_uri_file, 'r') as f:
+            self.worker.dvm_uri = f.readline()
+            print(f'Read DVM URI: {self.worker.dvm_uri}', flush=True)
+            self.logger.debug(f'Read DVM URI: {self.worker.dvm_uri}')
 
-            if dvm_uri_path.exists() and dvm_uri_path.stat().st_size > 0:
-                with open(dvm_uri_path, 'r') as f:
-                    self.dvm_uri = f.readline().strip()
-                if self.dvm_uri:
-                    break
+        os.environ['PMIX_SERVER_URI41'] = self.worker.dvm_uri
 
-            time.sleep(0.1)
-        else:
-            raise RuntimeError(f'Timed out waiting for DVM URI file {dvm_uri_path}')
-
-        print(f'Read DVM URI: {self.dvm_uri}', flush=True)
-        self.logger.debug(f'Read DVM URI: {self.dvm_uri}')
-
-        os.environ['PMIX_SERVER_URI41'] = self.dvm_uri
-
-
-    def close(self):
-        self.logger.info(f'Shutting down DVM at {self.dvm_uri}')
+    def teardown(self, worker: Worker):
+        self.logger.info(f'Shutting down DVM at {self.worker.dvm_uri}')
 
         # On some systems we use `pterm` to shut down the DVM, and on others we
         # use `prte-term`, so check for both.
@@ -3126,15 +3334,14 @@ class DVMPlugin(SchedulerPlugin):
             # if it's *still* none, then there is a serious
             # configuration problem.
             self.logger.critical('Neither pterm nor prte-term command found')
-        elif self.dvm_uri:
-            self.logger.debug(f'DVMPlugin.close(), pterm: {pterm_cmd!s}')
-            command = [pterm_cmd, '--dvm-uri', self.dvm_uri]
+        else:
+            self.logger.debug(f'DVMPluggin.teardown(), pterm: {pterm_cmd!s}')
+            command = [pterm_cmd, '--dvm-uri', self.worker.dvm_uri]
             subprocess.call(command)
         # Regardless if we have `pterm` or `prte-term`, we can still just
         # kill the process directly.
-        if self.dvm_proc is not None:
-            self.dvm_proc.terminate()
-            self.dvm_proc.kill()
+        self.worker.dvm_proc.terminate()
+        self.worker.dvm_proc.kill()
 
         self.logger.info('DVM shutdown')
 
@@ -3155,7 +3362,7 @@ class TaskPool:
         # scheduler` and `dask worker`
         dask = shutil.which('dask')
         dask_scheduler = [dask, 'scheduler']
-        dask_worker = [dask, 'worker']
+        DaskWorker = [dask, 'worker']
 
         shifter = shutil.which('shifter')
 
@@ -3212,7 +3419,9 @@ class TaskPool:
         while len(self.active_tasks) > 0:
             self._wait_any_task()
 
-    def add_task(self, task_name: str, nproc: int, working_dir: str, binary: str, *args, **keywords):
+    def add_task(
+        self, task_name: str, nproc: int, working_dir: str, binary: str, *args, **keywords
+    ):
         """
         Create :py:obj:`Task` object and add to *queued_tasks* of the task
         pool.  Raise exception if task name already exists in task pool.
@@ -3248,7 +3457,9 @@ class TaskPool:
         keywords['keywords']['block'] = False
 
         self.serial_pool = self.serial_pool and (nproc == 1)
-        self.queued_tasks[task_name] = Task(task_name, nproc, working_dir, binary_fullpath, *args, **keywords['keywords'])
+        self.queued_tasks[task_name] = Task(
+            task_name, nproc, working_dir, binary_fullpath, *args, **keywords['keywords']
+        )
 
     @staticmethod
     def _launch_keywords_with_defaults(task_keywords, logfile=None, errfile=None):
@@ -3261,7 +3472,7 @@ class TaskPool:
         return keywords
 
     def _process_dask_event(self, event):
-        """ This will create an IPS monitor event from a Dask event
+        """This will create an IPS monitor event from a Dask event
 
         These events will have been created in `launch()`.  As they are
         created, this callback will be invoked to send the corresponding
@@ -3273,8 +3484,7 @@ class TaskPool:
         """
         timestamp, message = event
 
-        self.services.debug(f'Processing dask event: {message!s}, '
-                            f'timestamp: {timestamp!s}')
+        self.services.debug(f'Processing dask event: {message!s}, timestamp: {timestamp!s}')
 
         if 'worker' in message:
             # Sneaky Dask will surreptitiously add 'worker', which is
@@ -3285,10 +3495,9 @@ class TaskPool:
 
         self.services._send_monitor_event(**message)
 
-
     def submit_dask_tasks(
         self,
-        block= True,
+        block=True,
         dask_nodes=1,
         dask_ppw=None,
         use_shifter=False,
@@ -3317,7 +3526,7 @@ class TaskPool:
             worker will have multiple cores, hopefully articulated via DVM
             (i.e., prun will be invoked and will coordinate with the DVM to
             allocate multiple cores to each worker thread). Note that the DVM
-            daemon will be started by the registered Dask scheduler plugin DVMPlugin.
+            daemon will be started by the registered Dask worker plugin DVMPlugin.
         :type dask_ppw: int
         :param use_shifter:  Option to launch dask scheduler and workers in shifter container
         :type use_shifter: bool
@@ -3342,7 +3551,9 @@ class TaskPool:
         :returns: number of tasks submitted
         """
 
-        def _make_worker_args(num_workers: int, num_threads: int, use_shifter: bool, shifter_args=None):
+        def _make_worker_args(
+            num_workers: int, num_threads: int, use_shifter: bool, shifter_args=None
+        ):
             """Make Dask worker command line arguments.
 
             :param num_workers: Number of workers to start
@@ -3352,10 +3563,9 @@ class TaskPool:
                 to start a Dask worker
             """
             base_args = [
-                *self.dask_worker,
+                *self.DaskWorker,
                 '--no-dashboard',
                 '--no-nanny',
-                *dask_host_args,
                 '--scheduler-file',
                 self.dask_scheduler_file,
                 '--nworkers',
@@ -3376,12 +3586,14 @@ class TaskPool:
             return base_args
 
         services: ServicesProxy = self.services
-        dask_host_args = _get_dask_host_args(services)
 
         # Note that we use the absolute path since at some point we may
         # be in a different directory, which means that we otherwise would
         # not be able to find the Dask scheduler file.
-        self.dask_scheduler_file = Path('.').absolute() / f'{self.name}_dask_sched_{datetime.now().strftime("%Y%m%d%S")}.json'
+        self.dask_scheduler_file = (
+            Path('.').absolute()
+            / f'{self.name}_dask_sched_{datetime.now().strftime("%Y%m%d%S")}.json'
+        )
         # self.dask_scheduler_file = os.path.join(os.getcwd(), f'{self.name}_dask_shed_{time.time()}.json')
 
         if use_shifter:
@@ -3396,7 +3608,6 @@ class TaskPool:
                         '--no-show',
                         '--idle-timeout',
                         str(TaskPool.IDLE_TIMEOUT),
-                        *dask_host_args,
                         '--scheduler-file',
                         str(self.dask_scheduler_file),
                         '--port',
@@ -3414,7 +3625,6 @@ class TaskPool:
                         '--no-show',
                         '--idle-timeout',
                         str(TaskPool.IDLE_TIMEOUT),
-                        *dask_host_args,
                         '--scheduler-file',
                         str(self.dask_scheduler_file),
                         '--port',
@@ -3423,29 +3633,26 @@ class TaskPool:
                 )
                 self.dask_sched_pid = self.dask_sched_popen.pid
 
-        else: # We are NOT using shifter
+        else:  # We are NOT using shifter
             try:
                 args = [
-                        *self.dask_scheduler,
-                        '--no-dashboard',
-                        '--no-jupyter',
-                        '--no-show',
-                        '--idle-timeout',
-                        str(TaskPool.IDLE_TIMEOUT),
-                        *dask_host_args,
-                        '--scheduler-file',
-                        str(self.dask_scheduler_file),
-                        '--port',
-                        '0',
-                    ]
+                    *self.dask_scheduler,
+                    '--no-dashboard',
+                    '--no-jupyter',
+                    '--no-show',
+                    '--idle-timeout',
+                    str(TaskPool.IDLE_TIMEOUT),
+                    '--scheduler-file',
+                    str(self.dask_scheduler_file),
+                    '--port',
+                    '0',
+                ]
                 self.services.info(f'Scheduler args: {" ".join(args)}')
                 self.dask_sched_popen = subprocess.Popen(args)
                 self.dask_sched_pid = self.dask_sched_popen.pid
-                self.services.info(f'Scheduler pid: '
-                                   f'{self.dask_sched_popen.pid}')
+                self.services.info(f'Scheduler pid: {self.dask_sched_popen.pid}')
             except Exception as e:
-                self.services.critical(f'Exception while starting Dask '
-                                       f'scheduler: {e!s}')
+                self.services.critical(f'Exception while starting Dask scheduler: {e!s}')
                 console.print_exception(show_locals=True)
                 # TODO better error handling than just re-raising the exception
                 raise
@@ -3483,8 +3690,12 @@ class TaskPool:
                 cores_per_node = services.get_config_param('CORES_PER_NODE')
 
             if dask_ppw is not None:
-                self.services.debug(f'Using {dask_ppw} processes per Dask worker via dask_ppw argument')
-                print(f'Using {dask_ppw} processes per Dask worker via dask_ppw argument', flush=True)
+                self.services.debug(
+                    f'Using {dask_ppw} processes per Dask worker via dask_ppw argument'
+                )
+                print(
+                    f'Using {dask_ppw} processes per Dask worker via dask_ppw argument', flush=True
+                )
                 nthreads = cores_per_node // dask_ppw
             else:
                 nthreads = cores_per_node
@@ -3504,22 +3715,27 @@ class TaskPool:
             print(f'Using {dask_ppw} processes per Dask worker via dask_ppw argument', flush=True)
         else:
             dask_ppw = int(services.get_config_param('PROCS_PER_NODE'))
-            self.services.debug(f'using {services.get_config_param("PROCS_PER_NODE")} processes per Dask worker from platform config PROCS_PER_NODE')
+            self.services.debug(
+                f'using {services.get_config_param("PROCS_PER_NODE")} processes per Dask worker from platform config PROCS_PER_NODE'
+            )
         self.services.info(f'Threads per Dask worker is {nthreads}')
 
         # --nprocs was removed in version 2022.10.0 and replaced with --nworkers
         # nworkers = '--nworkers' if tuple(map(int, self.distributed.__version__.split('.'))) >= (2022, 10, 0) else '--nprocs'
 
-        workers_cmd_line = _make_worker_args(num_workers=1, num_threads=nthreads, use_shifter=use_shifter, shifter_args=shifter_args)
+        workers_cmd_line = _make_worker_args(
+            num_workers=1, num_threads=nthreads, use_shifter=use_shifter, shifter_args=shifter_args
+        )
 
         self.services.debug(f'Dask workers command line: {workers_cmd_line}')
 
-        self.dask_workers_tid = services.launch_task(dask_nodes, os.getcwd(), *workers_cmd_line, task_ppn=task_ppn, task_gpp=task_gpp)
+        self.dask_workers_tid = services.launch_task(
+            dask_nodes, os.getcwd(), *workers_cmd_line, task_ppn=task_ppn, task_gpp=task_gpp
+        )
 
         self.services.debug(f'Dask scheduler pid: {self.dask_sched_popen.pid}')
 
-        self.dask_client = Client(scheduler_file=self.dask_scheduler_file,
-                                  direct_to_workers=True)
+        self.dask_client = Client(scheduler_file=self.dask_scheduler_file, direct_to_workers=True)
         self.services.debug(f'Dask client: {self.dask_client!s}')
 
         # And logging done via the dask workers will be forwarded to the root
@@ -3532,21 +3748,18 @@ class TaskPool:
 
         if dask_worker_plugin is not None:
             # TODO But what if there is more than one worker plugin?
+            # TODO And what about scheduler plugins?
             self.services.debug('Register user provided plugin')
             self.dask_client.register_plugin(dask_worker_plugin)
             self.services.debug('Done registering user provided pluging')
 
-        # Regardless of any other worker plugins, we need this scheduler plugin
-        # to set up the single DVM for the whole job so that OpenMPI can work
-        # properly.
+        # Regardless of any other worker plugins, we need this plugin to setup
+        # the DVM for the workers so that OpenMPI can work properly.
         self.services.debug('Registering DVMPlugin')
-        self.dask_client.register_plugin(DVMPlugin(logger=services.logger,
-                                                   oversubscribe=oversubscribe,
-                                                   hwthreads=hwthreads),
-                                         name=DVMPlugin.name)
+        self.dask_client.register_plugin(
+            DVMPlugin(logger=services.logger, oversubscribe=oversubscribe, hwthreads=hwthreads)
+        )
         self.services.debug('Registered DVMPlugin')
-        dvm_uri = self.dask_client.run_on_scheduler(_get_scheduler_dvm_uri)
-        self.services.debug(f'DVM URI from scheduler plugin: {dvm_uri!s}')
 
         # Wait for so many workers to be online before proceeding to
         # more evenly spread the load instead of biasing the tasks by the
@@ -3561,11 +3774,16 @@ class TaskPool:
         else:
             self.services.info('Only a single Dask worker needed, proceeding')
 
-
         try:
             # FIXME this is deprecated, but be mindful of blithely deleting
-            file_id = str(self.services._portal_runid) if self.services._portal_runid > 0 else self.services._fallback_portal_runid
-            self.worker_event_logfile = services.sim_name + '_' + file_id + '_' + self.name + '_{}.json'
+            file_id = (
+                str(self.services._portal_runid)
+                if self.services._portal_runid > 0
+                else self.services._fallback_portal_runid
+            )
+            self.worker_event_logfile = (
+                services.sim_name + '_' + file_id + '_' + self.name + '_{}.json'
+            )
             self.services.debug(f'Worker event log file: {self.worker_event_logfile}')
         except KeyError:
             # USE_PORTAL == False
@@ -3583,13 +3801,12 @@ class TaskPool:
         cpus_per_procs = []
         worker_event_logfiles = []
         for task_name, task in self.queued_tasks.items():
-            self.services.debug(f'Submitting task {task_name} to dask client with {dask_ppw} cores per worker')
+            self.services.debug(
+                f'Submitting task {task_name} to dask client with {dask_ppw} cores per worker'
+            )
             self.services.debug(f'Task {task_name} working dir: {task.working_dir}')
             self.services.debug(f'Task args: {task.args} keywords: {task.keywords}')
-            keywords = self._launch_keywords_with_defaults(task.keywords,
-                                                           logfile,
-                                                           errfile)
-            keywords = _add_dvm_uri_to_task_env(keywords, dvm_uri)
+            keywords = self._launch_keywords_with_defaults(task.keywords, logfile, errfile)
             task_names.append(task_name)
             binaries.append(task.binary)
             working_dirs.append(task.working_dir)
@@ -3614,13 +3831,11 @@ class TaskPool:
         self.queued_tasks = {}
 
         if block:
-            self.services.debug(f'submit_dask_tasks: blocking tasks to await '
-                                f'results')
+            self.services.debug('submit_dask_tasks: blocking tasks to await results')
             # Await all the futures to finish, thereby blocking until they
             # are all done.
             result = self.dask_client.gather(self.futures, direct=True)
-            self.services.debug(f'submit_dask_tasks: have {len(result)} '
-                                f'results, block released')
+            self.services.debug(f'submit_dask_tasks: have {len(result)} results, block released')
             # TODO check actual result values for problems
 
             # Set this to empty list so that get_dask_finished_tasks_status
@@ -3630,7 +3845,7 @@ class TaskPool:
             # Since we're done with Dask, let's shut it down
             self._shutdown_dask()
         else:
-            self.services.debug(f'submit_dask_tasks: not blocking tasks')
+            self.services.debug('submit_dask_tasks: not blocking tasks')
 
         return len(self.futures)
 
@@ -3697,24 +3912,32 @@ class TaskPool:
             if TaskPool.dask and TaskPool.distributed and self.serial_pool:
                 self.dask_pool = True
                 if use_shifter and not self.shifter:
-                    self.services.error('Requested to run dask within shifter '
-                                        'but shifter not available')
+                    self.services.error(
+                        'Requested to run dask within shifter but shifter not available'
+                    )
                     raise RuntimeError('shifter not found')
                 else:
                     return self.submit_dask_tasks(
-                            block, dask_nodes, dask_ppw, use_shifter,
-                            shifter_args, dask_worker_plugin,
-                            dask_worker_per_gpu, oversubscribe, hwthreads,
-                            logfile, errfile
+                        block,
+                        dask_nodes,
+                        dask_ppw,
+                        use_shifter,
+                        shifter_args,
+                        dask_worker_plugin,
+                        dask_worker_per_gpu,
+                        oversubscribe,
+                        hwthreads,
+                        logfile,
+                        errfile,
                     )
             elif not TaskPool.dask or not TaskPool.distributed:
                 raise RuntimeError(
-                    'Requested use_dask but cannot because import dask or '
-                    'distributed failed')
+                    'Requested use_dask but cannot because import dask or distributed failed'
+                )
             elif not self.serial_pool:
                 self.services.warning(
-                    'Requested use_dask but cannot because multiple '
-                    'processors requested')
+                    'Requested use_dask but cannot because multiple processors requested'
+                )
 
         submit_count = 0
         # Make sure any finished tasks are handled before attempting to submit
@@ -3723,8 +3946,7 @@ class TaskPool:
         while True:
             if len(self.queued_tasks) == 0:
                 break
-            active_tasks = self.services.launch_task_pool(self.name,
-                                                          launch_interval)
+            active_tasks = self.services.launch_task_pool(self.name, launch_interval)
             for task_name, task_id in active_tasks.items():
                 self.active_tasks[task_id] = self.queued_tasks.pop(task_name)
                 submit_count += 1
@@ -3755,7 +3977,7 @@ class TaskPool:
 
         if self.dask_client is not None:
             # Shutdown handles ending client, scheduler, and workers
-            self.dask_client.unsubscribe_topic('ips') # unregister handler
+            self.dask_client.unsubscribe_topic('ips')  # unregister handler
             self.services.debug('Unsubscribed from Dask client ips topic')
             self.dask_client.shutdown()
             self.services.debug('Shutdown Dask client')
@@ -3788,7 +4010,7 @@ class TaskPool:
         self.services.wait_task(self.dask_workers_tid)
         self.dask_scheduler_file = None
         self.dask_workers_tid = None
-        self.dask_sched_pid: Optional[int] = None
+        self.dask_sched_pid: int | None = None
         self.dask_sched_popen = None
         self.dask_pool = False
 
@@ -3797,7 +4019,6 @@ class TaskPool:
         self.serial_pool = True
 
         self.services.debug('Shutdown Dask system')
-
 
     def get_dask_finished_tasks_status(self):
         """Return a dictionary of exit status values for all dask tasks that
@@ -3857,26 +4078,21 @@ class TaskPool:
             self.services.debug('get_dask_finished_tasks_status: after gather()')
             # If we don't have a result, then there were no tasks to gather.
             if result is None:
-                self.services.warning(
-                    'No futures available in call to finished ')
+                self.services.warning('No futures available in call to finished ')
                 self._shutdown_dask()
                 return {}
             else:
-                self.services.debug(
-                    f'get_dask_finished_tasks_status: have {len(result)} futures')
+                self.services.debug(f'get_dask_finished_tasks_status: have {len(result)} futures')
         else:
             # This is ok if submit_dask_tasks.block = True, but we echo this
             # anyway in debug mode as a reality check.
             self.services.debug('get_dask_finished_tasks_status: have no futures')
 
-
         # NOTE: You may get an exception stack trace from Dask, this is currently not believed to cause an issue.
         # We no longer need Dask running, so shut it down.
-        self.services.debug(f'get_dask_finished_tasks_status: before _shutdown_dask()')
+        self.services.debug('get_dask_finished_tasks_status: before _shutdown_dask()')
         self._shutdown_dask()
-        self.services.debug(f'get_dask_finished_tasks_status: after _shutdown_dask()')
-
-
+        self.services.debug('get_dask_finished_tasks_status: after _shutdown_dask()')
 
         if result is not None:
             self.services.debug('get_dask_finished_tasks_status: have result')
@@ -3884,8 +4100,7 @@ class TaskPool:
             #  is doubtful.
             return dict(result)
 
-        self.services.debug('get_dask_finished_tasks_status: no result, '
-                            'returning None')
+        self.services.debug('get_dask_finished_tasks_status: no result, returning None')
 
         return result  # which will be none or {}
 
@@ -3943,7 +4158,9 @@ class Task:
     :param \*\*keywords: keyword arguments for launching the task.  See :py:meth:`ServicesProxy.launch_task` for details.
     """
 
-    def __init__(self, task_name: str, nproc: int, working_dir: str, binary: str, *args, **keywords):
+    def __init__(
+        self, task_name: str, nproc: int, working_dir: str, binary: str, *args, **keywords
+    ):
         self.name = task_name
         self.nproc = int(nproc)
         self.working_dir = working_dir

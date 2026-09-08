@@ -1,7 +1,7 @@
 from ipsframework import Component
 
 
-class driver(Component):
+class Driver(Component):
     def step(self, timestamp=0.0, **keywords):
         ports = self.services.get_config_param('PORTS')
         port_names = ports['NAMES'].split()

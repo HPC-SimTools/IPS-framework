@@ -10,13 +10,14 @@ import sys
 import tempfile
 import time
 import uuid
+from collections.abc import Iterable
 from multiprocessing import Process, Queue, set_start_method
-from typing import Any, Iterable, Optional, Union
+from typing import Any
 
 from configobj import ConfigObj
 
-from . import ipsLogging
-from .componentRegistry import ComponentID, ComponentRegistry
+from .component_registry import ComponentID, ComponentRegistry
+from .ips_logging import IpsLogger
 from .services import ServicesProxy
 
 # Try using fork for starting subprocesses, this is the default on
@@ -44,7 +45,7 @@ class ConfigurationManager:
         entry in the configurationManager class
         """
 
-        def __init__(self, sim_name: str, start_time: Optional[float] = None) -> None:
+        def __init__(self, sim_name: str, start_time: float | None = None) -> None:
             self.start_time = start_time if start_time else time.time()
             self.sim_name = sim_name
             self.portal_sim_name = None
@@ -61,7 +62,12 @@ class ConfigurationManager:
             self.component_process = None
             self.process_list = []
 
-    def __init__(self, fwk: Any, config_file_list: list[Union[str, os.PathLike[str]]], platform_file_name: Union[str, os.PathLike[str]]) -> None:
+    def __init__(
+        self,
+        fwk: Any,
+        config_file_list: list[str | os.PathLike[str]],
+        platform_file_name: str | os.PathLike[str],
+    ) -> None:
         """
         Initialize the values to be used by the configuration manager.  Also
         specified are the required fields of the simulation configuration
@@ -83,7 +89,15 @@ class ConfigurationManager:
         # in the component-generic.conf file, which allows you to point to a
         # directory that contains physics and other binaries on a global level
         # i.e. removing the requirement that it be specified for each component
-        self.required_fields = {'CLASS', 'SUB_CLASS', 'NAME', 'SCRIPT', 'INPUT_FILES', 'OUTPUT_FILES', 'NPROC'}
+        self.required_fields = {
+            'CLASS',
+            'SUB_CLASS',
+            'NAME',
+            'SCRIPT',
+            'INPUT_FILES',
+            'OUTPUT_FILES',
+            'NPROC',
+        }
         self.config_file_list = []
         self.sim_name_list = None
         self.sim_root_list = None
@@ -117,18 +131,30 @@ class ConfigurationManager:
         self.platform_file = os.path.abspath(platform_file_name)
         self.platform_conf = {}
         loc_keys = []
-        mach_keys = ['MPIRUN', 'NODE_DETECTION', 'CORES_PER_NODE', 'SOCKETS_PER_NODE', 'NODE_ALLOCATION_MODE']
+        mach_keys = [
+            'MPIRUN',
+            'NODE_DETECTION',
+            'CORES_PER_NODE',
+            'SOCKETS_PER_NODE',
+            'NODE_ALLOCATION_MODE',
+        ]
         prov_keys = ['HOST']
         self.platform_keywords = loc_keys + mach_keys + prov_keys
 
-        self.service_methods = ['get_port', 'get_config_parameter', 'set_config_parameter', 'get_time_loop', 'create_simulation']
+        self.service_methods = [
+            'get_port',
+            'get_config_parameter',
+            'set_config_parameter',
+            'get_time_loop',
+            'create_simulation',
+        ]
         self.fwk.register_service_handler(self.service_methods, self.process_service_request)
         self.sim_map = {}
         self.finished_sim_map = {}
         self.fwk_sim_name = None  # "Fake" simconf for framework components
         self.fwk_components = []  # List of framework specific components
         self.myTopic = None
-        self.log_daemon = ipsLogging.ipsLogger(self.log_dynamic_sim_queue)
+        self.log_daemon = IpsLogger(self.log_dynamic_sim_queue)
         self.log_process = None
 
     # CM initialize
@@ -138,7 +164,7 @@ class ConfigurationManager:
         :py:obj:`ConfigObj` module.  Create and initialize simulation(s) and
         their components, framework components and loggers.
         """
-        self.event_mgr = None  # eventManager(self)
+        self.event_mgr = None  # EventManager(self)
         self.data_mgr = data_mgr
         self.resource_mgr = resource_mgr
         self.task_mgr = task_mgr
@@ -157,8 +183,10 @@ class ConfigurationManager:
         """
         # parse file
         try:
-            self.platform_conf = ConfigObj(self.platform_file, interpolation='template', file_error=True)
-        except (IOError, SyntaxError):
+            self.platform_conf = ConfigObj(
+                self.platform_file, interpolation='template', file_error=True
+            )
+        except (OSError, SyntaxError):
             self.fwk.exception('Error opening config file: %s', self.platform_file)
             raise
         # get mandatory values
@@ -205,10 +233,16 @@ class ConfigurationManager:
         try:
             node_alloc_mode = self.platform_conf['NODE_ALLOCATION_MODE'].upper()
             if node_alloc_mode not in ['EXCLUSIVE', 'SHARED']:
-                self.fwk.error("bad value for NODE_ALLOCATION_MODE. expected 'EXCLUSIVE' or 'SHARED'.")
-                raise ValueError("bad value for NODE_ALLOCATION_MODE. expected 'EXCLUSIVE' or 'SHARED'.")
+                self.fwk.error(
+                    "bad value for NODE_ALLOCATION_MODE. expected 'EXCLUSIVE' or 'SHARED'."
+                )
+                raise ValueError(
+                    "bad value for NODE_ALLOCATION_MODE. expected 'EXCLUSIVE' or 'SHARED'."
+                )
         except Exception:
-            self.fwk.exception("missing value or bad type for NODE_ALLOCATION_MODE.  expected 'EXCLUSIVE' or 'SHARED'.")
+            self.fwk.exception(
+                "missing value or bad type for NODE_ALLOCATION_MODE.  expected 'EXCLUSIVE' or 'SHARED'."
+            )
             raise
 
         uan_val = self.platform_conf.get('USE_ACCURATE_NODES', 'ON').upper()
@@ -253,11 +287,13 @@ class ConfigurationManager:
                     if 'PORTAL_API_KEY' in conf:
                         self.platform_conf['_IPS_PORTAL_API_KEY'] = conf['PORTAL_API_KEY']
 
-            except (IOError, SyntaxError):
+            except (OSError, SyntaxError):
                 self.fwk.exception('Error opening config file %s: ', conf_file)
                 raise
             except Exception:
-                self.fwk.exception('Error(s) during parsing of supplied config file %s: ', conf_file)
+                self.fwk.exception(
+                    'Error(s) during parsing of supplied config file %s: ', conf_file
+                )
                 raise
 
             try:
@@ -339,9 +375,9 @@ class ConfigurationManager:
         runspace_conf = {}
         runspace_conf['CLASS'] = 'FWK'
         runspace_conf['SUB_CLASS'] = 'COMP'
-        runspace_conf['NAME'] = 'runspaceInitComponent'
+        runspace_conf['NAME'] = 'RunspaceInitComponent'
         runspace_conf['SCRIPT'] = ''
-        runspace_conf['MODULE'] = 'ipsframework.runspaceInitComponent'
+        runspace_conf['MODULE'] = 'ipsframework.runspace_init_component'
         runspace_conf['INPUT_DIR'] = '/dev/null'
         runspace_conf['INPUT_FILES'] = ''
         runspace_conf['IPS_CONFFILE_DIR'] = ''
@@ -353,7 +389,9 @@ class ConfigurationManager:
         if self.fwk.log_level == logging.DEBUG:
             runspace_conf['LOG_LEVEL'] = 'DEBUG'
 
-        runspace_component_id = self._create_component(runspace_conf, self.sim_map[self.fwk_sim_name])
+        runspace_component_id = self._create_component(
+            runspace_conf, self.sim_map[self.fwk_sim_name]
+        )
         self.fwk_components.append(runspace_component_id)
 
         # SIMYAN: set up The Portal bridge, allowing for an absence of a portal
@@ -361,7 +399,10 @@ class ConfigurationManager:
         # Users must set USE_PORTAL and include a PORTAL_URL in order to enable the portal
         if 'PORTAL_URL' not in self.sim_map[self.fwk_sim_name].sim_conf:
             use_portal = False
-        elif 'USE_PORTAL' in self.sim_map[self.fwk_sim_name].sim_conf and 'PORTAL_URL' in self.sim_map[self.fwk_sim_name].sim_conf:
+        elif (
+            'USE_PORTAL' in self.sim_map[self.fwk_sim_name].sim_conf
+            and 'PORTAL_URL' in self.sim_map[self.fwk_sim_name].sim_conf
+        ):
             use_portal = self.sim_map[self.fwk_sim_name].sim_conf['USE_PORTAL']
             if isinstance(use_portal, str) and use_portal.lower().strip() == 'true':
                 use_portal = True
@@ -376,7 +417,9 @@ class ConfigurationManager:
             def _config_portal(config: dict[str, Any]) -> None:
                 config['PORTAL_URL'] = self.get_platform_parameter('PORTAL_URL', silent=True)
                 if config['PORTAL_URL']:
-                    bridge_conf['_IPS_PORTAL_API_KEY'] = self.get_platform_parameter('_IPS_PORTAL_API_KEY', silent=True)
+                    bridge_conf['_IPS_PORTAL_API_KEY'] = self.get_platform_parameter(
+                        '_IPS_PORTAL_API_KEY', silent=True
+                    )
 
             fwk_components.append(('portal_bridge', 'PortalBridge', _config_portal))
 
@@ -387,7 +430,9 @@ class ConfigurationManager:
             bridge_conf['NAME'] = fwk_comp[1]
             if 'FWK_COMPS_PATH' in self.sim_map[self.fwk_sim_name].sim_conf:
                 bridge_conf['BIN_PATH'] = self.sim_map[self.fwk_sim_name].sim_conf['FWK_COMPS_PATH']
-                bridge_conf['SCRIPT'] = os.path.join(bridge_conf['BIN_PATH'], '_internal', 'bridges', f'{fwk_comp[0]}.py')
+                bridge_conf['SCRIPT'] = os.path.join(
+                    bridge_conf['BIN_PATH'], '_internal', 'bridges', f'{fwk_comp[0]}.py'
+                )
             else:
                 bridge_conf['SCRIPT'] = ''
                 bridge_conf['MODULE'] = f'ipsframework._internal.bridges.{fwk_comp[0]}'
@@ -411,7 +456,7 @@ class ConfigurationManager:
             component_id = self._create_component(bridge_conf, self.sim_map[self.fwk_sim_name])
             self.fwk_components.append(component_id)
 
-    def _initialize_sim(self, sim_data: "ConfigurationManager.SimulationData") -> None:
+    def _initialize_sim(self, sim_data: 'ConfigurationManager.SimulationData') -> None:
         """
         Parses the configuration data (*sim_conf*) associated with a simulation
         (*sim_name*). Instantiate the components associated with each simulation.
@@ -446,7 +491,11 @@ class ConfigurationManager:
                     continue
                 comp_conf = sim_conf[comp_ref]
             except Exception:
-                self.fwk.exception('Error accessing configuration section for ' + 'component %s in simulation %s', comp_ref, sim_name)
+                self.fwk.exception(
+                    'Error accessing configuration section for ' + 'component %s in simulation %s',
+                    comp_ref,
+                    sim_name,
+                )
                 sys.exit(1)
             conf_fields = set(comp_conf.keys())
 
@@ -469,9 +518,7 @@ class ConfigurationManager:
                 else:
                     comp_conf['BIN_PATH'] = comp_conf['BIN_DIR']
             if not self.required_fields.issubset(conf_fields):
-                msg = 'Error: missing required entries {} in simulation {} component {} configuration section'.format(
-                    list(self.required_fields - conf_fields), sim_name, comp_ref
-                )
+                msg = f'Error: missing required entries {list(self.required_fields - conf_fields)} in simulation {sim_name} component {comp_ref} configuration section'
                 self.fwk.critical(msg)
                 raise RuntimeError(msg)
             component_id = self._create_component(comp_conf, sim_data)
@@ -482,13 +529,18 @@ class ConfigurationManager:
                 sim_data.init_comp = component_id
 
         if sim_data.driver_comp is None:
-            msg = 'Missing DRIVER specification in config file for simulation {}'.format(sim_data.sim_name)
+            msg = f'Missing DRIVER specification in config file for simulation {sim_data.sim_name}'
             self.fwk.critical(msg)
             raise RuntimeError(msg)
         if sim_data.init_comp is None:
-            self.fwk.warning('Missing INIT specification in ' + 'config file for simulation %s', sim_data.sim_name)
+            self.fwk.warning(
+                'Missing INIT specification in ' + 'config file for simulation %s',
+                sim_data.sim_name,
+            )
 
-    def _create_component(self, comp_conf: dict[str, Any], sim_data: "ConfigurationManager.SimulationData") -> ComponentID:
+    def _create_component(
+        self, comp_conf: dict[str, Any], sim_data: 'ConfigurationManager.SimulationData'
+    ) -> ComponentID:
         """
         Create component and populate it with the information from the
         component's configuration section.
@@ -505,8 +557,14 @@ class ConfigurationManager:
                 spec.loader.exec_module(module)
                 component_class = getattr(module, class_name)
             except (FileNotFoundError, AttributeError):
-                self.fwk.error('Error in configuration file : NAME = %s   SCRIPT = %s', comp_conf['NAME'], comp_conf['SCRIPT'])
-                self.fwk.exception('Error instantiating IPS component %s From %s', class_name, script)
+                self.fwk.error(
+                    'Error in configuration file : NAME = %s   SCRIPT = %s',
+                    comp_conf['NAME'],
+                    comp_conf['SCRIPT'],
+                )
+                self.fwk.exception(
+                    'Error instantiating IPS component %s From %s', class_name, script
+                )
                 raise
         else:
             try:
@@ -523,11 +581,15 @@ class ConfigurationManager:
         fwk_inq = self.fwk.get_inq()
 
         log_pipe_name = sim_data.log_pipe_name
-        services_proxy = ServicesProxy(self.fwk, fwk_inq, svc_response_q, sim_data.sim_conf, log_pipe_name)
+        services_proxy = ServicesProxy(
+            self.fwk, fwk_inq, svc_response_q, sim_data.sim_conf, log_pipe_name
+        )
         new_component = component_class(services_proxy, comp_conf)
         new_component.__initialize__(component_id, invocation_q, sim_data.start_time)
         services_proxy.__initialize__(new_component)
-        self.comp_registry.addEntry(component_id, svc_response_q, invocation_q, new_component, services_proxy, comp_conf)
+        self.comp_registry.add_entry(
+            component_id, svc_response_q, invocation_q, new_component, services_proxy, comp_conf
+        )
         p = Process(target=new_component.__run__)
         p.start()
         sim_data.process_list.append(p)
@@ -537,7 +599,7 @@ class ConfigurationManager:
     def get_component_map(self) -> dict[str, list[ComponentID]]:
         """
         Return a dictionary of simulation names and lists of component
-        references.  (May only be the driver, and init (if present)???)
+        references.  (May only be the Driver, and init (if present)???)
         """
         sim_comps = {}
         for sim_name in self.sim_map:
@@ -583,7 +645,9 @@ class ConfigurationManager:
             val = sim_data.sim_conf[param]
         except KeyError:
             val = self.platform_conf[param]
-        self.fwk.debug('Returning value = %s for config parameter %s in simulation %s', val, param, sim_name)
+        self.fwk.debug(
+            'Returning value = %s for config parameter %s in simulation %s', val, param, sim_name
+        )
         return val
 
     def get_sim_names(self) -> list[str]:
@@ -600,20 +664,22 @@ class ConfigurationManager:
         self.fwk.debug('Configuration Manager received message: %s', str(msg.__dict__))
         sim_name = msg.sender_id.get_sim_name()
         method = getattr(self, msg.target_method)
-        self.fwk.debug('Configuration manager dispatching method %s on simulation %s', method, sim_name)
+        self.fwk.debug(
+            'Configuration manager dispatching method %s on simulation %s', method, sim_name
+        )
         retval = method(sim_name, *msg.args)
         return retval
 
     def create_simulation(
         self,
         sim_name: str,
-        config_file: Union[str, os.PathLike[str]],
-        override: Optional[dict[str, Any]],
+        config_file: str | os.PathLike[str],
+        override: dict[str, Any] | None,
         sub_workflow: bool = False,
-    ) -> tuple[str, Optional[ComponentID], Optional[ComponentID]]:
+    ) -> tuple[str, ComponentID | None, ComponentID | None]:
         try:
             conf = ConfigObj(config_file, interpolation='template', file_error=True)
-        except IOError:
+        except OSError:
             self.fwk.exception('Error opening config file %s: ', config_file)
             raise
         except SyntaxError:
@@ -664,7 +730,9 @@ in configuration file %s',
         self.sim_name_list.append(sim_name)
         self.sim_root_list.append(sim_root)
         self.log_file_list.append(log_file)
-        new_sim = self.SimulationData(sim_name, start_time=self.fwk.start_time if sub_workflow else time.time())
+        new_sim = self.SimulationData(
+            sim_name, start_time=self.fwk.start_time if sub_workflow else time.time()
+        )
         new_sim.sim_conf = conf
         new_sim.config_file = config_file
         new_sim.sim_root = sim_root
@@ -672,7 +740,9 @@ in configuration file %s',
         if not sub_workflow:
             new_sim.portal_sim_name = sim_name
             new_sim.log_pipe_name = f'{tempfile.gettempdir()}/ips_{uuid.uuid4()}.logpipe'
-            self.log_dynamic_sim_queue.put('CREATE_SIM  %s  %s' % (new_sim.log_pipe_name, new_sim.log_file))
+            self.log_dynamic_sim_queue.put(
+                'CREATE_SIM  %s  %s' % (new_sim.log_pipe_name, new_sim.log_file)
+            )
         else:
             new_sim.portal_sim_name = parent_sim.portal_sim_name
             new_sim.log_pipe_name = parent_sim.log_pipe_name
@@ -702,7 +772,9 @@ in configuration file %s',
         """
         return self.get_sim_parameter(sim_name, param)
 
-    def set_config_parameter(self, sim_name: str, param: str, value: Any, target_sim_name: str) -> Any:
+    def set_config_parameter(
+        self, sim_name: str, param: str, value: Any, target_sim_name: str
+    ) -> Any:
         """
         Set the configuration parameter *param* to value *value* in
         *target_sim_name*.  If *target_sim_name* is the framework, all
@@ -753,7 +825,7 @@ in configuration file %s',
         except Exception:
             pass
         for comp_id in all_sim_components:
-            self.comp_registry.removeEntry(comp_id)
+            self.comp_registry.remove_entry(comp_id)
         sim_data.logger = None
         sim_data.process_list = []
         self.finished_sim_map[sim_name] = sim_data

@@ -15,29 +15,29 @@ RUN_COMMENT = Testing dakota
 
 # Specification of plasma state files
 
-# Where to put plasma state files as the simulation evolves 
+# Where to put plasma state files as the simulation evolves
 PLASMA_STATE_WORK_DIR = $SIM_ROOT/work/plasma_state
 
 # Specify what files constitute the plasma state - N.B. not all components need all files
-PLASMA_STATE_FILES = 
+PLASMA_STATE_FILES =
 
 # Names of ports to be used.  An implementation and configuration must be specified for
 # each port
 
 [PORTS]
-   NAMES = DRIVER 
-   
+   NAMES = DRIVER
+
 # DRIVER port is called by the framework.  It is required, causes exception.
 
-   [[DRIVER]]                                       # REQUIRED Port section 
+   [[DRIVER]]                                       # REQUIRED Port section
       IMPLEMENTATION = ROSE
-                                                    
+
 # INIT port is called by the framework.  It typically produces the very first set of
 # plasma state files for SIMULATION_MODE = NORMAL.  It does not raise and exception
 # if missing.
-                                                    
-   [[INIT]]   
-      IMPLEMENTATION =  
+
+   [[INIT]]
+      IMPLEMENTATION =
 
 # Specification of IMPLEMENTATION for each physics port called out in PORTS list.
 # Additional specifications may be present that are not in the PORTS list
@@ -49,12 +49,12 @@ PLASMA_STATE_FILES =
 [ROSE]
     CLASS = DAKOTA
     SUB_CLASS = TEST
-    NAME = ResenbrockDriver
+    NAME = RosenbrockDriver
     NPROC = 1
     BIN_PATH =
     INPUT_DIR =
-    INPUT_FILES = 
-    OUTPUT_FILES =  
+    INPUT_FILES =
+    OUTPUT_FILES =
     SCRIPT = $PWD/dakota_test_Rosenbrock.py
 
 # Time loop specification (two modes for now) EXPLICIT | REGULAR
@@ -63,6 +63,6 @@ PLASMA_STATE_FILES =
 
 [TIME_LOOP]
    MODE = REGULAR
-   START = 0 
-   FINISH = 10 
+   START = 0
+   FINISH = 10
    NSTEP  = 10

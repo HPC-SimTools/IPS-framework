@@ -6,7 +6,9 @@ import os
 from ipsframework import Component
 
 
-class simple_sleep(Component):
+class SimpleSleep(Component):
     def step(self, timestamp=0.0, **keywords):
         this_dir = self.services.get_config_param('SIM_ROOT')
-        self.services.wait_task(self.services.launch_task(1, this_dir, f'{this_dir}{os.path.sep}myscript', 1))
+        self.services.wait_task(
+            self.services.launch_task(1, this_dir, f'{this_dir}{os.path.sep}myscript', 1)
+        )

@@ -5,7 +5,7 @@ import hashlib
 import json
 import os
 import time
-from typing import TYPE_CHECKING, Any, Literal, Union
+from typing import TYPE_CHECKING, Any, Literal
 
 from ipsframework import Component, ipsutil
 from ipsframework.cca_es_spec import Event
@@ -24,12 +24,12 @@ class SimulationData:
         self.counter = 0
         self.monitor_file_prefix = ''
         """The name of the file, minus the extension ('.html', '.jsonl', etc.).
-        
+
         If this is empty, you must either check to see if you can create the file, or you should assume that you can't create the file.
         """
-        self.portal_runid: Union[str, None] = None
+        self.portal_runid: str | None = None
         """Portal RunID, set by component which publishes the IPS_START event. Only used for logging here."""
-        self.parent_portal_runid: Union[str, None] = None
+        self.parent_portal_runid: str | None = None
         """Parent portal RunID, derived from locally determined portal RunID. Should explicitly be None (not empty string) if not set. Only used for logging."""
         self.sim_name = ''
         self.sim_root = ''
@@ -79,11 +79,15 @@ class LocalLoggingBridge(Component):
         try:
             self.html_dir = self.services.get_config_param('USER_W3_DIR', silent=True) or ''
         except Exception:
-            self.services.warning('Missing USER_W3_DIR configuration - disabling web-visible logging')
+            self.services.warning(
+                'Missing USER_W3_DIR configuration - disabling web-visible logging'
+            )
             self.write_to_htmldir = False
         else:
             if self.html_dir.strip() == '':
-                self.services.warning('Empty USER_W3_DIR configuration - disabling web-visible logging')
+                self.services.warning(
+                    'Empty USER_W3_DIR configuration - disabling web-visible logging'
+                )
                 self.write_to_htmldir = False
             else:
                 try:
@@ -91,7 +95,9 @@ class LocalLoggingBridge(Component):
                 except FileExistsError:
                     pass
                 except Exception:
-                    self.services.warning('Unable to create HTML directory - disabling web-visible logging')
+                    self.services.warning(
+                        'Unable to create HTML directory - disabling web-visible logging'
+                    )
                     self.write_to_htmldir = False
 
     def step(self, timestamp=0.0, **keywords):
@@ -110,11 +116,11 @@ class LocalLoggingBridge(Component):
             except Exception:
                 pass
 
-    def process_event(self, topicName: str, theEvent: Event):
+    def process_event(self, topic_name: str, the_event: Event):
         """
-        Process a single event *theEvent* on topic *topicName*.
+        Process a single event *the_event* on topic *topic_name*.
         """
-        event_body = theEvent.getBody()
+        event_body = the_event.get_body()
         sim_name = event_body['sim_name']
         portal_data = event_body['portal_data']
         try:
@@ -154,7 +160,9 @@ class LocalLoggingBridge(Component):
         portal_data['seqnum'] = sim_data.counter
 
         if 'trace' in portal_data:
-            portal_data['trace']['traceId'] = hashlib.md5(sim_data.portal_runid.encode()).hexdigest()
+            portal_data['trace']['traceId'] = hashlib.md5(
+                sim_data.portal_runid.encode()
+            ).hexdigest()
 
         self.send_event(sim_data, portal_data)
 
@@ -172,7 +180,9 @@ class LocalLoggingBridge(Component):
         *sim_root* so the portal can set up corresponding structures to manage
         data from the sim.
         """
-        self.services.debug('Initializing simulation using BasicBridge: %s -- %s ', sim_name, sim_root)
+        self.services.debug(
+            'Initializing simulation using BasicBridge: %s -- %s ', sim_name, sim_root
+        )
 
         sim_data = SimulationData()
         sim_data.sim_name = sim_name
@@ -191,15 +201,21 @@ class LocalLoggingBridge(Component):
         try:
             os.makedirs(sim_log_dir, exist_ok=True)
         except OSError as oserr:
-            self.services.exception('Error creating Simulation Log directory %s : %d %s' % (sim_log_dir, oserr.errno, oserr.strerror))
+            self.services.exception(
+                'Error creating Simulation Log directory %s : %d %s'
+                % (sim_log_dir, oserr.errno, oserr.strerror)
+            )
             raise
 
         sim_data.monitor_file_prefix = os.path.join(sim_log_dir, sim_data.portal_runid)
         eventlog_fname = f'{sim_data.monitor_file_prefix}.eventlog'
         try:
             sim_data.monitor_file = open(eventlog_fname, 'wb', 0)
-        except IOError as oserr:
-            self.services.error('Error opening file %s: error(%s): %s' % (eventlog_fname, oserr.errno, oserr.strerror))
+        except OSError as oserr:
+            self.services.error(
+                'Error opening file %s: error(%s): %s'
+                % (eventlog_fname, oserr.errno, oserr.strerror)
+            )
             self.services.error('Using /dev/null instead')
             sim_data.monitor_file_prefix = ''
             sim_data.monitor_file = open('/dev/null', 'w')
@@ -223,7 +239,7 @@ class LocalLoggingBridge(Component):
         """
         Send contents of *event_data* and *sim_data* to portal.
         """
-        timestamp = ipsutil.getTimeString()
+        timestamp = ipsutil.get_time_string()
         buf = '%8d %s ' % (sim_data.counter, timestamp)
         for k, v in event_data.items():
             if len(str(v).strip()) == 0:
@@ -240,7 +256,10 @@ class LocalLoggingBridge(Component):
         sim_data.json_monitor_file.write('%s\n' % buf)
 
         freq = self.dump_freq
-        if ((self.counter % freq == 0) and (time.time() - self.last_dump_time > self.min_dump_interval)) or (event_data['eventtype'] == 'IPS_END'):
+        if (
+            (self.counter % freq == 0)
+            and (time.time() - self.last_dump_time > self.min_dump_interval)
+        ) or (event_data['eventtype'] == 'IPS_END'):
             self.last_dump_time = time.time()
             if sim_data.monitor_file_prefix:
                 html_filename = f'{sim_data.monitor_file_prefix}.html'
@@ -251,5 +270,7 @@ class LocalLoggingBridge(Component):
                     try:
                         open(html_file, 'w').writelines(html_page)
                     except Exception:
-                        self.services.exception('Error writing html file into USER_W3_DIR directory')
+                        self.services.exception(
+                            'Error writing html file into USER_W3_DIR directory'
+                        )
                         self.write_to_htmldir = False

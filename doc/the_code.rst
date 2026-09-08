@@ -13,19 +13,19 @@ Framework
 
 Data Manager
 ------------
-.. automodule:: ipsframework.dataManager
+.. automodule:: ipsframework.data_manager
    :members:
    :undoc-members:
 
 Task Manager
 ------------
-.. automodule:: ipsframework.taskManager
+.. automodule:: ipsframework.task_manager
    :members:
    :undoc-members:
 
 Resource Manager
 ----------------
-.. automodule:: ipsframework.resourceManager
+.. automodule:: ipsframework.resource_manager
    :members:
    :undoc-members:
 
@@ -45,7 +45,7 @@ Resource Manager
 
 ----------------------------------
 
-.. automodule:: ipsframework.resourceHelper
+.. automodule:: ipsframework.resource_helper
    :members:
    :undoc-members:
 
@@ -58,13 +58,13 @@ Component
 Component Registry
 ------------------
 
-.. automodule:: ipsframework.componentRegistry
+.. automodule:: ipsframework.component_registry
    :members:
    :undoc-members:
 
 Configuration Manager
 ---------------------
-.. automodule:: ipsframework.configurationManager
+.. automodule:: ipsframework.configuration_manager
    :members:
    :undoc-members:
 
@@ -81,7 +81,7 @@ Other Utilities
 IPS Exceptions
 ^^^^^^^^^^^^^^
 
-.. automodule:: ipsframework.ipsExceptions
+.. automodule:: ipsframework.ips_exceptions
    :members:
    :undoc-members:
 
@@ -105,7 +105,6 @@ Framework Components
 
 ----------------------------------
 
-.. automodule:: ipsframework.runspaceInitComponent
+.. automodule:: ipsframework.runspace_init_component
    :members:
    :undoc-members:
-

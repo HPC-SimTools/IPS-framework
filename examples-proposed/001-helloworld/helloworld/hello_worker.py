@@ -1,7 +1,7 @@
 from ipsframework import Component
 
 
-class hello_worker(Component):
+class HelloWorker(Component):
     def __init__(self, services, config):
         """
         Automatically called from the IPS framework

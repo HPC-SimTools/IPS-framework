@@ -36,7 +36,7 @@ SIMULATION_MODE = NORMAL
 [DRIVER]
     CLASS = DRIVER
     SUB_CLASS =
-    NAME = driver
+    NAME = Driver
     BIN_PATH =
     NPROC = 1
     INPUT_FILES =
@@ -62,7 +62,9 @@ SIMULATION_MODE = NORMAL
 
 
 def test_exception(tmpdir):
-    platform_file, config_file = write_basic_config_and_platform_files(tmpdir, worker='exception_worker')
+    platform_file, config_file = write_basic_config_and_platform_files(
+        tmpdir, worker='ExceptionWorker'
+    )
 
     framework = Framework(
         config_file_list=[str(config_file)],
@@ -86,8 +88,8 @@ def test_exception(tmpdir):
     # remove timestamp
     lines = [line[24:] for line in lines]
 
-    assert 'WORKER__exception_worker_2 ERROR    Uncaught Exception in component method.\n' in lines
-    assert 'DRIVER__driver_1 ERROR    Uncaught Exception in component method.\n' in lines
+    assert 'WORKER__ExceptionWorker_2 ERROR    Uncaught Exception in component method.\n' in lines
+    assert 'DRIVER__Driver_1 ERROR    Uncaught Exception in component method.\n' in lines
 
     # check event log
     events = read_event_log(tmpdir)
@@ -95,10 +97,13 @@ def test_exception(tmpdir):
 
     worker_call_end_event = events[8]
 
-    assert worker_call_end_event['code'] == 'DRIVER__driver'
+    assert worker_call_end_event['code'] == 'DRIVER__Driver'
     assert worker_call_end_event['eventtype'] == 'IPS_CALL_END'
     assert not worker_call_end_event['ok']
-    assert worker_call_end_event['comment'] == 'Error: "Runtime error" Target = test@exception_worker@2:step(0)'
+    assert (
+        worker_call_end_event['comment']
+        == 'Error: "Runtime error" Target = test@exception_worker@2:step(0)'
+    )
 
     sim_end_event = events[10]
     assert sim_end_event['code'] == 'Framework'
@@ -108,7 +113,9 @@ def test_exception(tmpdir):
 
 
 def test_bad_task(tmpdir):
-    platform_file, config_file = write_basic_config_and_platform_files(tmpdir, worker='bad_task_worker')
+    platform_file, config_file = write_basic_config_and_platform_files(
+        tmpdir, worker='BadTaskWorker'
+    )
 
     framework = Framework(
         config_file_list=[str(config_file)],
@@ -132,8 +139,8 @@ def test_bad_task(tmpdir):
     # remove timestamp
     lines = [line[24:] for line in lines]
 
-    assert 'WORKER__bad_task_worker_2 ERROR    Uncaught Exception in component method.\n' in lines
-    assert 'DRIVER__driver_1 ERROR    Uncaught Exception in component method.\n' in lines
+    assert 'WORKER__BadTaskWorker_2 ERROR    Uncaught Exception in component method.\n' in lines
+    assert 'DRIVER__Driver_1 ERROR    Uncaught Exception in component method.\n' in lines
 
     # check event log
     events = read_event_log(tmpdir)
@@ -141,10 +148,13 @@ def test_bad_task(tmpdir):
 
     worker_call_end_event = events[8]
 
-    assert worker_call_end_event['code'] == 'DRIVER__driver'
+    assert worker_call_end_event['code'] == 'DRIVER__Driver'
     assert worker_call_end_event['eventtype'] == 'IPS_CALL_END'
     assert not worker_call_end_event['ok']
-    assert worker_call_end_event['comment'] == 'Error: "task binary of wrong type, expected str but found int" Target = test@bad_task_worker@2:step(0)'
+    assert (
+        worker_call_end_event['comment']
+        == 'Error: "task binary of wrong type, expected str but found int" Target = test@bad_task_worker@2:step(0)'
+    )
 
     sim_end_event = events[10]
     assert sim_end_event['code'] == 'Framework'
@@ -154,7 +164,9 @@ def test_bad_task(tmpdir):
 
 
 def test_bad_task_pool1(tmpdir):
-    platform_file, config_file = write_basic_config_and_platform_files(tmpdir, worker='bad_task_pool_worker1')
+    platform_file, config_file = write_basic_config_and_platform_files(
+        tmpdir, worker='BadTaskPoolWorker1'
+    )
 
     framework = Framework(
         config_file_list=[str(config_file)],
@@ -178,12 +190,16 @@ def test_bad_task_pool1(tmpdir):
     # remove timestamp
     lines = [line[24:] for line in lines]
 
-    assert 'WORKER__bad_task_pool_worker1_2 ERROR    Uncaught Exception in component method.\n' in lines
-    assert 'DRIVER__driver_1 ERROR    Uncaught Exception in component method.\n' in lines
+    assert (
+        'WORKER__BadTaskPoolWorker1_2 ERROR    Uncaught Exception in component method.\n' in lines
+    )
+    assert 'DRIVER__Driver_1 ERROR    Uncaught Exception in component method.\n' in lines
 
 
 def test_bad_task_pool2(tmpdir):
-    platform_file, config_file = write_basic_config_and_platform_files(tmpdir, worker='bad_task_pool_worker2')
+    platform_file, config_file = write_basic_config_and_platform_files(
+        tmpdir, worker='BadTaskPoolWorker2'
+    )
 
     framework = Framework(
         config_file_list=[str(config_file)],
@@ -207,12 +223,16 @@ def test_bad_task_pool2(tmpdir):
     # remove timestamp
     lines = [line[24:] for line in lines]
 
-    assert 'WORKER__bad_task_pool_worker2_2 ERROR    Uncaught Exception in component method.\n' in lines
-    assert 'DRIVER__driver_1 ERROR    Uncaught Exception in component method.\n' in lines
+    assert (
+        'WORKER__BadTaskPoolWorker2_2 ERROR    Uncaught Exception in component method.\n' in lines
+    )
+    assert 'DRIVER__Driver_1 ERROR    Uncaught Exception in component method.\n' in lines
 
 
 def test_assign_protected_attribute(tmpdir):
-    platform_file, config_file = write_basic_config_and_platform_files(tmpdir, worker='assign_protected_attribute')
+    platform_file, config_file = write_basic_config_and_platform_files(
+        tmpdir, worker='AssignProtectedAttribute'
+    )
 
     framework = Framework(
         config_file_list=[str(config_file)],
@@ -234,19 +254,24 @@ def test_assign_protected_attribute(tmpdir):
     assert (
         "AttributeError: can't set attribute\n" in lines
         or "AttributeError: can't set attribute 'args'\n" in lines
-        or "AttributeError: property 'args' of 'assign_protected_attribute' object has no setter\n" in lines
+        or "AttributeError: property 'args' of 'assign_protected_attribute' object has no setter\n"
+        in lines
     )
     assert (
         "Exception: can't set attribute\n" in lines
         or "Exception: can't set attribute 'args'\n" in lines
-        or "Exception: property 'args' of 'assign_protected_attribute' object has no setter\n" in lines
+        or "Exception: property 'args' of 'assign_protected_attribute' object has no setter\n"
+        in lines
     )
 
     # remove timestamp
     lines = [line[24:] for line in lines]
 
-    assert 'WORKER__assign_protected_attribute_2 ERROR    Uncaught Exception in component method.\n' in lines
-    assert 'DRIVER__driver_1 ERROR    Uncaught Exception in component method.\n' in lines
+    assert (
+        'WORKER__AssignProtectedAttribute_2 ERROR    Uncaught Exception in component method.\n'
+        in lines
+    )
+    assert 'DRIVER__Driver_1 ERROR    Uncaught Exception in component method.\n' in lines
 
     # check event log
     events = read_event_log(tmpdir)
@@ -254,7 +279,7 @@ def test_assign_protected_attribute(tmpdir):
 
     worker_call_end_event = events[8]
 
-    assert worker_call_end_event['code'] == 'DRIVER__driver'
+    assert worker_call_end_event['code'] == 'DRIVER__Driver'
     assert worker_call_end_event['eventtype'] == 'IPS_CALL_END'
     assert not worker_call_end_event['ok']
     # python 3.10 and 3.11 have different error messages
@@ -272,7 +297,9 @@ def test_assign_protected_attribute(tmpdir):
 
 
 def read_event_log(tmpdir):
-    sim_event_log_json = next(f for f in os.listdir(tmpdir.join('simulation_log')) if f.endswith('.json'))
+    sim_event_log_json = next(
+        f for f in os.listdir(tmpdir.join('simulation_log')) if f.endswith('.json')
+    )
     with open(str(tmpdir.join('simulation_log').join(sim_event_log_json)), 'r') as f:
         lines = f.readlines()
 
