@@ -67,7 +67,7 @@ def launch(executable: Any, task_name: str, working_dir: str | os.PathLike, *arg
 
     Valid kwargs:
     * `logfile` - where the task output is written; if not specified,
-        STDERR used
+        STDOUT used
     * `errfile` - where the task error output is written; if not specified,
         STDERR used
     * `task_env` - A dictionary of environment variables to set
@@ -261,7 +261,7 @@ def launch(executable: Any, task_name: str, working_dir: str | os.PathLike, *arg
                 log.error(f'Task {task_name} with command {cmd} failed with {e!s}')
         finally:
             if 'logfile' not in kwargs:
-                print(process.stdout.read() if process and process.stdout else '', file=sys.stderr)
+                print(process.stdout.read() if process and process.stdout else '')
             if 'errfile' not in kwargs:
                 print(process.stderr.read() if process and process.stderr else '', file=sys.stderr)
 
@@ -1801,7 +1801,7 @@ class ServicesProxy:
                 ok=False,
             )
             self.exception('Error in stage_input_files')
-            raise e
+            raise
         for _, old_conf, _, _ in self.sub_flows.values():
             ports = old_conf['PORTS']['NAMES'].split()
             comps = [old_conf['PORTS'][p]['IMPLEMENTATION'] for p in ports]
@@ -1819,7 +1819,7 @@ class ServicesProxy:
                         ok=False,
                     )
                     self.exception('Error in stage_input_files')
-                    raise e
+                    raise
         elapsed_time = time.time() - start_time
         self._send_monitor_event(
             event_type='IPS_STAGE_INPUTS',

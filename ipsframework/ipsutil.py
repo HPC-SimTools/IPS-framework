@@ -11,32 +11,12 @@ import sys
 import time
 from collections.abc import Iterable
 
-try:
-    import Pyro4
-except ImportError:
-    pass
-
 
 def which(program, alt_paths: list[str] | None = None):
-    def is_exe(fpath):
-        return os.path.exists(fpath) and os.access(fpath, os.X_OK)
-
-    fpath, _ = os.path.split(program)
-    if fpath:
-        if is_exe(program):
-            return program
-    else:
-        for path in os.environ['PATH'].split(os.pathsep):
-            exe_file = os.path.join(path, program)
-            if is_exe(exe_file):
-                return exe_file
-
-        # Trust locations in platform file over those in environment path
-        if alt_paths:
-            for path in alt_paths:
-                exe_file = os.path.join(path, program)
-                if is_exe(exe_file):
-                    return exe_file
+    path = os.environ.get('PATH', '')
+    if alt_paths:
+        path = os.pathsep.join([path, *alt_paths])
+    return shutil.which(program, path=path)
 
 
 def copy_files(
@@ -53,12 +33,6 @@ def copy_files(
     (default).
     Wild-cards in file name specification are allowed.
     """
-
-    use_data_server = os.getenv('USE_DATA_SERVER', 'DATA_SERVER_NOT_USED')
-    if use_data_server != 'DATA_SERVER_NOT_USED':
-        data_server = Pyro4.Proxy('PYRONAME:DataServer')
-        data_server.copy_files(src_dir, src_file_list, target_dir, prefix, keep_old)
-        return
 
     try:
         file_list = src_file_list.split()

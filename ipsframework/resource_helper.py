@@ -151,7 +151,7 @@ def get_checkjob_info():
                 data_lines.append(line.strip())
     except Exception as e:
         print(e, file=sys.stderr)
-        raise e
+        raise
         # return nodes, procs
     # parse output to get allocated nodes data
     """
@@ -171,11 +171,11 @@ def get_checkjob_info():
                 for i in pairs:
                     ndata.append(i.split(':'))
             # parse allocated nodes data [nid:nprocs]...
-            for m, _p in ndata:
-                nodes.append(m)
-        except Exception as e:
+            nodes = [m for m, _ in ndata]
+            p = ndata[-1][1]
+        except Exception:
             print('problem parsing - small format', file=sys.stderr)
-            raise e
+            raise
     elif data_lines[0].find('*') > -1:
         # large node number format
         try:
@@ -196,9 +196,9 @@ def get_checkjob_info():
                     # this is a single node id
                     nodes.append(r)
             ndata = [(n, p) for n in nodes]
-        except Exception as e:
+        except Exception:
             print('problem parsing - large format', file=sys.stderr)
-            raise e
+            raise
     else:
         # TODO: make this into a real exception type
         raise Exception('could not parse resource data')

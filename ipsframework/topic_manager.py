@@ -18,7 +18,7 @@ events that outlive a 'timeToLive' parameter.
 """
 
 from .cca_es_spec import Event, EventServiceError
-from .debug import debug
+from .debug import output as debug_output
 
 
 class TopicManager:
@@ -45,7 +45,7 @@ class TopicManager:
         """
         self.limit_pending_events = limit_pending_events
 
-        debug.output('TopicManager.__init__')
+        debug_output('TopicManager.__init__')
         self.print_events_and_listeners()
 
     """
@@ -66,7 +66,7 @@ class TopicManager:
             self.eventList.append(the_event)
             event_list_len = len(self.eventList)
             self.maxPendingEvents = max(event_list_len, self.maxPendingEvents)
-        debug.output('TopicManager.send_event')
+        debug_output('TopicManager.send_event')
         self.print_events_and_listeners()
 
     def register_listener(self, listenerid):
@@ -77,7 +77,7 @@ class TopicManager:
         """
         if listenerid not in self.listenerDirectory:
             self.listenerDirectory[listenerid] = len(self.eventList)
-            debug.output('TopicManager.register_listener')
+            debug_output('TopicManager.register_listener')
             self.print_events_and_listeners()
         else:
             raise EventServiceError('Event listener registered earlier.')
@@ -111,7 +111,7 @@ class TopicManager:
     def unregister_listener(self, listenerid):
         self.cleanup_events(listenerid)
         del self.listenerDirectory[listenerid]
-        debug.output('TopicManager.unregister_listener')
+        debug_output('TopicManager.unregister_listener')
         self.print_events_and_listeners()
 
     """
@@ -123,7 +123,7 @@ class TopicManager:
         for the_event in self.eventList[self.listenerDirectory[listenerid] :]:
             event_list_for_listener.append(Event(the_event.header, the_event.body))
         self.cleanup_events(listenerid)
-        debug.output('TopicManager.get_event_list_for_listener')
+        debug_output('TopicManager.get_event_list_for_listener')
         self.print_events_and_listeners()
         return event_list_for_listener
 
@@ -137,12 +137,12 @@ class TopicManager:
         for i, e in enumerate(self.eventList):
             string += '\n' + str(i) + '---' + str(e)
         string += '\n\n' + 'List of listeners:'
-        debug.output(string)
+        debug_output(string)
         sorted_keys = sorted(self.listenerDirectory.keys())
         for listenerid in sorted_keys:
             string = 'event = ' + str(self.listenerDirectory[listenerid])
-            debug.output(string, listenerid)
-        debug.output(':::::::::')
+            debug_output(string, listenerid)
+        debug_output(':::::::::')
 
     """
     Gives a profile of events posted to this topic, currently just
