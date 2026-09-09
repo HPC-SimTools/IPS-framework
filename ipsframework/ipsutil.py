@@ -15,7 +15,8 @@ from collections.abc import Iterable
 def which(program, alt_paths: list[str] | None = None):
     path = os.environ.get('PATH', '')
     if alt_paths:
-        path = os.pathsep.join([path, *alt_paths])
+        # trust locations in platform file over those in environment path
+        path = os.pathsep.join([*alt_paths, path])
     return shutil.which(program, path=path)
 
 
