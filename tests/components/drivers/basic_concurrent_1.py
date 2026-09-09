@@ -10,7 +10,7 @@ always pass.
 """
 
 from ipsframework import Component
-from ipsframework.ipsExceptions import IncompleteCallError
+from ipsframework.ips_exceptions import IncompleteCallError
 
 
 class BasicConcurrent1(Component):

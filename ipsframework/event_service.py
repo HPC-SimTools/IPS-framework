@@ -9,7 +9,7 @@ interface is straightforwardly mapped onto matching methods in this file.
 """
 
 from .cca_es_spec import Event, EventServiceError, Topic
-from .debug import debug
+from .debug import output as debug_output
 from .topic_manager import TopicManager
 
 
@@ -74,27 +74,27 @@ class EventService:
         method = getattr(self, msg.target_method)
         return method(*msg.args)
 
-    """""" """PublisherEventService methods start here""" """"""
+    """PublisherEventService methods start here"""
 
     def get_topic(self, topic_name):
         """Add an entry to the topicDirectory for a new topic."""
         if topic_name not in self.topicDirectory:
-            debug.output('get_topic %s' % topic_name)
+            debug_output('get_topic %s' % topic_name)
             self.topicDirectory[topic_name] = TopicManager()
         return Topic(topic_name)
 
     def exists_topic(self, topic_name):
         return topic_name in self.topicDirectory
 
-    """""" """PublisherEventService methods end here""" """"""
+    """PublisherEventService methods end here"""
 
-    """""" """SubscriberEventService methods start here""" """"""
+    """SubscriberEventService methods start here"""
 
     def register_subscriber(self):
         self.numSubscribers += 1
         subscriberid = self.numSubscribers
         self.subscriberDirectory[subscriberid] = {}
-        debug.output('Subscriber registered', subscriberid)
+        debug_output('Subscriber registered', subscriberid)
         return subscriberid
 
     """
@@ -108,7 +108,7 @@ class EventService:
     def unregister_subscriber(self, subscriberid):
         listener_list = []
         if subscriberid in self.subscriberDirectory:
-            debug.output('\n\n------Subscriber is unregistering', subscriberid)
+            debug_output('\n\n------Subscriber is unregistering', subscriberid)
 
             """
             Step through all the listeners for the subscriber in turn,
@@ -120,7 +120,7 @@ class EventService:
                     listenerid = self.subscriberDirectory[subscriberid][subscription_name][
                         listener_key
                     ]
-                    debug.output(
+                    debug_output(
                         'Unregistering listener on listener_key %s, subscription %s'
                         % (listener_key, subscription_name),
                         listenerid,
@@ -131,7 +131,7 @@ class EventService:
                     )
                     for topic_name in topic_list:
                         self.topicDirectory[topic_name].unregister_listener(listenerid)
-                    debug.output(
+                    debug_output(
                         'Listener on listener_key %s, subscription %s unregistered'
                         % (listener_key, subscription_name),
                         listenerid,
@@ -140,7 +140,7 @@ class EventService:
                     listener_list.append(listenerid)
             """ Remove the subscriber entry in subscriberDirectory. """
             del self.subscriberDirectory[subscriberid]
-            debug.output('Subscriber unregistered', subscriberid)
+            debug_output('Subscriber unregistered', subscriberid)
         else:
             raise EventServiceError('Subscriber not recognized.')
         return listener_list
@@ -157,7 +157,7 @@ class EventService:
 
             if subscription_name not in self.subscriberDirectory[subscriberid]:
                 self.subscriberDirectory[subscriberid][subscription_name] = {}
-                debug.output('Subscriber subscribed to %s' % subscription_name, subscriberid)
+                debug_output('Subscriber subscribed to %s' % subscription_name, subscriberid)
 
                 """
                   A Subscription object cannot be safely returned without screwing
@@ -205,9 +205,9 @@ class EventService:
             raise EventServiceError('Subscriber not recognized.')
         return event_list
 
-    """""" """SubscriberEventService methods end here""" """"""
+    """SubscriberEventService methods end here"""
 
-    """""" """Topic methods start here""" """"""
+    """Topic methods start here"""
 
     """
     send_event adds an event to the topic's TopicManager object.
@@ -218,24 +218,24 @@ class EventService:
             event_header = {}
             event_header[event_name] = event_name
             the_event = Event(event_header, event_body)
-            debug.output('Event %s sent to topic %s' % (the_event, topic_name))
+            debug_output('Event %s sent to topic %s' % (the_event, topic_name))
             self.topicDirectory[topic_name].send_event(the_event)
         else:
             raise EventServiceError('Topic not recognized.')
 
-    """""" """Topic methods end here""" """"""
+    """Topic methods end here"""
 
-    """""" """EventListener methods start here""" """"""
+    """EventListener methods start here"""
 
     def create_listener(self):
         self.numListeners += 1
         listenerid = self.numListeners
-        debug.output('Listener created', listenerid)
+        debug_output('Listener created', listenerid)
         return listenerid
 
-    """""" """EventListener methods end here""" """"""
+    """EventListener methods end here"""
 
-    """""" """Subscription methods start here""" """"""
+    """Subscription methods start here"""
 
     """
     register_event_listener adds a listener to its subscriber's subscriberDirectory
@@ -255,7 +255,7 @@ class EventService:
                         listener_key
                         not in self.subscriberDirectory[subscriberid][subscription_name]
                     ):
-                        debug.output(
+                        debug_output(
                             'Registering listener on listener_key %s, subscription %s'
                             % (listener_key, subscription_name),
                             listenerid,
@@ -296,7 +296,7 @@ class EventService:
                     listenerid = self.subscriberDirectory[subscriberid][subscription_name][
                         listener_key
                     ]
-                    debug.output(
+                    debug_output(
                         'Unregistering listener on listener_key %s, subscription %s'
                         % (listener_key, subscription_name),
                         listenerid,
@@ -308,7 +308,7 @@ class EventService:
                     for topic_name in topic_list:
                         self.topicDirectory[topic_name].unregister_listener(listenerid)
                     del self.subscriberDirectory[subscriberid][subscription_name][listener_key]
-                    debug.output(
+                    debug_output(
                         'Listener on listener_key %s, subscription %s unregistered'
                         % (listener_key, subscription_name),
                         listenerid,
@@ -335,7 +335,7 @@ class EventService:
         listener_list = []
         if subscriberid in self.subscriberDirectory:
             if subscription_name in self.subscriberDirectory[subscriberid]:
-                debug.output(
+                debug_output(
                     "\n\n------Subscriber's subscription to %s is being removed"
                     % subscription_name,
                     subscriberid,
@@ -344,7 +344,7 @@ class EventService:
                     listenerid = self.subscriberDirectory[subscriberid][subscription_name][
                         listener_key
                     ]
-                    debug.output(
+                    debug_output(
                         'Unregistering listener on listener_key %s, subscription %s'
                         % (listener_key, subscription_name),
                         listenerid,
@@ -355,7 +355,7 @@ class EventService:
                     )
                     for topic_name in topic_list:
                         self.topicDirectory[topic_name].unregister_listener(listenerid)
-                    debug.output(
+                    debug_output(
                         'Listener on listener_key %s, subscription %s unregistered'
                         % (listener_key, subscription_name),
                         listenerid,
@@ -363,7 +363,7 @@ class EventService:
                     )
                     listener_list.append(listenerid)
                 del self.subscriberDirectory[subscriberid][subscription_name]
-                debug.output(
+                debug_output(
                     "Subscriber's subscription to %s removed" % subscription_name, subscriberid
                 )
         """
@@ -374,9 +374,9 @@ class EventService:
         """
         return listener_list
 
-    """""" """Subscription methods end here""" """"""
+    """Subscription methods end here"""
 
-    """""" """Methods internal to the event service start here""" """"""
+    """Methods internal to the event service start here"""
 
     """
     A listener_key may specify a bunch of topics using wildcarding.
@@ -389,4 +389,4 @@ class EventService:
         topic_list.append(listener_key)
         return topic_list
 
-    """""" """Methods internal to the event service end here""" """"""
+    """Methods internal to the event service end here"""

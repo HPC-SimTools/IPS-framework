@@ -10,7 +10,7 @@ def write_basic_config_and_platform_files(tmpdir):
     test_component = tmpdir.join('test_component.py')
 
     driver = """from ipsframework.component import Component
-class test_driver(Component):
+class TestDriver(Component):
     def __init__(self, services, config):
         super().__init__(services, config)
 """
@@ -84,10 +84,10 @@ def test_framework_simple(tmpdir, capfd):
     assert 'test' in component_map
     test = component_map['test']
     assert len(test) == 1
-    assert test[0].get_class_name() == 'test_driver'
-    assert test[0].get_instance_name().startswith('test@test_driver')
+    assert test[0].get_class_name() == 'TestDriver'
+    assert test[0].get_instance_name().startswith('test@TestDriver')
     assert test[0].get_seq_num() == 1
-    assert test[0].get_serialization().startswith('test@test_driver')
+    assert test[0].get_serialization().startswith('test@TestDriver')
     assert test[0].get_sim_name() == 'test'
 
     # check all registered service handlers
@@ -97,12 +97,12 @@ def test_framework_simple(tmpdir, capfd):
         'create_simulation',
         'exists_topic',
         'finish_task',
-        'get_subscription',
-        'get_topic',
         'get_allocation',
         'get_config_parameter',
         'get_port',
+        'get_subscription',
         'get_time_loop',
+        'get_topic',
         'init_call',
         'init_task',
         'init_task_pool',
@@ -125,7 +125,7 @@ def test_framework_simple(tmpdir, capfd):
     framework.run()
 
     # check simulation_log
-    json_files = glob.glob(str(tmpdir.join('simulation_log').join('*.json')))
+    json_files = glob.glob(str(tmpdir.join('simulation_log').join('*.jsonl')))
     assert len(json_files) == 1
     with open(json_files[0], 'r') as json_file:
         json_lines = json_file.readlines()
@@ -258,7 +258,7 @@ def test_framework_log_output_debug(tmpdir):
     with open(str(tmpdir.join('framework_log_debug_test.log')), 'r') as f:
         lines = f.readlines()
 
-    assert len(lines) == 32
+    assert len(lines) == 30
 
     assert 'Traceback (most recent call last):\n' in lines
     assert "    raise ValueError('wrong value')\n" in lines

@@ -39,7 +39,7 @@ SIMULATION_MODE = NORMAL
 [DRIVER]
     CLASS = DRIVER
     SUB_CLASS =
-    NAME = driver
+    NAME = Driver
     BIN_PATH =
     NPROC = 1
     INPUT_FILES =
@@ -49,7 +49,7 @@ SIMULATION_MODE = NORMAL
 [WORKER]
     CLASS = WORKER
     SUB_CLASS =
-    NAME = simple_sleep
+    NAME = SimpleSleep
     NPROC = 1
     BIN_PATH =
     INPUT_FILES =
@@ -80,7 +80,7 @@ def test_trace_info(tmpdir):
     framework.run()
 
     # check simulation_log, make sure it includes events from dask tasks
-    json_files = glob.glob(str(tmpdir.join('simulation_log').join('*.json')))
+    json_files = glob.glob(str(tmpdir.join('simulation_log').join('*.jsonl')))
     assert len(json_files) == 1
     with open(json_files[0], 'r') as json_file:
         lines = json_file.readlines()
@@ -95,13 +95,13 @@ def test_trace_info(tmpdir):
 
     call_ids = [5, 1, 8, 2, 9, 7, 10, None]
     service_names = [
-        'trace@driver@1',
+        'trace@Driver@1',
         '/bin/sleep',
-        'trace@simple_sleep@2',
+        'trace@SimpleSleep@2',
         '/bin/sleep',
-        'trace@simple_sleep@2',
-        'trace@driver@1',
-        'trace@driver@1',
+        'trace@SimpleSleep@2',
+        'trace@Driver@1',
+        'trace@Driver@1',
         'trace@FRAMEWORK@Framework@0',
     ]
     names = ['init(0)', '1', 'step(0)', '1', 'step(0)', 'step(0)', 'finalize(0)', None]

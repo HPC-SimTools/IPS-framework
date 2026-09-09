@@ -52,7 +52,7 @@ def test_checkpoint_components_force():
 
     services_proxy = ServicesProxy(None, None, None, {}, None)
     services_proxy._dispatch_checkpoint = MagicMock(name='dispatch_checkpoint')
-    services_proxy.checkpoint_components([], 0, Force=True)
+    services_proxy.checkpoint_components([], 0, force=True)
     services_proxy._dispatch_checkpoint.assert_called_once_with(0, [], False)
 
 

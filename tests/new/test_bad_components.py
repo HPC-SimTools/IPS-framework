@@ -102,7 +102,7 @@ def test_exception(tmpdir):
     assert not worker_call_end_event['ok']
     assert (
         worker_call_end_event['comment']
-        == 'Error: "Runtime error" Target = test@exception_worker@2:step(0)'
+        == 'Error: "Runtime error" Target = test@ExceptionWorker@2:step(0)'
     )
 
     sim_end_event = events[10]
@@ -153,7 +153,7 @@ def test_bad_task(tmpdir):
     assert not worker_call_end_event['ok']
     assert (
         worker_call_end_event['comment']
-        == 'Error: "task binary of wrong type, expected str but found int" Target = test@bad_task_worker@2:step(0)'
+        == 'Error: "task binary of wrong type, expected str but found int" Target = test@BadTaskWorker@2:step(0)'
     )
 
     sim_end_event = events[10]
@@ -254,13 +254,13 @@ def test_assign_protected_attribute(tmpdir):
     assert (
         "AttributeError: can't set attribute\n" in lines
         or "AttributeError: can't set attribute 'args'\n" in lines
-        or "AttributeError: property 'args' of 'assign_protected_attribute' object has no setter\n"
+        or "AttributeError: property 'args' of 'AssignProtectedAttribute' object has no setter\n"
         in lines
     )
     assert (
         "Exception: can't set attribute\n" in lines
         or "Exception: can't set attribute 'args'\n" in lines
-        or "Exception: property 'args' of 'assign_protected_attribute' object has no setter\n"
+        or "Exception: property 'args' of 'AssignProtectedAttribute' object has no setter\n"
         in lines
     )
 
@@ -284,9 +284,9 @@ def test_assign_protected_attribute(tmpdir):
     assert not worker_call_end_event['ok']
     # python 3.10 and 3.11 have different error messages
     assert worker_call_end_event['comment'] in (
-        'Error: "can\'t set attribute" Target = test@assign_protected_attribute@2:step(0)',
-        "Error: \"can't set attribute 'args'\" Target = test@assign_protected_attribute@2:step(0)",
-        "Error: \"property 'args' of 'assign_protected_attribute' object has no setter\" Target = test@assign_protected_attribute@2:step(0)",
+        'Error: "can\'t set attribute" Target = test@AssignProtectedAttribute@2:step(0)',
+        "Error: \"can't set attribute 'args'\" Target = test@AssignProtectedAttribute@2:step(0)",
+        "Error: \"property 'args' of 'AssignProtectedAttribute' object has no setter\" Target = test@AssignProtectedAttribute@2:step(0)",
     )
 
     sim_end_event = events[10]
@@ -298,7 +298,7 @@ def test_assign_protected_attribute(tmpdir):
 
 def read_event_log(tmpdir):
     sim_event_log_json = next(
-        f for f in os.listdir(tmpdir.join('simulation_log')) if f.endswith('.json')
+        f for f in os.listdir(tmpdir.join('simulation_log')) if f.endswith('.jsonl')
     )
     with open(str(tmpdir.join('simulation_log').join(sim_event_log_json)), 'r') as f:
         lines = f.readlines()
