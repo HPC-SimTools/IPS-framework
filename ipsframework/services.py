@@ -30,7 +30,7 @@ from typing import TYPE_CHECKING, Any, NamedTuple
 import rich.traceback
 from configobj import ConfigObj
 from dask.distributed import get_worker
-from distributed import Client, Worker, WorkerPlugin
+from distributed import Client, Worker, SchedulerPlugin
 from rich import pretty
 from rich.console import Console
 from rich.traceback import Traceback
@@ -3237,7 +3237,7 @@ class ServicesProxy:
         return instances
 
 
-class DVMPlugin(WorkerPlugin):
+class DVMPlugin(SchedulerPlugin):
     def __init__(self, logger, oversubscribe=False, hwthreads=False):
         """
         Dask worker plugin to launch and manage an OpenMPI PRTE DVM on each
