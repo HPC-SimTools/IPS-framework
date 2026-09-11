@@ -10,7 +10,7 @@
 #SBATCH --job-name=example_024
 #SBATCH --constraint=cpu
 #SBATCH --nodes=1
-#SBATCH --time=5
+#SBATCH --time=10
 #SBATCH -p debug
 
 module load PrgEnv-gnu python
