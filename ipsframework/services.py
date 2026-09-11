@@ -30,10 +30,9 @@ from typing import TYPE_CHECKING, Any, NamedTuple
 import rich.traceback
 from configobj import ConfigObj
 from dask.distributed import get_worker
-from distributed import Client, Worker, SchedulerPlugin
+from distributed import Client, SchedulerPlugin
 from rich import pretty
 from rich.console import Console
-from rich.traceback import Traceback
 
 from ipsframework import ipsutil, messages
 from ipsframework._internal.definitions import IPS_EVENT_TYPE
@@ -45,6 +44,8 @@ from ipsframework.task_manager import TaskInit
 pretty.install()
 console = Console()
 rich.traceback.install(show_locals=True)
+
+DVM_PLUGIN_NAME = 'ips-dvm'
 
 if TYPE_CHECKING:
     from ipsframework.component import Component
@@ -73,13 +74,10 @@ def launch(executable: Any, task_name: str, working_dir: str | os.PathLike, *arg
     * `task_env` - A dictionary of environment variables to set
     * `timeout` - The timeout in seconds for the task to complete.
     * `cpus_per_proc` - The number of cpus per process to use for the task.
-        This implies that the DVMPlugin has set up a DVM daemon for this node.
+        If using OpenMPI DVM, the scheduler plugin provides DVM environment
+        variables through `task_env`.
     * `oversubscribe` - If `True`, then the number of processes can exceed the
         number of cores on the node.  Default is `False`.
-
-    If the worker has the attribute `dvm_uri_file`, then we are running
-    with a DVM (Distributed Virtual Machine) so the `binary` needs a
-    `prun` prepended pointing to that.
 
     :param executable: The binary to launch. Either a string or a class.
     :param task_name: The name of the task.
@@ -164,16 +162,29 @@ def launch(executable: Any, task_name: str, working_dir: str | os.PathLike, *arg
             del new_env['HWLOC_XMLFILE']
 
         # Check that the DVM environment variables are set.
-        if hasattr(worker, 'dvm_uri_file'):
-            dvm_uri_file = Path(worker.dvm_uri_file)
+        if task_env is not None and task_env != {}:
+            dvm_uri_file_name = task_env.get('IPS_DVM_URI_FILE')
+            if dvm_uri_file_name is None:
+                dvm_uri_file_name = task_env.get('PRTE_MCA_dvm_uri')
+            if dvm_uri_file_name is None:
+                dvm_uri_file_name = task_env.get('OMPI_MCA_pmix_server_uri_file')
+            if dvm_uri_file_name is not None:
+                dvm_uri_file = Path(dvm_uri_file_name)
+                if not dvm_uri_file.exists():
+                    log.error(f'DVM URI file {dvm_uri_file} does not exist')
+                    print(f'DVM URI file {dvm_uri_file} does not exist')
+                else:
+                    log.debug(f'Using DVM URI file: {dvm_uri_file}')
+                    print(f'Using DVM URI file: {dvm_uri_file}')
+
+        if 'IPS_DVM_URI_FILE' in os.environ:
+            dvm_uri_file = Path(os.environ['IPS_DVM_URI_FILE'])
             if not dvm_uri_file.exists():
                 log.error(f'DVM URI file {dvm_uri_file} does not exist')
                 print(f'DVM URI file {dvm_uri_file} does not exist')
-                # print(f'DVM URI file {dvm_uri_file} does not exist', flush=True)
             else:
                 log.debug(f'Using DVM URI file: {dvm_uri_file}')
                 print(f'Using DVM URI file: {dvm_uri_file}')
-                # print(f'Using DVM URI file: {dvm_uri_file}', flush=True)
 
         # PMIX_SERVER_URI41 is used by prun to figure out how to talk to the DVM
         # It can be defined in `task_env` or in `os.environ`, so we look in
@@ -2638,6 +2649,7 @@ class ServicesProxy:
         hwthreads=False,
         logfile=None,
         errfile=None,
+        use_dvm=False,
     ):
         """
         Launch all unfinished tasks in task pool *task_pool_name*.  If *block* is ``True``,
@@ -2666,6 +2678,8 @@ class ServicesProxy:
           resource allocation
         :param logfile: optional default file name for redirected task stdout
         :param errfile: optional default file name for redirected task stderr
+        :param use_dvm: if True, start a single OpenMPI PRTE DVM on the Dask
+          scheduler and pass its URI to Dask task environments
         :returns: task return value
         """
         start_time = time.time()
@@ -2685,6 +2699,7 @@ class ServicesProxy:
             hwthreads,
             logfile,
             errfile,
+            use_dvm,
         )
         elapsed_time = time.time() - start_time
         self._send_monitor_event(
@@ -3020,9 +3035,9 @@ class ServicesProxy:
             # This is critical for ensuring that `prun` is used to run the
             # ensemble instances.  This is because the ensemble instances rely
             # on the DVM (Dynamic Virtual Machine) to run the simulations,
-            # which was spun up in the docker worker plugin, `DVMPlugin`. The
-            # `prun` *should* use the environment variables set by the plugin
-            # to find the DVM.
+            # which was spun up in the Dask scheduler plugin, `DVMPlugin`.
+            # The `prun` *should* use the environment variables set by the
+            # plugin to find the DVM.
             platform_config['MPIRUN_VERSION'] = 'OPENMPI-DVM'
 
             # Set the budget of cores per instance. By default, we will give
@@ -3215,6 +3230,7 @@ class ServicesProxy:
                 dask_ppw=cores_per_instance,
                 oversubscribe=oversubscribe,
                 hwthreads=hwthreads,
+                use_dvm=True,
                 logfile=logfile,
                 errfile=errfile,
                 # launch_interval=0.0,
@@ -3238,10 +3254,13 @@ class ServicesProxy:
 
 
 class DVMPlugin(SchedulerPlugin):
+    name = DVM_PLUGIN_NAME
+    idempotent = True
+
     def __init__(self, logger, oversubscribe=False, hwthreads=False):
         """
-        Dask worker plugin to launch and manage an OpenMPI PRTE DVM on each
-        worker node.
+        Dask scheduler plugin to launch and manage one OpenMPI PRTE DVM for
+        the Dask cluster.
 
         :param logger: Logger object
         :param oversubscribe: Whether to allow oversubscription of nodes
@@ -3250,35 +3269,47 @@ class DVMPlugin(SchedulerPlugin):
         """
         super().__init__()
 
-        self.logger = logger
+        if isinstance(logger, logging.Logger):
+            self.logger_name = logger.name
+        elif isinstance(logger, str):
+            self.logger_name = logger
+        else:
+            self.logger_name = __name__
+        self.logger = logging.getLogger(self.logger_name)
         self.oversubscribe = oversubscribe
         self.hwthreads = hwthreads
+        self.dvm_uri_file: str | None = None
+        self.dvm_uri: str | None = None
+        self.dvm_proc: subprocess.Popen[bytes] | None = None
+        self.dvm_env: dict[str, str] = {}
 
-    def setup(self, worker: Worker):
+    def start(self, scheduler):
         """
-        :param worker: Dask worker
-        :param oversubscribe: Whether to allow oversubscription of nodes
-            when launching the ensemble runs. Default is False.
+        Start the PRTE DVM in the Dask scheduler process.
+
+        :param scheduler: Dask scheduler
         """
+        del scheduler
+
         if 'HWLOC_XMLFILE' in os.environ:
-            # Remove HWLOC_XMLFILE to avoid issues with OpenMPI on Dask workers
-            self.logger.debug('Removing HWLOC_XMLFILE environment variable for Dask worker')
+            # Remove HWLOC_XMLFILE to avoid issues with OpenMPI.
+            self.logger.debug('Removing HWLOC_XMLFILE environment variable for Dask scheduler')
             del os.environ['HWLOC_XMLFILE']
         else:
-            self.logger.debug('HWLOC_XMLFILE environment variable not set for Dask worker')
+            self.logger.debug('HWLOC_XMLFILE environment variable not set for Dask scheduler')
 
-        # Necessary to ensure the DVM "sees" all the resources to manage
-        os.environ['PRTE_MCA_ras_slurm_use_entire_allocation'] = '1'
+        # Necessary to ensure the DVM "sees" all the resources to manage.
+        self.dvm_env['PRTE_MCA_ras_slurm_use_entire_allocation'] = '1'
 
-        self.worker = worker
-        worker.logger = self.logger
+        prte_cmd = shutil.which('prte')
+        if prte_cmd is None:
+            raise RuntimeError('prte command not found; cannot launch OpenMPI DVM')
 
-        self.logger.info('Launching DVM')
-        self.worker.dvm_uri_file = f'/tmp/dvm.uri.{os.getpid()}'
+        self.dvm_uri_file = f'/tmp/dvm.uri.{os.getpid()}'
         command = [  #'srun', '--mpi=pmix_v4', '-N', os.environ['SLURM_NNODES'], '--ntasks-per-node=1',
-            'prte',  #'--no-daemonize',
+            prte_cmd,  #'--no-daemonize',
             '--report-uri',
-            self.worker.dvm_uri_file,
+            self.dvm_uri_file,
         ]
 
         mapping_policy = 'core'  # by default bind to cores
@@ -3291,38 +3322,63 @@ class DVMPlugin(SchedulerPlugin):
             self.logger.info('Allowing oversubscription of nodes')
             mapping_policy += ':oversubscribe'
 
-        # This environment variable is specific to OpenMPI's PRTE
-        os.environ['PRTE_MCA_rmaps_default_mapping_policy'] = mapping_policy
+        # This environment variable is specific to OpenMPI's PRTE.
+        self.dvm_env['PRTE_MCA_rmaps_default_mapping_policy'] = mapping_policy
+
+        dvm_start_env = os.environ.copy()
+        dvm_start_env.update(self.dvm_env)
+
+        self.logger.info('Launching OpenMPI PRTE DVM from Dask scheduler')
 
         try:
             self.logger.debug(f'Executing command: {command!s}')
-            self.worker.dvm_proc = subprocess.Popen(
-                command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+            self.dvm_proc = subprocess.Popen(
+                command,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.STDOUT,
+                env=dvm_start_env,
             )
         except Exception as e:
-            print(f'Exception during setting up DVM: {e}')
-            console.print(Traceback.from_exception(type(e), e, e.__traceback__))
+            self.logger.exception(f'Exception while setting up DVM: {e}')
+            raise
 
-            # If there was an exception, dump any stdout/stderr we have
-            if hasattr(self.worker.dvm_proc, 'stdout'):
-                print(self.worker.dvm_proc.stdout, file=sys.stdout, flush=True)
-                print(self.worker.dvm_proc.stderr, file=sys.stderr, flush=True)
+        try:
+            dvm_uri_path = Path(self.dvm_uri_file)
+            for _ in range(600):
+                if dvm_uri_path.exists() and dvm_uri_path.stat().st_size > 0:
+                    break
+                if self.dvm_proc.poll() is not None:
+                    raise RuntimeError(
+                        f'DVM process exited before writing URI file {self.dvm_uri_file}'
+                    )
+                time.sleep(0.1)
+            else:
+                raise RuntimeError(
+                    f'DVM URI file {self.dvm_uri_file} was not created within 60s'
+                )
 
-        # TODO What if there was a subprocess exception?
+            with open(dvm_uri_path) as f:
+                self.dvm_uri = f.readline().strip()
 
-        ready = self.worker.dvm_proc.stdout.readline()
-        self.logger.info(f'Ready Message : {ready}')
-        print(f'Ready Message : {ready}', flush=True)
+            if not self.dvm_uri:
+                raise RuntimeError(f'DVM URI file {self.dvm_uri_file} did not contain a URI')
 
-        with open(self.worker.dvm_uri_file, 'r') as f:
-            self.worker.dvm_uri = f.readline()
-            print(f'Read DVM URI: {self.worker.dvm_uri}', flush=True)
-            self.logger.debug(f'Read DVM URI: {self.worker.dvm_uri}')
+            self.dvm_env['PMIX_SERVER_URI41'] = self.dvm_uri
+            self.logger.info(f'OpenMPI PRTE DVM started with URI file {self.dvm_uri_file}')
+            self.logger.debug(f'Read DVM URI: {self.dvm_uri}')
+        except Exception:
+            self._shutdown_dvm()
+            raise
 
-        os.environ['PMIX_SERVER_URI41'] = self.worker.dvm_uri
+    async def close(self):
+        self._shutdown_dvm()
 
-    def teardown(self, worker: Worker):
-        self.logger.info(f'Shutting down DVM at {self.worker.dvm_uri}')
+    def _shutdown_dvm(self):
+        if self.dvm_uri is None and self.dvm_proc is None:
+            self.logger.debug('DVMPlugin close called before DVM startup completed')
+            return
+
+        self.logger.info(f'Shutting down OpenMPI PRTE DVM at {self.dvm_uri}')
 
         # On some systems we use `pterm` to shut down the DVM, and on others we
         # use `prte-term`, so check for both.
@@ -3334,16 +3390,37 @@ class DVMPlugin(SchedulerPlugin):
             # if it's *still* none, then there is a serious
             # configuration problem.
             self.logger.critical('Neither pterm nor prte-term command found')
-        else:
-            self.logger.debug(f'DVMPluggin.teardown(), pterm: {pterm_cmd!s}')
-            command = [pterm_cmd, '--dvm-uri', self.worker.dvm_uri]
+        elif self.dvm_uri is not None:
+            self.logger.debug(f'DVMPlugin.close(), pterm: {pterm_cmd!s}')
+            command = [pterm_cmd, '--dvm-uri', self.dvm_uri]
             subprocess.call(command)
+
         # Regardless if we have `pterm` or `prte-term`, we can still just
         # kill the process directly.
-        self.worker.dvm_proc.terminate()
-        self.worker.dvm_proc.kill()
+        if self.dvm_proc is not None and self.dvm_proc.poll() is None:
+            self.dvm_proc.terminate()
+            try:
+                self.dvm_proc.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                self.dvm_proc.kill()
+                self.dvm_proc.wait(timeout=5)
+
+        if self.dvm_uri_file is not None:
+            try:
+                Path(self.dvm_uri_file).unlink()
+            except FileNotFoundError:
+                pass
 
         self.logger.info('DVM shutdown')
+
+
+def _get_scheduler_dvm_environment(dask_scheduler=None):
+    plugin = dask_scheduler.plugins.get(DVM_PLUGIN_NAME)
+    if plugin is None:
+        raise RuntimeError('DVMPlugin is not registered on the Dask scheduler')
+    if not plugin.dvm_env.get('PMIX_SERVER_URI41'):
+        raise RuntimeError('DVMPlugin has not published a DVM URI')
+    return dict(plugin.dvm_env)
 
 
 class TaskPool:
@@ -3471,6 +3548,22 @@ class TaskPool:
             keywords.setdefault('errfile', errfile)
         return keywords
 
+    @staticmethod
+    def _launch_keywords_with_dvm_environment(task_keywords, dvm_task_env):
+        """Return launch keywords with scheduler DVM environment added."""
+        if not dvm_task_env:
+            return task_keywords
+
+        keywords = dict(task_keywords)
+        task_env = dict(keywords.get('task_env', {}))
+        task_env.update(dvm_task_env)
+        keywords['task_env'] = task_env
+        return keywords
+
+    def _platform_uses_openmpi_dvm(self):
+        version = self.services.get_config_param('MPIRUN_VERSION', silent=True)
+        return isinstance(version, str) and version.upper() == 'OPENMPI-DVM'
+
     def _process_dask_event(self, event):
         """This will create an IPS monitor event from a Dask event
 
@@ -3508,6 +3601,7 @@ class TaskPool:
         hwthreads=False,
         logfile=None,
         errfile=None,
+        use_dvm=False,
     ):
         """Launch tasks in *queued_tasks* using dask.
 
@@ -3525,8 +3619,7 @@ class TaskPool:
             so will be `PROCS_PER_NODE // dask_ppw` to enforce that each dask
             worker will have multiple cores, hopefully articulated via DVM
             (i.e., prun will be invoked and will coordinate with the DVM to
-            allocate multiple cores to each worker thread). Note that the DVM
-            daemon will be started by the registered Dask worker plugin DVMPlugin.
+            allocate multiple cores to each worker thread).
         :type dask_ppw: int
         :param use_shifter:  Option to launch dask scheduler and workers in shifter container
         :type use_shifter: bool
@@ -3543,6 +3636,9 @@ class TaskPool:
         :type logfile: str
         :param errfile: Optional default file name for redirected task stderr
         :type errfile: str
+        :param use_dvm: Whether to start a single DVM on the Dask scheduler
+            and pass its URI to worker-launched task subprocesses
+        :type use_dvm: bool
 
         FIXME consider having n processes instead of n threads given that we're
             likely running in a HPC context.
@@ -3753,13 +3849,15 @@ class TaskPool:
             self.dask_client.register_plugin(dask_worker_plugin)
             self.services.debug('Done registering user provided pluging')
 
-        # Regardless of any other worker plugins, we need this plugin to setup
-        # the DVM for the workers so that OpenMPI can work properly.
-        self.services.debug('Registering DVMPlugin')
-        self.dask_client.register_plugin(
-            DVMPlugin(logger=services.logger, oversubscribe=oversubscribe, hwthreads=hwthreads)
-        )
-        self.services.debug('Registered DVMPlugin')
+        dvm_task_env = {}
+        if use_dvm:
+            self.services.debug('Registering DVM scheduler plugin')
+            self.dask_client.register_plugin(
+                DVMPlugin(logger=services.logger, oversubscribe=oversubscribe, hwthreads=hwthreads)
+            )
+            self.services.debug('Registered DVM scheduler plugin')
+            dvm_task_env = self.dask_client.run_on_scheduler(_get_scheduler_dvm_environment)
+            self.services.debug('Fetched DVM environment from Dask scheduler')
 
         # Wait for so many workers to be online before proceeding to
         # more evenly spread the load instead of biasing the tasks by the
@@ -3807,6 +3905,7 @@ class TaskPool:
             self.services.debug(f'Task {task_name} working dir: {task.working_dir}')
             self.services.debug(f'Task args: {task.args} keywords: {task.keywords}')
             keywords = self._launch_keywords_with_defaults(task.keywords, logfile, errfile)
+            keywords = self._launch_keywords_with_dvm_environment(keywords, dvm_task_env)
             task_names.append(task_name)
             binaries.append(task.binary)
             working_dirs.append(task.working_dir)
@@ -3864,6 +3963,7 @@ class TaskPool:
         hwthreads=False,
         logfile=None,
         errfile=None,
+        use_dvm=False,
     ):
         """Launch tasks in *queued_tasks*.  Finished tasks are handled before
         launching new ones.  If *block* is ``True``, the number of
@@ -3906,11 +4006,15 @@ class TaskPool:
         :type logfile: str
         :param errfile: Optional default file name for redirected task stderr
         :type errfile: str
+        :param use_dvm: If True then start a single OpenMPI PRTE DVM on the
+            Dask scheduler and pass its URI to task subprocesses
+        :type use_dvm: bool
         :returns:
         """
         if use_dask:
             if TaskPool.dask and TaskPool.distributed and self.serial_pool:
                 self.dask_pool = True
+                use_dvm = use_dvm or self._platform_uses_openmpi_dvm()
                 if use_shifter and not self.shifter:
                     self.services.error(
                         'Requested to run dask within shifter but shifter not available'
@@ -3929,6 +4033,7 @@ class TaskPool:
                         hwthreads,
                         logfile,
                         errfile,
+                        use_dvm,
                     )
             elif not TaskPool.dask or not TaskPool.distributed:
                 raise RuntimeError(

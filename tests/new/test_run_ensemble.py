@@ -1,6 +1,6 @@
 import logging
 import os
-from importlib import import_module
+from types import SimpleNamespace
 
 from ipsframework import ServicesProxy, TaskPool
 from ipsframework import services as services_module
@@ -74,6 +74,7 @@ def test_run_ensemble_passes_logfile_and_errfile_to_add_task(tmpdir, monkeypatch
             'dask_ppw': None,
             'oversubscribe': False,
             'hwthreads': False,
+            'use_dvm': True,
             'logfile': 'instance.out',
             'errfile': 'instance.err',
         }
@@ -97,7 +98,7 @@ def test_services_submit_tasks_passes_logfile_and_errfile_to_task_pool():
     services._send_monitor_event = lambda *args, **kwargs: None
 
     assert services.submit_tasks('pool', logfile='instance.out', errfile='instance.err') == 1
-    assert task_pool.submit_args[-2:] == ('instance.out', 'instance.err')
+    assert task_pool.submit_args[-3:-1] == ('instance.out', 'instance.err')
 
 
 def test_task_pool_submit_tasks_passes_logfile_and_errfile_to_dask(monkeypatch):
@@ -117,7 +118,7 @@ def test_task_pool_submit_tasks_passes_logfile_and_errfile_to_dask(monkeypatch):
     assert (
         task_pool.submit_tasks(use_dask=True, logfile='instance.out', errfile='instance.err') == 1
     )
-    assert submitted_args[0][-2:] == ('instance.out', 'instance.err')
+    assert submitted_args[0][-3:-1] == ('instance.out', 'instance.err')
 
 
 def test_task_pool_launch_keywords_use_logfile_and_errfile_defaults():
@@ -150,6 +151,45 @@ def test_task_pool_launch_keywords_preserve_task_logfile_and_errfile():
         'logfile': 'task.out',
         'errfile': 'task.err',
     }
+
+
+def test_task_pool_launch_keywords_add_dvm_environment():
+    keywords = TaskPool._launch_keywords_with_dvm_environment(
+        {
+            'block': False,
+            'task_env': {
+                'EXISTING': '1',
+                'PMIX_SERVER_URI41': 'old-uri',
+            },
+        },
+        {
+            'PMIX_SERVER_URI41': 'scheduler-uri',
+            'PRTE_MCA_rmaps_default_mapping_policy': 'core',
+        },
+    )
+
+    assert keywords == {
+        'block': False,
+        'task_env': {
+            'EXISTING': '1',
+            'PMIX_SERVER_URI41': 'scheduler-uri',
+            'PRTE_MCA_rmaps_default_mapping_policy': 'core',
+        },
+    }
+
+
+def test_get_scheduler_dvm_environment():
+    dvm_env = {
+        'PMIX_SERVER_URI41': 'scheduler-uri',
+        'PRTE_MCA_rmaps_default_mapping_policy': 'core',
+    }
+    dask_scheduler = SimpleNamespace(
+        plugins={
+            services_module.DVM_PLUGIN_NAME: SimpleNamespace(dvm_env=dvm_env),
+        }
+    )
+
+    assert services_module._get_scheduler_dvm_environment(dask_scheduler) == dvm_env
 
 
 def test_launch_mapped_task_passes_logfile_and_errfile_to_launch(monkeypatch):
@@ -186,12 +226,10 @@ def test_launch_mapped_task_passes_logfile_and_errfile_to_launch(monkeypatch):
 def test_launch_writes_stderr_to_logfile_when_errfile_is_omitted(tmpdir, monkeypatch):
     script = write_stdout_stderr_script(tmpdir)
 
-    dask_distributed = import_module('dask.distributed')
-
     def get_worker():
         return DummyDaskWorker()
 
-    monkeypatch.setattr(dask_distributed, 'get_worker', get_worker)
+    monkeypatch.setattr(services_module, 'get_worker', get_worker)
 
     assert services_module.launch(
         str(script),
@@ -209,12 +247,10 @@ def test_launch_writes_stderr_to_logfile_when_errfile_is_omitted(tmpdir, monkeyp
 def test_launch_writes_stderr_to_logfile_when_errfile_matches_logfile(tmpdir, monkeypatch):
     script = write_stdout_stderr_script(tmpdir)
 
-    dask_distributed = import_module('dask.distributed')
-
     def get_worker():
         return DummyDaskWorker()
 
-    monkeypatch.setattr(dask_distributed, 'get_worker', get_worker)
+    monkeypatch.setattr(services_module, 'get_worker', get_worker)
 
     assert services_module.launch(
         str(script),
