@@ -99,7 +99,7 @@ IPS Utilities
 Framework Components
 --------------------
 
-.. automodule:: ipsframework.portalBridge
+.. automodule:: ipsframework._internal.bridges.portal_bridge
    :members:
    :undoc-members:
 

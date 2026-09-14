@@ -62,20 +62,20 @@ class RunningTask(NamedTuple):
 
 
 def launch(executable: Any, task_name: str, working_dir: str | os.PathLike, *args, **kwargs):
-    """This is used by :meth:`TaskPool.submit_dask_tasks` as the
-    input to :meth:`dask.distributed.Client.submit`.
+    """This is used by :meth:`TaskPool.submit_dask_tasks` as the input to :meth:`dask.distributed.Client.submit`.
 
     Valid kwargs:
+
     * `logfile` - where the task output is written; if not specified,
-        STDOUT used
+      STDOUT used
     * `errfile` - where the task error output is written; if not specified,
-        STDERR used
+      STDERR used
     * `task_env` - A dictionary of environment variables to set
     * `timeout` - The timeout in seconds for the task to complete.
     * `cpus_per_proc` - The number of cpus per process to use for the task.
-        This implies that the DVMPlugin has set up a DVM daemon for this node.
+      This implies that the DVMPlugin has set up a DVM daemon for this node.
     * `oversubscribe` - If `True`, then the number of processes can exceed the
-        number of cores on the node.  Default is `False`.
+      number of cores on the node.  Default is `False`.
 
     If the worker has the attribute `dvm_uri_file`, then we are running
     with a DVM (Distributed Virtual Machine) so the `binary` needs a
