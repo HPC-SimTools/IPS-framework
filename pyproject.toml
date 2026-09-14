@@ -54,6 +54,7 @@ dependencies = [
 dev = [
   "codespell>=2.4.1",
   "flask",
+  "mpi4py",                # mpi4py is required for some tests, but is not used in primary ipsframework code
   "mypy>=1.15.0",
   "pre-commit>=4.2.0",
   "pytest>=9.0.3",
@@ -128,7 +129,7 @@ extend-select = [
   'N',   # pep8-naming
   #'D',     # pydocstyle
   #'UP',    # pyupgrade
-  #'YTT',   # flake8-2020
+  'YTT', # flake8-2020
   #'ANN',   # flake8-annotations
   #'ASYNC', # flake8-async
   #'S',     # flake8-bandit
@@ -141,7 +142,7 @@ extend-select = [
   #'T10',   # flake8-debugger
   #'EM',    # flake8-error-message
   #'FA',    # flake8-future-annotations
-  #'ISC',   # flake8-implicit-string-concat
+  'ISC', # flake8-implicit-string-concat (ISC001 itself stays off, see ignore list)
   #'ICN',   # flake8-import-conventions
   #'G',     # flake8-logging-format
   #'INP',   # flake8-no-pep420
@@ -161,15 +162,15 @@ extend-select = [
   #'PGH',   # pygrep-hooks
   'PL', # pylint
   #'TRY',   # tryceratops
-  'FLY', # flynt
-  'RUF', # RUFF additional rules
+  'TRY201', # tryceratops: use bare `raise` to re-raise, don't name the exception
+  'FLY',    # flynt
+  'RUF',    # RUFF additional rules
 ]
 # If you're seeking to disable a rule, first consider whether the rule is overbearing, or if it should only be turned off for your usecase.
 ignore = [
   ### TODO move these to extend-select when ready
   'D',     # pydocstyle
   'UP',    # pyupgrade
-  'YTT',   # flake8-2020
   'ANN',   # flake8-annotations
   'ASYNC', # flake8-async
   'S',     # flake8-bandit
@@ -179,7 +180,6 @@ ignore = [
   'T10',   # flake8-debugger
   'EM',    # flake8-error-message
   'FA',    # flake8-future-annotations
-  'ISC',   # flake8-implicit-string-concat
   'ICN',   # flake8-import-conventions
   'G',     # flake8-logging-format
   'INP',   # flake8-no-pep420

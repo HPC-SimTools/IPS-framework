@@ -35,7 +35,7 @@ SIM_NAME = test
 LOG_FILE = {tmpdir!s}/{sim_log}
 LOG_LEVEL = INFO
 SIM_ROOT = {tmpdir!s}
-simulation_mode = {simulation_mode}
+SIMULATION_MODE = {simulation_mode}
 CURRENT_STATE = ${{SIM_NAME}}_ps.dat
 STATE_FILES = $CURRENT_STATE
 STATE_WORK_DIR = $SIM_ROOT/work/state
@@ -83,9 +83,9 @@ RESTART_TIME = LATEST
     MODULE = components.workers.timeloop_comp
 [TIME_LOOP]
     MODE = REGULAR
-    start = {start}
-    finish = {finish}
-    nstep = {nstep}
+    START = {start}
+    FINISH = {finish}
+    NSTEP = {nstep}
 [CHECKPOINT]
    MODE = ALL
    NUM_CHECKPOINT = 2
@@ -120,12 +120,12 @@ def test_timeloop_checkpoint_restart(tmpdir):
     lines = [line[24:] for line in lines]
 
     for time in ['100.0', '112.5', '125.0', '137.5', '150.0']:
-        assert f'TIMELOOP_COMP__timeloop_comp_2 INFO     step({time})\n' in lines
-        assert f'TIMELOOP_COMP2__timeloop_comp_3 INFO     step({time})\n' in lines
+        assert f'TIMELOOP_COMP__TimeloopComp_2 INFO     step({time})\n' in lines
+        assert f'TIMELOOP_COMP2__TimeloopComp_3 INFO     step({time})\n' in lines
         for comp in [
-            'TIMELOOP__timeloop_driver_1',
-            'TIMELOOP_COMP__timeloop_comp_2',
-            'TIMELOOP_COMP2__timeloop_comp_3',
+            'TIMELOOP__TimeloopDriver_1',
+            'TIMELOOP_COMP__TimeloopComp_2',
+            'TIMELOOP_COMP2__TimeloopComp_3',
         ]:
             assert f'{comp} INFO     checkpoint({time})\n' in lines
 
@@ -140,20 +140,20 @@ def test_timeloop_checkpoint_restart(tmpdir):
     # restart files
     restart_dir = tmpdir.join('restart')
     assert len(restart_dir.listdir()) == 2
-    assert restart_dir.join('137.500').join('TIMELOOP_COMP__timeloop_comp').exists()
-    assert restart_dir.join('150.000').join('TIMELOOP_COMP__timeloop_comp').exists()
-    assert restart_dir.join('137.500').join('TIMELOOP_COMP2__timeloop_comp').exists()
-    assert restart_dir.join('150.000').join('TIMELOOP_COMP2__timeloop_comp').exists()
+    assert restart_dir.join('137.500').join('TIMELOOP_COMP__TimeloopComp').exists()
+    assert restart_dir.join('150.000').join('TIMELOOP_COMP__TimeloopComp').exists()
+    assert restart_dir.join('137.500').join('TIMELOOP_COMP2__TimeloopComp').exists()
+    assert restart_dir.join('150.000').join('TIMELOOP_COMP2__TimeloopComp').exists()
 
     # 137.500
-    restart_files = restart_dir.join('137.500').join('TIMELOOP_COMP__timeloop_comp')
+    restart_files = restart_dir.join('137.500').join('TIMELOOP_COMP__TimeloopComp')
     assert len(restart_files.listdir()) == 2
     assert restart_files.join('w1_1.dat').exists()
     assert len(restart_files.join('w1_1.dat').readlines()) == 5
     assert restart_files.join('test_ps.dat').exists()
     assert len(restart_files.join('test_ps.dat').readlines()) == 14
 
-    restart_files = restart_dir.join('137.500').join('TIMELOOP_COMP2__timeloop_comp')
+    restart_files = restart_dir.join('137.500').join('TIMELOOP_COMP2__TimeloopComp')
     assert len(restart_files.listdir()) == 2
     assert restart_files.join('w2_1.dat').exists()
     assert len(restart_files.join('w2_1.dat').readlines()) == 5
@@ -161,14 +161,14 @@ def test_timeloop_checkpoint_restart(tmpdir):
     assert len(restart_files.join('test_ps.dat').readlines()) == 15
 
     # 150.000
-    restart_files = restart_dir.join('150.000').join('TIMELOOP_COMP__timeloop_comp')
+    restart_files = restart_dir.join('150.000').join('TIMELOOP_COMP__TimeloopComp')
     assert len(restart_files.listdir()) == 2
     assert restart_files.join('w1_1.dat').exists()
     assert len(restart_files.join('w1_1.dat').readlines()) == 6
     assert restart_files.join('test_ps.dat').exists()
     assert len(restart_files.join('test_ps.dat').readlines()) == 17
 
-    restart_files = restart_dir.join('150.000').join('TIMELOOP_COMP2__timeloop_comp')
+    restart_files = restart_dir.join('150.000').join('TIMELOOP_COMP2__TimeloopComp')
     assert len(restart_files.listdir()) == 2
     assert restart_files.join('w2_1.dat').exists()
     assert len(restart_files.join('w2_1.dat').readlines()) == 6
@@ -181,10 +181,10 @@ def test_timeloop_checkpoint_restart(tmpdir):
     assert len(results_dir.listdir()) == 8
 
     for time in ['100.0', '112.5', '125.0', '137.5', '150.0']:
-        assert results_dir.join('TIMELOOP_COMP__timeloop_comp_2').join(f'w1_1_{time}.dat').exists()
-        assert results_dir.join('TIMELOOP_COMP__timeloop_comp_2').join(f'w1_2_{time}.dat').exists()
-        assert results_dir.join('TIMELOOP_COMP2__timeloop_comp_3').join(f'w2_1_{time}.dat').exists()
-        assert results_dir.join('TIMELOOP_COMP2__timeloop_comp_3').join(f'w2_2_{time}.dat').exists()
+        assert results_dir.join('TIMELOOP_COMP__TimeloopComp_2').join(f'w1_1_{time}.dat').exists()
+        assert results_dir.join('TIMELOOP_COMP__TimeloopComp_2').join(f'w1_2_{time}.dat').exists()
+        assert results_dir.join('TIMELOOP_COMP2__TimeloopComp_3').join(f'w2_1_{time}.dat').exists()
+        assert results_dir.join('TIMELOOP_COMP2__TimeloopComp_3').join(f'w2_2_{time}.dat').exists()
 
     # Now do simulation_mode=RESTART
 
@@ -210,12 +210,12 @@ def test_timeloop_checkpoint_restart(tmpdir):
     lines = [line[24:] for line in lines]
 
     for time in ['162.5', '175.0', '187.5', '200.0']:
-        assert f'TIMELOOP_COMP__timeloop_comp_8 INFO     step({time})\n' in lines
-        assert f'TIMELOOP_COMP2__timeloop_comp_9 INFO     step({time})\n' in lines
+        assert f'TIMELOOP_COMP__TimeloopComp_8 INFO     step({time})\n' in lines
+        assert f'TIMELOOP_COMP2__TimeloopComp_9 INFO     step({time})\n' in lines
         for comp in [
-            'TIMELOOP__timeloop_driver_7',
-            'TIMELOOP_COMP__timeloop_comp_8',
-            'TIMELOOP_COMP2__timeloop_comp_9',
+            'TIMELOOP__TimeloopDriver_7',
+            'TIMELOOP_COMP__TimeloopComp_8',
+            'TIMELOOP_COMP2__TimeloopComp_9',
         ]:
             assert f'{comp} INFO     checkpoint({time})\n' in lines
 
@@ -230,20 +230,20 @@ def test_timeloop_checkpoint_restart(tmpdir):
     # restart files
     restart_dir = tmpdir.join('restart')
     assert len(restart_dir.listdir()) == 2
-    assert restart_dir.join('187.500').join('TIMELOOP_COMP__timeloop_comp').exists()
-    assert restart_dir.join('200.000').join('TIMELOOP_COMP__timeloop_comp').exists()
-    assert restart_dir.join('187.500').join('TIMELOOP_COMP2__timeloop_comp').exists()
-    assert restart_dir.join('200.000').join('TIMELOOP_COMP2__timeloop_comp').exists()
+    assert restart_dir.join('187.500').join('TIMELOOP_COMP__TimeloopComp').exists()
+    assert restart_dir.join('200.000').join('TIMELOOP_COMP__TimeloopComp').exists()
+    assert restart_dir.join('187.500').join('TIMELOOP_COMP2__TimeloopComp').exists()
+    assert restart_dir.join('200.000').join('TIMELOOP_COMP2__TimeloopComp').exists()
 
     # 137.500
-    restart_files = restart_dir.join('187.500').join('TIMELOOP_COMP__timeloop_comp')
+    restart_files = restart_dir.join('187.500').join('TIMELOOP_COMP__TimeloopComp')
     assert len(restart_files.listdir()) == 2
     assert restart_files.join('w1_1.dat').exists()
     assert len(restart_files.join('w1_1.dat').readlines()) == 10
     assert restart_files.join('test_ps.dat').exists()
     assert len(restart_files.join('test_ps.dat').readlines()) == 29
 
-    restart_files = restart_dir.join('187.500').join('TIMELOOP_COMP2__timeloop_comp')
+    restart_files = restart_dir.join('187.500').join('TIMELOOP_COMP2__TimeloopComp')
     assert len(restart_files.listdir()) == 2
     assert restart_files.join('w2_1.dat').exists()
     assert len(restart_files.join('w2_1.dat').readlines()) == 10
@@ -251,14 +251,14 @@ def test_timeloop_checkpoint_restart(tmpdir):
     assert len(restart_files.join('test_ps.dat').readlines()) == 30
 
     # 200.000
-    restart_files = restart_dir.join('200.000').join('TIMELOOP_COMP__timeloop_comp')
+    restart_files = restart_dir.join('200.000').join('TIMELOOP_COMP__TimeloopComp')
     assert len(restart_files.listdir()) == 2
     assert restart_files.join('w1_1.dat').exists()
     assert len(restart_files.join('w1_1.dat').readlines()) == 11
     assert restart_files.join('test_ps.dat').exists()
     assert len(restart_files.join('test_ps.dat').readlines()) == 32
 
-    restart_files = restart_dir.join('200.000').join('TIMELOOP_COMP2__timeloop_comp')
+    restart_files = restart_dir.join('200.000').join('TIMELOOP_COMP2__TimeloopComp')
     assert len(restart_files.listdir()) == 2
     assert restart_files.join('w2_1.dat').exists()
     assert len(restart_files.join('w2_1.dat').readlines()) == 11
@@ -267,25 +267,22 @@ def test_timeloop_checkpoint_restart(tmpdir):
 
     # work files, w[1,2]_1.dat should include previous data where w[1,2]_2.dat shouldn't
     work_files = tmpdir.join('work')
-    assert work_files.join('TIMELOOP_COMP__timeloop_comp_8').join('w1_1.dat').exists()
-    assert work_files.join('TIMELOOP_COMP__timeloop_comp_8').join('w1_2.dat').exists()
-    assert work_files.join('TIMELOOP_COMP__timeloop_comp_8').join('test_ps.dat').exists()
-    assert len(work_files.join('TIMELOOP_COMP__timeloop_comp_8').join('w1_1.dat').readlines()) == 11
-    assert len(work_files.join('TIMELOOP_COMP__timeloop_comp_8').join('w1_2.dat').readlines()) == 5
+    assert work_files.join('TIMELOOP_COMP__TimeloopComp_8').join('w1_1.dat').exists()
+    assert work_files.join('TIMELOOP_COMP__TimeloopComp_8').join('w1_2.dat').exists()
+    assert work_files.join('TIMELOOP_COMP__TimeloopComp_8').join('test_ps.dat').exists()
+    assert len(work_files.join('TIMELOOP_COMP__TimeloopComp_8').join('w1_1.dat').readlines()) == 11
+    assert len(work_files.join('TIMELOOP_COMP__TimeloopComp_8').join('w1_2.dat').readlines()) == 5
     assert (
-        len(work_files.join('TIMELOOP_COMP__timeloop_comp_8').join('test_ps.dat').readlines()) == 32
+        len(work_files.join('TIMELOOP_COMP__TimeloopComp_8').join('test_ps.dat').readlines()) == 32
     )
 
-    assert work_files.join('TIMELOOP_COMP2__timeloop_comp_9').join('w2_1.dat').exists()
-    assert work_files.join('TIMELOOP_COMP2__timeloop_comp_9').join('w2_2.dat').exists()
-    assert work_files.join('TIMELOOP_COMP2__timeloop_comp_9').join('test_ps.dat').exists()
+    assert work_files.join('TIMELOOP_COMP2__TimeloopComp_9').join('w2_1.dat').exists()
+    assert work_files.join('TIMELOOP_COMP2__TimeloopComp_9').join('w2_2.dat').exists()
+    assert work_files.join('TIMELOOP_COMP2__TimeloopComp_9').join('test_ps.dat').exists()
+    assert len(work_files.join('TIMELOOP_COMP2__TimeloopComp_9').join('w2_1.dat').readlines()) == 11
+    assert len(work_files.join('TIMELOOP_COMP2__TimeloopComp_9').join('w2_2.dat').readlines()) == 5
     assert (
-        len(work_files.join('TIMELOOP_COMP2__timeloop_comp_9').join('w2_1.dat').readlines()) == 11
-    )
-    assert len(work_files.join('TIMELOOP_COMP2__timeloop_comp_9').join('w2_2.dat').readlines()) == 5
-    assert (
-        len(work_files.join('TIMELOOP_COMP2__timeloop_comp_9').join('test_ps.dat').readlines())
-        == 33
+        len(work_files.join('TIMELOOP_COMP2__TimeloopComp_9').join('test_ps.dat').readlines()) == 33
     )
 
     # check output from services.stage_output_files
@@ -294,33 +291,33 @@ def test_timeloop_checkpoint_restart(tmpdir):
     assert len(results_dir.listdir()) == 14
 
     for time in ['162.5', '175.0', '187.5', '200.0']:
-        assert results_dir.join('TIMELOOP_COMP__timeloop_comp_8').join(f'w1_1_{time}.dat').exists()
-        assert results_dir.join('TIMELOOP_COMP__timeloop_comp_8').join(f'w1_2_{time}.dat').exists()
-        assert results_dir.join('TIMELOOP_COMP2__timeloop_comp_9').join(f'w2_1_{time}.dat').exists()
-        assert results_dir.join('TIMELOOP_COMP2__timeloop_comp_9').join(f'w2_2_{time}.dat').exists()
+        assert results_dir.join('TIMELOOP_COMP__TimeloopComp_8').join(f'w1_1_{time}.dat').exists()
+        assert results_dir.join('TIMELOOP_COMP__TimeloopComp_8').join(f'w1_2_{time}.dat').exists()
+        assert results_dir.join('TIMELOOP_COMP2__TimeloopComp_9').join(f'w2_1_{time}.dat').exists()
+        assert results_dir.join('TIMELOOP_COMP2__TimeloopComp_9').join(f'w2_2_{time}.dat').exists()
 
 
 def test_time_loop():
-    sim_conf = {'TIME_LOOP': {'MODE': 'REGULAR', 'start': '0', 'finish': '10', 'nstep': '10'}}
+    sim_conf = {'TIME_LOOP': {'MODE': 'REGULAR', 'START': '0', 'FINISH': '10', 'NSTEP': '10'}}
     services_proxy = ServicesProxy(None, None, None, sim_conf, None)
     tl = services_proxy.get_time_loop()
     assert tl == list(range(11))
 
     sim_conf = {
-        'TIME_LOOP': {'MODE': 'REGULAR', 'start': '0 + 20 / 2', 'finish': '13 - 1', 'nstep': '2'}
+        'TIME_LOOP': {'MODE': 'REGULAR', 'START': '0 + 20 / 2', 'FINISH': '13 - 1', 'NSTEP': '2'}
     }
     services_proxy = ServicesProxy(None, None, None, sim_conf, None)
     tl = services_proxy.get_time_loop()
     assert tl == [10, 11, 12]
 
     sim_conf = {
-        'TIME_LOOP': {'MODE': 'REGULAR', 'start': '10 * 2', 'finish': '10 ** 2', 'nstep': '2'}
+        'TIME_LOOP': {'MODE': 'REGULAR', 'START': '10 * 2', 'FINISH': '10 ** 2', 'NSTEP': '2'}
     }
     services_proxy = ServicesProxy(None, None, None, sim_conf, None)
     tl = services_proxy.get_time_loop()
     assert tl == [20, 60, 100]
 
-    sim_conf = {'TIME_LOOP': {'MODE': 'REGULAR', 'start': '1e2', 'finish': '5e1', 'nstep': '2'}}
+    sim_conf = {'TIME_LOOP': {'MODE': 'REGULAR', 'START': '1e2', 'FINISH': '5e1', 'NSTEP': '2'}}
     services_proxy = ServicesProxy(None, None, None, sim_conf, None)
     tl = services_proxy.get_time_loop()
     assert tl == [100, 75, 50]
@@ -330,9 +327,9 @@ def test_time_loop():
     tl = services_proxy.get_time_loop()
     assert tl == [7, 13, -42, 1000]
 
-    sim_conf = {'TIME_LOOP': {'MODE': 'REGULAR', 'start': '1p2', 'finish': '10', 'nstep': '2'}}
+    sim_conf = {'TIME_LOOP': {'MODE': 'REGULAR', 'START': '1p2', 'FINISH': '10', 'NSTEP': '2'}}
     services_proxy = ServicesProxy(None, None, None, sim_conf, None)
     services_proxy.error = MagicMock(name='error')
     with pytest.raises(ValueError) as excinfo:
         services_proxy.get_time_loop()
-    assert str(excinfo.value) == 'Invalid TIME_LOOP value of start = 1p2'
+    assert str(excinfo.value) == 'Invalid TIME_LOOP value of START = 1p2'

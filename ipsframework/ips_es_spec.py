@@ -17,17 +17,14 @@ class EventManager:
     def __init__(self, obj_ref):
         self.obj_ref = obj_ref
         self.objcache = {}
-        self.publisher = 'self.publisher'
-        self.subscriber = 'self.subscriber'
+        self._publisher_svc = None
+        self._subscriber_svc = None
 
     def publish(self, topic_name, event_name, event_body):
-        if self.publisher in self.objcache:
-            pub = self.objcache[self.publisher]
-        else:
-            pub = PublisherEventService()
-            self.objcache[self.publisher] = pub
+        if self._publisher_svc is None:
+            self._publisher_svc = PublisherEventService()
 
-        topic = pub.get_topic(topic_name)
+        topic = self._publisher_svc.get_topic(topic_name)
         topic.send_event(event_name, event_body)
 
     def subscribe(self, topic_name, callback):
@@ -41,11 +38,8 @@ class EventManager:
             #      throw an exception?
             return
 
-        if self.subscriber in self.objcache:
-            sub = self.objcache[self.subscriber]
-        else:
-            sub = SubscriberEventService()
-            self.objcache[self.subscriber] = sub
+        if self._subscriber_svc is None:
+            self._subscriber_svc = SubscriberEventService()
 
         if topic_name in self.objcache:
             # TODO: do we notify the client to do an unsubscribe before
@@ -53,7 +47,7 @@ class EventManager:
             #      currently throws an exception in this scenario...
             scp = self.objcache[topic_name]
         else:
-            scp = sub.get_subscription(topic_name)
+            scp = self._subscriber_svc.get_subscription(topic_name)
             self.objcache[topic_name] = scp
 
         evl = MyEventListener(callback_method)
@@ -68,8 +62,8 @@ class EventManager:
         #      throw an exception?
 
     def process_events(self):
-        if self.subscriber in self.objcache:
-            self.objcache[self.subscriber].process_events()
+        if self._subscriber_svc is not None:
+            self._subscriber_svc.process_events()
         # else:
         # TODO: do we notify the client to do a subscribe before processing?
         #      throw an exception?

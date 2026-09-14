@@ -51,7 +51,7 @@ def test_helloworld(tmpdir, capfd):
     assert framework.log_file_name.endswith('test.log')
 
     fwk_components = framework.config_manager.get_framework_components()
-    assert len(fwk_components) == 1
+    assert len(fwk_components) == 2
     assert 'Hello_world_1_FWK@RunspaceInitComponent@3' in fwk_components
 
     component_map = framework.config_manager.get_component_map()
@@ -81,8 +81,9 @@ def test_helloworld(tmpdir, capfd):
     assert captured_out[5] == 'Hello from HelloWorker'
     assert captured_out[6] == 'HelloDriver: finished worker call'
 
-    # check that portal didn't write anything since USE_PORTAL=False
-    assert not os.path.exists(tmpdir.join('simulation_log'))
+    # LocalLoggingBridge always writes simulation_log; portal-only www dir
+    # should not exist since USE_PORTAL=False
+    assert os.path.exists(tmpdir.join('simulation_log'))
     assert not os.path.exists(tmpdir.join('www'))
 
 
@@ -111,7 +112,7 @@ def test_helloworld_launch_task(tmpdir, capfd):
     assert framework.log_file_name.endswith('test.log')
 
     fwk_components = framework.config_manager.get_framework_components()
-    assert len(fwk_components) == 1
+    assert len(fwk_components) == 2
     assert 'Hello_world_1_FWK@RunspaceInitComponent@3' in fwk_components
 
     component_map = framework.config_manager.get_component_map()
@@ -179,7 +180,7 @@ def test_helloworld_task_pool(tmpdir, capfd):
 
     assert framework.log_file_name.endswith('test.log')
 
-    assert len(framework.config_manager.get_framework_components()) == 1
+    assert len(framework.config_manager.get_framework_components()) == 2
 
     component_map = framework.config_manager.get_component_map()
 
@@ -273,7 +274,7 @@ def test_helloworld_task_pool_dask(tmpdir, capfd):
     assert 'ret_val =  9' in captured_out
 
     for duration in ('0.2', '0.4', '0.6'):
-        for task in ['my_fun', 'myMethod']:
+        for task in ['my_fun', 'my_method']:
             assert f'{task}({duration})' in captured_out
 
     exit_status = json.loads(captured_out[-3].replace("'", '"'))

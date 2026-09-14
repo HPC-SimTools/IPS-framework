@@ -6,42 +6,22 @@ This file writes debug messages to 'debug.out' file if the environment
 variable 'IPSES_DEBUG' is defined.
 """
 
+import logging
 import os
 
+_logger = logging.getLogger(__name__)
 
-class Debug:  # pragma: no cover
-    def __init__(self):
-        self.file = None
-        if 'IPSES_DEBUG' in os.environ:
-            self.file = open('debug.out', 'w')
-
-    def output(self, s: str, id1=0, id2=0):
-        if self.file:
-            tmp = ''
-            if id1 != 0:
-                """ one subscriber/listener """
-                if id2 == 0:
-                    tmp += ', id = ' + str(id1)
-                else:
-                    tmp += ', listenerid = ' + str(id1) + ', subscriberid = ' + str(id2)
-
-            self.file.write(s + tmp + '\n')
-
-    def msg(self, s1: str, ret=99, s2=''):
-        if self.file:
-            if s2 == '':
-                if ret != 99:
-                    self.file.write(s1 + ' ' + str(ret) + '\n')
-                else:
-                    self.file.write(s1 + '\n')
-            elif ret != 99:
-                self.file.write(s1 + ' ' + str(ret) + ' ' + s2 + '\n')
-            else:
-                self.file.write(s1 + ' ' + s2 + '\n')
-
-    def __del__(self):
-        if self.file:
-            self.file.close()
+if 'IPSES_DEBUG' in os.environ:
+    _logger.setLevel(logging.DEBUG)
+    _logger.addHandler(logging.FileHandler('debug.out', mode='w'))
+else:
+    _logger.setLevel(logging.WARNING)
 
 
-debug = Debug()
+def output(s: str, id1=0, id2=0):
+    if id1 != 0:
+        if id2 == 0:
+            s += ', id = ' + str(id1)
+        else:
+            s += ', listenerid = ' + str(id1) + ', subscriberid = ' + str(id2)
+    _logger.debug(s)

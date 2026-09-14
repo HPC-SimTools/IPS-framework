@@ -147,7 +147,7 @@ class ComponentRegistry(metaclass=SingletonMeta):
             print(
                 'Error creating component registry entry for ', key, ' : ', str(e), file=sys.stderr
             )
-            raise e
+            raise
 
     def remove_entry(self, component_id):
         key = component_id.get_serialization()
