@@ -165,5 +165,8 @@ simulation_setup/
 run.log
 resource_usage
 
+# These are the output files from the simulation, which are not needed for version control
+*.out
+
 # readthedocs
 _build
