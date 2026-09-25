@@ -8,6 +8,7 @@
 #
 #SBATCH --account=atom # REPLACE "atom" WITH YOUR PROJECT ID
 #SBATCH --constraint=cpu
+#SBATCH --job-name=example_024
 #SBATCH --nodes=1
 #SBATCH --time=5
 #SBATCH -p debug
