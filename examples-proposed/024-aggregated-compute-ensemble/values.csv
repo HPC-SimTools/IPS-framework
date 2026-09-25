@@ -1,4 +1,4 @@
-instance_component:alpha, instance_component:L, instance_component:T_final,instance_component:Nx,instance_component:Nt
+instance_component:alpha, instance_component:l, instance_component:t_final,instance_component:nx,instance_component:nt
 0.1, 1.0, 1.0, 50, 1000
 0.14, 1.70, 5.38, 95,850
 0.32, 2.56, 5.74, 57,600
