@@ -284,7 +284,6 @@ class PortalSimulationData:
     """
 
     def __init__(self):
-        self.counter = 0
         self.portal_runid: str | None = None
         """Locally determined portal runid, also sent to the portal."""
         self.parent_portal_runid: str | None = None
@@ -307,6 +306,7 @@ class PortalBridge(Component):
         """
         super().__init__(services, config)
 
+        self.sequence_counter = 0
         self.sim_map: dict[str, PortalSimulationData] = {}
         self.done = False
         self.first_portal_runid = None
@@ -442,7 +442,8 @@ class PortalBridge(Component):
 
         if event_type == 'IPS_START' and 'parent_portal_runid' not in portal_data:
             portal_data['parent_portal_runid'] = sim_data.parent_portal_runid
-        portal_data['seqnum'] = sim_data.counter
+        self.sequence_counter += 1
+        portal_data['seqnum'] = self.sequence_counter
 
         if 'trace' in portal_data:
             portal_data['trace']['traceId'] = hashlib.md5(

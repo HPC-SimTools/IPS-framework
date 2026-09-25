@@ -21,7 +21,6 @@ class SimulationData:
     """
 
     def __init__(self):
-        self.counter = 0
         self.monitor_file_prefix = ''
         """The name of the file, minus the extension ('.html', '.jsonl', etc.).
 
@@ -55,7 +54,7 @@ class LocalLoggingBridge(Component):
         super().__init__(services, config)
         self.sim_map: dict[str, SimulationData] = {}
         self.done = False
-        self.counter = 0
+        self.sequence_counter = 0
         self.dump_freq = 10
         self.min_dump_interval = 300  # Minimum time interval in Sec for HTML dump operation
         self.last_dump_time = time.time()
@@ -116,6 +115,13 @@ class LocalLoggingBridge(Component):
             except Exception:
                 pass
 
+    def terminate(self, status: Literal[0, 1]):
+        """
+        Clean up services and call :py:obj:`sys_exit`.
+        """
+
+        Component.terminate(self, status)
+
     def process_event(self, topic_name: str, the_event: Event):
         """
         Process a single event *the_event* on topic *topic_name*.
@@ -130,7 +136,7 @@ class LocalLoggingBridge(Component):
 
         if portal_data['eventtype'] == 'IPS_START':
             sim_root = event_body['sim_root']
-            self.init_simulation(sim_name, sim_root, portal_data['portal_runid'])
+            self._init_simulation(sim_name, sim_root, portal_data['portal_runid'])
 
         sim_data = self.sim_map[sim_name]
         if portal_data['eventtype'] == 'PORTALBRIDGE_UPDATE_TIMESTAMP':
@@ -157,14 +163,15 @@ class LocalLoggingBridge(Component):
 
         if portal_data['eventtype'] == 'IPS_START' and 'parent_portal_runid' not in portal_data:
             portal_data['parent_portal_runid'] = sim_data.parent_portal_runid
-        portal_data['seqnum'] = sim_data.counter
+        self.sequence_counter += 1
+        portal_data['seqnum'] = self.sequence_counter
 
         if 'trace' in portal_data:
             portal_data['trace']['traceId'] = hashlib.md5(
                 sim_data.portal_runid.encode()
             ).hexdigest()
 
-        self.send_event(sim_data, portal_data)
+        self._save_event_to_log(sim_data, portal_data)
 
         if portal_data['eventtype'] == 'IPS_END':
             del self.sim_map[sim_name]
@@ -174,7 +181,7 @@ class LocalLoggingBridge(Component):
             self.services.debug('No more simulation to monitor - exiting')
             time.sleep(1)
 
-    def init_simulation(self, sim_name: str, sim_root: str, portal_runid: str):
+    def _init_simulation(self, sim_name: str, sim_root: str, portal_runid: str):
         """
         Create and send information about simulation *sim_name* living in
         *sim_root* so the portal can set up corresponding structures to manage
@@ -228,19 +235,12 @@ class LocalLoggingBridge(Component):
 
         self.sim_map[sim_data.sim_name] = sim_data
 
-    def terminate(self, status: Literal[0, 1]):
+    def _save_event_to_log(self, sim_data: SimulationData, event_data: dict[str, Any]):
         """
-        Clean up services and call :py:obj:`sys_exit`.
-        """
-
-        Component.terminate(self, status)
-
-    def send_event(self, sim_data: SimulationData, event_data: dict[str, Any]):
-        """
-        Send contents of *event_data* and *sim_data* to portal.
+        Send contents of *event_data* and *sim_data* to the log file.
         """
         timestamp = ipsutil.get_time_string()
-        buf = '%8d %s ' % (sim_data.counter, timestamp)
+        buf = '%8d %s ' % (event_data['seqnum'], timestamp)
         for k, v in event_data.items():
             if len(str(v).strip()) == 0:
                 continue
@@ -257,7 +257,7 @@ class LocalLoggingBridge(Component):
 
         freq = self.dump_freq
         if (
-            (self.counter % freq == 0)
+            (self.sequence_counter % freq == 0)
             and (time.time() - self.last_dump_time > self.min_dump_interval)
         ) or (event_data['eventtype'] == 'IPS_END'):
             self.last_dump_time = time.time()
