@@ -3275,10 +3275,22 @@ class DVMPlugin(WorkerPlugin):
 
         self.logger.info('Launching DVM')
         self.worker.dvm_uri_file = f'/tmp/dvm.uri.{os.getpid()}'
-        command = [  #'srun', '--mpi=pmix_v4', '-N', os.environ['SLURM_NNODES'], '--ntasks-per-node=1',
-            'prte',  #'--no-daemonize',
-            '--report-uri',
-            self.worker.dvm_uri_file,
+        # The command to launch the DVM.  Note that we use `prte` instead of
+        # `mpirun` or `prun`.  This is because we want to launch the DVM
+        # itself, not a specific application.  The DVM will then manage the
+        # resources and launch the applications as needed.  We use --host
+        # localhost to ensure that the DVM is launched on one local node.  Each
+        # node will have its own DVM managing the node resources.
+        # TODO Use a Dask scheduler plugin to launch one DVM instance to
+        #   orchestrate all the Dask workers instead of one DVM per worker.
+        #   Note that this work is largely completed on the git branch
+        #   253-dvm-daemons-should-be-in-scheduler-plugin and just needs
+        #   vetting.
+        command = [
+                'prte',
+                '--host', 'localhost',
+                '--report-uri',
+                self.worker.dvm_uri_file,
         ]
 
         mapping_policy = 'core'  # by default bind to cores
