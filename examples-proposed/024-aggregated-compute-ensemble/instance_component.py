@@ -53,36 +53,46 @@ class InstanceComponent(Component):
         # the `run_ensemble()` `name` argument prepended to a unique number
         # for each instance.  E.g., ENSEMBLE_INSTANCE might be "MY_INSTANCE_23".
         instance_id = self.services.get_config_param('ENSEMBLE_INSTANCE')
-        self.services.info(f'{instance_id}: Start of step of instance component.')
+        self.services.info(f'{instance_id}: Start of step of instance '
+                           f'component.')
 
         # Echo the parameters we're expecting, A, B, and C
         self.services.info(
-            f'{instance_id}: instance component parameters: alpha={self.alpha}, l={self.l}, t_final={self.t_final}, nx={self.nx}, nt={self.nt}'
+            f'{instance_id}: instance component parameters: '
+            f'alpha={self.alpha}, l={self.l}, t_final={self.t_final}, '
+            f'nx={self.nx}, nt={self.nt}'
         )
 
         cmd = create_cmd(
-            instance_id, Path(self.BIN_PATH), self.alpha, self.l, self.t_final, self.nx, self.nt
+            instance_id, Path(self.BIN_PATH),
+                self.alpha, self.l, self.t_final, self.nx, self.nt
         )
 
         working_dir = str(Path('.').absolute())
-        self.services.info(f'{instance_id}: Launching executable in {working_dir}')
+        self.services.info(f'{instance_id}: Launching executable in '
+                           f'{working_dir}')
         run_id = None
         try:
             cmd = ' '.join(cmd)  # need one big ole string for executing tasks
-            run_id = self.services.launch_task(nproc=1, working_dir=working_dir, binary=cmd)
+            run_id = self.services.launch_task(nproc=1,
+                                               working_dir=working_dir,
+                                               binary=cmd)
         except Exception:
-            self.services.critical(f'{instance_id}: Unable to launch executable in {working_dir}')
+            self.services.critical(f'{instance_id}: Unable to launch executable '
+                                   f'in {working_dir}')
 
         return_value = self.services.wait_task(run_id)  # block until done
 
         self.services.info(
-            f'{instance_id}: Completed MPI executable with return value: {return_value}.'
+            f'{instance_id}: Completed MPI executable with return value: '
+            f'{return_value}.'
         )
 
         # Add the generated data JSON and CSV files to the portal
         try:
             self.services.add_analysis_data_files(
-                [f'{instance_id}_solution.json', f'{instance_id}_stats.csv'], replace=True
+                [f'{instance_id}_solution.json', f'{instance_id}_stats.csv'],
+                    replace=True
             )
         except Exception:
             print('did not add data files to portal, check logs')
