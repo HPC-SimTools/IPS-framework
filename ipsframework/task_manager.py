@@ -129,11 +129,11 @@ class TaskManager:
         """
         ctt = self.curr_task_table
         for c, i in ctt.items():
-            print(c)
+            print(c, file=sys.stderr)
             for k, v in i.items():
-                print('   ', k, '=', v)
-            print('------')
-        print('=====================')
+                print('   ', k, '=', v, file=sys.stderr)
+            print('------', file=sys.stderr)
+        print('=====================', file=sys.stderr)
 
     # TM call
     def init_call(self, init_call_msg, manage_return=True):
@@ -435,7 +435,7 @@ class TaskManager:
                 nproc_flag = '-np'
                 ppn_flag = '-npernode'
                 host_select = '-H'
-                if smp_node or mpi_binary == 'prun':
+                if mpi_binary == 'prun':
                     # --display MAP-DEVEL is added to show the DVM state when
                     # invoking this prun. We do this so that we can verify the
                     # resources managed by DVM for this task as displayed in
@@ -450,6 +450,8 @@ class TaskManager:
                             str(nproc),
                         ]
                     )
+                elif smp_node:
+                    cmd = ' '.join([mpicmd, nproc_flag, str(nproc)])
                 else:
                     cmd = ' '.join([mpicmd, nproc_flag, str(nproc), ppn_flag, str(ppn)])
                 cmd = f'{cmd} -x PYTHONPATH'  # Propagate PYTHONPATH to compute nodes

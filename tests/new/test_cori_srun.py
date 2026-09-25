@@ -67,7 +67,7 @@ def test_srun_openmp_on_cori(tmpdir):
     framework.run()
 
     # check simulation_log
-    json_files = glob.glob(str(tmpdir.join('simulation_log').join('*.json')))
+    json_files = glob.glob(str(tmpdir.join('simulation_log').join('*.jsonl')))
     assert len(json_files) == 1
     with open(json_files[0], 'r') as json_file:
         comments = [json.loads(line)['comment'].split(', ', maxsplit=4)[3:] for line in json_file]
@@ -277,7 +277,7 @@ def test_srun_openmp_on_cori_pool(tmpdir):
     framework.run()
 
     # check simulation_log
-    json_files = glob.glob(str(tmpdir.join('simulation_log').join('*.json')))
+    json_files = glob.glob(str(tmpdir.join('simulation_log').join('*.jsonl')))
     assert len(json_files) == 1
     with open(json_files[0], 'r') as json_file:
         comments = [json.loads(line)['comment'].split(', ', maxsplit=5)[3:] for line in json_file]

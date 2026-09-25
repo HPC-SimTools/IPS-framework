@@ -3,6 +3,7 @@
 # -------------------------------------------------------------------------------
 # local version
 import os
+import sys
 import time
 from collections import namedtuple
 from math import ceil
@@ -151,7 +152,7 @@ class ResourceManager:
                     self.accurate_nodes = False
                     self.fwk.warning('RM: User set accurate_nodes to False')
             except Exception:
-                print("can't get resource info")
+                print("can't get resource info", file=sys.stderr)
                 raise
 
             # -------------------------------
@@ -280,11 +281,11 @@ class ResourceManager:
         """
         Print the node tree to ``stdout``.
         """
-        print('*** RM.nodeTable ***')
+        print('*** RM.nodeTable ***', file=sys.stderr)
         for n, i in self.nodes.items():
-            print(n)
+            print(n, file=sys.stderr)
             i.print_sockets()
-        print('=====================')
+        print('=====================', file=sys.stderr)
 
     def add_nodes(self, list_of_nodes: list[tuple[str, int]]) -> int:
         """
@@ -482,20 +483,20 @@ class ResourceManager:
                     self.avail_cores -= cores_allocated
                     self.active_tasks.update({task_id: (comp_id, nproc, cores_allocated)})
             except Exception:
-                print('Available Nodes:')
+                print('Available Nodes:', file=sys.stderr)
                 for nm in self.avail_nodes:
                     n = self.nodes[nm]
-                    print(n.name, n.avail_cores)
+                    print(n.name, n.avail_cores, file=sys.stderr)
                     n.print_sockets()
-                print('\nAllocated Nodes:')
+                print('\nAllocated Nodes:', file=sys.stderr)
                 for nm in self.alloc_nodes:
                     n = self.nodes[nm]
-                    print(n.name, n.avail_cores)
+                    print(n.name, n.avail_cores, file=sys.stderr)
                     n.print_sockets()
-                print('\n ***** Neither List!')
+                print('\n ***** Neither List!', file=sys.stderr)
                 for nm, n in self.nodes.items():
                     if nm not in self.avail_nodes and nm not in self.alloc_nodes:
-                        print(nm, n.avail_cores)
+                        print(nm, n.avail_cores, file=sys.stderr)
                         n.print_sockets()
                 raise
 

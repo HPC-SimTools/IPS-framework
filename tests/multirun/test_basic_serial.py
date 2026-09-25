@@ -50,9 +50,9 @@ def test_basic_serial_1(tmpdir, capfd):
     assert captured_out[0] == "Created <class 'small_worker.SmallWorker'>"
     assert captured_out[1] == "Created <class 'medium_worker.MediumWorker'>"
     assert captured_out[2] == "Created <class 'large_worker.LargeWorker'>"
-    assert captured_out[3] == 'small_worker : init() called'
-    assert captured_out[5] == 'medium_worker : init() called'
-    assert captured_out[7] == 'large_worker : init() called'
+    assert captured_out[3] == 'SmallWorker : init() called'
+    assert captured_out[5] == 'MediumWorker : init() called'
+    assert captured_out[7] == 'LargeWorker : init() called'
     assert captured_out[9] == 'Current time =  3.50'
     assert captured_out[10] == 'Current time =  3.60'
     assert captured_out[11] == 'Current time =  3.70'
@@ -61,7 +61,7 @@ def test_basic_serial_1(tmpdir, capfd):
     driver_files = [
         os.path.basename(f)
         for f in glob.glob(
-            str(tmpdir.join('test_basic_serial_1_0/work/drivers_testing_basic_serial_1_*/*'))
+            str(tmpdir.join('test_basic_serial_1_0/work/drivers_testing_BasicSerial1_*/*'))
         )
     ]
     for infile in ['file1', 'ofile1', 'ofile2', 'sfile1', 'sfile2']:
@@ -189,7 +189,7 @@ def test_basic_serial_multi(tmpdir, capfd):
         driver_files = [
             os.path.basename(f)
             for f in glob.glob(
-                str(tmpdir.join(f'test_basic_serial_{no}_0/work/drivers_testing_basic_serial*_*/*'))
+                str(tmpdir.join(f'test_basic_serial_{no}_0/work/drivers_testing_BasicSerial*_*/*'))
             )
         ]
         for infile in ['file1', 'ofile1', 'ofile2', 'sfile1', 'sfile2']:
@@ -306,7 +306,7 @@ def test_basic_serial_multi(tmpdir, capfd):
 
     # check that the parent_portal_runid is correctly set
     serial1_json_files = glob.glob(
-        str(tmpdir.join('test_basic_serial_1_0').join('simulation_log').join('*.json'))
+        str(tmpdir.join('test_basic_serial_1_0').join('simulation_log').join('*.jsonl'))
     )
     assert len(serial1_json_files) == 1
     with open(serial1_json_files[0], 'r') as json_file:
@@ -317,7 +317,7 @@ def test_basic_serial_multi(tmpdir, capfd):
     serial1_portal_runid = serial1_ips_start['portal_runid']
 
     serial2_json_files = glob.glob(
-        str(tmpdir.join('test_basic_serial_2_0').join('simulation_log').join('*.json'))
+        str(tmpdir.join('test_basic_serial_2_0').join('simulation_log').join('*.jsonl'))
     )
     assert len(serial2_json_files) == 1
     with open(serial2_json_files[0], 'r') as json_file:
@@ -363,19 +363,17 @@ def test_basic_concurrent_1(tmpdir, capfd):
     assert captured_out[5] == 'MediumWorker : init() called'
     assert captured_out[7] == 'LargeWorker : init() called'
     assert captured_out[9] == 'Current time =  3.50'
-    assert captured_out[10] == 'nonblocking wait_call() invoked before call 10 finished'
+    assert captured_out[10] == 'nonblocking wait_call() invoked before call 12 finished'
     assert captured_out[11] == 'Current time =  3.60'
-    assert captured_out[12] == 'nonblocking wait_call() invoked before call 13 finished'
+    assert captured_out[12] == 'nonblocking wait_call() invoked before call 15 finished'
     assert captured_out[13] == 'Current time =  3.70'
-    assert captured_out[14] == 'nonblocking wait_call() invoked before call 16 finished'
+    assert captured_out[14] == 'nonblocking wait_call() invoked before call 18 finished'
 
     # check files copied and created
     driver_files = [
         os.path.basename(f)
         for f in glob.glob(
-            str(
-                tmpdir.join('test_basic_concurrent_1_0/work/drivers_testing_basic_concurrent_1_*/*')
-            )
+            str(tmpdir.join('test_basic_concurrent_1_0/work/drivers_testing_BasicConcurrent1_*/*'))
         )
     ]
     for infile in ['file1', 'ofile1', 'ofile2', 'sfile1', 'sfile2']:

@@ -84,8 +84,8 @@ from ipsframework.messages import (
 from ipsframework.resource_manager import ResourceManager
 from ipsframework.task_manager import TaskManager
 
-if sys.version_info[0] != 3 or sys.version_info[1] < 9:
-    print('IPS is only compatible with Python 3.9 or higher', file=sys.stderr)
+if sys.version_info < (3, 10):
+    print('IPS is only compatible with Python 3.10 or higher', file=sys.stderr)
     sys.exit(1)
 
 

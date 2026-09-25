@@ -82,7 +82,7 @@ def test_component_logging(tmpdir):
     # remove timestamp
     lines = [line[24:] for line in lines]
 
-    component_id = 'LOGGING__loggingTester_1'
+    component_id = 'LOGGING__LoggingTester_1'
 
     # for log_level=WARNING only WARNING, ERROR and CRITICAL logs should be included
     # DEBUG and INFO should be excluded
