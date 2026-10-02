@@ -6,7 +6,7 @@
 # free to create your own environment with a different name; but, be sure to
 # change the "conda activate" line below accordingly if you do so.
 #
-#SBATCH --account=atom # REPLACE WITH YOUR PROJECT ID
+#SBATCH --account=m4527 # REPLACE WITH YOUR PROJECT ID
 #SBATCH --constraint=cpu
 #SBATCH --job-name=example_021
 #SBATCH --nodes=1
