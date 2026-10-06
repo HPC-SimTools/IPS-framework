@@ -203,7 +203,7 @@ def launch(executable: Any, task_name: str, working_dir: str | os.PathLike, *arg
                     stderr=subprocess_stderr,
                     cwd=working_dir_path,
                     text=True,
-                    preexec_fn=os.setsid,  # noqa: PLW1509  # TODO - FIX THIS, it is deprecated (https://github.com/python/cpython/issues/82616) (https://docs.astral.sh/ruff/rules/subprocess-popen-preexec-fn/)
+                    start_new_session=True,
                     env=new_env,
                 )
             except Exception as e:
