@@ -3642,9 +3642,12 @@ class TaskPool:
                 raise
 
         dask_nodes = 1 if dask_nodes is None else dask_nodes
-        if services.get_config_param('MPIRUN') == 'eval':
-            # TODO Why?
-            dask_nodes = 1
+        # if services.get_config_param('MPIRUN') == 'eval':
+        #     # TODO Why?
+        # Commenting this out for now since it seems to be a hack that is no
+        # longer needed.  If we need to use `eval` for some reason, then we
+        # should figure out why and fix it properly.
+        #     dask_nodes = 1
 
         # By default we should have as many threads as there are
         # processors on the node, which is what PROCS_PER_NODE should be set
