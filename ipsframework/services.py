@@ -3642,6 +3642,8 @@ class TaskPool:
                 raise
 
         dask_nodes = 1 if dask_nodes is None else dask_nodes
+        self.services.info(f'Launching {dask_nodes} Dask workers with '
+                           f'{dask_ppw} processes per worker')
         # if services.get_config_param('MPIRUN') == 'eval':
         #     # TODO Why?
         # Commenting this out for now since it seems to be a hack that is no
