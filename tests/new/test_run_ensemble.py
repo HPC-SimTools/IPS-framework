@@ -223,3 +223,21 @@ def test_launch_writes_stderr_to_logfile_when_errfile_matches_logfile(tmpdir, mo
         'stdout-line\n',
         'stderr-line\n',
     ]
+
+
+def test_launch_does_not_deadlock_when_output_exceeds_pipe_buffer(tmpdir, monkeypatch, capsys):
+    script = tmpdir.join('big_output.sh')
+    script.write('#!/bin/sh\nhead -c 1000000 /dev/zero | tr "\\0" x\n')
+    script.chmod(448)  # 700
+
+    monkeypatch.setattr(services_module, 'get_worker', DummyDaskWorker)
+
+    # without logfile/errfile, stdout is a PIPE; 1 MB overflows the ~64 KiB pipe buffer
+    assert services_module.launch(str(script), 'task_0', str(tmpdir), timeout=30) == ('task_0', 0)
+    assert capsys.readouterr().out.count('x') == 1000000
+
+
+def test_launch_timeout_kills_task(tmpdir, monkeypatch):
+    monkeypatch.setattr(services_module, 'get_worker', DummyDaskWorker)
+
+    assert services_module.launch('sleep', 'task_0', str(tmpdir), 100, timeout=1) == ('task_0', -1)
