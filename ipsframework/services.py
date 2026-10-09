@@ -11,6 +11,7 @@ import logging.handlers
 import os
 import queue
 import shutil
+import signal
 import socket
 import subprocess
 import sys
@@ -175,7 +176,7 @@ def launch(executable: Any, task_name: str, working_dir: str | os.PathLike, *arg
                 f'DVM environment variable PMIX_SERVER_URI41 set in os.environ to {os.environ["PMIX_SERVER_URI41"]}'
             )
 
-        timeout = float(kwargs.get('timeout', 1.0e9))
+        timeout = float(kwargs['timeout']) if 'timeout' in kwargs else None
 
         cmd = f'{executable} {" ".join(map(str, args))}'
 
@@ -193,6 +194,7 @@ def launch(executable: Any, task_name: str, working_dir: str | os.PathLike, *arg
 
         cmd_lst = cmd.split()
         process = None
+        out, err = None, None
         try:
             try:
                 process = subprocess.Popen(
@@ -201,7 +203,7 @@ def launch(executable: Any, task_name: str, working_dir: str | os.PathLike, *arg
                     stderr=subprocess_stderr,
                     cwd=working_dir_path,
                     text=True,
-                    preexec_fn=os.setsid,  # noqa: PLW1509  # TODO - FIX THIS, it is deprecated (https://github.com/python/cpython/issues/82616) (https://docs.astral.sh/ruff/rules/subprocess-popen-preexec-fn/)
+                    start_new_session=True,
                     env=new_env,
                 )
             except Exception as e:
@@ -219,7 +221,9 @@ def launch(executable: Any, task_name: str, working_dir: str | os.PathLike, *arg
                 raise
 
             try:
-                ret_val = process.wait(timeout)
+                # communicate() drains the pipes while waiting; wait() deadlocks once a PIPE fills
+                out, err = process.communicate(timeout=timeout)
+                ret_val = process.returncode
                 finish_time = time.time()
                 worker.log_event(
                     'ips',
@@ -245,7 +249,9 @@ def launch(executable: Any, task_name: str, working_dir: str | os.PathLike, *arg
                         'comment': f'task_name = {task_name}, timed-out after {timeout}s',
                     },
                 )
-                process.kill()
+                # child is a session leader (setsid); kill the whole group so no grandchild keeps the pipe open
+                os.killpg(process.pid, signal.SIGKILL)
+                out, err = process.communicate()
                 log.error(f'Task {task_name} with command {cmd} timed out after {timeout}s')
                 ret_val = -1
             except Exception as e:
@@ -260,10 +266,10 @@ def launch(executable: Any, task_name: str, working_dir: str | os.PathLike, *arg
                 )
                 log.error(f'Task {task_name} with command {cmd} failed with {e!s}')
         finally:
-            if 'logfile' not in kwargs:
-                print(process.stdout.read() if process and process.stdout else '')
-            if 'errfile' not in kwargs:
-                print(process.stderr.read() if process and process.stderr else '', file=sys.stderr)
+            if out:
+                print(out)
+            if err:
+                print(err, file=sys.stderr)
 
             if close_stdout:
                 subprocess_stdout.close()
@@ -3257,10 +3263,11 @@ class DVMPlugin(WorkerPlugin):
         #   253-dvm-daemons-should-be-in-scheduler-plugin and just needs
         #   vetting.
         command = [
-                'prte',
-                '--host', 'localhost',
-                '--report-uri',
-                self.worker.dvm_uri_file,
+            'prte',
+            '--host',
+            'localhost',
+            '--report-uri',
+            self.worker.dvm_uri_file,
         ]
 
         mapping_policy = 'core'  # by default bind to cores
@@ -3642,8 +3649,9 @@ class TaskPool:
                 raise
 
         dask_nodes = 1 if dask_nodes is None else dask_nodes
-        self.services.info(f'Launching {dask_nodes} Dask workers with '
-                           f'{dask_ppw} processes per worker')
+        self.services.info(
+            f'Launching {dask_nodes} Dask workers with {dask_ppw} processes per worker'
+        )
         # if services.get_config_param('MPIRUN') == 'eval':
         #     # TODO Why?
         # Commenting this out for now since it seems to be a hack that is no
