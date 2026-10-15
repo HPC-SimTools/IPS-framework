@@ -162,6 +162,10 @@ def launch(executable: Any, task_name: str, working_dir: str | os.PathLike, *arg
                 log.error(f'DVM URI file {dvm_uri_file} does not exist')
             else:
                 log.debug(f'Using DVM URI file: {dvm_uri_file}')
+            if worker.dvm_proc.poll() is not None:
+                log.error(
+                    f'DVM (prte) exited with code {worker.dvm_proc.returncode}, see {worker.dvm_log_file}'
+                )
 
         # PMIX_SERVER_URI41 is used by prun to figure out how to talk to the DVM
         # It can be defined in `task_env` or in `os.environ`, so we look in
@@ -3214,12 +3218,14 @@ class ServicesProxy:
 
 
 class DVMPlugin(WorkerPlugin):
-    def __init__(self, logger, oversubscribe=False, hwthreads=False):
+    def __init__(self, logger, working_dir, oversubscribe=False, hwthreads=False):
         """
         Dask worker plugin to launch and manage an OpenMPI PRTE DVM on each
         worker node.
 
         :param logger: Logger object
+        :param working_dir: Directory for the DVM URI and log files; shared by
+            all workers, so file names are suffixed with host and PID.
         :param oversubscribe: Whether to allow oversubscription of nodes
             when launching the ensemble runs. Default is False.
         :param hwthreads: Whether to use hardware threads
@@ -3227,6 +3233,7 @@ class DVMPlugin(WorkerPlugin):
         super().__init__()
 
         self.logger = logger
+        self.working_dir = Path(working_dir)
         self.oversubscribe = oversubscribe
         self.hwthreads = hwthreads
 
@@ -3250,7 +3257,11 @@ class DVMPlugin(WorkerPlugin):
         worker.logger = self.logger
 
         self.logger.info('Launching DVM')
-        self.worker.dvm_uri_file = f'/tmp/dvm.uri.{os.getpid()}'
+        # The working dir is shared by all workers (possibly across nodes), so
+        # each worker needs a unique suffix.
+        suffix = f'{socket.gethostname()}.{os.getpid()}'
+        self.worker.dvm_uri_file = str(self.working_dir / f'dvm.uri.{suffix}')
+        Path(self.worker.dvm_uri_file).unlink(missing_ok=True)  # never read a stale URI
         # The command to launch the DVM.  Note that we use `prte` instead of
         # `mpirun` or `prun`.  This is because we want to launch the DVM
         # itself, not a specific application.  The DVM will then manage the
@@ -3283,27 +3294,33 @@ class DVMPlugin(WorkerPlugin):
         # This environment variable is specific to OpenMPI's PRTE
         os.environ['PRTE_MCA_rmaps_default_mapping_policy'] = mapping_policy
 
+        # prte output goes to a file, not a PIPE: an undrained pipe can fill
+        # up and block the DVM, and the file survives for post-mortems.
+        self.worker.dvm_log_file = self.working_dir / f'dvm.log.{suffix}'
+        self.worker.dvm_log = open(self.worker.dvm_log_file, 'w')
         try:
             self.logger.debug(f'Executing command: {command!s}')
             self.worker.dvm_proc = subprocess.Popen(
-                command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+                command, stdout=self.worker.dvm_log, stderr=subprocess.STDOUT
             )
         except Exception as e:
             print(f'Exception during setting up DVM: {e}', file=sys.stderr)
             console.print(Traceback.from_exception(type(e), e, e.__traceback__))
+            raise
 
-            # If there was an exception, dump any stdout/stderr we have
-            if hasattr(self.worker.dvm_proc, 'stdout'):
-                print(self.worker.dvm_proc.stdout, file=sys.stderr, flush=True)
-                print(self.worker.dvm_proc.stderr, file=sys.stderr, flush=True)
-
-        # TODO What if there was a subprocess exception?
-
-        ready = self.worker.dvm_proc.stdout.readline()
-        self.logger.info(f'Ready Message : {ready}')
+        # Wait for prte to write its URI; fail loudly if it dies or stalls.
+        uri_path = Path(self.worker.dvm_uri_file)
+        deadline = time.time() + 30
+        while not (uri_path.exists() and uri_path.stat().st_size > 0):
+            if self.worker.dvm_proc.poll() is not None or time.time() > deadline:
+                raise RuntimeError(
+                    f'DVM failed to start (exit code {self.worker.dvm_proc.poll()}), '
+                    f'see {self.worker.dvm_log_file}:\n{self.worker.dvm_log_file.read_text()}'
+                )
+            time.sleep(0.1)
 
         with open(self.worker.dvm_uri_file, 'r') as f:
-            self.worker.dvm_uri = f.readline()
+            self.worker.dvm_uri = f.readline().strip()
             self.logger.debug(f'Read DVM URI: {self.worker.dvm_uri}')
 
         os.environ['PMIX_SERVER_URI41'] = self.worker.dvm_uri
@@ -3329,6 +3346,7 @@ class DVMPlugin(WorkerPlugin):
         # kill the process directly.
         self.worker.dvm_proc.terminate()
         self.worker.dvm_proc.kill()
+        self.worker.dvm_log.close()
 
         self.logger.info('DVM shutdown')
 
@@ -3648,7 +3666,7 @@ class TaskPool:
                 # TODO better error handling than just re-raising the exception
                 raise
 
-        dask_nodes = 1 if dask_nodes is None else dask_nodes
+        dask_nodes = dask_nodes or 1  # None or 0 (nodes unspecified) -> 1
         self.services.info(
             f'Launching {dask_nodes} Dask workers with {dask_ppw} processes per worker'
         )
@@ -3748,7 +3766,12 @@ class TaskPool:
         # the DVM for the workers so that OpenMPI can work properly.
         self.services.debug('Registering DVMPlugin')
         self.dask_client.register_plugin(
-            DVMPlugin(logger=services.logger, oversubscribe=oversubscribe, hwthreads=hwthreads)
+            DVMPlugin(
+                logger=services.logger,
+                working_dir=services.get_working_dir(),
+                oversubscribe=oversubscribe,
+                hwthreads=hwthreads,
+            )
         )
         self.services.debug('Registered DVMPlugin')
 
