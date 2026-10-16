@@ -71,7 +71,7 @@ class EnsembleDriver(Component):
             template,
             variables,
             run_dir=Path('.').absolute(),
-            name='my_simple_ensemble',
+            name='INSTANCE_',
             num_nodes=1,
             cores_per_instance=1,
         )
