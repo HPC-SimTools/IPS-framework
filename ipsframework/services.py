@@ -2987,9 +2987,13 @@ class ServicesProxy:
             platform_config = ConfigObj()
             platform_config.filename = str(platform_config_file_path)
 
-            # Though in a batch submission context this may not have much
-            # meaning.
-            platform_config['HOST'] = socket.gethostname()
+            # Note that in a batch submission context this may not have much
+            # meaning.  In any case, this is intentionally set to the empty
+            # string so that the instance will set to the actual hostname it
+            # is running on; if we set it here it will always be set to the
+            # head node regardless of the actual node on which the instance
+            # runs.
+            platform_config['HOST'] = ''
 
             # Regardless, faithfully duplicate the MPIRUN setting from the
             # top-level platform config, which is what the user has set. Same
