@@ -366,6 +366,46 @@ The ensemble system provides robust error handling:
 - Resource allocation errors are reported with detailed messages
 - Configuration template errors are caught before execution begins
 
+DVM diagnostics
+---------------
+
+Each Dask worker's DVM launch creates a persistent directory beneath the
+ensemble driver's working directory::
+
+    dvm/<hostname>.<worker-pid>.<launch-uuid>/
+        uri
+        output.log
+        lifecycle.jsonl
+        shutdown.log
+
+``uri`` contains PRTE's connection URI, and ``output.log`` captures the DVM's
+combined stdout and stderr directly to disk. ``lifecycle.jsonl`` contains
+UTC timestamps, monotonic elapsed times, worker and DVM identities, launch
+parameters, readiness, instance start/end records, observed exits, and shutdown
+actions. Only selected Slurm and PRTE environment settings are recorded.
+``shutdown.log`` is created when a shutdown command is attempted and captures
+its combined output. Records are flushed as they are written.
+
+Shutdown first attempts ``pterm`` or ``prte-term`` with a ten-second timeout,
+then waits up to ten seconds for the DVM to exit. If necessary, it sends
+terminate and waits five seconds, then sends kill and waits another five
+seconds. Command results and escalation are recorded, and diagnostic files
+are retained.
+
+Nonzero MPI task results returned by ``wait_task()`` create a
+``dvm-failures.<component-pid>.jsonl`` file in the component working directory.
+These records include the instance name, task command, return code, and the
+associated lifecycle journal path. Each component owns its own failure file
+to avoid concurrent appends from different processes.
+
+DVM process state is sampled by the owning worker at lifecycle events,
+including instance start and end; there is no background monitor. Child
+failure records explicitly report DVM state as unknown in the child.
+An ``exit_observed`` timestamp is the time the worker detected an exit,
+not necessarily the time it occurred. A running process does not establish
+DVM responsiveness. Abrupt worker or node loss may leave no final record.
+Components must still check ``wait_task()`` results and propagate failures.
+
 Limitations
 -----------
 
