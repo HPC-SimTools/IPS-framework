@@ -436,6 +436,14 @@ class TaskManager:
                 ppn_flag = '-npernode'
                 host_select = '-H'
                 if mpi_binary == 'prun':
+                    # Point prun at this node's DVM explicitly instead of
+                    # letting it discover one; set by services.launch().
+                    dvm_uri_file = os.environ.get('IPS_DVM_URI_FILE')
+                    if not dvm_uri_file:
+                        raise RuntimeError(
+                            'MPIRUN_VERSION is OPENMPI-DVM but IPS_DVM_URI_FILE is not set; '
+                            'this instance was not launched from a Dask worker with a DVMPlugin'
+                        )
                     # --display MAP-DEVEL is added to show the DVM state when
                     # invoking this prun. We do this so that we can verify the
                     # resources managed by DVM for this task as displayed in
@@ -444,6 +452,8 @@ class TaskManager:
                     cmd = ' '.join(
                         [
                             mpicmd,
+                            '--dvm-uri',
+                            f'file:{dvm_uri_file}',
                             '--display',
                             'ALLOCATION,MAP-DEVEL,BINDINGS',
                             nproc_flag,
