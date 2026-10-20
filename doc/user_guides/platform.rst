@@ -393,7 +393,8 @@ The platform configuration file contains platform specific information that the 
   USE_ACCURATE_NODES = ON
 
 **HOST**
-        name of the platform.  Used by the portal.
+        name of the platform, which is used by the portal.
+        If left blank, the framework will detect the host name and use that.
 **MPIRUN**
         command to launch parallel applications.  Used by the task
 	manager to launch parallel tasks on compute nodes.  If you
