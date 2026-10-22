@@ -241,7 +241,8 @@ Template Configuration Template File
 ------------------------------------
 
 The configuration template file should contain placeholder variables that will be substituted with actual values.
-Use ``?`` syntax for placeholders.  It is otherwise a standard IPS configuration file.:
+Use ``?`` syntax for placeholders; note that these are optional and can be used to highlight variables that will be
+substituted in each ensemble instance.  The template configuration file is otherwise a standard IPS configuration file.:
 
 .. code-block:: ini
 
