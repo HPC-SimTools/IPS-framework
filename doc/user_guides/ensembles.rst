@@ -344,6 +344,28 @@ The ensemble system uses Dask for distributed computing:
 - **Memory**: Automatically managed by Dask scheduler and the underlying cluster job scheduler (e.g., SLURM, PBS)
 - **Load Balancing**: Dask handles work distribution and load balancing
 
+MPI resources are specified both for the ensemble and for tasks submitted by
+components within each running ensemble instance:
+
+- Pass ``cores_per_instance`` to :meth:`ServicesProxy.run_ensemble` to set each
+  instance's core budget. The generated platform configuration sets both
+  ``CORES_PER_NODE`` and ``PROCS_PER_NODE`` to this value (or 1 if omitted), with
+  ``NODES = 1``. Thus, ``num_nodes`` distributes ensemble instances across nodes;
+  each instance's MPI tasks must fit on a single node.
+- For individual MPI tasks, call :meth:`ServicesProxy.launch_task` with
+  ``nproc`` set to the required number of MPI processes, then use
+  :meth:`ServicesProxy.wait_task` to wait for completion. A component can, for
+  example, pass ``int(self.NPROC)`` as ``nproc`` to use the ``NPROC`` value from
+  its section of the ensemble template, or specify the process count directly.
+- For a pool of MPI tasks, use :meth:`ServicesProxy.create_task_pool` and
+  :meth:`ServicesProxy.add_task`, specifying ``nproc`` for each task, then call
+  :meth:`ServicesProxy.submit_tasks` with ``use_dask=False``. These tasks use the
+  instance's IPS resource manager and the Open MPI DVM launcher (``prun``).
+  Size ``cores_per_instance`` for the largest task if tasks run sequentially,
+  or for the sum of process counts of tasks intended to run concurrently
+  (assuming one core per MPI process). For example, two concurrent four-process
+  tasks need a budget of at least eight cores per instance.
+
 Portal
 ------
 
