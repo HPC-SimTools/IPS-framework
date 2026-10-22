@@ -344,6 +344,15 @@ The ensemble system uses Dask for distributed computing:
 - **Memory**: Automatically managed by Dask scheduler and the underlying cluster job scheduler (e.g., SLURM, PBS)
 - **Load Balancing**: Dask handles work distribution and load balancing
 
+Portal
+------
+
+If the Portal is enabled and the API key has been set, ``run_ensemble`` will automatically interact with the Portal to send appropriate files.
+
+If the Portal is disabled, ``run_ensemble`` will skip the Portal interaction, but will otherwise behave normally.
+
+Please see the `Portal <portal_guides.html>`_ page for specifics on using the Portal.
+
 Best Practices
 --------------
 

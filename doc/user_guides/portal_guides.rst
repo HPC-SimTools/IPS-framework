@@ -110,6 +110,16 @@ the simulations:
 
 .. image:: child_runs_trace.png
 
+Ensembles
+---------
+
+If the Portal is enabled and the API key has been set, ``run_ensemble`` will automatically interact with the Portal to send appropriate files.
+
+If the Portal is disabled, ``run_ensemble`` will skip the Portal interaction, but will otherwise behave normally.
+
+Please see the `Ensembles <ensembles.html>`_ page for specifics on using the Ensembles API.
+
+
 IPS-Framework APIs
 ------------------
 
@@ -140,14 +150,3 @@ If calling either of these APIs when the Portal is disabled, a warning will be l
 
 Please see the `Jupyter <jupyter.html>`_ page for specifics on using the Jupyter APIs.
 
-Ensembles API
-=============
-
-.. automethod:: ipsframework.services.ServicesProxy.run_ensemble
-    :noindex:
-
-If the Portal is enabled and the API key has been set, ``run_ensemble`` will automatically interact with the Portal to send appropriate files. 
-
-If the Portal is disabled, ``run_ensemble`` will skip the Portal interaction, but will otherwise behave normally.
-
-Please see the `Ensembles <ensembles.html>`_ page for specifics on using the Ensembles API.
