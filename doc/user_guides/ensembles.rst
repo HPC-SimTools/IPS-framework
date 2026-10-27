@@ -241,7 +241,8 @@ Template Configuration Template File
 ------------------------------------
 
 The configuration template file should contain placeholder variables that will be substituted with actual values.
-Use ``?`` syntax for placeholders.  It is otherwise a standard IPS configuration file.:
+Use ``?`` syntax for placeholders; note that these are optional and can be used to highlight variables that will be
+substituted in each ensemble instance.  The template configuration file is otherwise a standard IPS configuration file.:
 
 .. code-block:: ini
 
@@ -342,6 +343,37 @@ The ensemble system uses Dask for distributed computing:
 - **Cores**: Distributed among ensemble members based on ``cores_per_instance``
 - **Memory**: Automatically managed by Dask scheduler and the underlying cluster job scheduler (e.g., SLURM, PBS)
 - **Load Balancing**: Dask handles work distribution and load balancing
+
+MPI resources are specified both for the ensemble and for tasks submitted by
+components within each running ensemble instance:
+
+- Pass ``cores_per_instance`` to :meth:`ServicesProxy.run_ensemble` to set each
+  instance's core budget. The generated platform configuration sets both
+  ``CORES_PER_NODE`` and ``PROCS_PER_NODE`` to this value (or 1 if omitted), with
+  ``NODES = 1``. Thus, ``num_nodes`` distributes ensemble instances across nodes;
+  each instance's MPI tasks must fit on a single node.
+- For individual MPI tasks, call :meth:`ServicesProxy.launch_task` with
+  ``nproc`` set to the required number of MPI processes, then use
+  :meth:`ServicesProxy.wait_task` to wait for completion. A component can, for
+  example, pass ``int(self.NPROC)`` as ``nproc`` to use the ``NPROC`` value from
+  its section of the ensemble template, or specify the process count directly.
+- For a pool of MPI tasks, use :meth:`ServicesProxy.create_task_pool` and
+  :meth:`ServicesProxy.add_task`, specifying ``nproc`` for each task, then call
+  :meth:`ServicesProxy.submit_tasks` with ``use_dask=False``. These tasks use the
+  instance's IPS resource manager and the Open MPI DVM launcher (``prun``).
+  Size ``cores_per_instance`` for the largest task if tasks run sequentially,
+  or for the sum of process counts of tasks intended to run concurrently
+  (assuming one core per MPI process). For example, two concurrent four-process
+  tasks need a budget of at least eight cores per instance.
+
+Portal
+------
+
+If the Portal is enabled and the API key has been set, ``run_ensemble`` will automatically interact with the Portal to send appropriate files.
+
+If the Portal is disabled, ``run_ensemble`` will skip the Portal interaction, but will otherwise behave normally.
+
+Please see the `Portal <portal_guides.html>`_ page for specifics on using the Portal.
 
 Best Practices
 --------------

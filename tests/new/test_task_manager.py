@@ -1027,3 +1027,32 @@ def test_init_task_pool_srun(tmpdir):
     }
     with pytest.raises(ResourceRequestMismatchError):
         init_final_task_pool(msg=msg)
+
+
+def test_build_launch_cmd_prun_uses_explicit_dvm_uri(monkeypatch):
+    tm = TaskManager(mock.Mock())
+    tm.task_launch_cmd = 'mpirun'
+    tm.mpicmd = '/usr/bin/prun'
+    tm.resource_mgr = mock.Mock(nodes=['node1'])
+    tm.config_mgr = mock.Mock(get_platform_parameter=lambda *a, **k: 'OPENMPI-DVM')
+
+    kwargs = {
+        'nproc': 1,
+        'binary': 'executable',
+        'cmd_args': (),
+        'working_dir': None,
+        'ppn': 1,
+        'max_ppn': 1,
+        'nodes': 'dummynode0',
+        'accurate_nodes': False,
+        'partial_nodes': False,
+        'task_id': None,
+    }
+
+    monkeypatch.delenv('IPS_DVM_URI_FILE', raising=False)
+    with pytest.raises(RuntimeError):
+        tm.build_launch_cmd(**kwargs)
+
+    monkeypatch.setenv('IPS_DVM_URI_FILE', '/work/dvm.uri.nid001.42')
+    cmd, _ = tm.build_launch_cmd(**kwargs)
+    assert cmd.startswith('/usr/bin/prun --dvm-uri file:/work/dvm.uri.nid001.42 ')

@@ -173,6 +173,17 @@ def launch(executable: Any, task_name: str, working_dir: str | os.PathLike, *arg
                 log.error(
                     f'DVM (prte) exited with code {worker.dvm_proc.returncode}, see {worker.dvm_log_file}'
                 )
+            # Workers run inside an srun step, which may export its own PMIx
+            # identity/rendezvous variables; drop them so prun can only reach
+            # this worker's DVM.  PMIX_MCA_* are tuning knobs and are kept.
+            for key in [
+                k for k in new_env if k.startswith('PMIX_') and not k.startswith('PMIX_MCA_')
+            ]:
+                if key not in task_env:
+                    del new_env[key]
+            new_env['PMIX_SERVER_URI41'] = worker.dvm_uri
+            # read by TaskManager to pass `prun --dvm-uri file:...`
+            new_env['IPS_DVM_URI_FILE'] = str(dvm_uri_file)
 
         # PMIX_SERVER_URI41 is used by prun to figure out how to talk to the DVM
         # It can be defined in `task_env` or in `os.environ`, so we look in

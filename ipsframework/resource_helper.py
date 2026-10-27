@@ -357,7 +357,13 @@ def get_resource_list(services, host, partial_nodes=False):
         else:
             accurate_nodes = True
     elif node_detect_str == 'slurm_env':
-        num_nodes, ppn, mixed_nodes, list_of_nodes = get_slurm_info()
+        try:
+            num_nodes, ppn, mixed_nodes, list_of_nodes = get_slurm_info()
+        except Exception:
+            services.critical(
+                'MISCONFIGURED NODE_DETECTION parameter: you are not running in a Slurm environment'
+            )
+            raise
         accurate_nodes = True
     elif node_detect_str == 'manual':
         num_nodes, ppn, mixed_nodes, list_of_nodes = manual_detection(services)
