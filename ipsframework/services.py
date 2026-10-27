@@ -3399,16 +3399,24 @@ class DVMPlugin(WorkerPlugin):
             )
             diagnostics.record('launched')
             uri_path = Path(worker.dvm_uri_file)
+
+            # Get the DVM URI from the file written by the DVM.  The DVM
+            # writes the URI to a file, and we need to read it to get the
+            # URI.  We wait for the file to be created and for the URI to be
+            # written to it.  We wait up to 30 seconds for this
             deadline = time.monotonic() + 30
             while True:
                 if worker.dvm_proc.poll() is not None:
                     raise RuntimeError(f'DVM exited during startup; see {worker.dvm_log_file}')
-                uri = uri_path.readline().strip() if uri_path.exists() else ''
+
+                uri = uri_path.open('r').readline().strip() if uri_path.exists() else ''
                 if uri:
                     worker.dvm_uri = uri
                     break
+
                 if time.monotonic() >= deadline:
                     raise RuntimeError(f'DVM startup timed out; see {worker.dvm_log_file}')
+
                 time.sleep(0.1)
             os.environ['PMIX_SERVER_URI41'] = worker.dvm_uri
             diagnostics.record('ready', uri=worker.dvm_uri)
