@@ -3368,6 +3368,7 @@ class DVMPlugin(WorkerPlugin):
             'prte',
             '--host',
             'localhost',
+            '--debug-daemons-file',
             '--report-uri',
             self.worker.dvm_uri_file,
         ]
