@@ -3403,7 +3403,7 @@ class DVMPlugin(WorkerPlugin):
             while True:
                 if worker.dvm_proc.poll() is not None:
                     raise RuntimeError(f'DVM exited during startup; see {worker.dvm_log_file}')
-                uri = uri_path.read_text().strip() if uri_path.exists() else ''
+                uri = uri_path.readline().strip() if uri_path.exists() else ''
                 if uri:
                     worker.dvm_uri = uri
                     break
