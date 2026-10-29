@@ -6,6 +6,7 @@
 import functools
 import glob
 import hashlib
+import json
 import logging
 import logging.handlers
 import os
@@ -22,7 +23,7 @@ import uuid
 import weakref
 from collections.abc import Callable, Iterable
 from copy import deepcopy
-from datetime import datetime
+from datetime import datetime, timezone
 from multiprocessing import Queue
 from operator import iadd
 from pathlib import Path
@@ -150,6 +151,12 @@ def launch(executable: Any, task_name: str, working_dir: str | os.PathLike, *arg
         task_env = kwargs.get('task_env', {})
         new_env = os.environ.copy()
         new_env.update(task_env)
+        diagnostics = getattr(worker, 'dvm_diagnostics', None)
+        if diagnostics is not None:
+            new_env['IPS_DVM_DIAGNOSTICS'] = str(diagnostics.path.resolve())
+            new_env['IPS_DVM_INSTANCE'] = task_name
+            diagnostics.record('instance_start', instance=task_name,
+                               instance_working_dir=str(working_dir_path))
 
         if 'HWLOC_XMLFILE' in new_env:
             log.debug('Removing HWLOC_XMLFILE from task environment')
@@ -222,6 +229,8 @@ def launch(executable: Any, task_name: str, working_dir: str | os.PathLike, *arg
                     env=new_env,
                 )
             except Exception as e:
+                if diagnostics is not None:
+                    diagnostics.record('instance_launch_failed', instance=task_name, error=str(e))
                 worker.log_event(
                     'ips',
                     {
@@ -245,7 +254,7 @@ def launch(executable: Any, task_name: str, working_dir: str | os.PathLike, *arg
                     {
                         'event_type': 'IPS_DASK_TASK_END',
                         'event_time': finish_time,
-                        'state': 'Succeeded',
+                        'state': 'Succeeded' if ret_val == 0 else 'Failed',
                         'comment': f'task_name = {task_name}, elapsed time = {finish_time - start_time:.2f}s',
                         'start_time': start_time,
                         'elapsed_time': finish_time - start_time,
@@ -255,6 +264,8 @@ def launch(executable: Any, task_name: str, working_dir: str | os.PathLike, *arg
                 )
 
             except subprocess.TimeoutExpired:
+                if diagnostics is not None:
+                    diagnostics.record('instance_timeout', instance=task_name, timeout=timeout)
                 worker.log_event(
                     'ips',
                     {
@@ -270,6 +281,8 @@ def launch(executable: Any, task_name: str, working_dir: str | os.PathLike, *arg
                 log.error(f'Task {task_name} with command {cmd} timed out after {timeout}s')
                 ret_val = -1
             except Exception as e:
+                if diagnostics is not None:
+                    diagnostics.record('instance_wait_failed', instance=task_name, error=str(e))
                 worker.log_event(
                     'ips',
                     {
@@ -281,6 +294,8 @@ def launch(executable: Any, task_name: str, working_dir: str | os.PathLike, *arg
                 )
                 log.error(f'Task {task_name} with command {cmd} failed with {e!s}')
         finally:
+            if diagnostics is not None:
+                diagnostics.record('instance_end', instance=task_name, return_code=ret_val)
             if out:
                 print(out)
             if err:
@@ -1383,6 +1398,24 @@ class ServicesProxy:
                 str(task_id),
                 finish_time - task.start_time,
             )
+
+        if task_retval != 0 and os.environ.get('IPS_DVM_DIAGNOSTICS'):
+            reference = os.environ['IPS_DVM_DIAGNOSTICS']
+            failure = dict(
+                event='mpi_task_failed', timestamp=datetime.now(timezone.utc).isoformat(),
+                instance=os.environ.get('IPS_DVM_INSTANCE'), task_id=task_id,
+                return_code=task_retval, command=task.command,
+                hostname=socket.gethostname(), process_pid=os.getpid(),
+                dvm_lifecycle=reference, dvm_state='unknown_in_child',
+            )
+            try:
+                # Each component process owns its own journal; no shared-file append races.
+                path = Path(self.get_working_dir()) / f'dvm-failures.{os.getpid()}.jsonl'
+                with path.open('a') as stream:
+                    stream.write(json.dumps(failure) + '\n')
+            except OSError:
+                self.logger.exception('Unable to write DVM task failure diagnostics')
+            event_comment += f' return_code = {task_retval}; DVM lifecycle = {reference}'
 
         self._send_monitor_event(
             'IPS_TASK_END',
@@ -3232,6 +3265,46 @@ class ServicesProxy:
         return instances
 
 
+
+class _DVMDiagnostics:
+    """Worker-local, thread-safe lifecycle journal; constructed after plugin transfer."""
+
+    def __init__(self, directory, worker):
+        self.directory = directory
+        self.path = directory / 'lifecycle.jsonl'
+        self.lock = threading.Lock()
+        self.started = time.monotonic()
+        self.worker = worker
+        self.shutdown_requested = False
+        self.exit_recorded = False
+
+    def record(self, event, **fields):
+        with self.lock:
+            process = getattr(self.worker, 'dvm_proc', None)
+            code = process.poll() if process is not None else None
+            common = dict(
+                timestamp=datetime.now(timezone.utc).isoformat(),
+                elapsed_seconds=time.monotonic() - self.started,
+                dvm_id=self.directory.name,
+                hostname=socket.gethostname(),
+                worker_pid=os.getpid(),
+                worker_address=str(self.worker.address),
+                dvm_pid=process.pid if process is not None else None,
+                dvm_state=(
+                    'not_started' if process is None
+                    else ('running' if code is None else 'exited')
+                ),
+                dvm_return_code=code,
+                signal=-code if code is not None and code < 0 else None,
+                shutdown_requested=self.shutdown_requested,
+            )
+            with self.path.open('a') as stream:
+                if code is not None and not self.exit_recorded:
+                    stream.write(json.dumps(dict(common, event='exit_observed')) + '\n')
+                    self.exit_recorded = True
+                stream.write(json.dumps(dict(common, event=event, **fields)) + '\n')
+
+
 class DVMPlugin(WorkerPlugin):
     def __init__(self, logger, working_dir, oversubscribe=False, hwthreads=False):
         """
@@ -3239,8 +3312,8 @@ class DVMPlugin(WorkerPlugin):
         worker node.
 
         :param logger: Logger object
-        :param working_dir: Directory for the DVM URI and log files; shared by
-            all workers, so file names are suffixed with host and PID.
+        :param working_dir: Parent of the persistent DVM diagnostic directories.
+            Each launch gets a unique directory containing host, PID, and UUID.
         :param oversubscribe: Whether to allow oversubscription of nodes
             when launching the ensemble runs. Default is False.
         :param hwthreads: Whether to use hardware threads
@@ -3274,8 +3347,11 @@ class DVMPlugin(WorkerPlugin):
         self.logger.info('Launching DVM')
         # The working dir is shared by all workers (possibly across nodes), so
         # each worker needs a unique suffix.
-        suffix = f'{socket.gethostname()}.{os.getpid()}'
-        self.worker.dvm_uri_file = str(self.working_dir / f'dvm.uri.{suffix}')
+        suffix = f'{socket.gethostname()}.{os.getpid()}.{uuid.uuid4().hex}'
+        directory = self.working_dir / 'dvm' / suffix
+        directory.mkdir(parents=True)
+        worker.dvm_diagnostics = _DVMDiagnostics(directory, worker)
+        self.worker.dvm_uri_file = str(directory / 'uri')
         Path(self.worker.dvm_uri_file).unlink(missing_ok=True)  # never read a stale URI
         # The command to launch the DVM.  Note that we use `prte` instead of
         # `mpirun` or `prun`.  This is because we want to launch the DVM
@@ -3292,6 +3368,7 @@ class DVMPlugin(WorkerPlugin):
             'prte',
             '--host',
             'localhost',
+            '--debug-daemons-file',
             '--report-uri',
             self.worker.dvm_uri_file,
         ]
@@ -3311,59 +3388,94 @@ class DVMPlugin(WorkerPlugin):
 
         # prte output goes to a file, not a PIPE: an undrained pipe can fill
         # up and block the DVM, and the file survives for post-mortems.
-        self.worker.dvm_log_file = self.working_dir / f'dvm.log.{suffix}'
+        self.worker.dvm_log_file = directory / 'output.log'
         self.worker.dvm_log = open(self.worker.dvm_log_file, 'w')
+        diagnostics = worker.dvm_diagnostics
+        diagnostics.record(
+            'launch_requested',
+            command=command,
+            working_dir=os.getcwd(),
+            environment={
+                key: os.environ[key]
+                for key in (
+                    'SLURM_JOB_ID', 'SLURM_JOB_NODELIST', 'SLURM_JOB_NUM_NODES',
+                    'PRTE_MCA_ras_slurm_use_entire_allocation',
+                    'PRTE_MCA_rmaps_default_mapping_policy',
+                )
+                if key in os.environ
+            },
+        )
         try:
-            self.logger.debug(f'Executing command: {command!s}')
-            self.worker.dvm_proc = subprocess.Popen(
-                command, stdout=self.worker.dvm_log, stderr=subprocess.STDOUT
+            worker.dvm_proc = subprocess.Popen(
+                command, stdout=worker.dvm_log, stderr=subprocess.STDOUT
             )
-        except Exception as e:
-            print(f'Exception during setting up DVM: {e}', file=sys.stderr)
-            console.print(Traceback.from_exception(type(e), e, e.__traceback__))
+            diagnostics.record('launched')
+            uri_path = Path(worker.dvm_uri_file)
+
+            # Get the DVM URI from the file written by the DVM.  The DVM
+            # writes the URI to a file, and we need to read it to get the
+            # URI.  We wait for the file to be created and for the URI to be
+            # written to it.  We wait up to 30 seconds for this
+            deadline = time.monotonic() + 30
+            while True:
+                if worker.dvm_proc.poll() is not None:
+                    raise RuntimeError(f'DVM exited during startup; see {worker.dvm_log_file}')
+
+                uri = uri_path.open('r').readline().strip() if uri_path.exists() else ''
+                if uri:
+                    worker.dvm_uri = uri
+                    break
+
+                if time.monotonic() >= deadline:
+                    raise RuntimeError(f'DVM startup timed out; see {worker.dvm_log_file}')
+
+                time.sleep(0.1)
+            os.environ['PMIX_SERVER_URI41'] = worker.dvm_uri
+            diagnostics.record('ready', uri=worker.dvm_uri)
+        except Exception as exc:
+            diagnostics.record('startup_failed', error=str(exc))
+            self.teardown(worker)
             raise
 
-        # Wait for prte to write its URI; fail loudly if it dies or stalls.
-        uri_path = Path(self.worker.dvm_uri_file)
-        deadline = time.time() + 30
-        while not (uri_path.exists() and uri_path.stat().st_size > 0):
-            if self.worker.dvm_proc.poll() is not None or time.time() > deadline:
-                raise RuntimeError(
-                    f'DVM failed to start (exit code {self.worker.dvm_proc.poll()}), '
-                    f'see {self.worker.dvm_log_file}:\n{self.worker.dvm_log_file.read_text()}'
-                )
-            time.sleep(0.1)
-
-        with open(self.worker.dvm_uri_file, 'r') as f:
-            self.worker.dvm_uri = f.readline().strip()
-            self.logger.debug(f'Read DVM URI: {self.worker.dvm_uri}')
-
-        os.environ['PMIX_SERVER_URI41'] = self.worker.dvm_uri
-
     def teardown(self, worker: Worker):
-        self.logger.info(f'Shutting down DVM at {self.worker.dvm_uri}')
-
-        # On some systems we use `pterm` to shut down the DVM, and on others we
-        # use `prte-term`, so check for both.
-        pterm_cmd = shutil.which('pterm')
-        if pterm_cmd is None:
-            # On MacOS homebrew, pterm -> prte-term
-            pterm_cmd = shutil.which('prte-term')
-        if pterm_cmd is None:
-            # if it's *still* none, then there is a serious
-            # configuration problem.
-            self.logger.critical('Neither pterm nor prte-term command found')
-        else:
-            self.logger.debug(f'DVMPluggin.teardown(), pterm: {pterm_cmd!s}')
-            command = [pterm_cmd, '--dvm-uri', self.worker.dvm_uri]
-            subprocess.call(command)
-        # Regardless if we have `pterm` or `prte-term`, we can still just
-        # kill the process directly.
-        self.worker.dvm_proc.terminate()
-        self.worker.dvm_proc.kill()
-        self.worker.dvm_log.close()
-
-        self.logger.info('DVM shutdown')
+        diagnostics = worker.dvm_diagnostics
+        # Observe an already-dead DVM before marking this as intentional shutdown.
+        diagnostics.record('shutdown_begin')
+        diagnostics.shutdown_requested = True
+        process = getattr(worker, 'dvm_proc', None)
+        try:
+            if process is not None and process.poll() is None:
+                pterm = shutil.which('pterm') or shutil.which('prte-term')
+                if pterm and getattr(worker, 'dvm_uri', None):
+                    command = [pterm, '--dvm-uri', worker.dvm_uri]
+                    diagnostics.record('shutdown_command', command=command)
+                    with (diagnostics.directory / 'shutdown.log').open('a') as output:
+                        try:
+                            result = subprocess.run(
+                                command, stdout=output, stderr=subprocess.STDOUT, timeout=10
+                            )
+                            diagnostics.record('shutdown_command_end', return_code=result.returncode)
+                        except (OSError, subprocess.TimeoutExpired) as exc:
+                            diagnostics.record('shutdown_command_failed', error=str(exc))
+                else:
+                    diagnostics.record('shutdown_command_unavailable')
+                try:
+                    process.wait(timeout=10)
+                except subprocess.TimeoutExpired:
+                    diagnostics.record('terminate_requested')
+                    process.terminate()
+                    try:
+                        process.wait(timeout=5)
+                    except subprocess.TimeoutExpired:
+                        diagnostics.record('kill_requested')
+                        process.kill()
+                        process.wait(timeout=5)
+            diagnostics.record('shutdown_complete')
+        except Exception as exc:
+            diagnostics.record('shutdown_failed', error=str(exc))
+            self.logger.exception('DVM cleanup failed')
+        finally:
+            worker.dvm_log.close()
 
 
 class TaskPool:
