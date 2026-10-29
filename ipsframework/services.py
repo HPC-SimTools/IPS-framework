@@ -35,7 +35,6 @@ from dask.distributed import get_worker
 from distributed import Client, Worker, WorkerPlugin
 from rich import pretty
 from rich.console import Console
-from rich.traceback import Traceback
 
 from ipsframework import ipsutil, messages
 from ipsframework._internal.definitions import IPS_EVENT_TYPE
@@ -155,8 +154,9 @@ def launch(executable: Any, task_name: str, working_dir: str | os.PathLike, *arg
         if diagnostics is not None:
             new_env['IPS_DVM_DIAGNOSTICS'] = str(diagnostics.path.resolve())
             new_env['IPS_DVM_INSTANCE'] = task_name
-            diagnostics.record('instance_start', instance=task_name,
-                               instance_working_dir=str(working_dir_path))
+            diagnostics.record(
+                'instance_start', instance=task_name, instance_working_dir=str(working_dir_path)
+            )
 
         if 'HWLOC_XMLFILE' in new_env:
             log.debug('Removing HWLOC_XMLFILE from task environment')
@@ -1401,13 +1401,18 @@ class ServicesProxy:
 
         if task_retval != 0 and os.environ.get('IPS_DVM_DIAGNOSTICS'):
             reference = os.environ['IPS_DVM_DIAGNOSTICS']
-            failure = dict(
-                event='mpi_task_failed', timestamp=datetime.now(timezone.utc).isoformat(),
-                instance=os.environ.get('IPS_DVM_INSTANCE'), task_id=task_id,
-                return_code=task_retval, command=task.command,
-                hostname=socket.gethostname(), process_pid=os.getpid(),
-                dvm_lifecycle=reference, dvm_state='unknown_in_child',
-            )
+            failure = {
+                'event': 'mpi_task_failed',
+                'timestamp': datetime.now(timezone.utc).isoformat(),
+                'instance': os.environ.get('IPS_DVM_INSTANCE'),
+                'task_id': task_id,
+                'return_code': task_retval,
+                'command': task.command,
+                'hostname': socket.gethostname(),
+                'process_pid': os.getpid(),
+                'dvm_lifecycle': reference,
+                'dvm_state': 'unknown_in_child',
+            }
             try:
                 # Each component process owns its own journal; no shared-file append races.
                 path = Path(self.get_working_dir()) / f'dvm-failures.{os.getpid()}.jsonl'
@@ -3265,7 +3270,6 @@ class ServicesProxy:
         return instances
 
 
-
 class _DVMDiagnostics:
     """Worker-local, thread-safe lifecycle journal; constructed after plugin transfer."""
 
@@ -3282,22 +3286,21 @@ class _DVMDiagnostics:
         with self.lock:
             process = getattr(self.worker, 'dvm_proc', None)
             code = process.poll() if process is not None else None
-            common = dict(
-                timestamp=datetime.now(timezone.utc).isoformat(),
-                elapsed_seconds=time.monotonic() - self.started,
-                dvm_id=self.directory.name,
-                hostname=socket.gethostname(),
-                worker_pid=os.getpid(),
-                worker_address=str(self.worker.address),
-                dvm_pid=process.pid if process is not None else None,
-                dvm_state=(
-                    'not_started' if process is None
-                    else ('running' if code is None else 'exited')
+            common = {
+                'timestamp': datetime.now(timezone.utc).isoformat(),
+                'elapsed_seconds': time.monotonic() - self.started,
+                'dvm_id': self.directory.name,
+                'hostname': socket.gethostname(),
+                'worker_pid': os.getpid(),
+                'worker_address': str(self.worker.address),
+                'dvm_pid': process.pid if process is not None else None,
+                'dvm_state': (
+                    'not_started' if process is None else ('running' if code is None else 'exited')
                 ),
-                dvm_return_code=code,
-                signal=-code if code is not None and code < 0 else None,
-                shutdown_requested=self.shutdown_requested,
-            )
+                'dvm_return_code': code,
+                'signal': -code if code is not None and code < 0 else None,
+                'shutdown_requested': self.shutdown_requested,
+            }
             with self.path.open('a') as stream:
                 if code is not None and not self.exit_recorded:
                     stream.write(json.dumps(dict(common, event='exit_observed')) + '\n')
@@ -3398,7 +3401,9 @@ class DVMPlugin(WorkerPlugin):
             environment={
                 key: os.environ[key]
                 for key in (
-                    'SLURM_JOB_ID', 'SLURM_JOB_NODELIST', 'SLURM_JOB_NUM_NODES',
+                    'SLURM_JOB_ID',
+                    'SLURM_JOB_NODELIST',
+                    'SLURM_JOB_NUM_NODES',
                     'PRTE_MCA_ras_slurm_use_entire_allocation',
                     'PRTE_MCA_rmaps_default_mapping_policy',
                 )
@@ -3452,9 +3457,15 @@ class DVMPlugin(WorkerPlugin):
                     with (diagnostics.directory / 'shutdown.log').open('a') as output:
                         try:
                             result = subprocess.run(
-                                command, stdout=output, stderr=subprocess.STDOUT, timeout=10
+                                command,
+                                stdout=output,
+                                stderr=subprocess.STDOUT,
+                                timeout=10,
+                                check=False,
                             )
-                            diagnostics.record('shutdown_command_end', return_code=result.returncode)
+                            diagnostics.record(
+                                'shutdown_command_end', return_code=result.returncode
+                            )
                         except (OSError, subprocess.TimeoutExpired) as exc:
                             diagnostics.record('shutdown_command_failed', error=str(exc))
                 else:
