@@ -1056,3 +1056,65 @@ def test_build_launch_cmd_prun_uses_explicit_dvm_uri(monkeypatch):
     monkeypatch.setenv('IPS_DVM_URI_FILE', '/work/dvm.uri.nid001.42')
     cmd, _ = tm.build_launch_cmd(**kwargs)
     assert cmd.startswith('/usr/bin/prun --dvm-uri file:/work/dvm.uri.nid001.42 ')
+
+
+@pytest.mark.parametrize('cpp', [0, 1, 4])
+@pytest.mark.parametrize('whole_nodes,whole_socks', [(False, False), (False, True), (True, True)])
+def test_dvm_task_core_budget(
+    tmp_path, monkeypatch, cpp: int, whole_nodes: bool, whole_socks: bool
+) -> None:
+    """Exercise allocation, command generation, exhaustion, and release together.
+
+    :param tmp_path: Isolated resource report directory.
+    :param monkeypatch: Fixture setting the DVM rendezvous file.
+    :param cpp: Requested cores per rank, including the default sentinel.
+    :param whole_nodes: Whether to reserve whole nodes.
+    :param whole_socks: Whether to reserve whole sockets.
+    :returns: None.
+    """
+    fwk = mock.Mock()
+    cm = mock.Mock()
+    cm.fwk_sim_name = 'test'
+    cm.sim_map = {'test': mock.Mock(sim_root=str(tmp_path))}
+    cm.get_platform_parameter.return_value = 'HOST'
+    tm = TaskManager(fwk)
+    rm = ResourceManager(fwk)
+    tm.initialize(mock.Mock(), rm, cm)
+    rm.initialize(mock.Mock(), tm, cm, cmd_nodes=1, cmd_ppn=4)
+    cm.get_platform_parameter.return_value = 'OPENMPI-DVM'
+    tm.task_launch_cmd = 'mpirun'
+    tm.mpicmd = '/usr/bin/prun'
+    monkeypatch.setenv('IPS_DVM_URI_FILE', '/tmp/test-dvm-uri')
+    task_id, cmd, _, reserved = tm._init_task(
+        'component',
+        1,
+        'executable',
+        str(tmp_path),
+        0,
+        cpp,
+        False,
+        0,
+        whole_nodes,
+        whole_socks,
+        [],
+        None,
+    )
+    assert '-np 1' in cmd
+    if cpp:
+        assert f'--map-by slot:PE={cpp}:CORECPUS --bind-to core' in cmd
+    else:
+        assert '--map-by' not in cmd
+    expected = 4 if whole_nodes or whole_socks else (cpp or 1)
+    assert reserved == expected
+    assert rm.alloc_cores == expected
+    assert rm.processes == 1
+    with pytest.raises(InsufficientResourcesError):
+        rm.get_allocation('other', 1, 99, False, False, task_cpp=4)
+    assert rm.alloc_cores == expected
+    rm.release_allocation(task_id, 0)
+    assert rm.avail_cores == 4
+    assert rm.alloc_cores == rm.processes == 0
+    with pytest.raises(BadResourceRequestError):
+        rm.get_allocation('other', 1, 100, False, False, task_cpp=5)
+    assert rm.avail_cores == 4
+    rm.reporting_file.close()

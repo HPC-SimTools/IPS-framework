@@ -375,3 +375,36 @@ def test_allocations(tmpdir):
         assert lines[6] == 'core: 1  - task_id: 0  - owner: comp0'
         assert lines[7] == 'core: 2  - task_id: 0  - owner: comp0'
         assert lines[8] == 'core: 3  - task_id: 0  - owner: comp0'
+
+
+@pytest.mark.parametrize('cpp', [2, 4])
+def test_dvm_complete_ranks(tmp_path, cpp: int) -> None:
+    """Ensure ranks cannot be split across nodes with fragmented capacity.
+
+    :param tmp_path: Isolated resource report directory.
+    :param cpp: Physical cores per MPI rank.
+    :returns: None.
+    """
+    cm = mock.Mock()
+    cm.fwk_sim_name = 'test'
+    cm.sim_map = {'test': mock.Mock(sim_root=str(tmp_path))}
+    cm.get_platform_parameter.return_value = 'HOST'
+    rm = ResourceManager(mock.Mock())
+    rm.initialize(mock.Mock(), mock.Mock(), cm, cmd_nodes=2, cmd_ppn=4)
+    cm.get_platform_parameter.return_value = 'OPENMPI-DVM'
+    # One rank on each node leaves fewer than cpp free cores on each.
+    rm.get_allocation('first', 2, 1, False, False, task_ppn=1, task_cpp=3)
+    with pytest.raises(InsufficientResourcesError):
+        rm.get_allocation('second', 1, 2, False, False, task_cpp=cpp)
+    assert rm.avail_cores == 2
+    assert rm.processes == 2
+    rm.release_allocation(1, 0)
+    result = rm.get_allocation('second', 2, 3, False, False, task_cpp=cpp)
+    assert result.cores_allocated == 2 * cpp
+    assert result.ppn == min(2, 4 // cpp)
+    rm.release_allocation(3, 0)
+    assert rm.avail_cores == 8
+    for invalid in (-1, 1.5, '4'):
+        with pytest.raises(ValueError):
+            rm.get_allocation('invalid', 1, 4, False, False, task_cpp=invalid)
+    rm.reporting_file.close()

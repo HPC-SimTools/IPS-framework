@@ -956,7 +956,7 @@ class ServicesProxy:
         manage how the binary is launched.  Keywords may be the following:
 
             * *task_ppn* : the processes per node value for this task
-            * *task_cpp* : the cores per process, only used when ``MPIRUN=srun`` commands
+            * *task_cpp* : cores per process
             * *task_gpp* : the gpus per process, only used when ``MPIRUN=srun`` commands
             * *omp* : If ``True`` the task will be launch with the correct OpenMP environment
                variables set, only used when ``MPIRUN=srun``

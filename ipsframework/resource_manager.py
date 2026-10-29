@@ -371,6 +371,14 @@ class ResourceManager:
             whole_nodes = True
             whole_socks = True
 
+        if (
+            str(self.CM.get_platform_parameter('MPIRUN_VERSION', silent=True)).upper()
+            == 'OPENMPI-DVM'
+        ):
+            return self._get_dvm_allocation(
+                comp_id, nproc, task_id, whole_nodes, whole_socks, ppn, task_cpp, task_gpp
+            )
+
         # Are there enough cores to satisfy the request?
         # Returns the list of nodes that fit the bill
         allocation_possible = False
@@ -524,6 +532,97 @@ class ResourceManager:
                     accurate_nodes=self.accurate_nodes,
                     cores_allocated=cores_allocated,
                 )
+
+    def _get_dvm_allocation(
+        self,
+        comp_id: str,
+        nproc: int,
+        task_id: int,
+        whole_nodes: bool,
+        whole_socks: bool,
+        ppn: int,
+        task_cpp: int,
+        task_gpp: int,
+    ) -> Allocation:
+        """Reserve complete ranks for a DVM launch without reducing their core count.
+
+        :param comp_id: Identifier of the requesting component.
+        :param nproc: Number of MPI ranks requested.
+        :param task_id: Identifier used to track and release the allocation.
+        :param whole_nodes: Whether to reserve entire nodes.
+        :param whole_socks: Whether to reserve entire sockets.
+        :param ppn: Maximum ranks per node requested by the caller.
+        :param task_cpp: Physical cores per rank; zero retains launcher defaults.
+        :param task_gpp: GPUs per rank.
+        :returns: Allocation containing rank counts and reserved physical cores.
+        :raises ValueError: If the rank or core count is invalid.
+        :raises BadResourceRequestError: If the request exceeds total capacity.
+        :raises InsufficientResourcesError: If capacity is temporarily occupied.
+        """
+        if nproc < 1 or not isinstance(task_cpp, int) or task_cpp < 0:
+            raise ValueError('DVM tasks require positive nproc and nonnegative integer task_cpp')
+        cpp = task_cpp or 1
+        ppn = min(ppn, self.cores_per_node // cpp)
+        total_capacity = sum(min(ppn, node.total_cores // cpp) for node in self.nodes.values())
+        requested_nodes = ceil(nproc / max(ppn, 1))
+        if nproc > total_capacity:
+            raise BadResourceRequestError(
+                comp_id, task_id, requested_nodes, max(1, requested_nodes - len(self.nodes))
+            )
+        if not self.check_gpus(ppn, task_gpp):
+            raise GpuResourceRequestMismatchError(comp_id, task_id, ppn, task_gpp, self.gpn)
+
+        # Plan first so a failed request never consumes a partial allocation.
+        plan = []
+        remaining = nproc
+        for name in self.avail_nodes:
+            node = self.nodes[name]
+            available = node.avail_cores
+            if whole_nodes:
+                available = available if available == node.total_cores else 0
+            elif whole_socks:
+                available = sum(
+                    sock.avail_cores
+                    for sock in node.sockets
+                    if sock.avail_cores == sock.total_cores
+                )
+            ranks = min(ppn, available // cpp, remaining)
+            if ranks:
+                plan.append((name, ranks))
+                remaining -= ranks
+            if not remaining:
+                break
+        if remaining:
+            raise InsufficientResourcesError(
+                comp_id, task_id, requested_nodes, ceil(remaining / ppn)
+            )
+
+        entries = []
+        cores_allocated = 0
+        for name, ranks in plan:
+            node = self.nodes[name]
+            count, cores = node.allocate(whole_nodes, whole_socks, task_id, comp_id, ranks * cpp)
+            entries.append((name, cores))
+            cores_allocated += count
+            if name not in self.alloc_nodes:
+                self.alloc_nodes.append(name)
+            if not node.avail_cores:
+                self.avail_nodes.remove(name)
+        self.processes += nproc
+        self.alloc_cores += cores_allocated
+        self.avail_cores -= cores_allocated
+        self.active_tasks[task_id] = (comp_id, nproc, cores_allocated)
+        self.report_rm_status('allocation for DVM task %d' % task_id)
+        return Allocation(
+            partial_node=not whole_nodes,
+            nodelist=[name for name, _ in plan],
+            corelist=None if whole_nodes else entries,
+            ppn=ppn,
+            max_ppn=self.max_ppn,
+            cpp=task_cpp,
+            accurate_nodes=self.accurate_nodes,
+            cores_allocated=cores_allocated,
+        )
 
     def check_whole_node_cap(self, nproc, ppn):
         """
