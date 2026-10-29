@@ -3400,14 +3400,8 @@ class DVMPlugin(WorkerPlugin):
             working_dir=os.getcwd(),
             environment={
                 key: os.environ[key]
-                for key in (
-                    'SLURM_JOB_ID',
-                    'SLURM_JOB_NODELIST',
-                    'SLURM_JOB_NUM_NODES',
-                    'PRTE_MCA_ras_slurm_use_entire_allocation',
-                    'PRTE_MCA_rmaps_default_mapping_policy',
-                )
-                if key in os.environ
+                for key in os.environ
+                if key.startswith('SLURM_') or key.startswith('PRTE_')
             },
         )
         try:
@@ -3456,6 +3450,7 @@ class DVMPlugin(WorkerPlugin):
                     diagnostics.record('shutdown_command', command=command)
                     with (diagnostics.directory / 'shutdown.log').open('a') as output:
                         try:
+                            # TODO - if we want to handle pterm failures differently from successes, explicitly use check=True
                             result = subprocess.run(
                                 command,
                                 stdout=output,
