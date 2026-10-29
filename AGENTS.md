@@ -13,7 +13,7 @@ The IPS framework is a framework where users create components (as defined in th
   specification pass, and try to enforce additional Ruff rules through
   `pyproject.toml` when possible.
   * We humans can manually add the rules we don't like to the extend-ignore
-    list.
+    list. Do NOT ignore a rule on your own, explicitly ask the human if you REALLY think the rule should be ignored.
 * When adding a new module, if nothing in the module is intended to be imported directly by framework users, place the module somewhere under the `ipsframework/_internal` directory. These are considered private modules.
   * Note that several modules SHOULD be added to this `_internal` private module directory, but currently aren't. As a general rule, anything not in `component.py`, `services.py`, or not explicitly marked in `__init__.py` should probably be considered private.
   * If a module has ANYTHING re-exported in the root `__init__.py`, it should not be in a private module.
@@ -42,3 +42,4 @@ The IPS framework is a framework where users create components (as defined in th
     method's behavior and any relevant details.
   * If the function or class is only used inside the private module it's defined in, prefix it with one underscore.
   * If the function or class is only used inside a given public module and is not intended to be used by application developers, prefix it with one underscore.
+* If adding a new variable inside a class, and the variable should not be used outside of the class itself, prefix the variable with one underscore.
