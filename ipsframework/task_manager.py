@@ -330,42 +330,63 @@ class TaskManager:
             task_cpp=tcpp,
             task_gpp=tgpp,
         )
-        self.fwk.debug('RM: get_allocation() returned %s', str(allocation))
+        try:
+            self.fwk.debug('RM: get_allocation() returned %s', str(allocation))
 
-        if allocation.partial_node or allocation.accurate_nodes:
-            nodes = ','.join(allocation.nodelist)
-        else:
-            nodes = ''
+            if allocation.partial_node or allocation.accurate_nodes:
+                nodes = ','.join(allocation.nodelist)
+            else:
+                nodes = ''
 
-        (cmd, env_update) = self.build_launch_cmd(
-            nproc,
-            binary,
-            cmd_args,
-            working_dir,
-            allocation.ppn,
-            allocation.max_ppn,
-            nodes,
-            allocation.accurate_nodes,
-            allocation.partial_node,
-            task_id,
-            allocation.cpp,
-            omp,
-            tgpp,
-            allocation.corelist,
-            launch_cmd_extra_args,
-        )
+            (cmd, env_update) = self.build_launch_cmd(
+                nproc,
+                binary,
+                cmd_args,
+                working_dir,
+                allocation.ppn,
+                allocation.max_ppn,
+                nodes,
+                allocation.accurate_nodes,
+                allocation.partial_node,
+                task_id,
+                allocation.cpp,
+                omp,
+                tgpp,
+                allocation.corelist,
+                launch_cmd_extra_args,
+            )
 
-        self.curr_task_table[task_id] = {
-            'component': caller_id,
-            'status': 'init_task',
-            'binary': binary,
-            'nproc': nproc,
-            'args': cmd_args,
-            'launch_cmd': cmd,
-            'env_update': env_update,
-        }
+            self.curr_task_table[task_id] = {
+                'component': caller_id,
+                'status': 'init_task',
+                'binary': binary,
+                'nproc': nproc,
+                'args': cmd_args,
+                'launch_cmd': cmd,
+                'env_update': env_update,
+            }
 
-        return (task_id, cmd, env_update, allocation.cores_allocated)
+            return (task_id, cmd, env_update, allocation.cores_allocated)
+        except Exception:
+            self._rollback_tasks([task_id])
+            raise
+
+    def _rollback_tasks(self, task_ids: list[int]) -> None:
+        """Release reservations after task initialization fails.
+
+        Attempt every release, logging cleanup failures without masking the
+        original initialization exception. Keep task records if release fails.
+
+        :param task_ids: Task identifiers reserved by the failed operation.
+        :returns: None.
+        """
+        for task_id in task_ids:
+            try:
+                self.resource_mgr.release_allocation(task_id, -1)
+            except Exception:
+                self.fwk.exception('TM: Failed to roll back task %d', task_id)
+            else:
+                self.curr_task_table.pop(task_id, None)
 
     def build_launch_cmd(
         self,
@@ -749,65 +770,61 @@ class TaskManager:
         caller_id = init_task_msg.sender_id
         task_dict = init_task_msg.args[0]
         ret_dict = {}
-        for task_name in task_dict:
-            # handle for task related things
-            task_init = task_dict[task_name]
+        try:
+            for task_name in task_dict:
+                # handle for task related things
+                task_init = task_dict[task_name]
 
-            try:
-                ret_dict[task_name] = self._init_task(
-                    caller_id,
-                    task_init.nproc,
-                    task_init.binary,
-                    task_init.working_dir,
-                    task_init.tppn,
-                    task_init.tcpp,
-                    task_init.omp,
-                    task_init.tgpp,
-                    task_init.wnodes,
-                    task_init.wsocks,
-                    task_init.cmd_args,
-                    task_init.launch_cmd_extra_args,
-                )
-            except InsufficientResourcesError:
-                continue
-            except BadResourceRequestError as e:
-                self.fwk.error(
-                    'There has been a fatal error, %s requested %d too many processors in task %d',
-                    caller_id,
-                    e.deficit,
-                    e.task_id,
-                )
-                for task_id, _, _, _ in ret_dict.values():
-                    self.resource_mgr.release_allocation(task_id, -1)
-                    del self.curr_task_table[task_id]
-                raise
-            except ResourceRequestMismatchError as e:
-                self.fwk.error(
-                    'There has been a fatal error, %s requested too few processors per node to launch task %d (request: procs = %d, ppn = %d)',
-                    caller_id,
-                    e.task_id,
-                    e.nproc,
-                    e.ppn,
-                )
-                for task_id, _, _, _ in ret_dict.values():
-                    self.resource_mgr.release_allocation(task_id, -1)
-                    del self.curr_task_table[task_id]
-                raise
-            except GpuResourceRequestMismatchError as e:
-                self.fwk.error(
-                    'There has been a fatal error, %s requested too many GPUs per node to launch task %d (requested: ppn = %d, gpp = %d)',
-                    caller_id,
-                    e.task_id,
-                    e.ppn,
-                    e.gpp,
-                )
-                for task_id, _, _, _ in ret_dict.values():
-                    self.resource_mgr.release_allocation(task_id, -1)
-                    del self.curr_task_table[task_id]
-                raise
-            except Exception:
-                self.fwk.exception('TM:init_task_pool(): Allocation exception')
-                raise
+                try:
+                    ret_dict[task_name] = self._init_task(
+                        caller_id,
+                        task_init.nproc,
+                        task_init.binary,
+                        task_init.working_dir,
+                        task_init.tppn,
+                        task_init.tcpp,
+                        task_init.omp,
+                        task_init.tgpp,
+                        task_init.wnodes,
+                        task_init.wsocks,
+                        task_init.cmd_args,
+                        task_init.launch_cmd_extra_args,
+                    )
+                except InsufficientResourcesError:
+                    continue
+                except BadResourceRequestError as e:
+                    self.fwk.error(
+                        'There has been a fatal error, %s requested %d too many processors in task %d',
+                        caller_id,
+                        e.deficit,
+                        e.task_id,
+                    )
+                    raise
+                except ResourceRequestMismatchError as e:
+                    self.fwk.error(
+                        'There has been a fatal error, %s requested too few processors per node to launch task %d (request: procs = %d, ppn = %d)',
+                        caller_id,
+                        e.task_id,
+                        e.nproc,
+                        e.ppn,
+                    )
+                    raise
+                except GpuResourceRequestMismatchError as e:
+                    self.fwk.error(
+                        'There has been a fatal error, %s requested too many GPUs per node to launch task %d (requested: ppn = %d, gpp = %d)',
+                        caller_id,
+                        e.task_id,
+                        e.ppn,
+                        e.gpp,
+                    )
+                    raise
+                except Exception:
+                    self.fwk.exception('TM:init_task_pool(): Allocation exception')
+                    raise
+
+        except Exception:
+            self._rollback_tasks([task_id for task_id, _, _, _ in ret_dict.values()])
+            raise
 
         return ret_dict
 
