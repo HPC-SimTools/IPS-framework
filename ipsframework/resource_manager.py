@@ -8,6 +8,7 @@ import time
 from collections import namedtuple
 from math import ceil
 
+from ._internal.cpu_resources import _get_cpu_nodes
 from .ips_es_spec import EventManager
 from .ips_exceptions import (
     BadResourceRequestError,
@@ -108,6 +109,15 @@ class ResourceManager:
         self.TM = task_mngr
         self.CM = config_mngr
         self.node_alloc_mode = self.CM.get_platform_parameter('NODE_ALLOCATION_MODE')
+        self._dvm = (
+            str(self.CM.get_platform_parameter('MPIRUN_VERSION', silent=True)).upper()
+            == 'OPENMPI-DVM'
+        )
+
+        self._dvm_rank_allocations: dict[int, dict[str, int]] = {}
+        self._dvm_total_ranks = (
+            int(self.CM.get_platform_parameter('TOTAL_PROCS', silent=True) or 0) if self._dvm else 0
+        )
 
         rfile_name = os.path.join(self.CM.sim_map[self.CM.fwk_sim_name].sim_root, 'resource_usage')
         # SIMYAN: try to safely make the directory...
@@ -137,13 +147,31 @@ class ResourceManager:
             self.host = self.CM.get_platform_parameter('HOST')
             self.fwk.debug('RM: Host = %s', self.host)
             try:
-                (
-                    list_of_nodes,
-                    self.cores_per_node,
-                    self.sockets_per_node,
-                    self.max_ppn,
-                    self.accurate_nodes,
-                ) = get_resource_list(self.CM, self.host)
+                if self._dvm:
+                    list_of_nodes = _get_cpu_nodes(
+                        self.CM.get_platform_parameter,
+                        str(self.CM.get_platform_parameter('DVM_HWTHREADS', silent=True)).lower()
+                        == 'true',
+                    )
+                    # Process limits restrict ranks, never the CPU inventory.
+                    self.max_ppn = int(self.CM.get_platform_parameter('PROCS_PER_NODE'))
+                    if self.max_ppn <= 0:
+                        self.max_ppn = max(count for _, count in list_of_nodes)
+                    self.cores_per_node = max(count for _, count in list_of_nodes)
+                    self.sockets_per_node = int(
+                        self.CM.get_platform_parameter('SOCKETS_PER_NODE') or 1
+                    )
+                    self.accurate_nodes = (
+                        self.CM.get_platform_parameter('NODE_DETECTION') != 'manual'
+                    )
+                else:
+                    (
+                        list_of_nodes,
+                        self.cores_per_node,
+                        self.sockets_per_node,
+                        self.max_ppn,
+                        self.accurate_nodes,
+                    ) = get_resource_list(self.CM, self.host)
                 self.fwk.warning('RM: list_of_nodes = %s', str(list_of_nodes))
                 self.fwk.warning('RM: max_ppn = %d ', int(self.max_ppn))
                 if self.accurate_nodes is True and not self.CM.get_platform_parameter(
@@ -167,7 +195,7 @@ class ResourceManager:
             if user_ppn <= self.max_ppn:
                 self.ppn = user_ppn
                 for i, (node, count) in enumerate(list_of_nodes):
-                    if count > self.ppn:
+                    if not self._dvm and count > self.ppn:
                         list_of_nodes[i] = (node, self.ppn)
                 self.fwk.warning('Using user set procs per node: %d', user_ppn)
             else:
@@ -182,7 +210,7 @@ class ResourceManager:
                 if user_ppn <= self.max_ppn:
                     self.ppn = user_ppn
                     for i, (node, count) in enumerate(list_of_nodes):
-                        if count > self.ppn:
+                        if not self._dvm and count > self.ppn:
                             list_of_nodes[i] = (node, self.ppn)
                 else:
                     self.fwk.warning(
@@ -552,7 +580,8 @@ class ResourceManager:
         :param whole_nodes: Whether to reserve entire nodes.
         :param whole_socks: Whether to reserve entire sockets.
         :param ppn: Maximum ranks per node requested by the caller.
-        :param task_cpp: Physical cores per rank; zero retains launcher defaults.
+        :param task_cpp: Processing elements per rank in the configured CPU mode;
+            zero retains launcher defaults.
         :param task_gpp: GPUs per rank.
         :returns: Allocation containing rank counts and reserved physical cores.
         :raises ValueError: If the rank or core count is invalid.
@@ -564,6 +593,8 @@ class ResourceManager:
         cpp = task_cpp or 1
         ppn = min(ppn, self.cores_per_node // cpp)
         total_capacity = sum(min(ppn, node.total_cores // cpp) for node in self.nodes.values())
+        if self._dvm_total_ranks > 0:
+            total_capacity = min(total_capacity, self._dvm_total_ranks)
         requested_nodes = ceil(nproc / max(ppn, 1))
         if nproc > total_capacity:
             raise BadResourceRequestError(
@@ -586,12 +617,17 @@ class ResourceManager:
                     for sock in node.sockets
                     if sock.avail_cores == sock.total_cores
                 )
-            ranks = min(ppn, available // cpp, remaining)
+            ranks_in_use = sum(
+                allocation.get(name, 0) for allocation in self._dvm_rank_allocations.values()
+            )
+            ranks = min(ppn, available // cpp, remaining, max(0, self.max_ppn - ranks_in_use))
             if ranks:
                 plan.append((name, ranks))
                 remaining -= ranks
             if not remaining:
                 break
+        if self._dvm_total_ranks > 0:
+            remaining = max(remaining, nproc - max(0, self._dvm_total_ranks - self.processes))
         if remaining:
             raise InsufficientResourcesError(
                 comp_id, task_id, requested_nodes, ceil(remaining / ppn)
@@ -612,6 +648,7 @@ class ResourceManager:
         self.alloc_cores += cores_allocated
         self.avail_cores -= cores_allocated
         self.active_tasks[task_id] = (comp_id, nproc, cores_allocated)
+        self._dvm_rank_allocations[task_id] = dict(plan)
         self.report_rm_status('allocation for DVM task %d' % task_id)
         return Allocation(
             partial_node=not whole_nodes,
@@ -777,6 +814,7 @@ class ResourceManager:
         self.avail_cores += num_cores
         self.alloc_cores -= num_cores
         self.processes -= nproc
+        self._dvm_rank_allocations.pop(task_id, None)
 
         self.report_rm_status('released nodes for task %d' % task_id)
 

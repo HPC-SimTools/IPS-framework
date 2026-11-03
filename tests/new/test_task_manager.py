@@ -1101,7 +1101,9 @@ def test_dvm_task_core_budget(
     )
     assert '-np 1' in cmd
     if cpp:
-        assert f'--map-by slot:PE={cpp}:CORECPUS --bind-to core' in cmd
+        assert f'--map-by slot:PE={cpp} ' in cmd
+        assert 'CORECPUS' not in cmd
+        assert '--bind-to core' not in cmd
     else:
         assert '--map-by' not in cmd
     expected = 4 if whole_nodes or whole_socks else (cpp or 1)

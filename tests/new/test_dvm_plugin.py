@@ -1,7 +1,9 @@
 """DVM diagnostics and cleanup without requiring PRTE or Slurm."""
+
 import json
 import logging
 import subprocess
+from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import Mock
 
@@ -23,7 +25,6 @@ def running(tmp_path, monkeypatch):
     proc.poll.side_effect = lambda: proc.returncode
 
     def popen(command, **kwargs):
-        from pathlib import Path
         Path(command[-1]).write_text('test-uri\n')
         return proc
 
@@ -47,8 +48,14 @@ def test_ready_and_graceful_shutdown(running, monkeypatch):
     plugin.teardown(worker)
     events = records(worker)
     assert [r['event'] for r in events] == [
-        'launch_requested', 'launched', 'ready', 'shutdown_begin',
-        'shutdown_command', 'exit_observed', 'shutdown_command_end', 'shutdown_complete',
+        'launch_requested',
+        'launched',
+        'ready',
+        'shutdown_begin',
+        'shutdown_command',
+        'exit_observed',
+        'shutdown_command_end',
+        'shutdown_complete',
     ]
     assert events[0]['environment']['PRTE_MCA_ras_slurm_use_entire_allocation'] == '1'
     assert events[2]['uri'] == 'test-uri'
@@ -61,7 +68,9 @@ def test_ready_and_graceful_shutdown(running, monkeypatch):
 
 def test_shutdown_timeout_escalates_and_reaps(running, monkeypatch):
     plugin, worker, proc = running
-    monkeypatch.setattr(services.subprocess, 'run', Mock(side_effect=subprocess.TimeoutExpired('pterm', 10)))
+    monkeypatch.setattr(
+        services.subprocess, 'run', Mock(side_effect=subprocess.TimeoutExpired('pterm', 10))
+    )
     calls = []
 
     def wait(timeout):
@@ -77,7 +86,9 @@ def test_shutdown_timeout_escalates_and_reaps(running, monkeypatch):
     proc.terminate.assert_called_once()
     proc.kill.assert_called_once()
     events = records(worker)
-    assert {'shutdown_command_failed', 'terminate_requested', 'kill_requested'} <= {e['event'] for e in events}
+    assert {'shutdown_command_failed', 'terminate_requested', 'kill_requested'} <= {
+        e['event'] for e in events
+    }
     assert events[-1]['signal'] == 9
     assert events[-1]['dvm_return_code'] == -9
 
@@ -111,7 +122,9 @@ def test_child_failure_references_dvm(tmp_path, monkeypatch):
     monkeypatch.setenv('IPS_DVM_INSTANCE', 'INSTANCE_3')
     proxy = Mock()
     proxy.get_working_dir.return_value = str(tmp_path)
-    task = Mock(start_time=0, nproc=1, cores_allocated=1, binary='prun', args=(), command='prun test')
+    task = Mock(
+        start_time=0, nproc=1, cores_allocated=1, binary='prun', args=(), command='prun test'
+    )
     task.process.wait.return_value = 195
     proxy.task_map = {7: task}
     assert services.ServicesProxy.wait_task(proxy, 7) == 195
