@@ -461,7 +461,7 @@ class TaskManager:
                         ]
                     )
                     if cpp:
-                        cmd += f' --map-by slot:PE={cpp}:CORECPUS --bind-to core'
+                        cmd += f' --map-by slot:PE={cpp}'
                 elif smp_node:
                     cmd = ' '.join([mpicmd, nproc_flag, str(nproc)])
                 else:
