@@ -439,7 +439,7 @@ DVM responsiveness. Abrupt worker or node loss may leave no final record.
 Components must still check ``wait_task()`` results and propagate failures.
 
 CPU budgets and rank limits
---------------------------
+---------------------------
 
 ``cores_per_instance`` is the CPU budget available to each subordinate IPS
 instance, not a request for that many MPI ranks. It defaults to one and must
