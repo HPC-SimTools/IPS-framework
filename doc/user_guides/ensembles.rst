@@ -368,9 +368,10 @@ components within each running ensemble instance:
 
 .. note::
 
-   Python MPI tasks must use an ``mpi4py`` installation linked to the MPI
-   implementation used by the launcher. An ``mpi4py`` package
-   linked to MPICH can cause every process launched by Open MPI's ``prun`` to
+   IPS tasks that call python scripts that use ``mpi4py`` must ensure that ``mpi4py`` package in your
+   environment is linked to OpenMPI, not MPICH or another MPI
+   implementation. An ``mpi4py`` package
+   linked to MPICH can cause every process launched by an IPS component to
    report rank 0 in an ``MPI.COMM_WORLD`` of size 1 even though the user
    requested multiple ranks.
 
