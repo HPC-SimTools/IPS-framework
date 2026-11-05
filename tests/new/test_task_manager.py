@@ -1056,3 +1056,178 @@ def test_build_launch_cmd_prun_uses_explicit_dvm_uri(monkeypatch):
     monkeypatch.setenv('IPS_DVM_URI_FILE', '/work/dvm.uri.nid001.42')
     cmd, _ = tm.build_launch_cmd(**kwargs)
     assert cmd.startswith('/usr/bin/prun --dvm-uri file:/work/dvm.uri.nid001.42 ')
+
+
+@pytest.mark.parametrize('cpp', [0, 1, 4])
+@pytest.mark.parametrize('whole_nodes,whole_socks', [(False, False), (False, True), (True, True)])
+def test_dvm_task_core_budget(
+    tmp_path, monkeypatch, cpp: int, whole_nodes: bool, whole_socks: bool
+) -> None:
+    """Exercise allocation, command generation, exhaustion, and release together.
+
+    :param tmp_path: Isolated resource report directory.
+    :param monkeypatch: Fixture setting the DVM rendezvous file.
+    :param cpp: Requested cores per rank, including the default sentinel.
+    :param whole_nodes: Whether to reserve whole nodes.
+    :param whole_socks: Whether to reserve whole sockets.
+    :returns: None.
+    """
+    fwk = mock.Mock()
+    cm = mock.Mock()
+    cm.fwk_sim_name = 'test'
+    cm.sim_map = {'test': mock.Mock(sim_root=str(tmp_path))}
+    cm.get_platform_parameter.return_value = 'HOST'
+    tm = TaskManager(fwk)
+    rm = ResourceManager(fwk)
+    tm.initialize(mock.Mock(), rm, cm)
+    rm.initialize(mock.Mock(), tm, cm, cmd_nodes=1, cmd_ppn=4)
+    cm.get_platform_parameter.return_value = 'OPENMPI-DVM'
+    tm.task_launch_cmd = 'mpirun'
+    tm.mpicmd = '/usr/bin/prun'
+    monkeypatch.setenv('IPS_DVM_URI_FILE', '/tmp/test-dvm-uri')
+    task_id, cmd, _, reserved = tm._init_task(
+        'component',
+        1,
+        'executable',
+        str(tmp_path),
+        0,
+        cpp,
+        False,
+        0,
+        whole_nodes,
+        whole_socks,
+        [],
+        None,
+    )
+    assert '-np 1' in cmd
+    if cpp:
+        assert f'--map-by slot:PE={cpp} ' in cmd
+        assert 'CORECPUS' not in cmd
+        assert '--bind-to core' not in cmd
+    else:
+        assert '--map-by' not in cmd
+    expected = 4 if whole_nodes or whole_socks else (cpp or 1)
+    assert reserved == expected
+    assert rm.alloc_cores == expected
+    assert rm.processes == 1
+    with pytest.raises(InsufficientResourcesError):
+        rm.get_allocation('other', 1, 99, False, False, task_cpp=4)
+    assert rm.alloc_cores == expected
+    rm.release_allocation(task_id, 0)
+    assert rm.avail_cores == 4
+    assert rm.alloc_cores == rm.processes == 0
+    with pytest.raises(BadResourceRequestError):
+        rm.get_allocation('other', 1, 100, False, False, task_cpp=5)
+    assert rm.avail_cores == 4
+    rm.reporting_file.close()
+
+
+@pytest.fixture
+def dvm_pool_manager(tmp_path, monkeypatch):
+    """Yield a task manager with four synthetic CPU resources.
+
+    :param tmp_path: Directory for the resource report.
+    :param monkeypatch: Fixture supplying a synthetic DVM URI.
+    :yields: Task manager using real resource accounting without hardware discovery.
+    """
+    fwk = mock.Mock()
+    cm = mock.Mock()
+    cm.fwk_sim_name = 'test'
+    cm.sim_map = {'test': mock.Mock(sim_root=str(tmp_path))}
+    settings = {'MPIRUN_VERSION': 'OPENMPI-DVM', 'TOTAL_PROCS': 4}
+    cm.get_platform_parameter.side_effect = lambda name, **kwargs: settings.get(name)
+    tm = TaskManager(fwk)
+    rm = ResourceManager(fwk)
+    tm.initialize(mock.Mock(), rm, cm)
+    rm.initialize(mock.Mock(), tm, cm, cmd_nodes=1, cmd_ppn=4)
+    tm.task_launch_cmd = 'mpirun'
+    tm.mpicmd = '/usr/bin/prun'
+    monkeypatch.setenv('IPS_DVM_URI_FILE', '/tmp/test-dvm-uri')
+    yield tm
+    rm.reporting_file.close()
+
+
+def _pool_request(**tasks: TaskInit) -> ServiceRequestMessage:
+    """Build a pool initialization request.
+
+    :param tasks: Named task initialization records.
+    :returns: Service request containing the supplied tasks.
+    """
+    return ServiceRequestMessage('id', 'id', 'c', 'init_task_pool', tasks)
+
+
+def _pool_task(cpp: int = 1) -> TaskInit:
+    """Construct a one-rank task using partial-node allocation.
+
+    :param cpp: CPU resources to reserve for the rank.
+    :returns: Task initialization record.
+    """
+    return TaskInit(1, 'exe', '/dir', 0, cpp, 0, False, False, False, False, (), None)
+
+
+@pytest.mark.parametrize('failure', ['validation', 'command'])
+def test_dvm_pool_fatal_error_restores_resources(dvm_pool_manager, failure: str) -> None:
+    """Roll back a failed submission while preserving a prior task.
+
+    :param dvm_pool_manager: Manager with synthetic DVM resources.
+    :param failure: Whether validation or command construction fails.
+    :returns: None.
+    """
+    tm = dvm_pool_manager
+    rm = tm.resource_mgr
+    prior = tm.init_task_pool(_pool_request(prior=_pool_task()))['prior'][0]
+    prior_table = tm.curr_task_table.copy()
+    prior_ranks = rm._dvm_rank_allocations.copy()
+    if failure == 'command':
+        error = RuntimeError('command construction failed')
+        with mock.patch.object(tm, 'build_launch_cmd', side_effect=[('exe', None), error]):
+            with pytest.raises(RuntimeError) as caught:
+                tm.init_task_pool(_pool_request(first=_pool_task(), second=_pool_task()))
+        assert caught.value is error
+    else:
+        with pytest.raises(ValueError, match='nonnegative integer task_cpp'):
+            tm.init_task_pool(_pool_request(first=_pool_task(), second=_pool_task(-1)))
+    assert tm.curr_task_table == prior_table
+    assert rm._dvm_rank_allocations == prior_ranks
+    assert (rm.avail_cores, rm.alloc_cores, rm.processes) == (3, 1, 1)
+    assert sum(node.avail_cores for node in rm.nodes.values()) == 3
+    # Reuse every recovered core while the unrelated task is still reserved.
+    recovered = tm.init_task_pool(_pool_request(recovered=_pool_task(3)))['recovered'][0]
+    assert (rm.avail_cores, rm.alloc_cores, rm.processes) == (0, 4, 2)
+    for task_id in (prior, recovered):
+        tm.finish_task(ServiceRequestMessage('id', 'id', 'c', 'finish_task', task_id, 0))
+    assert not tm.curr_task_table
+    assert not rm._dvm_rank_allocations
+    assert (rm.avail_cores, rm.alloc_cores, rm.processes) == (4, 0, 0)
+
+
+def test_dvm_pool_exhaustion_preserves_successes(dvm_pool_manager) -> None:
+    """Keep successful tasks when another task must wait for capacity.
+
+    :param dvm_pool_manager: Manager with synthetic DVM resources.
+    :returns: None.
+    """
+    tm = dvm_pool_manager
+    result = tm.init_task_pool(_pool_request(first=_pool_task(4), waiting=_pool_task()))
+    assert set(result) == {'first'}
+    task_id = result['first'][0]
+    assert set(tm.curr_task_table) == {task_id}
+    assert set(tm.resource_mgr._dvm_rank_allocations) == {task_id}
+    assert tm.resource_mgr.alloc_cores == 4
+    tm.finish_task(ServiceRequestMessage('id', 'id', 'c', 'finish_task', task_id, 0))
+    assert tm.resource_mgr.avail_cores == 4
+
+
+def test_task_rollback_attempts_all_releases() -> None:
+    """Continue cleanup after a release failure, retaining its task record.
+
+    :returns: None.
+    """
+    tm = TaskManager(mock.Mock())
+    tm.resource_mgr = mock.Mock()
+    tm.resource_mgr.release_allocation.side_effect = [RuntimeError('release failed'), True]
+    tm.curr_task_table = {1: {}, 2: {}}
+    tm._rollback_tasks([1, 2])
+    assert tm.resource_mgr.release_allocation.call_args_list == [mock.call(1, -1), mock.call(2, -1)]
+    assert set(tm.curr_task_table) == {1}
+    tm.fwk.exception.assert_called_once()

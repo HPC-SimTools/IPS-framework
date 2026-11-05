@@ -37,6 +37,7 @@ from rich import pretty
 from rich.console import Console
 
 from ipsframework import ipsutil, messages
+from ipsframework._internal.cpu_resources import _ensemble_worker_threads, _get_cpu_nodes
 from ipsframework._internal.definitions import IPS_EVENT_TYPE
 from ipsframework.cca_es_spec import initialize_event_service
 from ipsframework.component_registry import ComponentID
@@ -956,7 +957,7 @@ class ServicesProxy:
         manage how the binary is launched.  Keywords may be the following:
 
             * *task_ppn* : the processes per node value for this task
-            * *task_cpp* : the cores per process, only used when ``MPIRUN=srun`` commands
+            * *task_cpp* : cores per process
             * *task_gpp* : the gpus per process, only used when ``MPIRUN=srun`` commands
             * *omp* : If ``True`` the task will be launch with the correct OpenMP environment
                variables set, only used when ``MPIRUN=srun``
@@ -2905,14 +2906,16 @@ class ServicesProxy:
           `logfile` and `errfile` will write to the working directory local
           to the ensemble instance.
 
-        TODO be able to specify the number of cores per instance
-
         :param template: configuration template file
         :param variables: a dict of variables to pass to the ensemble runs
         :param run_dir: in which to run the ensembles
         :param name: ensemble name, or string to prepend to generated instance
             directory and file names
-        :param cores_per_instance: How many cores per ensemble instances?
+        :param cores_per_instance: Positive CPU budget per instance, default one.
+            Counts physical cores, or hardware threads when ``hwthreads=True``.
+            Concurrent tasks inside an instance share this budget. Parent
+            concurrency uses allocated CPU capacity, independently of rank limits.
+            Manual platform CPU capacities must use the same unit.
         :param num_nodes: Total number of nodes to allocate for the ensemble
             runs. There will be one Dask worker assigned to each of these
             nodes. If none specified, then assign a worker to each allocated
@@ -2925,6 +2928,12 @@ class ServicesProxy:
         :returns: a list of dicts mapping created subdirs to simulation names
             and their parameters
         """
+        cores_per_instance = 1 if cores_per_instance is None \
+            else cores_per_instance
+
+        if cores_per_instance < 1:
+            raise ValueError('cores_per_instance must be a positive integer')
+
         # This should be a unique variable across all ensembles we keep track
         # of in the portal This ID should only be shared by runs within an
         # ensemble
@@ -3057,15 +3066,12 @@ class ServicesProxy:
             # `prun` *should* use the environment variables set by the plugin
             # to find the DVM.
             platform_config['MPIRUN_VERSION'] = 'OPENMPI-DVM'
+            platform_config['DVM_HWTHREADS'] = hwthreads
 
-            # Set the budget of cores per instance. By default, we will give
-            # a single core per instance.
-            if cores_per_instance is not None:
-                platform_config['CORES_PER_NODE'] = cores_per_instance
-                platform_config['PROCS_PER_NODE'] = cores_per_instance
-            else:
-                platform_config['CORES_PER_NODE'] = 1
-                platform_config['PROCS_PER_NODE'] = 1
+            # This virtual node contains the instance's CPU budget. Rank limits
+            # remain separate even when their default equals that budget.
+            platform_config['CORES_PER_NODE'] = cores_per_instance
+            platform_config['PROCS_PER_NODE'] = cores_per_instance
 
             # for now each instance will always run on just one node
             platform_config['NODES'] = 1
@@ -3240,6 +3246,7 @@ class ServicesProxy:
         try:
             # Note that we *always* use Dask to run the ensemble tasks
             self.logger.debug(f'Submitting {len(instances)} ensemble tasks')
+            self.task_pools[task_pool_name]._ensemble_budget = cores_per_instance
             num_submitted = self.submit_tasks(
                 task_pool_name,
                 block=True,
@@ -3260,6 +3267,7 @@ class ServicesProxy:
         except Exception as e:
             self.critical(f'Got an exception running ensemble: {e!s}')
             traceback.print_exc()
+            raise
         finally:
             # self.debug('Getting finished tasks')
             # exit_status = self.get_finished_tasks(task_pool_name)
@@ -3523,6 +3531,7 @@ class TaskPool:
         self.dask_scheduler_file = None
         self.dask_client = None
         self.worker_event_logfile = None
+        self._ensemble_budget: int | None = None
 
     def _wait_any_task(self, block=True):
         """
@@ -3728,6 +3737,14 @@ class TaskPool:
             return base_args
 
         services: ServicesProxy = self.services
+        ensemble_threads = None
+        if self._ensemble_budget is not None:
+            if dask_worker_per_gpu:
+                raise ValueError('Ensemble CPU budgets require one Dask worker per node')
+            cpu_nodes = _get_cpu_nodes(services.get_config_param, hwthreads)
+            ensemble_threads = _ensemble_worker_threads(
+                [capacity for _, capacity in cpu_nodes], self._ensemble_budget
+            )
 
         # Note that we use the absolute path since at some point we may
         # be in a different directory, which means that we otherwise would
@@ -3824,6 +3841,10 @@ class TaskPool:
             nthreads = dask_ppw if dask_ppw else services.get_config_param('PROCS_PER_NODE') // gpn
             task_ppn = gpn
             task_gpp = 1
+        elif ensemble_threads is not None:
+            nthreads = ensemble_threads
+            task_ppn = 1
+            task_gpp = 0
         else:
             # The number of threads per Dask worker is the number of processors
             # on that node divided by the cores per instance, which we're

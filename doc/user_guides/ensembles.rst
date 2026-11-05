@@ -438,10 +438,47 @@ not necessarily the time it occurred. A running process does not establish
 DVM responsiveness. Abrupt worker or node loss may leave no final record.
 Components must still check ``wait_task()`` results and propagate failures.
 
+CPU budgets and rank limits
+---------------------------
+
+``cores_per_instance`` is the CPU budget available to each subordinate IPS
+instance, not a request for that many MPI ranks. It defaults to one and must
+be a positive integer. A task launched with ``nproc=2, task_cpp=4`` requires
+eight processing elements from this budget.
+
+The generated single-node platform sets both ``CORES_PER_NODE`` and
+``PROCS_PER_NODE`` to the instance budget by default. These settings remain
+independent: an explicitly configured DVM instance with eight cores and a
+two-process limit can run two four-core ranks. Lowering the process limit
+does not discard CPU capacity. CPU reservations and concurrent rank occupancy
+are tracked and released separately. ``TOTAL_PROCS``, when set, also limits
+concurrent ranks across the instance's nodes.
+
+Parent scheduling allows ``allocated CPU capacity // cores_per_instance``
+instances concurrently per worker. A 128-core node can therefore run sixteen
+eight-core instances at once. All workers use the concurrency supported by
+the smallest allocated node budget. An instance budget exceeding that capacity
+is rejected before workers are launched. Generic non-ensemble Dask task pools
+retain their existing ``dask_ppw`` behavior.
+
+In core mode, budgets count physical cores. With ``hwthreads=True``, budgets
+count hardware threads. Manual platforms must declare ``CORES_PER_NODE`` in
+the selected unit; generated instance platforms do this automatically.
+For Slurm platforms, ``CORES_PER_NODE`` describes physical capacity and IPS
+uses ``SLURM_JOB_CPUS_PER_NODE`` plus ``scontrol show node`` topology to bound
+and convert the allocation. IPS does not inspect the login host's or macOS
+host's topology to infer compute-node capacity. Partial allocations are
+conservatively rounded down in physical-core mode. Missing scheduler topology
+is an error, rather than permission to use an entire machine.
+
+This CPU-budget discovery path currently supports ``NODE_DETECTION=manual``
+and ``slurm_env``. Other launchers retain their existing resource-discovery
+behavior. Instances remain on a single node, and the DVM controls actual
+binding; the instance configuration describes a budget rather than CPU IDs.
+
 Limitations
 -----------
 
-- The method signature indicates `cores_per_instance` is not yet fully implemented
 - Parameter substitution is limited to simple string replacement
 
 See Also

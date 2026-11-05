@@ -1,5 +1,9 @@
 import logging
 import os
+from unittest import mock
+
+import pytest
+from configobj import ConfigObj
 
 from ipsframework import ServicesProxy, TaskPool
 from ipsframework import services as services_module
@@ -45,7 +49,11 @@ def test_run_ensemble_passes_logfile_and_errfile_to_add_task(tmpdir, monkeypatch
         submit_tasks_kwargs.append(kwargs)
         return 1
 
-    monkeypatch.setattr(services, 'create_task_pool', lambda name: None)
+    monkeypatch.setattr(
+        services,
+        'create_task_pool',
+        lambda name: services.task_pools.setdefault(name, TaskPool(name, services)),
+    )
     monkeypatch.setattr(services, 'add_task', record_add_task)
     monkeypatch.setattr(services, 'submit_tasks', record_submit_tasks)
     monkeypatch.setattr(services, 'get_finished_tasks', lambda task_pool_name: {})
@@ -70,7 +78,7 @@ def test_run_ensemble_passes_logfile_and_errfile_to_add_task(tmpdir, monkeypatch
             'block': True,
             'use_dask': True,
             'dask_nodes': 1,
-            'dask_ppw': None,
+            'dask_ppw': 1,
             'oversubscribe': False,
             'hwthreads': False,
             'logfile': 'instance.out',
@@ -241,3 +249,111 @@ def test_launch_timeout_kills_task(tmpdir, monkeypatch):
     monkeypatch.setattr(services_module, 'get_worker', DummyDaskWorker)
 
     assert services_module.launch('sleep', 'task_0', str(tmpdir), 100, timeout=1) == ('task_0', -1)
+
+
+@pytest.mark.parametrize('budget,hwthreads', [(None, False), (8, False), (8, True)])
+def test_ensemble_generated_budget(
+    tmp_path, monkeypatch, budget: int | None, hwthreads: bool
+) -> None:
+    """Keep generated instance budgets and parent scheduling in the same units.
+
+    :param tmp_path: Directory for generated configuration files.
+    :param monkeypatch: Fixture replacing external task submission.
+    :param budget: Requested budget, or default sentinel.
+    :param hwthreads: Hardware-thread allocation mode.
+    :returns: None.
+    """
+    template = tmp_path / 'template.config'
+    template.write_text('[comp]\nA = ?\n')
+    services = ServicesProxy(None, None, None, {'USE_PORTAL': 'False'}, None)
+    services.fwk = DummyFramework()
+    services.logger = logging.getLogger(__name__)
+    monkeypatch.setattr(
+        services,
+        'create_task_pool',
+        lambda name: services.task_pools.setdefault(name, TaskPool(name, services)),
+    )
+    monkeypatch.setattr(services, 'add_task', mock.Mock())
+    submit = mock.Mock(return_value=1)
+    monkeypatch.setattr(services, 'submit_tasks', submit)
+    monkeypatch.setattr(services, 'remove_task_pool', mock.Mock())
+    (tmp_path / 'runs').mkdir()
+    services.run_ensemble(
+        template,
+        {'comp': {'A': ['1']}},
+        tmp_path / 'runs',
+        'instance',
+        num_nodes=1,
+        cores_per_instance=budget,
+        hwthreads=hwthreads,
+    )
+    config = ConfigObj(str(next(tmp_path.rglob('*_platform.config'))))
+    assert int(config['CORES_PER_NODE']) == (budget or 1)
+    assert int(config['PROCS_PER_NODE']) == (budget or 1)
+    assert int(config['NODES']) == 1
+    assert config.as_bool('DVM_HWTHREADS') is hwthreads
+    assert submit.call_args.kwargs['dask_ppw'] == (budget or 1)
+    assert next(iter(services.task_pools.values()))._ensemble_budget == (budget or 1)
+
+
+@pytest.mark.parametrize('capacity,budget,expected', [(128, 8, 16), (128, 1, 128), (256, 8, 32)])
+def test_ensemble_worker_command_uses_cpu_budget(
+    monkeypatch, capacity: int, budget: int, expected: int
+) -> None:
+    """Size the real worker command using CPU budgets rather than rank limits.
+
+    :param monkeypatch: Fixture mocking process launches.
+    :param capacity: Explicit CPU capacity in the selected unit.
+    :param budget: Per-instance CPU budget.
+    :param expected: Number of worker execution threads.
+    :returns: None.
+    """
+    services = mock.Mock()
+    config = {
+        'NODE_DETECTION': 'manual',
+        'CORES_PER_NODE': capacity,
+        'PROCS_PER_NODE': 2,
+        'NODES': 1,
+    }
+    services.get_config_param.side_effect = lambda key, **kwargs: config.get(key)
+    services.launch_task.side_effect = RuntimeError('stop at worker launch')
+    pool = TaskPool('ensemble', services)
+    pool._ensemble_budget = budget
+    pool.dask_scheduler = ['dask', 'scheduler']
+    pool.DaskWorker = ['dask', 'worker']
+    monkeypatch.setattr(services_module.subprocess, 'Popen', mock.Mock())
+    with pytest.raises(RuntimeError, match='stop at worker launch'):
+        pool.submit_dask_tasks(dask_ppw=budget)
+    args = services.launch_task.call_args.args
+    assert args[args.index('--nthreads') + 1] == str(expected)
+
+
+def test_oversized_ensemble_budget_fails_before_launch(monkeypatch) -> None:
+    """Reject an oversized budget before starting a scheduler or worker.
+
+    :param monkeypatch: Fixture mocking subprocess creation.
+    :returns: None.
+    """
+    services = mock.Mock()
+    config = {'NODE_DETECTION': 'manual', 'CORES_PER_NODE': 128, 'NODES': 1}
+    services.get_config_param.side_effect = lambda key, **kwargs: config.get(key)
+    pool = TaskPool('ensemble', services)
+    pool._ensemble_budget = 129
+    popen = mock.Mock()
+    monkeypatch.setattr(services_module.subprocess, 'Popen', popen)
+    with pytest.raises(ValueError, match='exceeds'):
+        pool.submit_dask_tasks()
+    popen.assert_not_called()
+    services.launch_task.assert_not_called()
+
+
+@pytest.mark.parametrize('budget', [0, -1, True, 1.5])
+def test_run_ensemble_rejects_invalid_budget(budget) -> None:
+    """Reject invalid instance budgets before generating any files.
+
+    :param budget: Invalid CPU budget.
+    :returns: None.
+    """
+    services = ServicesProxy(None, None, None, {'USE_PORTAL': 'False'}, None)
+    with pytest.raises(ValueError, match='positive integer'):
+        services.run_ensemble('unused', {}, 'unused', 'instance', cores_per_instance=budget)

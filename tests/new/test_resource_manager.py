@@ -375,3 +375,137 @@ def test_allocations(tmpdir):
         assert lines[6] == 'core: 1  - task_id: 0  - owner: comp0'
         assert lines[7] == 'core: 2  - task_id: 0  - owner: comp0'
         assert lines[8] == 'core: 3  - task_id: 0  - owner: comp0'
+
+
+@pytest.mark.parametrize('cpp', [2, 4])
+def test_dvm_complete_ranks(tmp_path, cpp: int) -> None:
+    """Ensure ranks cannot be split across nodes with fragmented capacity.
+
+    :param tmp_path: Isolated resource report directory.
+    :param cpp: Physical cores per MPI rank.
+    :returns: None.
+    """
+    cm = mock.Mock()
+    cm.fwk_sim_name = 'test'
+    cm.sim_map = {'test': mock.Mock(sim_root=str(tmp_path))}
+    cm.get_platform_parameter.return_value = 'HOST'
+    rm = ResourceManager(mock.Mock())
+    rm.initialize(mock.Mock(), mock.Mock(), cm, cmd_nodes=2, cmd_ppn=4)
+    cm.get_platform_parameter.return_value = 'OPENMPI-DVM'
+    # One rank on each node leaves fewer than cpp free cores on each.
+    rm.get_allocation('first', 2, 1, False, False, task_ppn=1, task_cpp=3)
+    with pytest.raises(InsufficientResourcesError):
+        rm.get_allocation('second', 1, 2, False, False, task_cpp=cpp)
+    assert rm.avail_cores == 2
+    assert rm.processes == 2
+    rm.release_allocation(1, 0)
+    result = rm.get_allocation('second', 2, 3, False, False, task_cpp=cpp)
+    assert result.cores_allocated == 2 * cpp
+    assert result.ppn == min(2, 4 // cpp)
+    rm.release_allocation(3, 0)
+    assert rm.avail_cores == 8
+    for invalid in (-1, 1.5, '4'):
+        with pytest.raises(ValueError):
+            rm.get_allocation('invalid', 1, 4, False, False, task_cpp=invalid)
+    rm.reporting_file.close()
+
+
+@pytest.mark.parametrize(
+    'whole_nodes,whole_socks,reserved', [(False, False, 4), (False, True, 4), (True, True, 8)]
+)
+def test_dvm_unequal_core_and_rank_limits(
+    tmp_path, whole_nodes: bool, whole_socks: bool, reserved: int
+) -> None:
+    """Initialize from an eight-core, two-rank platform and verify allocation.
+
+    :param tmp_path: Resource-report directory.
+    :param whole_nodes: Reserve complete nodes.
+    :param whole_socks: Reserve complete sockets.
+    :param reserved: Expected CPU reservation.
+    :returns: None.
+    """
+    params = {
+        'HOST': 'test',
+        'MPIRUN_VERSION': 'OPENMPI-DVM',
+        'NODE_DETECTION': 'manual',
+        'CORES_PER_NODE': 8,
+        'PROCS_PER_NODE': 2,
+        'NODES': 1,
+        'TOTAL_PROCS': 0,
+        'SOCKETS_PER_NODE': 2,
+        'NODE_ALLOCATION_MODE': 'SHARED',
+        'GPUS_PER_NODE': 0,
+    }
+    cm = mock.Mock()
+    cm.fwk_sim_name = 'test'
+    cm.sim_map = {'test': mock.Mock(sim_root=str(tmp_path))}
+    cm.get_platform_parameter.side_effect = lambda key, **kwargs: params.get(key)
+    rm = ResourceManager(mock.Mock())
+    rm.initialize(mock.Mock(), mock.Mock(), cm)
+    assert rm.total_cores == rm.avail_cores == 8
+    assert rm.ppn == rm.max_ppn == 2
+    result = rm.get_allocation('test', 1, 1, whole_nodes, whole_socks, task_cpp=4)
+    assert result.cores_allocated == reserved
+    assert result.ppn == 1
+    assert rm.processes == 1
+    rm.release_allocation(1, 0)
+    assert rm.avail_cores == 8
+    result = rm.get_allocation('test', 2, 2, False, False, task_cpp=4)
+    assert result.cores_allocated == 8
+    assert result.ppn == 2
+    with pytest.raises(InsufficientResourcesError):
+        rm.get_allocation('blocked', 1, 3, False, False, task_cpp=1)
+    assert rm.avail_cores == 0
+    rm.release_allocation(2, 0)
+    with pytest.raises(BadResourceRequestError):
+        rm.get_allocation('oversized', 2, 4, False, False, task_cpp=5)
+    assert rm.avail_cores == 8
+    assert rm.processes == rm.alloc_cores == 0
+    # Separate tasks may each launch one rank while sharing the CPU budget.
+    rm.get_allocation('first', 1, 5, False, False, task_cpp=4)
+    rm.get_allocation('second', 1, 6, False, False, task_cpp=4)
+    assert rm.alloc_cores == 8
+    rm.release_allocation(5, 0)
+    rm.release_allocation(6, 0)
+    assert rm.avail_cores == 8
+    rm.reporting_file.close()
+
+
+def test_dvm_rank_limit_does_not_destroy_cpu_capacity(tmp_path) -> None:
+    """Track concurrent rank occupancy independently from reserved CPUs.
+
+    :param tmp_path: Resource-report directory.
+    :returns: None.
+    """
+    params = {
+        'HOST': 'test',
+        'MPIRUN_VERSION': 'OPENMPI-DVM',
+        'NODE_DETECTION': 'manual',
+        'CORES_PER_NODE': 8,
+        'PROCS_PER_NODE': 2,
+        'NODES': 1,
+        'TOTAL_PROCS': 0,
+        'SOCKETS_PER_NODE': 1,
+        'NODE_ALLOCATION_MODE': 'SHARED',
+        'GPUS_PER_NODE': 0,
+    }
+    cm = mock.Mock()
+    cm.fwk_sim_name = 'test'
+    cm.sim_map = {'test': mock.Mock(sim_root=str(tmp_path))}
+    cm.get_platform_parameter.side_effect = lambda key, **kwargs: params.get(key)
+    rm = ResourceManager(mock.Mock())
+    rm.initialize(mock.Mock(), mock.Mock(), cm)
+    rm.get_allocation('first', 1, 1, False, False, task_cpp=1)
+    rm.get_allocation('second', 1, 2, False, False, task_cpp=1)
+    assert rm.avail_cores == 6
+    with pytest.raises(InsufficientResourcesError):
+        rm.get_allocation('third', 1, 3, False, False, task_cpp=1)
+    rm.release_allocation(1, 0)
+    allocation = rm.get_allocation('third', 1, 3, False, False, task_cpp=4)
+    assert allocation.cores_allocated == 4
+    assert rm.avail_cores == 3
+    rm.release_allocation(2, 0)
+    rm.release_allocation(3, 0)
+    assert rm.avail_cores == 8
+    assert not rm._dvm_rank_allocations
+    rm.reporting_file.close()
