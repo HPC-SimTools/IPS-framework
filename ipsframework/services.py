@@ -2928,16 +2928,15 @@ class ServicesProxy:
         :returns: a list of dicts mapping created subdirs to simulation names
             and their parameters
         """
+        cores_per_instance = 1 if cores_per_instance is None \
+            else cores_per_instance
+
+        if cores_per_instance < 1:
+            raise ValueError('cores_per_instance must be a positive integer')
+
         # This should be a unique variable across all ensembles we keep track
         # of in the portal This ID should only be shared by runs within an
         # ensemble
-        cores_per_instance = 1 if cores_per_instance is None else cores_per_instance
-        if (
-            isinstance(cores_per_instance, bool)
-            or not isinstance(cores_per_instance, int)
-            or cores_per_instance < 1
-        ):
-            raise ValueError('cores_per_instance must be a positive integer')
         portal_ensemble_id = str(uuid.uuid4())
 
         use_portal = self._should_use_portal()
