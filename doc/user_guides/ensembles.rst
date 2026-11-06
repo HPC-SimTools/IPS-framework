@@ -366,6 +366,28 @@ components within each running ensemble instance:
   (assuming one core per MPI process). For example, two concurrent four-process
   tasks need a budget of at least eight cores per instance.
 
+.. note::
+
+   IPS tasks that call python scripts that use ``mpi4py`` must ensure that ``mpi4py`` package in your
+   environment is linked to OpenMPI, not MPICH or another MPI
+   implementation. An ``mpi4py`` package
+   linked to MPICH can cause every process launched by an IPS component to
+   report rank 0 in an ``MPI.COMM_WORLD`` of size 1 even though the user
+   requested multiple ranks.
+
+   If you encounter this symptom, check the library loaded by the Python
+   environment used for the task:
+
+   .. code-block:: bash
+
+      python -c 'from mpi4py import MPI; print(MPI.Get_library_version())'
+
+   In the affected environment, rebuilding and reinstalling ``mpi4py`` from
+   source after loading the ``openmpi`` module and setting
+   ``MPICC="$(which mpicc)"`` will resolve this issue. Verify that the rebuilt
+   package reports Open MPI, and rerun a multi-rank task to confirm that its
+   communicator has the requested size and distinct ranks.
+
 Portal
 ------
 

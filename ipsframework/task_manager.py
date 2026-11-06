@@ -453,7 +453,7 @@ class TaskManager:
                 if not mpicmd:
                     raise Exception('Missing %s command in $PATH' % (mpi_binary))
 
-                nproc_flag = '-np'
+                nproc_flag = '-n'
                 ppn_flag = '-npernode'
                 host_select = '-H'
                 if mpi_binary == 'prun':
@@ -483,6 +483,7 @@ class TaskManager:
                     )
                     if cpp:
                         cmd += f' --map-by slot:PE={cpp}'
+                        cmd += ' --bind-to core'
                 elif smp_node:
                     cmd = ' '.join([mpicmd, nproc_flag, str(nproc)])
                 else:
